@@ -1,0 +1,37 @@
+{
+    // Python
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.rulers": [
+            80,
+            120
+        ]
+    },
+    "ruff.codeAction.fixViolation": {
+        "enable": true
+    },
+    "ruff.enable": true,
+    "ruff.organizeImports": true,
+    "ruff.lint.args": [
+        "--config=${workspaceFolder}/pyproject.toml"
+    ],
+    "ruff.lint.run": "onSave",
+
+    // Hide files
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/node_modules": true,
+        ".pytest_cache": true,
+        ".ruff_cache": true,
+        ".venv": true,
+        "junit": true,
+    },
+}

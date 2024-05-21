@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "convergence-games"
+version = "0.1.0"
+description = "A game information and allocator for Convergence"
+authors = ["Jacob Cheatley <jacobcheatley@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.111.0"
+sqlalchemy = "^2.0.30"
+pydantic = "^2.7.1"
+sqlmodel = "^0.0.18"
+uvicorn = "^0.29.0"
+pydantic-settings = "^2.2.1"
+httpx = "^0.27.0"
+
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.4.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "venv",
+    "ignore",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "N",  # pep8-naming
+]
+ignore = [
+    "B008",  # Do not perform function calls in argument defaults - too many false positives especially with FastAPI
+    "C901",  # Function is too complex - warned by radon
+    "E501",  # Line too long - handled by ruff formatter
+]
