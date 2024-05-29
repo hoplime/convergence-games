@@ -43,11 +43,21 @@ def create_mock_db() -> None:
             system_map[system_name] = system
 
         time_slots = [
-            TimeSlot(start_time=dt.datetime(2024, 1, 1, 12), end_time=dt.datetime(2024, 1, 1, 14)),
-            TimeSlot(start_time=dt.datetime(2024, 1, 1, 14), end_time=dt.datetime(2024, 1, 1, 16)),
-            TimeSlot(start_time=dt.datetime(2024, 1, 1, 16), end_time=dt.datetime(2024, 1, 1, 18)),
-            TimeSlot(start_time=dt.datetime(2024, 1, 1, 18), end_time=dt.datetime(2024, 1, 1, 20)),
-            TimeSlot(start_time=dt.datetime(2024, 1, 1, 20), end_time=dt.datetime(2024, 1, 1, 22)),
+            TimeSlot(
+                name="Saturday Morning", start_time=dt.datetime(2024, 1, 1, 12), end_time=dt.datetime(2024, 1, 1, 14)
+            ),
+            TimeSlot(
+                name="Saturday Midday", start_time=dt.datetime(2024, 1, 1, 14), end_time=dt.datetime(2024, 1, 1, 16)
+            ),
+            TimeSlot(
+                name="Saturday Afternoon", start_time=dt.datetime(2024, 1, 1, 16), end_time=dt.datetime(2024, 1, 1, 18)
+            ),
+            TimeSlot(
+                name="Sunday Morning", start_time=dt.datetime(2024, 1, 1, 18), end_time=dt.datetime(2024, 1, 1, 20)
+            ),
+            TimeSlot(
+                name="Sunday Midday", start_time=dt.datetime(2024, 1, 1, 20), end_time=dt.datetime(2024, 1, 1, 22)
+            ),
         ]
         session.add_all(time_slots)
 

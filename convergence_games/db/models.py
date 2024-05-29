@@ -25,6 +25,18 @@ class System(SystemBase, table=True):
     games: list["Game"] = Relationship(back_populates="system")
 
 
+class SystemCreate(SystemBase):
+    pass
+
+
+class SystemRead(SystemBase):
+    id: int
+
+
+class SystemUpdate(SystemBase):
+    name: str | None = None
+
+
 # endregion
 
 
@@ -44,6 +56,10 @@ class GenreCreate(GenreBase):
 
 class GenreRead(GenreBase):
     id: int
+
+
+class GenreUpdate(GenreBase):
+    name: str | None = None
 
 
 # endregion
@@ -84,6 +100,26 @@ class Game(GameBase, table=True):
         return "\n".join(line.lstrip() for line in result.split("\n"))
 
 
+class GameCreate(GameBase):
+    pass
+
+
+class GameRead(GameBase):
+    id: int
+
+
+class GameUpdate(GameBase):
+    title: str | None = None
+    description: str | None = None
+    crunch: GameCrunch | None = None
+    narrativism: GameNarrativism | None = None
+    tone: GameTone | None = None
+    age_suitability: str | None = None
+    minimum_players: int | None = None
+    optimal_players: int | None = None
+    maximum_players: int | None = None
+
+
 # endregion
 
 
@@ -99,11 +135,25 @@ class Person(PersonBase, table=True):
     gmd_games: list[Game] = Relationship(back_populates="gamemaster")
 
 
+class PersonCreate(PersonBase):
+    pass
+
+
+class PersonRead(PersonBase):
+    id: int
+
+
+class PersonUpdate(PersonBase):
+    name: str | None = None
+    email: str | None = None
+
+
 # endregion
 
 
 # region TimeSlot
 class TimeSlotBase(SQLModel):
+    name: str
     start_time: dt.datetime
     end_time: dt.datetime
 
@@ -112,6 +162,20 @@ class TimeSlot(TimeSlotBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     table_allocations: list["TableAllocation"] = Relationship(back_populates="slot")
+
+
+class TimeSlotCreate(TimeSlotBase):
+    pass
+
+
+class TimeSlotRead(TimeSlotBase):
+    id: int
+
+
+class TimeSlotUpdate(TimeSlotBase):
+    name: str | None = None
+    start_time: dt.datetime | None = None
+    end_time: dt.datetime | None = None
 
 
 # endregion
@@ -130,6 +194,20 @@ class TableAllocation(TableAllocationBase, table=True):
     slot: TimeSlot = Relationship(back_populates="table_allocations")
     game: Game = Relationship(back_populates="table_allocations")
     __table_args__ = (UniqueConstraint("table_number", "slot_id", name="unique_table_allocation"),)
+
+
+class TableAllocationCreate(TableAllocationBase):
+    pass
+
+
+class TableAllocationRead(TableAllocationBase):
+    id: int
+
+
+class TableAllocationUpdate(TableAllocationBase):
+    table_number: int | None = None
+    slot_id: int | None = None
+    game_id: int | None = None
 
 
 # endregion
