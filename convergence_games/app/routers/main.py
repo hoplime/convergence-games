@@ -13,7 +13,14 @@ router = APIRouter(prefix="/frontend")
 def api_index() -> FastUI:
     # language=markdown
     markdown = """\
-# BIG MARKDOWN ENERGY sdwafdagf
+# Convergence 2024
+
+I could put in a bunch of info here, but it's not important for now. This will be a sick landing/home page eventually.
+
+## TODO - More content
+
+- Bullet points
+- Wow
 """
     return page(c.Markdown(text=markdown))
 

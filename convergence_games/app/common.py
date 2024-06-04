@@ -11,6 +11,11 @@ def page(*components, title: str | None = None) -> FastUI:
             title_event=GoToEvent(url="/"),
             start_links=[
                 c.Link(components=[c.Text(text="Games")], on_click=GoToEvent(url="/games"), active="startswith:/games"),
+                c.Link(
+                    components=[c.Text(text="Sessions")],
+                    on_click=GoToEvent(url="/sessions"),
+                    active="startswith:/sessions",
+                ),
             ],
         ),
         c.Page(

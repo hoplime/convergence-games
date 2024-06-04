@@ -12,6 +12,8 @@ from starlette import status
 
 from convergence_games.app.routers.games import router as games_router
 from convergence_games.app.routers.main import router as main_router
+from convergence_games.app.routers.my_sessions import router as sessions_router
+from convergence_games.app.routers.people import router as people_router
 from convergence_games.db.session import create_mock_db
 
 
@@ -50,6 +52,8 @@ app.add_exception_handler(IntegrityError, integrity_error_handler)
 fastapi_auth_exception_handling(app)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(games_router)
+app.include_router(people_router)
+app.include_router(sessions_router)
 app.include_router(main_router)
 
 

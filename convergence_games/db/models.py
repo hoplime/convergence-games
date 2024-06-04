@@ -133,6 +133,7 @@ class Person(PersonBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     gmd_games: list[Game] = Relationship(back_populates="gamemaster")
+    session_preferences: list["SessionPreference"] = Relationship(back_populates="person")
 
 
 class PersonCreate(PersonBase):
@@ -161,7 +162,7 @@ class TimeSlotBase(SQLModel):
 class TimeSlot(TimeSlotBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
-    table_allocations: list["TableAllocation"] = Relationship(back_populates="slot")
+    table_allocations: list["TableAllocation"] = Relationship(back_populates="time_slot")
 
 
 class TimeSlotCreate(TimeSlotBase):
@@ -191,8 +192,9 @@ class TableAllocationBase(SQLModel):
 class TableAllocation(TableAllocationBase, table=True):
     id: int = Field(primary_key=True)
 
-    slot: TimeSlot = Relationship(back_populates="table_allocations")
+    time_slot: TimeSlot = Relationship(back_populates="table_allocations")
     game: Game = Relationship(back_populates="table_allocations")
+    session_preferences: list["SessionPreference"] = Relationship(back_populates="table_allocation")
     __table_args__ = (UniqueConstraint("table_number", "slot_id", name="unique_table_allocation"),)
 
 
@@ -211,3 +213,31 @@ class TableAllocationUpdate(TableAllocationBase):
 
 
 # endregion
+
+
+# region SessionPreference
+class SessionPreferenceBase(SQLModel):
+    weight: int = Field(default=1)
+    person_id: int = Field(foreign_key="person.id")
+    table_allocation_id: int = Field(foreign_key="tableallocation.id")
+
+
+class SessionPreference(SessionPreferenceBase, table=True):
+    id: int = Field(primary_key=True)
+
+    person: Person = Relationship(back_populates="session_preferences")
+    table_allocation: TableAllocation = Relationship(back_populates="session_preferences")
+
+
+class SessionPreferenceCreate(SessionPreferenceBase):
+    pass
+
+
+class SessionPreferenceRead(SessionPreferenceBase):
+    id: int
+
+
+class SessionPreferenceUpdate(SessionPreferenceBase):
+    weight: int | None = None
+    person_id: int | None = None
+    table_allocation_id: int | None = None

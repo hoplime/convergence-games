@@ -1,10 +1,12 @@
 import datetime as dt
+import random
+from csv import DictReader
 from pathlib import Path
 from typing import Any, Generator
 
 from sqlmodel import Session, SQLModel, create_engine, select
 
-from convergence_games.db.extra_types import GameCrunch
+from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
 from convergence_games.db.models import Game, Genre, Person, System, TableAllocation, TimeSlot
 
 engine = None
@@ -24,81 +26,107 @@ def create_db_and_tables() -> None:
     SQLModel.metadata.create_all(engine)
 
 
+def create_mock_time_slots(session: Session) -> list[TimeSlot]:
+    time_slots = [
+        TimeSlot(
+            name="Saturday Morning",
+            start_time=dt.datetime(2024, 9, 7, 9),
+            end_time=dt.datetime(2024, 9, 7, 12),
+        ),
+        TimeSlot(
+            name="Saturday Afternoon",
+            start_time=dt.datetime(2024, 9, 7, 13),
+            end_time=dt.datetime(2024, 9, 7, 16),
+        ),
+        TimeSlot(
+            name="Saturday Evening",
+            start_time=dt.datetime(2024, 9, 7, 17),
+            end_time=dt.datetime(2024, 9, 7, 21),
+        ),
+        TimeSlot(
+            name="Sunday Morning",
+            start_time=dt.datetime(2024, 9, 8, 9),
+            end_time=dt.datetime(2024, 9, 8, 12),
+        ),
+        TimeSlot(
+            name="Sunday Afternoon",
+            start_time=dt.datetime(2024, 9, 8, 13),
+            end_time=dt.datetime(2024, 9, 8, 16),
+        ),
+    ]
+    session.add_all(time_slots)
+    return time_slots
+
+
 def create_mock_db() -> None:
     if engine is None:
         create_db_and_tables()
-    genre_names = ["Sci-fi", "Fantasy", "Horror", "Historical", "Modern"]
-    system_names = ["D&D 5e", "Warhammer Fantasy RPG", "Board Game"]
+
     with Session(engine) as session:
+        gm_map: dict[str, Person] = {}
         genre_map: dict[str, Genre] = {}
-        for genre_name in genre_names:
-            genre = Genre(name=genre_name)
-            session.add(genre)
-            genre_map[genre_name] = genre
-
         system_map: dict[str, System] = {}
-        for system_name in system_names:
-            system = System(name=system_name)
-            session.add(system)
-            system_map[system_name] = system
+        game_map: dict[str, Game] = {}
 
-        time_slots = [
-            TimeSlot(
-                name="Saturday Morning", start_time=dt.datetime(2024, 1, 1, 12), end_time=dt.datetime(2024, 1, 1, 14)
-            ),
-            TimeSlot(
-                name="Saturday Midday", start_time=dt.datetime(2024, 1, 1, 14), end_time=dt.datetime(2024, 1, 1, 16)
-            ),
-            TimeSlot(
-                name="Saturday Afternoon", start_time=dt.datetime(2024, 1, 1, 16), end_time=dt.datetime(2024, 1, 1, 18)
-            ),
-            TimeSlot(
-                name="Sunday Morning", start_time=dt.datetime(2024, 1, 1, 18), end_time=dt.datetime(2024, 1, 1, 20)
-            ),
-            TimeSlot(
-                name="Sunday Midday", start_time=dt.datetime(2024, 1, 1, 20), end_time=dt.datetime(2024, 1, 1, 22)
-            ),
-        ]
-        session.add_all(time_slots)
+        with open("mock_data/Mock Convergence Data - GMs.csv") as f:
+            for row in DictReader(f):
+                person = Person(name=row["name"], email=row["email"])
+                gm_map[row["name"]] = person
 
-        alice = Person(name="Alice", email="alice@email.com")
-        session.add(alice)
+        session.add_all(gm_map.values())
 
-        bob = Person(name="Bob", email="bob@email.com")
-        session.add(bob)
+        with open("mock_data/Mock Convergence Data - Games.csv") as f:
+            for row in DictReader(f):
+                genre_names = [name.strip() for name in row["genres"].split(",")]
+                system_name = row["system"]
+                crunch = random.choice(list(GameCrunch))
+                narrativism = random.choice(list(GameNarrativism))
+                tone = random.choice(list(GameTone))
+                gamemaster_name = row["gamemaster"]
+                title = row["title"]
+                description = row["description"]
+                age_suitability = row["age_suitability"]
 
-        terraforming_mars = Game(
-            title="Terraforming Mars",
-            description="A game about terraforming Mars.\nIt's really good",
-            crunch=GameCrunch.HEAVY,
-            gamemaster=alice,
-            genres=[genre_map["Sci-fi"], genre_map["Modern"]],
-            system=system_map["Board Game"],
-        )
-        catan = Game(
-            title="Catan",
-            description="A game about trading",
-            gamemaster=alice,
-            genres=[genre_map["Modern"]],
-            system=system_map["Board Game"],
-        )
-        dnd_5e = Game(
-            title="D&D 5e",
-            description="A game about adventuring",
-            crunch=GameCrunch.MEDIUM,
-            gamemaster=bob,
-            genres=[genre_map["Fantasy"]],
-            system=system_map["D&D 5e"],
-        )
-        session.add_all([terraforming_mars, catan, dnd_5e])
+                if system_name not in system_map:
+                    system = System(name=system_name)
+                    system_map[system_name] = system
 
-        table_allocations = [
-            TableAllocation(table_number=1, slot=time_slots[0], game=terraforming_mars),
-            # TableAllocation(table_number=1, slot=time_slots[0], game=catan),
-            TableAllocation(table_number=2, slot=time_slots[0], game=catan),
-            TableAllocation(table_number=3, slot=time_slots[1], game=dnd_5e),
-        ]
-        session.add_all(table_allocations)
+                for genre_name in genre_names:
+                    if genre_name not in genre_map:
+                        genre = Genre(name=genre_name)
+                        genre_map[genre_name] = genre
+
+                gamemaster = gm_map[gamemaster_name]
+
+                game = Game(
+                    title=title,
+                    description=description,
+                    crunch=crunch,
+                    narrativism=narrativism,
+                    tone=tone,
+                    age_suitability=age_suitability,
+                    gamemaster=gamemaster,
+                    genres=[genre_map[genre_name] for genre_name in genre_names],
+                    system=system_map[system_name],
+                )
+                game_map[title] = game
+
+        session.add_all(system_map.values())
+        session.add_all(genre_map.values())
+        session.add_all(game_map.values())
+
+        time_slots = create_mock_time_slots(session)
+        with open("mock_data/Mock Convergence Data - Tables.csv") as f:
+            for row in DictReader(f):
+                table_number = row["table_number"]
+                for i, time_slot in enumerate(time_slots):
+                    game = game_map[row[f"time_slot_{i}"]]
+                    table_allocation = TableAllocation(
+                        table_number=table_number,
+                        game=game,
+                        time_slot=time_slot,
+                    )
+                    session.add(table_allocation)
 
         session.commit()
 
