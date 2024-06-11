@@ -4,25 +4,25 @@ from pathlib import Path
 
 import arel
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from httpx import AsyncClient
 from sqlalchemy.exc import IntegrityError
 from starlette import status
 
+from convergence_games.app.routes.api import router as api_router
+from convergence_games.app.routes.frontend import router as frontend_router
+from convergence_games.app.templates import templates
 from convergence_games.db.session import create_mock_db
+
+STATIC_PATH = Path(__file__).parent / "static"
+DEBUG = os.environ.get("DEBUG")
 
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
     create_mock_db()
     print("Mock DB created")
-
-    async with AsyncClient() as client:
-        app_.state.httpx_client = client
-        yield
-
+    yield
     print("Shutdown")
 
 
@@ -36,7 +36,6 @@ def integrity_error_handler(request: Request, exc: IntegrityError):
         "connection_invalidated": exc.connection_invalidated,
         "message": "Integrity error occurred.",
     }
-    print(detail)
     raise HTTPException(
         status_code=status.HTTP_409_CONFLICT,
         detail=detail,
@@ -45,18 +44,18 @@ def integrity_error_handler(request: Request, exc: IntegrityError):
 
 app = FastAPI(lifespan=lifespan)
 app.add_exception_handler(IntegrityError, integrity_error_handler)
-STATIC_PATH = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
-templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
-if _debug := os.environ.get("DEBUG"):
+# Hot Reloading
+if DEBUG:
     hot_reload = arel.HotReload(paths=[arel.Path(".")])
     app.add_websocket_route("/hot-reload", hot_reload, name="hot-reload")
     app.add_event_handler("startup", hot_reload.startup)
     app.add_event_handler("shutdown", hot_reload.shutdown)
-    templates.env.globals["DEBUG"] = _debug
+    templates.env.globals["DEBUG"] = DEBUG
     templates.env.globals["hot_reload"] = hot_reload
 
+# Favicons
 for favicon_file in (STATIC_PATH / "favicon").iterdir():
     # We've got to bind favicon_file to the closure to avoid a late binding issue.
     def create_favicon_route(favicon_file=favicon_file):
@@ -67,12 +66,5 @@ for favicon_file in (STATIC_PATH / "favicon").iterdir():
 
     app.get(f"/{favicon_file.name}", include_in_schema=False)(create_favicon_route())
 
-
-@app.get("/")
-async def read_index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request=request, name="index.html.jinja")
-
-
-@app.get("/games")
-async def read_games(request: Request) -> HTMLResponse:
-    return HTMLResponse("<p>WOW LOOK AT ALL THESE GAMES</p>")
+app.include_router(frontend_router)
+app.include_router(api_router)
