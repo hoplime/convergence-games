@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Convergence Games</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- Favicon -->
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+        <link rel="manifest" href="/site.webmanifest">
+        <!-- Libraries -->
+        <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+        <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+        <!--
+        Hey there Convergence attendee! Thanks for inspecting the source code of this website.
+        Come to Jacob Cheatley and say the secret passphrase "Lime Copper Frog".
+        If he still remembers that he set up this comment, he'll give you a prize.
+        -->
+        <link href="{{url_for('static',path='/css/style.css')}}" rel="stylesheet" />
+    </head>
+    <body>
+        <h1 class="border-red-950 border-4">Welcome to Convergence Games</h1>
+        <p>Convergence Games is a website. Wow, how amazing is that?!</p>
+        <p class="invisible">Click <a href="/games">here</a> to view the list of games available on the platform.</p>
+        <button hx-get="/games" hx-swap="outerHTML" _="on click console.log('loading')">Load Games</button>
+        <a>gdagad</a>
+        {% if DEBUG %} {{ hot_reload.script(url_for('hot-reload')) | safe }} {% endif %}
+    </body>
+</html>

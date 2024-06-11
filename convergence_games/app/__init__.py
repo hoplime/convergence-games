@@ -1,19 +1,16 @@
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import arel
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastui import prebuilt_html
-from fastui.auth import fastapi_auth_exception_handling
+from fastapi.templating import Jinja2Templates
 from httpx import AsyncClient
 from sqlalchemy.exc import IntegrityError
 from starlette import status
 
-from convergence_games.app.routers.games import router as games_router
-from convergence_games.app.routers.main import router as main_router
-from convergence_games.app.routers.my_sessions import router as sessions_router
-from convergence_games.app.routers.people import router as people_router
 from convergence_games.db.session import create_mock_db
 
 
@@ -48,15 +45,34 @@ def integrity_error_handler(request: Request, exc: IntegrityError):
 
 app = FastAPI(lifespan=lifespan)
 app.add_exception_handler(IntegrityError, integrity_error_handler)
+STATIC_PATH = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
+templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
-fastapi_auth_exception_handling(app)
-app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
-app.include_router(games_router)
-app.include_router(people_router)
-app.include_router(sessions_router)
-app.include_router(main_router)
+if _debug := os.environ.get("DEBUG"):
+    hot_reload = arel.HotReload(paths=[arel.Path(".")])
+    app.add_websocket_route("/hot-reload", hot_reload, name="hot-reload")
+    app.add_event_handler("startup", hot_reload.startup)
+    app.add_event_handler("shutdown", hot_reload.shutdown)
+    templates.env.globals["DEBUG"] = _debug
+    templates.env.globals["hot_reload"] = hot_reload
+
+for favicon_file in (STATIC_PATH / "favicon").iterdir():
+    # We've got to bind favicon_file to the closure to avoid a late binding issue.
+    def create_favicon_route(favicon_file=favicon_file):
+        async def read_favicon() -> FileResponse:
+            return FileResponse(favicon_file)
+
+        return read_favicon
+
+    app.get(f"/{favicon_file.name}", include_in_schema=False)(create_favicon_route())
 
 
-@app.get("/{path:path}")
-async def html_landing() -> HTMLResponse:
-    return HTMLResponse(prebuilt_html(title="Convergence Games Default Title", api_root_url="/frontend"))
+@app.get("/")
+async def read_index(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="index.html.jinja")
+
+
+@app.get("/games")
+async def read_games(request: Request) -> HTMLResponse:
+    return HTMLResponse("<p>WOW LOOK AT ALL THESE GAMES</p>")

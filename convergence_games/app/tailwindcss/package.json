@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "tailwindcss": "^3.4.4"
+  },
+  "scripts": {
+    "tailwind:watch": "tailwindcss -i ./styles/style.css -o ../static/css/style.css --watch --minify"
+  }
+}

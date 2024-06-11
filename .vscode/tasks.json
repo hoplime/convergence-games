@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "npm",
+            "script": "tailwind:watch",
+            "path": "convergence_games/app/tailwindcss",
+            "group": "build",
+            "problemMatcher": [],
+            "label": "tailwind",
+            "detail": "tailwindcss -i ./styles/style.css -o ../static/css/app.css --watch",
+			"isBackground": true,
+			"promptOnClose": false,
+			"presentation": {
+				"echo": true,
+				"reveal": "silent",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			}
+        }
+    ]
+}
