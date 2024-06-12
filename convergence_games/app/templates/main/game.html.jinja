@@ -1,0 +1,5 @@
+{% extends "shared/_layout.html.jinja" %}
+{% block title %}{{ game.title }}{% endblock %}
+{% block content %}
+{{ render_partial('shared/partials/game_card.html.jinja', game=game) }}
+{% endblock %}

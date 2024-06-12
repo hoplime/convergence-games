@@ -120,6 +120,13 @@ class GameUpdate(GameBase):
     maximum_players: int | None = None
 
 
+class GameWithExtra(GameRead):
+    genres: list[Genre] = []
+    system: System
+    gamemaster: "Person"
+    table_allocations: list["TableAllocationWithSlot"] = []
+
+
 # endregion
 
 
@@ -147,6 +154,10 @@ class PersonRead(PersonBase):
 class PersonUpdate(PersonBase):
     name: str | None = None
     email: str | None = None
+
+
+class PersonWithExtra(PersonRead):
+    gmd_games: list["GameWithExtra"] = []
 
 
 # endregion
@@ -212,6 +223,10 @@ class TableAllocationUpdate(TableAllocationBase):
     game_id: int | None = None
 
 
+class TableAllocationWithSlot(TableAllocationRead):
+    time_slot: TimeSlot
+
+
 # endregion
 
 
@@ -241,3 +256,6 @@ class SessionPreferenceUpdate(SessionPreferenceBase):
     weight: int | None = None
     person_id: int | None = None
     table_allocation_id: int | None = None
+
+
+# endregion

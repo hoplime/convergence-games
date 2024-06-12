@@ -1,0 +1,24 @@
+<label class="relative">
+    <input type="checkbox" class="hidden peer">
+    <div class="cursor-pointer after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center peer-checked:after:-rotate-180 after:transition-transform">
+        {{ title }}
+    </div>
+
+    <div class="absolute bg-white border p-2 transition-opacity opacity-0 pointer-events-none peer-checked:opacity-100 peer-checked:pointer-events-auto">
+        <ul>
+            <li>
+                {% for option in options %}
+                <label class="flex whitespace-nowrap cursor-pointer px-2 py-1 transition-colors hover:bg-blue-100 [&:has(input:checked)]:bg-blue-200">
+                    <input type="checkbox"
+                        class="cursor-pointer update-form"
+                        value="{{ option.value }}"
+                        name="{{ form_name }}"
+                        {% if option.checked %}checked{% endif %}
+                    >
+                    <span class="peer-checked:text-blue-500">{{ option.name }}</span>
+                </label>
+                {% endfor %}
+            </li>
+        </ul>
+    </div>
+</label>

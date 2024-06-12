@@ -12,7 +12,7 @@ from starlette import status
 from convergence_games.app.routes.api import router as api_router
 from convergence_games.app.routes.frontend import router as frontend_router
 from convergence_games.app.templates import templates
-from convergence_games.db.session import create_mock_db
+from convergence_games.db.session import create_mock_db, get_startup_db_info
 
 STATIC_PATH = Path(__file__).parent / "static"
 DEBUG = os.environ.get("DEBUG")
@@ -21,8 +21,9 @@ DEBUG = os.environ.get("DEBUG")
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
     create_mock_db()
+    db = get_startup_db_info()
     print("Mock DB created")
-    yield
+    yield {"db": db}
     print("Shutdown")
 
 

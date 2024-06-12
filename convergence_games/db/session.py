@@ -1,13 +1,14 @@
 import datetime as dt
 import random
 from csv import DictReader
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Generator
 
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
-from convergence_games.db.models import Game, Genre, Person, System, TableAllocation, TimeSlot
+from convergence_games.db.models import Game, GameWithExtra, Genre, Person, System, TableAllocation, TimeSlot
 
 engine = None
 
@@ -129,6 +130,55 @@ def create_mock_db() -> None:
                     session.add(table_allocation)
 
         session.commit()
+
+
+@dataclass
+class Option:
+    name: str
+    value: int | str
+    checked: bool = False
+
+
+class StartupDBInfo:
+    def __init__(self) -> None:
+        with Session(engine) as session:
+            self.all_games = self._get_all_games(session)
+            self.game_map = self._get_game_map()
+            self.all_genres = self._get_all_genres(session)
+            self.genre_options = self._get_genre_options()
+            self.all_systems = self._get_all_systems(session)
+            self.system_options = self._get_system_options()
+
+    def _get_all_games(self, session: Session) -> list[GameWithExtra]:
+        statement = select(Game)
+        games = session.exec(statement).all()
+        return [GameWithExtra.model_validate(game) for game in games]
+
+    def _get_game_map(self) -> dict[int, GameWithExtra]:
+        games = self.all_games
+        return {game.id: game for game in games}
+
+    def _get_all_genres(self, session: Session) -> list[Genre]:
+        statement = select(Genre)
+        genres = session.exec(statement).all()
+        return genres
+
+    def _get_genre_options(self) -> list[Option]:
+        genres = self.all_genres
+        return [Option(name=genre.name, value=genre.id) for genre in genres]
+
+    def _get_all_systems(self, session: Session) -> list[System]:
+        statement = select(System)
+        systems = session.exec(statement).all()
+        return systems
+
+    def _get_system_options(self) -> list[Option]:
+        systems = self.all_systems
+        return [Option(name=system.name, value=system.id) for system in systems]
+
+
+def get_startup_db_info() -> StartupDBInfo:
+    return StartupDBInfo()
 
 
 if __name__ == "__main__":

@@ -21,14 +21,11 @@
         <link href="{{url_for('static',path='/css/style.css')}}" rel="stylesheet" />
         {% endblock %}
     </head>
-    <body>
+    <body class="bg-gray-200">
         <nav>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/games">Games</a></li>
-            </ul>
+            <p>TODO NAVIGATION</p>
         </nav>
-        <main>
+        <main id="content">
             {% block content %}{% endblock %}
         </main>
         <footer>

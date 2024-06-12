@@ -1,0 +1,19 @@
+{% extends "shared/_layout.html.jinja" %}
+{% block title %}Games{% endblock %}
+{% block content %}
+<form id="filter-form"
+    hx-get="/games"
+    hx-target="#game_list"
+    hx-trigger="change delay:200ms"
+>
+{{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=genre_options, title='Genre', form_name='genre') }}
+{{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=system_options, title='System', form_name='system') }}
+</form>
+<div id="game_list">
+{% block game_list %}
+    {% for game in games %}
+    {{ render_partial('shared/partials/game_card.html.jinja', game=game) }}
+    {% endfor %}
+{% endblock %}
+</div>
+{% endblock %}

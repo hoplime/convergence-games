@@ -10,14 +10,14 @@
                 "--host=0.0.0.0",
                 "convergence_games.app:app",
                 "--reload",
-                "--reload-include", "*.css",
-                "--reload-include", "*.jinja",
+                // "--reload-include", "*.css",
+                // "--reload-include", "*.jinja",
             ],
             "justMyCode": false,
             "preLaunchTask": "tailwind",
             "env": {
                 "WATCHFILES_FORCE_POLLING": "1",
-                "DEBUG": "True"
+                // "DEBUG": "True"
             }
         },
     ]
