@@ -1,4 +1,5 @@
 import datetime as dt
+from functools import cached_property
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Enum, Field, Relationship, SQLModel

@@ -1,5 +1,28 @@
 {% extends "shared/_layout.html.jinja" %}
 {% block title %}{{ game.title }}{% endblock %}
 {% block content %}
-{{ render_partial('shared/partials/game_card.html.jinja', game=game) }}
+<title>{{ game.title }} - Convergence 2024</title>
+<div>
+    <h1 class="text-2xl font-sans antialiased">{{ game.title }}</h1>
+    <h2 class="font-sans antialiased">{{ game.system.name }}</h3>
+    <ul>
+        {% for genre in game.genres %}
+        <li class="inline-block bg-gray-200 rounded-full px-3 py-1 text-xs font-semibold text-gray-700 mr-1">{{ genre.name }}</li>
+        {% endfor %}
+    </ul>
+    <p>{{ game.description }}</p>
+    <h2>Sessions</h2>
+    <ul>
+        {% for allocation in game.table_allocations %}
+        <li _="on click log {{ allocation.id }}">
+            {{ allocation.time_slot.start_time.strftime('%H:%M') }} - {{ allocation.time_slot.end_time.strftime('%H:%M') }} on {{ allocation.time_slot.start_time.strftime('%A') }} @ Table {{ allocation.table_number }}
+        </li>
+        {% endfor %}
+    </ul>
+    {{ render_partial(
+        'shared/partials/button.html.jinja',
+        text='Back to Games',
+        extra_attrs={'hx-get': '/games', 'hx-target': '#content', 'hx-select': '#content', 'hx-push-url': 'true'}
+    ) }}
+</div>
 {% endblock %}

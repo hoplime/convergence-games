@@ -1,6 +1,7 @@
 <div class="m-4 p-1 flex flex-col rounded-xl bg-white bg-clip-border text-gray-700 shadow-lg cursor-pointer"
     hx-get="/games/{{ game.id }}"
     hx-target="#content"
+    hx-select="#content"
     hx-push-url="true">
     <h2 class="block font-sans text-md font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased">{{ game.title }}</h5>
     <h3 class="font-sans antialiased">{{ game.system.name }}</h3>

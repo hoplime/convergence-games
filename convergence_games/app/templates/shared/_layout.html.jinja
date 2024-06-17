@@ -2,7 +2,7 @@
 <html>
     <head>
         {% block head %}
-        <title>{% block title %}Convergence 2024{% endblock %}{% if self.title() %} - Convergence 2024{% endif %}</title>
+        {% block title_element %}<title>{% block title %}Convergence 2024{% endblock %}{% if self.title() %} - Convergence 2024{% endif %}</title>{% endblock %}
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <!-- Favicon -->
@@ -19,18 +19,27 @@
         If he still remembers that he set up this comment, he'll give you a prize.
         -->
         <link href="{{url_for('static',path='/css/style.css')}}" rel="stylesheet" />
+        <script>
+            htmx.logAll();
+        </script>
         {% endblock %}
     </head>
     <body class="bg-gray-200">
-        <nav>
-            <p>TODO NAVIGATION</p>
-        </nav>
-        <main id="content">
-            {% block content %}{% endblock %}
-        </main>
-        <footer>
-            <p>&copy; 2024 Waikato Role-playing Guild</p>
-        </footer>
+        <div id="wrapper">
+            <nav>
+                <ul>
+                    <li class="inline-block rounded-full bg-red-500" hx-get="/" hx-target="#content" hx-select="#content" hx-push-url="true">Home</li>
+                    <li class="inline-block rounded-full bg-red-500" hx-get="/games" hx-target="#content" hx-select="#content" hx-push-url="true">Games</li>
+                    <li class="inline-block rounded-full bg-red-500" hx-get="/me" id="me-nav" hx-target="#content" hx-select="#content" hx-push-url="true">{% if user %}My Profile{% else %}Login{% endif%}</li>
+                </ul>
+            </nav>
+            <main id="content">
+                {% block content %}{% endblock %}
+            </main>
+            <footer>
+                <p>&copy; 2024 Waikato Role-playing Guild</p>
+            </footer>
+        </div>
         {% if DEBUG %} {{ hot_reload.script(url_for('hot-reload')) | safe }} {% endif %}
     </body>
 </html>

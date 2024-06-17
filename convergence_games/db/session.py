@@ -144,13 +144,16 @@ class StartupDBInfo:
         with Session(engine) as session:
             self.all_games = self._get_all_games(session)
             self.game_map = self._get_game_map()
+
             self.all_genres = self._get_all_genres(session)
             self.genre_options = self._get_genre_options()
             self.all_systems = self._get_all_systems(session)
             self.system_options = self._get_system_options()
+            self.all_time_slots = self._get_all_time_slots(session)
+            self.time_slot_options = self._get_time_slot_options()
 
     def _get_all_games(self, session: Session) -> list[GameWithExtra]:
-        statement = select(Game)
+        statement = select(Game).order_by(Game.title)
         games = session.exec(statement).all()
         return [GameWithExtra.model_validate(game) for game in games]
 
@@ -175,6 +178,15 @@ class StartupDBInfo:
     def _get_system_options(self) -> list[Option]:
         systems = self.all_systems
         return [Option(name=system.name, value=system.id) for system in systems]
+
+    def _get_all_time_slots(self, session: Session) -> list[TimeSlot]:
+        statement = select(TimeSlot)
+        time_slots = session.exec(statement).all()
+        return time_slots
+
+    def _get_time_slot_options(self) -> list[Option]:
+        time_slots = self.all_time_slots
+        return [Option(name=time_slot.name, value=time_slot.id) for time_slot in time_slots]
 
 
 def get_startup_db_info() -> StartupDBInfo:
