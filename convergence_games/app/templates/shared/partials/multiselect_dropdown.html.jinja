@@ -8,16 +8,16 @@
     {{ title }}
   </div>
   {# Dropdown Title #}
-  <div tabindex="0" role="button" class="btn m-1 text-sm font-medium after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center group-focus-within:after:-rotate-180 after:transition-transform -md:hidden">{{ title }}</div>
+  <div tabindex="0" role="button" class="btn text-sm font-medium after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center group-focus-within:after:-rotate-180 after:transition-transform -md:hidden">{{ title }}</div>
   <div class="
     collapse-content
-    dropdown-content z-[1] menu md:p-2 md:shadow md:bg-base-100 md:rounded-box md:w-54
+    dropdown-content z-[1] md:menu md:p-2 md:shadow md:bg-base-100 md:rounded-box md:w-54
     ">
-    <ul tabindex="0">
+    <ul tabindex="0" class="md:grid md:w-96 grid-cols-2 grid-flow-row gap-1">
         {% for option in options %}
         <li>
-            <label class="cursor-pointer label pointer-events-auto">
-                <span class="label-text pointer-events-auto">{{ option.name }}</span>
+            <label class="cursor-pointer label h-full">
+                <span class="label-text">{{ option.name }}</span>
                 <input
                     type="checkbox"
                     class="checkbox checkbox-accent"
@@ -29,5 +29,8 @@
         </li>
         {% endfor %}
     </ul>
+    {% set input_filter = "<input[name=" + form_name + "/>"%}
+    <button type="button" class="btn btn-secondary btn-outline" _="on click set {{ input_filter }}'s checked to false then trigger change">Clear</button>
+    {# <button type="button" class="btn btn-secondary btn-outline" _="on click set {{ input_filter }}'s checked to true then trigger change">Select All</button> #}
   </div>
 </div>

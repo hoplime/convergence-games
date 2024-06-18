@@ -21,4 +21,7 @@ module.exports = {
     },
   },
   plugins: [require("daisyui")],
+  safelift: [
+    'text-accent'
+  ]
 };
