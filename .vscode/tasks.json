@@ -18,7 +18,12 @@
 				"panel": "shared",
 				"showReuseMessage": true,
 				"clear": false
-			}
+			},
+            "options": {
+                "shell": {
+                    "args": ["-i"]
+                }
+            }
         }
     ]
 }
