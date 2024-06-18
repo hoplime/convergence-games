@@ -1,7 +1,7 @@
 module.exports = {
-    content: ["../templates/**/*.html", "../templates/**/*.html.jinja"],
-    theme: {
-        extend: {},
-    },
-    plugins: [],
+  content: ["../templates/**/*.html", "../templates/**/*.html.jinja"],
+  theme: {
+    extend: {},
+  },
+  plugins: [require("daisyui")],
 };
