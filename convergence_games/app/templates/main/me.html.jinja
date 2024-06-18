@@ -10,11 +10,7 @@
     console.log({{ request.headers['hx-request'] }});
 </script>
 <p>{{ user }} </p>
-{{ render_partial(
-    'shared/partials/button.html.jinja',
-    text='Logout',
-    extra_attrs={'hx-post': '/logout', 'hx-target': '#wrapper', 'hx-select': '#wrapper', 'hx-push-url': 'false'}
-) }}
+<button type="button" class="btn btn-error btn-outline" hx-post="/logout" hx-target="#wrapper" hx-select="#wrapper" hx-push-url="false">Logout</button>
 
 {% else %}
 

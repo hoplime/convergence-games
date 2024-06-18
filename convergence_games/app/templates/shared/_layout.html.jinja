@@ -24,13 +24,13 @@
         </script>
         {% endblock %}
     </head>
-    <body class="bg-gray-200">
+    <body>
         <div id="wrapper">
             <nav>
                 <ul>
-                    <li class="inline-block rounded-full bg-red-500" hx-get="/" hx-target="#content" hx-select="#content" hx-push-url="true">Home</li>
-                    <li class="inline-block rounded-full bg-red-500" hx-get="/games" hx-target="#content" hx-select="#content" hx-push-url="true">Games</li>
-                    <li class="inline-block rounded-full bg-red-500" hx-get="/me" id="me-nav" hx-target="#content" hx-select="#content" hx-push-url="true">{% if user %}My Profile{% else %}Login{% endif%}</li>
+                    <li hx-get="/" hx-target="#content" hx-select="#content" hx-push-url="true">Home</li>
+                    <li hx-get="/games" hx-target="#content" hx-select="#content" hx-push-url="true">Games</li>
+                    <li hx-get="/me" id="me-nav" hx-target="#content" hx-select="#content" hx-push-url="true">{% if user %}My Profile{% else %}Login{% endif%}</li>
                 </ul>
             </nav>
             <main id="content">

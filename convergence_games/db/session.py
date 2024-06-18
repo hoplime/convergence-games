@@ -162,7 +162,7 @@ class StartupDBInfo:
         return {game.id: game for game in games}
 
     def _get_all_genres(self, session: Session) -> list[Genre]:
-        statement = select(Genre)
+        statement = select(Genre).order_by(Genre.name)
         genres = session.exec(statement).all()
         return genres
 
@@ -171,7 +171,7 @@ class StartupDBInfo:
         return [Option(name=genre.name, value=genre.id) for genre in genres]
 
     def _get_all_systems(self, session: Session) -> list[System]:
-        statement = select(System)
+        statement = select(System).order_by(System.name)
         systems = session.exec(statement).all()
         return systems
 

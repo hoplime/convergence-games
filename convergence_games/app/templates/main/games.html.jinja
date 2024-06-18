@@ -7,8 +7,8 @@
     hx-target="#game_list"
     hx-trigger="change delay:200ms"
     hx-select="#game_list"
-    class="flex flex-wrap justify-around gap-2"
 >
+<h1>Filters</h1>
 {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=genre_options, title='Genre', form_name='genre') }}
 {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=system_options, title='System', form_name='system') }}
 {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=time_slot_options, title='Time Slot', form_name='time_slot') }}

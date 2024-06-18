@@ -19,10 +19,6 @@
         </li>
         {% endfor %}
     </ul>
-    {{ render_partial(
-        'shared/partials/button.html.jinja',
-        text='Back to Games',
-        extra_attrs={'hx-get': '/games', 'hx-target': '#content', 'hx-select': '#content', 'hx-push-url': 'true'}
-    ) }}
+    <button type="button" class="btn btn-secondary btn-outline" hx-get="/games" hx-target="#content" hx-select="#content" hx-push-url="true">Back to Games</button>
 </div>
 {% endblock %}

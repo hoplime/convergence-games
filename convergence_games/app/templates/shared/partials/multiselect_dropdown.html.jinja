@@ -1,32 +1,30 @@
-<label class="has-[input.shared-filter:checked]:bg-white px-4 rounded-t-full">
-    <input type="checkbox" class="hidden peer shared-filter shared-filter-{{ form_name }}"
-        _="on change if my.checked 
-            then set <.shared-filter:not(.shared-filter-{{ form_name }})/>'s checked to not my.checked">
-    <div class="cursor-pointer text-s font-semibold text-gray-700 mr-1 after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center peer-checked:after:-rotate-180 after:transition-transform">
-        {{ title }}
-    </div>
-
-    <div class="absolute bg-white border p-2 transition-opacity opacity-0 pointer-events-none peer-checked:opacity-100 peer-checked:pointer-events-auto z-auto w-full left-0">
-        <ul>
-            <li>
-                {% for option in options %}
-                <label class="flex whitespace-nowrap cursor-pointer px-2 py-1 transition-colors hover:bg-blue-100 [&:has(input:checked)]:bg-blue-200">
-                    <input type="checkbox"
-                        class="cursor-pointer"
-                        value="{{ option.value }}"
-                        name="{{ form_name }}"
-                        {% if option.checked %}checked{% endif %}
-                    >
-                    <span class="peer-checked:text-blue-500">{{ option.name }}</span>
-                </label>
-                {% endfor %}
-            </li>
-        </ul>
-        {{ render_partial(
-            'shared/partials/button.html.jinja',
-            text='Clear',
-            extra_classes='bg-red-500',
-            extra_attrs={'_': 'on click set .shared-filter-' ~ form_name ~ '\'s checked to false' }
-        ) }}
-    </div>
-</label>
+<div class="
+    -md:collapse -md:bg-base-200
+    md:dropdown">
+  <input type="checkbox" class="peer md:hidden" />
+  <div tabindex="0" class="collapse-title text-md font-medium after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center peer-checked:after:-rotate-180 after:transition-transform md:hidden">
+    {{ title }}
+  </div>
+  <div tabindex="0" role="button" class="btn m-1 -md:hidden">{{ title }}</div>
+  <div class="
+    collapse-content
+    dropdown-content z-[1] menu md:p-2 md:shadow md:bg-base-100 md:rounded-box md:w-54
+    ">
+    <ul tabindex="0">
+        {% for option in options %}
+        <li>
+            <label class="cursor-pointer label pointer-events-auto">
+                <span class="label-text pointer-events-auto">{{ option.name }}</span>
+                <input
+                    type="checkbox"
+                    class="checkbox checkbox-accent"
+                    value="{{ option.value }}"
+                    name="{{ form_name }}"
+                    {% if option.checked %}checked{% endif %}
+                />
+            </label>
+        </li>
+        {% endfor %}
+    </ul>
+  </div>
+</div>
