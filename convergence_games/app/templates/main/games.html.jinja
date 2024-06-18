@@ -8,10 +8,10 @@
     hx-trigger="change delay:200ms"
     hx-select="#game_list"
 >
-<h1>Filters</h1>
 {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=genre_options, title='Genre', form_name='genre') }}
 {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=system_options, title='System', form_name='system') }}
 {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=time_slot_options, title='Time Slot', form_name='time_slot') }}
+<button type="reset" class="btn btn-secondary btn-outline" _="on click trigger change">Clear Filters</button>
 </form>
 <div id="game_list">
     {% for game in games %}

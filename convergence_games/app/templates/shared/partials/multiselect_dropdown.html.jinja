@@ -1,11 +1,14 @@
 <div class="
     -md:collapse -md:bg-base-200
-    md:dropdown">
+    md:dropdown
+    group">
   <input type="checkbox" class="peer md:hidden" />
-  <div tabindex="0" class="collapse-title text-md font-medium after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center peer-checked:after:-rotate-180 after:transition-transform md:hidden">
+  {# Collapse Title #}
+  <div tabindex="0" class="collapse-title text-sm font-medium after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center peer-checked:after:-rotate-180 after:transition-transform md:hidden">
     {{ title }}
   </div>
-  <div tabindex="0" role="button" class="btn m-1 -md:hidden">{{ title }}</div>
+  {# Dropdown Title #}
+  <div tabindex="0" role="button" class="btn m-1 text-sm font-medium after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center group-focus-within:after:-rotate-180 after:transition-transform -md:hidden">{{ title }}</div>
   <div class="
     collapse-content
     dropdown-content z-[1] menu md:p-2 md:shadow md:bg-base-100 md:rounded-box md:w-54

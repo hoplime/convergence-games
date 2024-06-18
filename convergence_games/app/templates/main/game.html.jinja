@@ -14,7 +14,7 @@
     <h2>Sessions</h2>
     <ul>
         {% for allocation in game.table_allocations %}
-        <li _="on click log {{ allocation.id }}">
+        <li class="pointer-events-auto" _="on click log {{ allocation.id }}">
             {{ allocation.time_slot.start_time.strftime('%H:%M') }} - {{ allocation.time_slot.end_time.strftime('%H:%M') }} on {{ allocation.time_slot.start_time.strftime('%A') }} @ Table {{ allocation.table_number }}
         </li>
         {% endfor %}
