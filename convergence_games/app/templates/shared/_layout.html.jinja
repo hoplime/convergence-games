@@ -4,7 +4,6 @@
         {% block head %}
         {% block title_element %}<title>{% block title %}Convergence 2024{% endblock %}{% if self.title() %} - Convergence 2024{% endif %}</title>{% endblock %}
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <!-- Favicon -->
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -19,7 +18,12 @@
         If he still remembers that he set up this comment, he'll give you a prize.
         -->
         <link href="{{url_for('static',path='/css/style.css')}}" rel="stylesheet" />
-        <meta name="viewport" content="viewport-fit=cover">
+        <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0">
+        <style>
+        html {
+            overflow-y: scroll;
+        }
+        </style>
         {% endblock %}
     </head>
     <body>
