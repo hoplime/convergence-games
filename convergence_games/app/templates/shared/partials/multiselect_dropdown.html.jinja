@@ -12,17 +12,26 @@
     tabindex="0"
     role="button"
     class="btn text-sm font-medium after:ml-1 after:inline-flex after:items-center after:text-xs after:transition-transform after:content-['▼'] group-focus-within:after:-rotate-180 -md:hidden"
+    _="
+      on touchstart or mousedown
+      if the event's target.classList contains 'opened'
+      then call document.activeElement.blur()
+      then halt
+      end
+      on focus add .opened to me
+      on blur remove .opened from me
+      "
   >
     {{ title }}
   </div>
   {# Content #}
   <div
-    class="md:w-54 collapse-content dropdown-content z-[1] md:menu md:rounded-box md:bg-base-100 md:p-2 md:shadow"
+    class="md:w-54 collapse-content dropdown-content z-[1] md:menu md:rounded-box md:bg-base-200 md:p-2 md:shadow"
   >
     <ul tabindex="0" class="grid-flow-row grid-cols-2 gap-1 md:grid md:w-96">
       {% for option in options %}
         <li>
-          <label class="label h-full cursor-pointer">
+          <label class="label h-full cursor-pointer hover:bg-base-100">
             <span class="label-text">{{ option.name }}</span>
             <input
               type="checkbox"

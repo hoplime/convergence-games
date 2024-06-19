@@ -89,10 +89,12 @@ async def login(
     request: Request,
     user: User,
 ) -> HTMLResponse:
-    return templates.TemplateResponse(
-        name="main/me.html.jinja",
-        context={"request": request, "user": user},  # , block_name=hx_target
-    )
+    if user:
+        return templates.TemplateResponse(
+            name="main/profile.html.jinja",
+            context={"request": request, "user": user},  # , block_name=hx_target
+        )
+    return templates.TemplateResponse(name="main/login.html.jinja", context={"request": request})
 
 
 @router.post("/me")
@@ -102,11 +104,14 @@ async def login_post(
     session: Session,
 ) -> HTMLResponse:
     user = get_user(session, email)
-    return templates.TemplateResponse(
-        name="main/me.html.jinja",
-        context={"request": request, "user": user},
-        headers={"Set-Cookie": f"email={email}; Secure; HttpOnly; SameSite=Lax"},
-    )
+    if user:
+        return templates.TemplateResponse(
+            name="main/profile.html.jinja",
+            context={"request": request, "user": user},
+            headers={"Set-Cookie": f"email={email}; Secure; SameSite=Lax"},
+        )
+    # TODO: Add error message
+    return templates.TemplateResponse(name="main/login.html.jinja", context={"request": request})
 
 
 @router.post("/logout")
@@ -114,7 +119,7 @@ async def logout(
     request: Request,
 ) -> HTMLResponse:
     return templates.TemplateResponse(
-        name="main/me.html.jinja",
+        name="main/login.html.jinja",
         context={"request": request, "user": None},
-        headers={"Set-Cookie": "email=; Max-Age=0; Secure; HttpOnly; SameSite=Lax"},
+        headers={"Set-Cookie": "email=; Max-Age=0; Secure; SameSite=Lax"},
     )

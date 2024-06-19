@@ -48,6 +48,7 @@
       <style>
         html {
           overflow-y: scroll;
+          scrollbar-gutter: stable both-edges;
         }
       </style>
     {% endblock %}
@@ -78,7 +79,7 @@
             hx-target="#content"
             hx-select="#content"
             hx-push-url="true"
-            _="on load or htmx:load from #content if window.location.pathname == '/' then add .text-accent to me else remove .text-accent from me"
+            _="on load or htmx:load from #content if window.location.pathname == '/' add .text-accent to me else remove .text-accent from me"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -101,7 +102,7 @@
             hx-target="#content"
             hx-select="#content"
             hx-push-url="true"
-            _="on load or htmx:load from #content if window.location.pathname.startsWith('/games') then add .text-accent to me else remove .text-accent from me"
+            _="on load or htmx:load from #content if window.location.pathname.startsWith('/games') add .text-accent to me else remove .text-accent from me"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -124,7 +125,19 @@
             hx-target="#content"
             hx-select="#content"
             hx-push-url="true"
-            _="on load or htmx:load from #content if window.location.pathname.startsWith('/me') then add .text-accent to me else remove .text-accent from me"
+            _="
+              on load or htmx:load from #content
+              if window.location.pathname.startsWith('/me')
+                add .text-accent to me else remove .text-accent from me
+              end
+              get (<span/> in me)
+              then
+                if cookies.email
+                  set its innerText to 'Profile'
+                else
+                  set its innerText to 'Login'
+              end
+              "
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -138,12 +151,7 @@
                 d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"
               />
             </svg>
-            <span
-              class="text-xs"
-              _="on load or htmx:load from #content log cookies then if cookies.email then set my innerHTML to 'Profile' else set my innerHTML to 'Login'"
-            >
-              Login
-            </span>
+            <span class="text-xs">Login</span>
           </button>
         </div>
       </nav>

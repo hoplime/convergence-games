@@ -1,0 +1,14 @@
+{% extends "shared/_layout.html.jinja" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+  <title>Login - Convergence 2024</title>
+
+  <script>
+    console.log("{{ request.headers['hx-request'] }}");
+  </script>
+  <form action="/me" method="POST">
+    <label for="email">Email</label>
+    <input type="text" id="email" name="email" required />
+    <button type="submit">Login</button>
+  </form>
+{% endblock %}
