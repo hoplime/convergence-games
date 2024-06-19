@@ -1,40 +1,37 @@
 {% extends "shared/_layout.html.jinja" %}
-{% block title %}{{ game.title }}{% endblock %}
+{% block title %}{{ game.title }} - Convergence 2024{% endblock %}
 {% block content %}
-  <title>{{ game.title }} - Convergence 2024</title>
-  <div>
-    <h1 class="font-sans text-2xl antialiased">{{ game.title }}</h1>
-    <h2 class="font-sans antialiased">{{ game.system.name }}</h2>
-    <ul>
-      {% for genre in game.genres %}
-        <li
-          class="mr-1 inline-block rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700"
+    <title>{{ game.title }} - Convergence 2024</title>
+    <div>
+        <h1 class="font-sans text-2xl antialiased">{{ game.title }}</h1>
+        <h2 class="font-sans antialiased">{{ game.system.name }}</h2>
+        <ul>
+            {% for genre in game.genres %}
+                <li class="mr-1 inline-block rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700">
+                    {{ genre.name }}
+                </li>
+            {% endfor %}
+        </ul>
+        <p>{{ game.description }}</p>
+        <h2>Sessions</h2>
+        <ul>
+            {% for allocation in game.table_allocations %}
+                <li class="pointer-events-auto" _="on click log {{ allocation.id }}">
+                    {{ allocation.time_slot.start_time.strftime('%H:%M') }} -
+                    {{ allocation.time_slot.end_time.strftime('%H:%M') }} on
+                    {{ allocation.time_slot.start_time.strftime('%A') }} @ Table {{ allocation.table_number }}
+                </li>
+            {% endfor %}
+        </ul>
+        <button
+            type="button"
+            class="btn btn-outline btn-secondary"
+            hx-get="/games"
+            hx-target="#content"
+            hx-select="#content"
+            hx-push-url="true"
         >
-          {{ genre.name }}
-        </li>
-      {% endfor %}
-    </ul>
-    <p>{{ game.description }}</p>
-    <h2>Sessions</h2>
-    <ul>
-      {% for allocation in game.table_allocations %}
-        <li class="pointer-events-auto" _="on click log {{ allocation.id }}">
-          {{ allocation.time_slot.start_time.strftime('%H:%M') }} -
-          {{ allocation.time_slot.end_time.strftime('%H:%M') }} on
-          {{ allocation.time_slot.start_time.strftime('%A') }} @ Table
-          {{ allocation.table_number }}
-        </li>
-      {% endfor %}
-    </ul>
-    <button
-      type="button"
-      class="btn btn-outline btn-secondary"
-      hx-get="/games"
-      hx-target="#content"
-      hx-select="#content"
-      hx-push-url="true"
-    >
-      Back to Games
-    </button>
-  </div>
+            Back to Games
+        </button>
+    </div>
 {% endblock %}

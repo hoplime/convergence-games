@@ -11,6 +11,17 @@ from convergence_games.db.session import Option
 router = APIRouter(tags=["frontend"])
 
 
+@router.get("/")
+async def home(
+    request: Request,
+    user: User,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        name="main/home.html.jinja",
+        context={"request": request, "user": user},
+    )
+
+
 @router.get("/games")
 async def games(
     request: Request,
@@ -108,7 +119,7 @@ async def login_post(
         return templates.TemplateResponse(
             name="main/profile.html.jinja",
             context={"request": request, "user": user},
-            headers={"Set-Cookie": f"email={email}; Secure; SameSite=Lax"},
+            headers={"Set-Cookie": f"email={email}; SameSite=Lax"},
         )
     # TODO: Add error message
     return templates.TemplateResponse(name="main/login.html.jinja", context={"request": request})
@@ -121,5 +132,5 @@ async def logout(
     return templates.TemplateResponse(
         name="main/login.html.jinja",
         context={"request": request, "user": None},
-        headers={"Set-Cookie": "email=; Max-Age=0; Secure; SameSite=Lax"},
+        headers={"Set-Cookie": "email=; Max-Age=0; SameSite=Lax"},
     )

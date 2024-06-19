@@ -1,17 +1,17 @@
 <div
-  class="card w-full cursor-pointer bg-base-200 shadow-xl"
-  hx-get="/games/{{ game.id }}"
-  hx-target="#content"
-  hx-select="#content"
-  hx-push-url="true"
+    class="card w-full cursor-pointer bg-base-200 shadow-xl"
+    hx-get="/games/{{ game.id }}"
+    hx-target="#content"
+    hx-select="#content"
+    hx-push-url="true"
 >
-  <div class="card-body">
-    <h2 class="card-title">{{ game.title }}</h2>
-    <h3 class="font-sans antialiased">{{ game.system.name }}</h3>
-    <div>
-      {% for genre in game.genres %}
-        <div class="badge badge-outline gap-2">{{ genre.name }}</div>
-      {% endfor %}
+    <div class="card-body">
+        <h2 class="card-title">{{ game.title }}</h2>
+        <h3 class="font-sans antialiased">{{ game.system.name }}</h3>
+        <div>
+            {% for genre in game.genres %}
+                <div class="badge badge-outline gap-2">{{ genre.name }}</div>
+            {% endfor %}
+        </div>
     </div>
-  </div>
 </div>

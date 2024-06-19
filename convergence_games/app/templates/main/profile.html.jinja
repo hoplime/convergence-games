@@ -1,20 +1,29 @@
 {% extends "shared/_layout.html.jinja" %}
-{% block title %}My Profile{% endblock %}
+{% block title %}My Profile - Convergence 2024{% endblock %}
 {% block content %}
-  <title>My Profile - Convergence 2024</title>
+    <title>My Profile - Convergence 2024</title>
 
-  <script>
-    console.log("{{ request.headers['hx-request'] }}");
-  </script>
-  <p>{{ user }}</p>
-  <button
-    type="button"
-    class="btn btn-outline btn-error"
-    hx-post="/logout"
-    hx-target="#wrapper"
-    hx-select="#wrapper"
-    hx-push-url="false"
-  >
-    Logout
-  </button>
+    <script>
+        console.log("{{ request.headers['hx-request'] }}");
+    </script>
+    <p>{{ user }}</p>
+    <button
+        type="button"
+        class="btn btn-outline btn-error"
+        hx-post="/logout"
+        hx-target="#wrapper"
+        hx-select="#wrapper"
+        hx-push-url="false"
+    >
+        Logout
+    </button>
+    <button class="btn btn-primary" _="on click showModal() the #preferences_modal">Show Preferences</button>
+    <dialog id="preferences_modal" class="modal">
+        <div class="modal-box p-0">
+            <form method="dialog">
+                <button class="btn btn-circle btn-ghost btn-sm absolute right-2 top-2">✕</button>
+            </form>
+            {{ render_partial('shared/partials/preferences.html.jinja') }}
+        </div>
+    </dialog>
 {% endblock %}

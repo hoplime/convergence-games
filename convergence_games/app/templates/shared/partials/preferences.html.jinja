@@ -1,0 +1,75 @@
+{% set common_styles = " mask relative after:absolute after:left-1/2 after:after:m-auto after:block after:-translate-x-1/2 after:text-center after:align-middle after:font-bold after:text-base-100" %}
+<div class="flex flex-col gap-4 p-2 pl-0">
+    <h2 class="ml-2">Game Preferences</h2>
+    <form>
+        <div class="flex flex-col gap-4">
+            {% for i in range(20) %}
+                <div class="flex w-full flex-row gap-2">
+                    <div class="rating rating-md">
+                        <input type="radio" class="rating-hidden" name="rating-{{ i }}" value="0" />
+                        <input
+                            type="radio"
+                            class="mask-d4 {{ common_styles }} bg-blue-400 after:content-['4']"
+                            name="rating-{{ i }}"
+                            value="1"
+                        />
+                        <input
+                            type="radio"
+                            class="mask-d6 {{ common_styles }} bg-indigo-400 after:content-['6']"
+                            name="rating-{{ i }}"
+                            value="2"
+                        />
+                        <input
+                            type="radio"
+                            class="mask-d8 {{ common_styles }} bg-violet-400 after:content-['8']"
+                            name="rating-{{ i }}"
+                            value="3"
+                            checked
+                        />
+                        <input
+                            type="radio"
+                            class="mask-d10 {{ common_styles }} bg-red-400 after:content-['10']"
+                            name="rating-{{ i }}"
+                            value="4"
+                        />
+                        <input
+                            type="radio"
+                            class="mask-d12 {{ common_styles }} bg-orange-400 after:content-['12']"
+                            name="rating-{{ i }}"
+                            value="5"
+                        />
+                        <input
+                            type="radio"
+                            class="mask-d20 {{ common_styles }} checked:out bg-yellow-400 after:content-['20']"
+                            name="rating-{{ i }}"
+                            value="d20"
+                        />
+                    </div>
+                    <span>
+                        <span class="mr-1">
+                            {% if (range(1, 10) | random) > 5 %}
+                                Game Title Which Could be Very Long
+                            {% else %}
+                                Short Game
+                            {% endif %}
+                        </span>
+                        <div class="inline" style="width: 1em; height: 1em;">
+                            <svg
+                                class="btn btn-circle btn-outline btn-neutral inline aspect-square"
+                                style="width: 1em; height: 1em; min-height: 1em; display: inline;"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="currentColor"
+                                class="bi bi-info"
+                                viewBox="0 0 16 16"
+                            >
+                                <path
+                                    d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"
+                                />
+                            </svg>
+                        </div>
+                    </span>
+                </div>
+            {% endfor %}
+        </div>
+    </form>
+</div>
