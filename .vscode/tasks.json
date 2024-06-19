@@ -4,11 +4,11 @@
         {
             "type": "npm",
             "script": "tailwind:watch",
-            "path": "convergence_games/app/tailwindcss",
+            "path": "",
             "group": "build",
             "problemMatcher": [],
             "label": "tailwind",
-            "detail": "tailwindcss -i ./styles/style.css -o ../static/css/app.css --watch",
+            "detail": "Preprocess with Tailwind CSS",
 			"isBackground": true,
 			"promptOnClose": false,
 			"presentation": {

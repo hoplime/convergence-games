@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "tailwindcss": "^3.4.4"
+  },
+  "scripts": {
+    "tailwind:watch": "tailwindcss -i ./convergence_games/app/style.css -o ./convergence_games/app/static/css/style.css --watch --minify"
+  },
+  "devDependencies": {
+    "daisyui": "^4.12.2",
+    "prettier": "^3.3.2",
+    "prettier-plugin-jinja-template": "^1.4.0",
+    "prettier-plugin-tailwindcss": "^0.6.5"
+  }
+}

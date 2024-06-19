@@ -1,5 +1,8 @@
 module.exports = {
-  content: ["../templates/**/*.html", "../templates/**/*.html.jinja"],
+  content: [
+    "./convergence_games/app/templates/**/*.html",
+    "./convergence_games/app/templates/**/*.html.jinja",
+  ],
   theme: {
     extend: {
       screens: {
@@ -17,11 +20,9 @@ module.exports = {
 
         "-sm": { max: "639px" },
         // => @media (max-width: 639px) { ... }
-      }
+      },
     },
   },
   plugins: [require("daisyui")],
-  safelift: [
-    'text-accent'
-  ]
+  safelift: ["text-accent"],
 };
