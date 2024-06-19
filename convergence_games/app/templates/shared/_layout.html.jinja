@@ -1,76 +1,157 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-    <head>
-        {% block head %}
-        {% block title_element %}<title>{% block title %}Convergence 2024{% endblock %}{% if self.title() %} - Convergence 2024{% endif %}</title>{% endblock %}
-        <meta charset="utf-8">
-        <!-- Favicon -->
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-        <link rel="manifest" href="/site.webmanifest">
-        <!-- Libraries -->
-        <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-        <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
-        <!--
+  <head>
+    {% block head %}
+      {% block title_element %}
+        <title>
+          {% block title %}Convergence 2024{% endblock %}{% if self.title() %}
+            - Convergence 2024
+          {% endif %}
+        </title>
+      {% endblock %}
+      <meta charset="utf-8" />
+      <!-- Favicon -->
+      <link
+        rel="apple-touch-icon"
+        sizes="180x180"
+        href="/apple-touch-icon.png"
+      />
+      <link
+        rel="icon"
+        type="image/png"
+        sizes="32x32"
+        href="/favicon-32x32.png"
+      />
+      <link
+        rel="icon"
+        type="image/png"
+        sizes="16x16"
+        href="/favicon-16x16.png"
+      />
+      <link rel="manifest" href="/site.webmanifest" />
+      <!-- Libraries -->
+      <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+      <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+      <!--
         Hey there Convergence attendee! Thanks for inspecting the source code of this website.
         Come to Jacob Cheatley and say the secret passphrase "Lime Copper Frog".
         If he still remembers that he set up this comment, he'll give you a prize.
         -->
-        <link href="{{url_for('static',path='/css/style.css')}}" rel="stylesheet" />
-        <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0">
-        <style>
+      <link
+        href="{{ url_for('static',path='/css/style.css') }}"
+        rel="stylesheet"
+      />
+      <meta
+        name="viewport"
+        content="viewport-fit=cover, width=device-width, initial-scale=1.0"
+      />
+      <style>
         html {
-            overflow-y: scroll;
+          overflow-y: scroll;
         }
-        </style>
-        {% endblock %}
-    </head>
-    <body>
-        <div id="wrapper">
-            <nav class="navbar bg-base-100">
-                <div class="navbar-start">
-                    <button class="btn btn-ghost text-xl hidden md:inline-flex"
-                    hx-get="/" hx-target="#content" hx-select="#content" hx-push-url="true"
-                    >
-                        <img src="{{ url_for('static', path='images/convergence-logo-min.svg') }}" class="w-5">
-                        Convergence 2024
-                    </button>
-                </div>
-                <div class="navbar-end">
-                    {# Home #}
-                    <button class="btn btn-ghost gap-0 flex-col md:hidden"
-                    hx-get="/" hx-target="#content" hx-select="#content" hx-push-url="true"
-                    _="on load or htmx:load from #content if window.location.pathname == '/' then add .text-accent to me else remove .text-accent from me">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house-door-fill" viewBox="0 0 16 16"><path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5"/></svg>
-                        <span class="text-xs">Home</span>
-                    </button>
-                    {# Games #}
-                    <button class="btn btn-ghost gap-0 flex-col"
-                    hx-get="/games" hx-target="#content" hx-select="#content" hx-push-url="true"
-                    _="on load or htmx:load from #content if window.location.pathname.startsWith('/games') then add .text-accent to me else remove .text-accent from me">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dice-6-fill" viewBox="0 0 16 16"><path d="M3 0a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V3a3 3 0 0 0-3-3zm1 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m8 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m1.5 6.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0M12 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3M5.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0M4 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"/></svg>
-                        <span class="text-xs">Games</span>
-                    </button>
-                    {# Login #}
-                    <button class="btn btn-ghost gap-0 flex-col"
-                    hx-get="/me" hx-target="#content" hx-select="#content" hx-push-url="true"
-                    _="on load or htmx:load from #content if window.location.pathname.startsWith('/me') then add .text-accent to me else remove .text-accent from me">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></svg>
-                        <span class="text-xs"
-                        _="on load or htmx:load from #content log cookies then if cookies.email then set my innerHTML to 'Profile' else set my innerHTML to 'Login'">
-                            Login
-                        </span>
-                    </button>
-                </div>
-            </nav>
-            <main id="content">
-                {% block content %}{% endblock %}
-            </main>
-            <footer>
-                <p>&copy; 2024 Waikato Role-playing Guild</p>
-            </footer>
+      </style>
+    {% endblock %}
+  </head>
+  <body>
+    <div id="wrapper">
+      <nav class="navbar bg-base-100">
+        <div class="navbar-start">
+          <button
+            class="btn btn-ghost hidden text-xl md:inline-flex"
+            hx-get="/"
+            hx-target="#content"
+            hx-select="#content"
+            hx-push-url="true"
+          >
+            <img
+              src="{{ url_for('static', path='images/convergence-logo-min.svg') }}"
+              class="w-5"
+            />
+            Convergence 2024
+          </button>
         </div>
-        {% if DEBUG %} {{ hot_reload.script(url_for('hot-reload')) | safe }} {% endif %}
-    </body>
+        <div class="navbar-end">
+          {# Home #}
+          <button
+            class="btn btn-ghost flex-col gap-0 md:hidden"
+            hx-get="/"
+            hx-target="#content"
+            hx-select="#content"
+            hx-push-url="true"
+            _="on load or htmx:load from #content if window.location.pathname == '/' then add .text-accent to me else remove .text-accent from me"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              class="bi bi-house-door-fill"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5"
+              />
+            </svg>
+            <span class="text-xs">Home</span>
+          </button>
+          {# Games #}
+          <button
+            class="btn btn-ghost flex-col gap-0"
+            hx-get="/games"
+            hx-target="#content"
+            hx-select="#content"
+            hx-push-url="true"
+            _="on load or htmx:load from #content if window.location.pathname.startsWith('/games') then add .text-accent to me else remove .text-accent from me"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              class="bi bi-dice-6-fill"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M3 0a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V3a3 3 0 0 0-3-3zm1 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m8 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m1.5 6.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0M12 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3M5.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0M4 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"
+              />
+            </svg>
+            <span class="text-xs">Games</span>
+          </button>
+          {# Login #}
+          <button
+            class="btn btn-ghost flex-col gap-0"
+            hx-get="/me"
+            hx-target="#content"
+            hx-select="#content"
+            hx-push-url="true"
+            _="on load or htmx:load from #content if window.location.pathname.startsWith('/me') then add .text-accent to me else remove .text-accent from me"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              class="bi bi-person-fill"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"
+              />
+            </svg>
+            <span
+              class="text-xs"
+              _="on load or htmx:load from #content log cookies then if cookies.email then set my innerHTML to 'Profile' else set my innerHTML to 'Login'"
+            >
+              Login
+            </span>
+          </button>
+        </div>
+      </nav>
+      <main id="content">{% block content %}{% endblock %}</main>
+      <footer>
+        <p>&copy; 2024 Waikato Role-playing Guild</p>
+      </footer>
+    </div>
+    {% if DEBUG %}{{ hot_reload.script(url_for('hot-reload')) | safe }}{% endif %}
+  </body>
 </html>

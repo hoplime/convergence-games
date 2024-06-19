@@ -1,29 +1,36 @@
 {% extends "shared/_layout.html.jinja" %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<title>{% if user %}My Profile{% else %}Login{% endif%} - Convergence 2024</title>
+  <title>
+    {% if user %}My Profile{% else %}Login{% endif %} - Convergence 2024
+  </title>
 
-{% if user %}
+  {% if user %}
+    {# We are logged in #}
+    <script>
+      console.log("{{ request.headers['hx-request'] }}");
+    </script>
+    <p>{{ user }}</p>
+    <button
+      type="button"
+      class="btn btn-outline btn-error"
+      hx-post="/logout"
+      hx-target="#wrapper"
+      hx-select="#wrapper"
+      hx-push-url="false"
+    >
+      Logout
+    </button>
+  {% else %}
 
-{# We are logged in #}
-<script>
-    console.log({{ request.headers['hx-request'] }});
-</script>
-<p>{{ user }} </p>
-<button type="button" class="btn btn-error btn-outline" hx-post="/logout" hx-target="#wrapper" hx-select="#wrapper" hx-push-url="false">Logout</button>
-
-{% else %}
-
-{# We are not logged in #}
-<script>
-    console.log({{ request.headers['hx-request'] }});
-</script>
-<form action="/me" method="POST">
-    <label for="email">Email</label>
-    <input type="text" id="email" name="email" required>
-    <button type="submit">Login</button>
-</form>
-
-{% endif %}
-
+    {# We are not logged in #}
+    <script>
+      console.log("{{ request.headers['hx-request'] }}");
+    </script>
+    <form action="/me" method="POST">
+      <label for="email">Email</label>
+      <input type="text" id="email" name="email" required />
+      <button type="submit">Login</button>
+    </form>
+  {% endif %}
 {% endblock %}

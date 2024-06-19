@@ -1,9 +1,0 @@
-<button
-    type="button"
-    class="btn btn-primary {{ extra_classes }}"
-    {% if extra_attrs %}
-        {% for attr_name, attr_value in extra_attrs.items() %}
-            {{ attr_name }}="{{ attr_value | safe }}"
-        {% endfor %}
-    {% endif %}
->{{ text if text else 'Button' }}</button>

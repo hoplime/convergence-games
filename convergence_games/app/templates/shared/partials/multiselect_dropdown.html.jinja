@@ -1,36 +1,48 @@
-<div class="
-    -md:collapse -md:bg-base-200
-    md:dropdown
-    group">
+<div class="group md:dropdown -md:collapse -md:bg-base-200">
   <input type="checkbox" class="peer md:hidden" />
   {# Collapse Title #}
-  <div tabindex="0" class="collapse-title text-sm font-medium after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center peer-checked:after:-rotate-180 after:transition-transform md:hidden">
+  <div
+    tabindex="0"
+    class="collapse-title text-sm font-medium after:ml-1 after:inline-flex after:items-center after:text-xs after:transition-transform after:content-['▼'] peer-checked:after:-rotate-180 md:hidden"
+  >
     {{ title }}
   </div>
   {# Dropdown Title #}
-  <div tabindex="0" role="button" class="btn text-sm font-medium after:content-['▼'] after:text-xs after:ml-1 after:inline-flex after:items-center group-focus-within:after:-rotate-180 after:transition-transform -md:hidden">{{ title }}</div>
-  <div class="
-    collapse-content
-    dropdown-content z-[1] md:menu md:p-2 md:shadow md:bg-base-100 md:rounded-box md:w-54
-    ">
-    <ul tabindex="0" class="md:grid md:w-96 grid-cols-2 grid-flow-row gap-1">
-        {% for option in options %}
+  <div
+    tabindex="0"
+    role="button"
+    class="btn text-sm font-medium after:ml-1 after:inline-flex after:items-center after:text-xs after:transition-transform after:content-['▼'] group-focus-within:after:-rotate-180 -md:hidden"
+  >
+    {{ title }}
+  </div>
+  {# Content #}
+  <div
+    class="md:w-54 collapse-content dropdown-content z-[1] md:menu md:rounded-box md:bg-base-100 md:p-2 md:shadow"
+  >
+    <ul tabindex="0" class="grid-flow-row grid-cols-2 gap-1 md:grid md:w-96">
+      {% for option in options %}
         <li>
-            <label class="cursor-pointer label h-full">
-                <span class="label-text">{{ option.name }}</span>
-                <input
-                    type="checkbox"
-                    class="checkbox checkbox-accent"
-                    value="{{ option.value }}"
-                    name="{{ form_name }}"
-                    {% if option.checked %}checked{% endif %}
-                />
-            </label>
+          <label class="label h-full cursor-pointer">
+            <span class="label-text">{{ option.name }}</span>
+            <input
+              type="checkbox"
+              class="checkbox-accent checkbox"
+              value="{{ option.value }}"
+              name="{{ form_name }}"
+              {% if option.checked %}checked{% endif %}
+            />
+          </label>
         </li>
-        {% endfor %}
+      {% endfor %}
     </ul>
-    {% set input_filter = "<input[name=" + form_name + "/>"%}
-    <button type="button" class="btn btn-secondary btn-outline" _="on click set {{ input_filter }}'s checked to false then trigger change">Clear</button>
+    {% set input_filter = "<input[name=" + form_name + "/>" %}
+    <button
+      type="button"
+      class="btn btn-outline btn-secondary"
+      _="on click set {{ input_filter }}'s checked to false then trigger change"
+    >
+      Clear
+    </button>
     {# <button type="button" class="btn btn-secondary btn-outline" _="on click set {{ input_filter }}'s checked to true then trigger change">Select All</button> #}
   </div>
 </div>

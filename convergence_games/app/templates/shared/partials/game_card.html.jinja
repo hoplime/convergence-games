@@ -1,13 +1,23 @@
-<div class="m-4 p-1 flex flex-col rounded-xl bg-white bg-clip-border text-gray-700 shadow-lg cursor-pointer"
-    hx-get="/games/{{ game.id }}"
-    hx-target="#content"
-    hx-select="#content"
-    hx-push-url="true">
-    <h2 class="block font-sans text-md font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased">{{ game.title }}</h5>
-    <h3 class="font-sans antialiased">{{ game.system.name }}</h3>
-    <ul>
-        {% for genre in game.genres %}
-        <li class="inline-block bg-gray-200 rounded-full px-3 py-1 text-xs font-semibold text-gray-700 mr-1">{{ genre.name }}</li>
-        {% endfor %}
-    </ul>
+<div
+  class="m-4 flex cursor-pointer flex-col rounded-xl bg-white bg-clip-border p-1 text-gray-700 shadow-lg"
+  hx-get="/games/{{ game.id }}"
+  hx-target="#content"
+  hx-select="#content"
+  hx-push-url="true"
+>
+  <h2
+    class="text-md text-blue-gray-900 block font-sans font-semibold leading-snug tracking-normal antialiased"
+  >
+    {{ game.title }}
+  </h2>
+  <h3 class="font-sans antialiased">{{ game.system.name }}</h3>
+  <ul>
+    {% for genre in game.genres %}
+      <li
+        class="mr-1 inline-block rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700"
+      >
+        {{ genre.name }}
+      </li>
+    {% endfor %}
+  </ul>
 </div>
