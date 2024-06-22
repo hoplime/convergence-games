@@ -130,6 +130,7 @@
             <footer>
                 <p>&copy; 2024 Waikato Role-playing Guild</p>
             </footer>
+            {{ render_partial('shared/partials/modal_dialog.html.jinja') }}
         </div>
         {% if DEBUG %}{{ hot_reload.script(url_for('hot-reload')) | safe }}{% endif %}
     </body>

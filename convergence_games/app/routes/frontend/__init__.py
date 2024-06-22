@@ -2,10 +2,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Form, Query
 from fastapi.responses import HTMLResponse
+from sqlmodel import select
 
 from convergence_games.app.dependencies import Session, User, get_user
 from convergence_games.app.request_type import Request
 from convergence_games.app.templates import templates
+from convergence_games.db.models import Game, GameWithExtra, TableAllocation, TimeSlot
 from convergence_games.db.session import Option
 
 router = APIRouter(tags=["frontend"])
@@ -133,4 +135,38 @@ async def logout(
         name="main/login.html.jinja",
         context={"request": request, "user": None},
         headers={"Set-Cookie": "email=; Max-Age=0; SameSite=Lax"},
+    )
+
+
+@router.get("/preferences")
+async def preferences(
+    request: Request,
+    user: User,
+    session: Session,
+    time_slot_id: Annotated[int, Query()] = 1,
+) -> HTMLResponse:
+    with session:
+        time_slot = session.get(TimeSlot, time_slot_id)
+        statement = (
+            select(Game, TableAllocation)
+            .where(TableAllocation.game_id == Game.id and TableAllocation.time_slot.id == time_slot_id)
+            .group_by(Game.id)
+            .order_by(Game.title)
+        )
+        games_and_table_allocations = session.exec(statement).all()
+        games_and_table_allocations = [
+            (GameWithExtra.model_validate(game), table_allocation)
+            for game, table_allocation in games_and_table_allocations
+        ]
+        print(games_and_table_allocations)
+    # {{ table_allocation.time_slot.start_time.strftime('%H:%M') }} -
+    # {{ table_allocation.time_slot.end_time.strftime('%H:%M') }} on
+    # {{ table_allocation.time_slot.start_time.strftime('%A') }}
+    return templates.TemplateResponse(
+        name="shared/partials/preferences.html.jinja",
+        context={
+            "request": request,
+            "games_and_table_allocations": games_and_table_allocations,
+            "time_slot_name": time_slot.start_time.strftime("%H:%M %A"),
+        },
     )

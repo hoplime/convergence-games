@@ -1,59 +1,26 @@
-{% set common_styles = " mask relative after:absolute after:left-1/2 after:after:m-auto after:block after:-translate-x-1/2 after:text-center after:align-middle after:font-bold after:text-base-100" %}
 <div class="flex flex-col gap-4 p-2 pl-0">
-    <h2 class="ml-2">Game Preferences</h2>
-    <form>
+    <h2 class="ml-2">Game Preferences - {{ time_slot_name }}</h2>
+    <form class="flex flex-col gap-4">
         <div class="flex flex-col gap-4">
-            {% for i in range(20) %}
+            {% for game, table_allocation in games_and_table_allocations %}
                 <div class="flex w-full flex-row gap-2">
-                    <div class="rating rating-md">
-                        <input type="radio" class="rating-hidden" name="rating-{{ i }}" value="0" />
-                        <input
-                            type="radio"
-                            class="mask-d4 {{ common_styles }} bg-blue-400 after:content-['4']"
-                            name="rating-{{ i }}"
-                            value="1"
-                        />
-                        <input
-                            type="radio"
-                            class="mask-d6 {{ common_styles }} bg-indigo-400 after:content-['6']"
-                            name="rating-{{ i }}"
-                            value="2"
-                        />
-                        <input
-                            type="radio"
-                            class="mask-d8 {{ common_styles }} bg-violet-400 after:content-['8']"
-                            name="rating-{{ i }}"
-                            value="3"
-                            checked
-                        />
-                        <input
-                            type="radio"
-                            class="mask-d10 {{ common_styles }} bg-red-400 after:content-['10']"
-                            name="rating-{{ i }}"
-                            value="4"
-                        />
-                        <input
-                            type="radio"
-                            class="mask-d12 {{ common_styles }} bg-orange-400 after:content-['12']"
-                            name="rating-{{ i }}"
-                            value="5"
-                        />
-                        <input
-                            type="radio"
-                            class="mask-d20 {{ common_styles }} checked:out bg-yellow-400 after:content-['20']"
-                            name="rating-{{ i }}"
-                            value="d20"
-                        />
-                    </div>
+                    {{
+                        render_partial('shared/partials/game_preference_rating.html.jinja', input_name="rating-" ~ table_allocation.id ,
+                        enable_d20=true)
+                    }}
                     <span>
-                        <span class="mr-1">
-                            {% if (range(1, 10) | random) > 5 %}
-                                Game Title Which Could be Very Long
-                            {% else %}
-                                Short Game
-                            {% endif %}
-                        </span>
-                        <div class="inline" style="width: 1em; height: 1em;">
+                        <span id="game-title-{{ game.id }}" class="mr-1 transition-all duration-500"
+                            >{{ game.title }} | {{ game.system.name }}</span
+                        >
+                        <div
+                            class="inline cursor-pointer"
+                            style="width: 1em; height: 1em;"
+                            hx-get="/games/{{ game.id }}"
+                            hx-target="#content"
+                            hx-select="#content"
+                            hx-push-url="true"
+                            _="on click close() on #modal-dialog"
+                        >
                             <svg
                                 class="btn btn-circle btn-outline btn-neutral inline aspect-square"
                                 style="width: 1em; height: 1em; min-height: 1em; display: inline;"
@@ -70,6 +37,9 @@
                     </span>
                 </div>
             {% endfor %}
+        </div>
+        <div class="flex w-full flex-col items-center">
+            <button type="submit" class="btn btn-primary">Save Preferences</button>
         </div>
     </form>
 </div>
