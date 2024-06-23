@@ -1,13 +1,17 @@
-from typing import Annotated
+from collections.abc import Mapping
+from enum import Enum
+from typing import Annotated, Iterator, Literal
 
 from fastapi import APIRouter, Form, Query
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, BeforeValidator, ConfigDict, RootModel
+from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from sqlmodel import select
 
 from convergence_games.app.dependencies import Session, User, get_user
 from convergence_games.app.request_type import Request
 from convergence_games.app.templates import templates
-from convergence_games.db.models import Game, GameWithExtra, TableAllocation, TimeSlot
+from convergence_games.db.models import Game, GameWithExtra, SessionPreference, TableAllocation, TimeSlot
 from convergence_games.db.session import Option
 
 router = APIRouter(tags=["frontend"])
@@ -145,28 +149,99 @@ async def preferences(
     session: Session,
     time_slot_id: Annotated[int, Query()] = 1,
 ) -> HTMLResponse:
+    print(f"Getting preferences for user {user.id} for time slot {time_slot_id}")
     with session:
         time_slot = session.get(TimeSlot, time_slot_id)
         statement = (
-            select(Game, TableAllocation)
-            .where(TableAllocation.game_id == Game.id and TableAllocation.time_slot.id == time_slot_id)
+            select(Game, TableAllocation, SessionPreference)
+            .join(
+                TableAllocation,
+                (TableAllocation.game_id == Game.id) & (TableAllocation.time_slot_id == time_slot_id),
+            )
+            .outerjoin(
+                SessionPreference,
+                (SessionPreference.person_id == user.id)
+                & (SessionPreference.table_allocation_id == TableAllocation.id),
+            )
             .group_by(Game.id)
             .order_by(Game.title)
+            # .where(SessionPreference.person_id == user.id)
         )
-        games_and_table_allocations = session.exec(statement).all()
-        games_and_table_allocations = [
-            (GameWithExtra.model_validate(game), table_allocation)
-            for game, table_allocation in games_and_table_allocations
+        preferences_data = session.exec(statement).all()
+        print(preferences_data[0])
+        preferences_data = [
+            (
+                GameWithExtra.model_validate(game),
+                table_allocation,
+                str(session_preference.preference if session_preference is not None else 3),
+            )
+            for game, table_allocation, session_preference in preferences_data
         ]
-        print(games_and_table_allocations)
-    # {{ table_allocation.time_slot.start_time.strftime('%H:%M') }} -
-    # {{ table_allocation.time_slot.end_time.strftime('%H:%M') }} on
-    # {{ table_allocation.time_slot.start_time.strftime('%A') }}
+        print(preferences_data[0])
     return templates.TemplateResponse(
         name="shared/partials/preferences.html.jinja",
         context={
             "request": request,
-            "games_and_table_allocations": games_and_table_allocations,
-            "time_slot_name": time_slot.start_time.strftime("%H:%M %A"),
+            "preferences_data": preferences_data,
+            "time_slot": time_slot,
         },
     )
+
+
+class RatingValue(Enum):
+    ZERO = "0"
+    ONE = "1"
+    TWO = "2"
+    THREE = "3"
+    FOUR = "4"
+    FIVE = "5"
+    D20 = "20"
+
+    def numeric(self) -> int:
+        return int(self.value)
+
+
+RatingTableAllocationKey = Annotated[int, BeforeValidator(lambda rating_x: int(rating_x.removeprefix("rating-")))]
+
+
+class RatingForm(RootModel, Mapping[int, RatingValue]):
+    root: dict[RatingTableAllocationKey, RatingValue]
+
+    def __len__(self) -> int:
+        return len(self.root)
+
+    def __getitem__(self, key: int) -> RatingValue:
+        return self.root[key]
+
+    def __iter__(self) -> Iterator[int]:
+        return iter(self.root)
+
+
+@router.post("/preferences")
+async def preferences_post(
+    request: Request,
+    user: User,
+    session: Session,
+    time_slot_id: Annotated[int, Query()],
+    # form: Annotated[RatingForm, Form()],
+    # time_slot_id: Annotated[int, Form()],
+    # game_ids: Annotated[list[int], Form()],
+) -> HTMLResponse:
+    form_data = await request.form()
+    table_allocation_ratings = RatingForm.model_validate(form_data)
+    person_id = user.id
+    with session:
+        session_preferences: list[SessionPreference] = []
+        for table_allocation_id, rating in table_allocation_ratings.items():
+            session_preference = SessionPreference(
+                preference=rating.numeric(), person_id=person_id, table_allocation_id=table_allocation_id
+            )
+
+            session_preferences.append(session_preference)
+        statement = sqlite_upsert(SessionPreference).values([pref.model_dump() for pref in session_preferences])
+        statement = statement.on_conflict_do_update(
+            set_={"preference": statement.excluded.preference},
+        )
+        session.exec(statement)
+        session.commit()
+    return await preferences(request, user, session, time_slot_id)

@@ -66,7 +66,7 @@ class GenreUpdate(GenreBase):
 # endregion
 
 
-# regoion Game
+# region Game
 class GameBase(SQLModel):
     title: str = Field(index=True)
     description: str
@@ -197,7 +197,7 @@ class TimeSlotUpdate(TimeSlotBase):
 # region TableAllocation
 class TableAllocationBase(SQLModel):
     table_number: int = Field(index=True)
-    slot_id: int = Field(foreign_key="timeslot.id")
+    time_slot_id: int = Field(foreign_key="timeslot.id")
     game_id: int = Field(foreign_key="game.id")
 
 
@@ -207,7 +207,7 @@ class TableAllocation(TableAllocationBase, table=True):
     time_slot: TimeSlot = Relationship(back_populates="table_allocations")
     game: Game = Relationship(back_populates="table_allocations")
     session_preferences: list["SessionPreference"] = Relationship(back_populates="table_allocation")
-    __table_args__ = (UniqueConstraint("table_number", "slot_id", name="unique_table_allocation"),)
+    __table_args__ = (UniqueConstraint("table_number", "time_slot_id", name="unique_table_allocation"),)
 
 
 class TableAllocationCreate(TableAllocationBase):
@@ -233,14 +233,12 @@ class TableAllocationWithSlot(TableAllocationRead):
 
 # region SessionPreference
 class SessionPreferenceBase(SQLModel):
-    weight: int = Field(default=1)
-    person_id: int = Field(foreign_key="person.id")
-    table_allocation_id: int = Field(foreign_key="tableallocation.id")
+    preference: int = Field(default=3)
+    person_id: int = Field(primary_key=True, foreign_key="person.id")
+    table_allocation_id: int = Field(primary_key=True, foreign_key="tableallocation.id")
 
 
 class SessionPreference(SessionPreferenceBase, table=True):
-    id: int = Field(primary_key=True)
-
     person: Person = Relationship(back_populates="session_preferences")
     table_allocation: TableAllocation = Relationship(back_populates="session_preferences")
 
@@ -250,7 +248,7 @@ class SessionPreferenceCreate(SessionPreferenceBase):
 
 
 class SessionPreferenceRead(SessionPreferenceBase):
-    id: int
+    pass
 
 
 class SessionPreferenceUpdate(SessionPreferenceBase):

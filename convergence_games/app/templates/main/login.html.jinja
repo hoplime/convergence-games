@@ -3,7 +3,7 @@
 {% block content %}
     <title>Login - Convergence 2024</title>
 
-    <form action="/me" method="POST" class="m-auto w-96">
+    <form hx-post="/me" hx-target="#content" hx-select="#content" class="m-auto w-96">
         <label class="input input-bordered flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 opacity-70">
                 <path

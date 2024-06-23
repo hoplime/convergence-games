@@ -28,7 +28,6 @@
                             hx-get="/preferences?time_slot_id={{ table_allocation.time_slot.id }}"
                             _="on click
                             wait for htmx:afterSettle from #modal-content
-                            then log the result
                             then showModal() on #modal-dialog
                             then add .text-accent to #game-title-{{ game.id }}
                             then go to the middle of #game-title-{{ game.id }}"

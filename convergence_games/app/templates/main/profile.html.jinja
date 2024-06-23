@@ -18,7 +18,9 @@
         class="btn btn-primary"
         hx-target="#modal-content"
         hx-get="/preferences?time_slot_id=1"
-        _="on click showModal() on #modal-dialog"
+        _="on click
+        wait for htmx:afterSettle from #modal-content
+        then showModal() on #modal-dialog"
     >
         Schedule Time Slot 1
     </button>

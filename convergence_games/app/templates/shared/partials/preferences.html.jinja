@@ -1,12 +1,17 @@
-<div class="flex flex-col gap-4 p-2 pl-0">
-    <h2 class="ml-2">Game Preferences - {{ time_slot_name }}</h2>
-    <form class="flex flex-col gap-4">
+<div class="flex flex-col gap-4 p-2 pl-0" id="preferences-content">
+    <h2 class="ml-2">Game Preferences - {{ time_slot.start_time.strftime('%H:%M %A') }}</h2>
+    <form
+        class="flex flex-col gap-4"
+        hx-post="/preferences?time_slot_id={{ time_slot.id }}"
+        hx-target="#preferences-content"
+        hx-swap="outerHTML"
+    >
         <div class="flex flex-col gap-4">
-            {% for game, table_allocation in games_and_table_allocations %}
+            {% for game, table_allocation, preference in preferences_data %}
                 <div class="flex w-full flex-row gap-2">
                     {{
                         render_partial('shared/partials/game_preference_rating.html.jinja', input_name="rating-" ~ table_allocation.id ,
-                        enable_d20=true)
+                        enable_d20=true, starting_value=preference)
                     }}
                     <span>
                         <span id="game-title-{{ game.id }}" class="mr-1 transition-all duration-500"
