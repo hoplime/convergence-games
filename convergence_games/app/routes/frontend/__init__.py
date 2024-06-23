@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from dataclasses import dataclass
 from enum import Enum
 from typing import Annotated, Iterator, Literal
 
@@ -11,7 +12,7 @@ from sqlmodel import select
 from convergence_games.app.dependencies import Session, User, get_user
 from convergence_games.app.request_type import Request
 from convergence_games.app.templates import templates
-from convergence_games.db.models import Game, GameWithExtra, SessionPreference, TableAllocation, TimeSlot
+from convergence_games.db.models import Game, GameWithExtra, Person, SessionPreference, TableAllocation, TimeSlot
 from convergence_games.db.session import Option
 
 router = APIRouter(tags=["frontend"])
@@ -102,7 +103,7 @@ async def game(
 
 
 @router.get("/me")
-async def login(
+async def me(
     request: Request,
     user: User,
 ) -> HTMLResponse:
@@ -114,25 +115,95 @@ async def login(
     return templates.TemplateResponse(name="main/login.html.jinja", context={"request": request})
 
 
-@router.post("/me")
+@router.get("/login")
+async def login(
+    request: Request,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        name="main/login.html.jinja",
+        context={"request": request},
+    )
+
+
+@router.post("/login")
 async def login_post(
     request: Request,
     email: Annotated[str, Form()],
     session: Session,
 ) -> HTMLResponse:
-    user = get_user(session, email)
-    if user:
+    user = get_user(session, email.lower())
+    if user is None:
+        return templates.TemplateResponse(
+            name="main/signup.html.jinja",
+            context={
+                "request": request,
+                "email": email,
+                "alerts": [Alert("Email not found, going to sign up", "warning")],
+            },
+        )
+    else:
         return templates.TemplateResponse(
             name="main/profile.html.jinja",
             context={"request": request, "user": user},
             headers={"Set-Cookie": f"email={email}; SameSite=Lax"},
         )
-    # TODO: Add error message
-    return templates.TemplateResponse(name="main/login.html.jinja", context={"request": request})
+
+
+@router.get("/signup")
+async def signup(
+    request: Request,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        name="main/signup.html.jinja",
+        context={"request": request},
+    )
+
+
+@dataclass
+class Alert:
+    message: str
+    type: Literal["info", "success", "warning", "error"] = "info"
+
+    @property
+    def alert_class(self) -> str:
+        return f"alert-{self.type}"
+
+
+@router.post("/signup")
+async def signup_post(
+    request: Request,
+    email: Annotated[str, Form()],
+    name: Annotated[str, Form()],
+    session: Session,
+) -> HTMLResponse:
+    with session:
+        user = Person(email=email, name=name)
+        session.add(user)
+        try:
+            session.commit()
+        except Exception as e:
+            print(e)
+            session.rollback()
+            return templates.TemplateResponse(
+                name="main/signup.html.jinja",
+                context={
+                    "request": request,
+                    "email": email,
+                    "name": name,
+                    "alerts": [Alert("Email already in use", "error")],
+                },
+            )
+        session.refresh(user)
+    print(user, "signed up")
+    return templates.TemplateResponse(
+        name="main/profile.html.jinja",
+        context={"request": request, "user": user},
+        headers={"Set-Cookie": f"email={email}; SameSite=Lax"},
+    )
 
 
 @router.post("/logout")
-async def logout(
+async def logout_post(
     request: Request,
 ) -> HTMLResponse:
     return templates.TemplateResponse(

@@ -142,6 +142,7 @@ class Person(PersonBase, table=True):
 
     gmd_games: list[Game] = Relationship(back_populates="gamemaster")
     session_preferences: list["SessionPreference"] = Relationship(back_populates="person")
+    __table_args__ = (UniqueConstraint("email", name="unique_email"),)
 
 
 class PersonCreate(PersonBase):

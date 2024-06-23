@@ -39,6 +39,7 @@
                         hx-target="#content"
                         hx-select="#content"
                         hx-push-url="true"
+                        hx-swap="outerHTML"
                     >
                         <img src="{{ url_for('static', path='images/convergence-logo-min.svg') }}" class="w-5" />
                         Convergence 2024
@@ -52,6 +53,7 @@
                         hx-target="#content"
                         hx-select="#content"
                         hx-push-url="true"
+                        hx-swap="outerHTML"
                         _="on load or htmx:load from #content if window.location.pathname == '/' add .text-accent to me else remove .text-accent from me"
                     >
                         <svg
@@ -75,6 +77,7 @@
                         hx-target="#content"
                         hx-select="#content"
                         hx-push-url="true"
+                        hx-swap="outerHTML"
                         _="on load or htmx:load from #content if window.location.pathname.startsWith('/games') add .text-accent to me else remove .text-accent from me"
                     >
                         <svg
@@ -98,6 +101,7 @@
                         hx-target="#content"
                         hx-select="#content"
                         hx-push-url="true"
+                        hx-swap="outerHTML"
                         _="
               on load or htmx:load from #content
               if window.location.pathname.startsWith('/me')
@@ -126,7 +130,23 @@
                     </button>
                 </div>
             </nav>
-            <main id="content">{% block content %}{% endblock %}</main>
+            <main id="content">
+                {% block content %}{% endblock %}
+                <div class="toast">
+                    {% for alert in alerts %}
+                        <div
+                            class="{{ alert.alert_class }} alert transition-opacity duration-1000 ease-in-out"
+                            _="on load
+                            wait 1000ms
+                            then set my.style.opacity to 0
+                            then wait 1000ms
+                            then remove me"
+                        >
+                            {{ alert.message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </main>
             <footer>
                 <p>&copy; 2024 Waikato Role-playing Guild</p>
             </footer>
