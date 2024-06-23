@@ -112,7 +112,11 @@ async def me(
             name="main/profile.html.jinja",
             context={"request": request, "user": user},  # , block_name=hx_target
         )
-    return templates.TemplateResponse(name="main/login.html.jinja", context={"request": request})
+    return templates.TemplateResponse(
+        name="main/login.html.jinja",
+        context={"request": request},
+        headers={"Set-Cookie": "email=; Max-Age=0; SameSite=Lax"},
+    )
 
 
 @router.get("/login")
@@ -182,7 +186,6 @@ async def signup_post(
         try:
             session.commit()
         except Exception as e:
-            print(e)
             session.rollback()
             return templates.TemplateResponse(
                 name="main/signup.html.jinja",
@@ -190,7 +193,7 @@ async def signup_post(
                     "request": request,
                     "email": email,
                     "name": name,
-                    "alerts": [Alert("Email already in use", "error")],
+                    "alerts": [Alert("Email already in use, please login instead", "error")],
                 },
             )
         session.refresh(user)
@@ -316,3 +319,32 @@ async def preferences_post(
         session.exec(statement)
         session.commit()
     return await preferences(request, user, session, time_slot_id)
+
+
+@router.get("/edit_profile")
+async def user_edit(
+    request: Request,
+    user: User,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        name="shared/partials/profile_info_edit.html.jinja",
+        context={"request": request, "user": user},
+    )
+
+
+@router.put("/edit_profile")
+async def user_edit_post(
+    request: Request,
+    user: User,
+    session: Session,
+    name: Annotated[str, Form()],
+) -> HTMLResponse:
+    with session:
+        user.name = name
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+    return templates.TemplateResponse(
+        name="shared/partials/profile_info.html.jinja",
+        context={"request": request, "user": user},
+    )

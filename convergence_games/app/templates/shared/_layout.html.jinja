@@ -54,7 +54,7 @@
                         hx-select="#content"
                         hx-push-url="true"
                         hx-swap="outerHTML"
-                        _="on load or htmx:load from #content if window.location.pathname == '/' add .text-accent to me else remove .text-accent from me"
+                        _="on load or htmx:load from #wrapper if window.location.pathname == '/' add .text-accent to me else remove .text-accent from me"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -78,7 +78,7 @@
                         hx-select="#content"
                         hx-push-url="true"
                         hx-swap="outerHTML"
-                        _="on load or htmx:load from #content if window.location.pathname.startsWith('/games') add .text-accent to me else remove .text-accent from me"
+                        _="on load or htmx:load from #wrapper if window.location.pathname.startsWith('/games') add .text-accent to me else remove .text-accent from me"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -103,17 +103,17 @@
                         hx-push-url="true"
                         hx-swap="outerHTML"
                         _="
-              on load or htmx:load from #content
+              on load or htmx:load from #wrapper
               if window.location.pathname.startsWith('/me')
                 add .text-accent to me else remove .text-accent from me
-              end
-              get (<span/> in me)
-              then
-                if cookies.email
-                  set its innerText to 'Profile'
-                else
-                  set its innerText to 'Login'
-              end
+                end
+                get (<span/> in me)
+                then
+                    if cookies.email
+                    set its innerText to 'Profile'
+                    else
+                    set its innerText to 'Login'
+                end
               "
                     >
                         <svg
