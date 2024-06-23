@@ -1,5 +1,4 @@
 import datetime as dt
-from functools import cached_property
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Enum, Field, Relationship, SQLModel
@@ -32,6 +31,11 @@ class SystemCreate(SystemBase):
 
 class SystemRead(SystemBase):
     id: int
+    test: str = "test"
+
+
+class SystemWithExtra(SystemRead):
+    games: list["Game"]
 
 
 class SystemUpdate(SystemBase):
@@ -57,6 +61,10 @@ class GenreCreate(GenreBase):
 
 class GenreRead(GenreBase):
     id: int
+
+
+class GenreWithExtra(GenreRead):
+    games: list["Game"]
 
 
 class GenreUpdate(GenreBase):
@@ -123,8 +131,8 @@ class GameUpdate(GameBase):
 
 class GameWithExtra(GameRead):
     genres: list[Genre] = []
-    system: System
     gamemaster: "Person"
+    system: System
     table_allocations: list["TableAllocationWithSlot"] = []
 
 
@@ -154,13 +162,14 @@ class PersonRead(PersonBase):
     id: int
 
 
+class PersonWithExtra(PersonRead):
+    gmd_games: list[Game]
+    session_preferences: list["SessionPreference"]
+
+
 class PersonUpdate(PersonBase):
     name: str | None = None
     email: str | None = None
-
-
-class PersonWithExtra(PersonRead):
-    gmd_games: list["GameWithExtra"] = []
 
 
 # endregion
@@ -187,6 +196,10 @@ class TimeSlotRead(TimeSlotBase):
     id: int
 
 
+class TimeSlotWithExtra(TimeSlotRead):
+    table_allocations: list["TableAllocationWithExtra"]
+
+
 class TimeSlotUpdate(TimeSlotBase):
     name: str | None = None
     start_time: dt.datetime | None = None
@@ -204,7 +217,7 @@ class TableAllocationBase(SQLModel):
 
 
 class TableAllocation(TableAllocationBase, table=True):
-    id: int = Field(primary_key=True)
+    id: int | None = Field(primary_key=True)
 
     time_slot: TimeSlot = Relationship(back_populates="table_allocations")
     game: Game = Relationship(back_populates="table_allocations")
@@ -218,6 +231,12 @@ class TableAllocationCreate(TableAllocationBase):
 
 class TableAllocationRead(TableAllocationBase):
     id: int
+
+
+class TableAllocationWithExtra(TableAllocationRead):
+    time_slot: TimeSlot
+    game: Game
+    session_preferences: list["SessionPreference"]
 
 
 class TableAllocationUpdate(TableAllocationBase):
@@ -251,6 +270,11 @@ class SessionPreferenceCreate(SessionPreferenceBase):
 
 class SessionPreferenceRead(SessionPreferenceBase):
     pass
+
+
+class SessionPreferenceWithExtra(SessionPreferenceRead):
+    person: Person
+    table_allocation: TableAllocation
 
 
 class SessionPreferenceUpdate(SessionPreferenceBase):

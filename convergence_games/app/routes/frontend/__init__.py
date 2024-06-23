@@ -15,7 +15,7 @@ from convergence_games.app.templates import templates
 from convergence_games.db.models import Game, GameWithExtra, Person, SessionPreference, TableAllocation, TimeSlot
 from convergence_games.db.session import Option
 
-router = APIRouter(tags=["frontend"])
+router = APIRouter(tags=["frontend"], include_in_schema=False)
 
 
 @router.get("/")
