@@ -3,7 +3,13 @@
 {% block content %}
     <title>Sign Up - Convergence 2024</title>
 
-    <form hx-post="/signup" hx-target="#content" hx-select="#content" hx-swap="outerHTML" class="m-auto w-96">
+    <form
+        hx-post="/signup"
+        hx-target="#content"
+        hx-select="#content"
+        hx-swap="outerHTML"
+        class="m-auto w-96 max-w-[90%]"
+    >
         <h2 class="font-bold">Sign Up</h2>
         <label class="input input-bordered flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 opacity-70">
