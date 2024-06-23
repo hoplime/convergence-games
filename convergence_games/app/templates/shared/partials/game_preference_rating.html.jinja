@@ -40,7 +40,7 @@
         class="mask-d12 {{ common_rating_styles }} bg-orange-400 after:content-['12']"
         name="{{ input_name }}"
         value="5"
-        {% if starting_value == "5" %}checked{% endif %}
+        {% if (starting_value == "5") or (start_value == "20" and not enable_d20) %}checked{% endif %}
     />
     {% if enable_d20 %}
         <input

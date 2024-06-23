@@ -256,6 +256,7 @@ async def preferences(
         name="shared/partials/preferences.html.jinja",
         context={
             "request": request,
+            "user": user,
             "preferences_data": preferences_data,
             "time_slot": time_slot,
         },
@@ -338,9 +339,11 @@ async def user_edit_post(
     user: User,
     session: Session,
     name: Annotated[str, Form()],
+    golden_d20s: Annotated[int, Form()],
 ) -> HTMLResponse:
     with session:
         user.name = name
+        user.golden_d20s = golden_d20s
         session.add(user)
         session.commit()
         session.refresh(user)

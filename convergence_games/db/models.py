@@ -135,6 +135,7 @@ class GameWithExtra(GameRead):
 class PersonBase(SQLModel):
     name: str = Field(index=True)
     email: str = Field(index=True)
+    golden_d20s: int = Field(default=0)
 
 
 class Person(PersonBase, table=True):

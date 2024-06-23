@@ -11,7 +11,7 @@
                 <div class="flex w-full flex-row gap-2">
                     {{
                         render_partial('shared/partials/game_preference_rating.html.jinja', input_name="rating-" ~ table_allocation.id ,
-                        enable_d20=true, starting_value=preference)
+                        enable_d20=user.golden_d20s > 0, starting_value=preference)
                     }}
                     <span>
                         <span id="game-title-{{ game.id }}" class="mr-1 transition-all duration-500"

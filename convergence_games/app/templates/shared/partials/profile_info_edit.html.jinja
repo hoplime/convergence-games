@@ -16,6 +16,8 @@
             required
         />
     </label>
+    {# TODO: Remove the golden d20 debugger when admin API is created #}
+    <input class="input input-bordered" name="golden_d20s" type="number" value="{{ user.golden_d20s }}" />
     <button class="btn btn-primary" type="submit">Save</button>
     {# TODO: Only swap the form back #}
     <button
