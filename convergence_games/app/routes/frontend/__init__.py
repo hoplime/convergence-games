@@ -12,6 +12,7 @@ from sqlmodel import select
 from convergence_games.app.dependencies import Session, User, get_user
 from convergence_games.app.request_type import Request
 from convergence_games.app.templates import templates
+from convergence_games.db.extra_types import GameCrunch
 from convergence_games.db.models import Game, GameWithExtra, Person, SessionPreference, TableAllocation, TimeSlot
 from convergence_games.db.session import Option
 
@@ -36,6 +37,7 @@ async def games(
     genre: Annotated[list[int] | None, Query()] = None,
     system: Annotated[list[int] | None, Query()] = None,
     time_slot: Annotated[list[int] | None, Query()] = None,
+    crunch: Annotated[list[GameCrunch] | None, Query()] = None,
 ) -> HTMLResponse:
     games = request.state.db.all_games
 
@@ -56,6 +58,9 @@ async def games(
             )
         ]
 
+    if crunch is not None:
+        games = [game for game in games if game.crunch in crunch]
+
     genre_options = [
         Option(name=o.name, value=o.value, checked=o.value in genre if genre is not None else False)
         for o in request.state.db.genre_options
@@ -68,6 +73,10 @@ async def games(
         Option(name=o.name, value=o.value, checked=o.value in time_slot if time_slot is not None else False)
         for o in request.state.db.time_slot_options
     ]
+    crunch_options = [
+        Option(name=e.value, value=e.value, checked=e.value in crunch if crunch is not None else False)
+        for e in GameCrunch
+    ]
 
     push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
 
@@ -78,6 +87,7 @@ async def games(
             "genre_options": genre_options,
             "system_options": system_options,
             "time_slot_options": time_slot_options,
+            "crunch_options": crunch_options,
             "request": request,
             "user": user,
         },
