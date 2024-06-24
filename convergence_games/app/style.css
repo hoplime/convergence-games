@@ -2,9 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-.btn-primary {
-    @apply bg-blue-500 text-white font-bold py-2 px-4 rounded;
-}
+/* .btn-primary {
+    @apply bg-blue-500 text-white font-semibold py-2 px-4 rounded;
+} */
 
 /* mask-image: url("data:image/svg+xml,%3csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3e%3cpath fill='black' d='m100 0 100 100-100 100L0 100z' fill-rule='evenodd'/%3e%3c/svg%3e"); */
 

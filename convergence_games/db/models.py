@@ -137,6 +137,18 @@ class GameWithExtra(GameRead):
     system: System
     table_allocations: list["TableAllocationWithSlot"] = []
 
+    @property
+    def schedule(self) -> list[tuple[str, list[bool]]]:
+        # TODO: Assert that there are exactly 5 time slots, or be smart about time slots
+        flags = [False] * 5
+        for table_allocation in self.table_allocations:
+            flags[table_allocation.time_slot_id - 1] = True
+        result = [
+            ("SAT", flags[:3]),
+            ("SUN", flags[3:]),
+        ]
+        return result
+
 
 # endregion
 

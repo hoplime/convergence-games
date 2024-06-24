@@ -8,10 +8,34 @@
 >
     <div class="card-body">
         <h2 class="card-title">{{ game.title }}</h2>
-        <h3 class="font-sans antialiased">{{ game.system.name }}</h3>
-        <div>
-            {% for genre in game.genres %}
-                <div class="badge badge-outline gap-2">{{ genre.name }}</div>
+        <h3 class="font-sans antialiased">
+            {{ game.system.name }} <span class="font-thin">|</span> Run by {{ game.gamemaster.name }}
+        </h3>
+        {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game) }}
+        <div class="absolute bottom-4 right-4 flex flex-row items-center justify-items-center gap-1">
+            {# <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-calendar-event inline"
+                viewBox="0 0 16 16"
+            >
+                <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z" />
+                <path
+                    d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"
+                />
+            </svg> #}
+            {% for day_name, session_flags in game.schedule %}
+                <div class="flex flex-col items-center justify-items-center">
+                    <span class="font-mono text-[8px]">{{ day_name }}</span>
+                    <div class="flex flex-row">
+                        {% for flag in session_flags %}
+                            {% set classes = ("h-2 w-3 bg-accent" if flag else "h-2 w-3 border-[1px] border-neutral") %}
+                            <div class="{{ classes }}"></div>
+                        {% endfor %}
+                    </div>
+                </div>
             {% endfor %}
         </div>
     </div>
