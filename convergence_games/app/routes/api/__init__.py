@@ -1,19 +1,11 @@
-from dataclasses import dataclass
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from pydantic import BaseModel, ConfigDict, create_model
 from sqlmodel import SQLModel, inspect, select
 
 from convergence_games.app.dependencies import Auth, Session
-from convergence_games.app.routes.api.models import ModelBoilerplate, boilerplates
+from convergence_games.app.routes.api.models import boilerplates
 
 router = APIRouter(prefix="/api", dependencies=[Auth])
-
-
-@router.get("/")
-async def index(request: Request) -> dict[str, str]:
-    return {"message": "Hello World"}
 
 
 for boilerplate in boilerplates:

@@ -127,6 +127,8 @@ class GameUpdate(GameBase):
     minimum_players: int | None = None
     optimal_players: int | None = None
     maximum_players: int | None = None
+    gamemaster_id: int | None = None
+    system_id: int | None = None
 
 
 class GameWithExtra(GameRead):
@@ -170,6 +172,7 @@ class PersonWithExtra(PersonRead):
 class PersonUpdate(PersonBase):
     name: str | None = None
     email: str | None = None
+    golden_d20s: int | None = None
 
 
 # endregion
