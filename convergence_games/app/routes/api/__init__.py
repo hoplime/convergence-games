@@ -1,11 +1,19 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from pydantic import BaseModel, ConfigDict, create_model
 from sqlmodel import SQLModel, inspect, select
 
 from convergence_games.app.dependencies import Auth, Session
 from convergence_games.app.routes.api.models import boilerplates
+from convergence_games.settings import SETTINGS
 
 router = APIRouter(prefix="/api", dependencies=[Auth])
+
+
+@router.get("/settings")
+async def get_settings() -> dict[str, Any]:
+    return SETTINGS.model_dump()
 
 
 for boilerplate in boilerplates:

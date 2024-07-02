@@ -3,3 +3,4 @@ poetry.lock
 .venv/
 __pycache__/
 *.db
+docker-home/

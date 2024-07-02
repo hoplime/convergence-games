@@ -1,0 +1,8 @@
+# This is used for local development
+
+services:
+  webapp:
+    environment:
+      - RECREATE_DATABASE=True
+    volumes:
+      - ./docker-home:/home

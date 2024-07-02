@@ -1,9 +1,9 @@
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import arel
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import IntegrityError
@@ -13,9 +13,9 @@ from convergence_games.app.routes.api import router as api_router
 from convergence_games.app.routes.frontend import router as frontend_router
 from convergence_games.app.templates import templates
 from convergence_games.db.session import create_mock_db, get_startup_db_info
+from convergence_games.settings import SETTINGS
 
 STATIC_PATH = Path(__file__).parent / "static"
-DEBUG = os.environ.get("DEBUG")
 
 
 @asynccontextmanager
@@ -44,16 +44,17 @@ def integrity_error_handler(request: Request, exc: IntegrityError):
 
 
 app = FastAPI(lifespan=lifespan)
+# app.add_middleware(HTTPSRedirectMiddleware)
 app.add_exception_handler(IntegrityError, integrity_error_handler)
 app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
 
 # Hot Reloading
-if DEBUG:
+if SETTINGS.DEBUG:
     hot_reload = arel.HotReload(paths=[arel.Path(".")])
     app.add_websocket_route("/hot-reload", hot_reload, name="hot-reload")
     app.add_event_handler("startup", hot_reload.startup)
     app.add_event_handler("shutdown", hot_reload.shutdown)
-    templates.env.globals["DEBUG"] = DEBUG
+    templates.env.globals["DEBUG"] = SETTINGS.DEBUG
     templates.env.globals["hot_reload"] = hot_reload
 
 # Favicons

@@ -9,6 +9,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 
 from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
 from convergence_games.db.models import Game, GameWithExtra, Genre, Person, System, TableAllocation, TimeSlot
+from convergence_games.settings import SETTINGS
 
 engine = None
 
@@ -20,8 +21,8 @@ def get_session() -> Generator[Session, Any, None]:
 
 def create_db_and_tables() -> None:
     global engine
-    engine_path = Path("database.db")
-    if engine_path.exists():
+    engine_path = Path(SETTINGS.DATABASE_PATH)
+    if SETTINGS.RECREATE_DATABASE and engine_path.exists():
         engine_path.unlink()
     engine = create_engine(f"sqlite:///{str(engine_path)}", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
