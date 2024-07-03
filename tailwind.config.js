@@ -21,5 +21,20 @@ module.exports = {
         },
     },
     plugins: [require("daisyui")],
-    safelist: ["text-accent", "alert-info", "alert-success", "alert-warning", "alert-error"],
+    safelist: [
+        "text-accent",
+        "alert-info",
+        "alert-success",
+        "alert-warning",
+        "alert-error",
+        // Dynamic Grids for Dropdowns :/
+        "grid-cols-1",
+        "md:w-[12rem]",
+        "grid-cols-2",
+        "md:w-[24rem]",
+        "grid-cols-3",
+        "md:w-[36rem]",
+        "grid-cols-4",
+        "md:w-[48rem]",
+    ],
 };

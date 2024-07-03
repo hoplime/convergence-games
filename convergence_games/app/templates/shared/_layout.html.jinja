@@ -94,40 +94,42 @@
                         </svg>
                         <span class="text-xs">Games</span>
                     </button>
-                    {# Login #}
-                    <button
-                        class="btn btn-ghost flex-col gap-0"
-                        hx-get="/me"
-                        hx-target="#content"
-                        hx-select="#content"
-                        hx-push-url="true"
-                        hx-swap="outerHTML"
-                        _="
-              on load or htmx:load from #wrapper
-              if window.location.pathname.startsWith('/me')
-                add .text-accent to me else remove .text-accent from me
-                end
-                get (<span/> in me)
-                then
-                    if cookies.email
-                    set its innerText to 'Profile'
-                    else
-                    set its innerText to 'Login'
-                end
-              "
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            fill="currentColor"
-                            class="bi bi-person-fill"
-                            viewBox="0 0 16 16"
+                    {% if FLAG_USERS %}
+                        {# Login #}
+                        <button
+                            class="btn btn-ghost flex-col gap-0"
+                            hx-get="/me"
+                            hx-target="#content"
+                            hx-select="#content"
+                            hx-push-url="true"
+                            hx-swap="outerHTML"
+                            _="
+                        on load or htmx:load from #wrapper
+                        if window.location.pathname.startsWith('/me')
+                            add .text-accent to me else remove .text-accent from me
+                            end
+                            get (<span/> in me)
+                            then
+                                if cookies.email
+                                set its innerText to 'Profile'
+                                else
+                                set its innerText to 'Login'
+                            end
+                        "
                         >
-                            <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
-                        </svg>
-                        <span class="text-xs">Login</span>
-                    </button>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                fill="currentColor"
+                                class="bi bi-person-fill"
+                                viewBox="0 0 16 16"
+                            >
+                                <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+                            </svg>
+                            <span class="text-xs">Login</span>
+                        </button>
+                    {% endif %}
                 </div>
             </nav>
             <main id="content">

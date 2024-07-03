@@ -12,10 +12,12 @@
             hx-swap="outerHTML"
         >
             <div class="flex flex-col gap-4 md:flex-row">
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=genre_options, title='Genre', form_name='genre') }}
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=system_options, title='System', form_name='system') }}
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=time_slot_options, title='Time Slot', form_name='time_slot') }}
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=crunch_options, title='Crunch', form_name='crunch') }}
+                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=genre_options, title='Genre', form_name='genre', cols=3) }}
+                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=system_options, title='System', form_name='system', cols=3) }}
+                {% if FLAG_SCHEDULE %}
+                    {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=time_slot_options, title='Time Slot', form_name='time_slot', cols=3) }}
+                {% endif %}
+                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=crunch_options, title='Crunch', form_name='crunch', cols=1) }}
             </div>
         </form>
         <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

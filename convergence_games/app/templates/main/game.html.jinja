@@ -7,34 +7,36 @@
         <h2 class="font-sans text-xl antialiased">{{ game.system.name }} | Run by {{ game.gamemaster.name }}</h2>
         {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game) }}
         <p>{{ game.description }}</p>
-        <h2>Sessions</h2>
-        <form>
-            <ul class="flex flex-col">
-                {% for table_allocation in game.table_allocations %}
-                    <li class="flex flex-row">
-                        {# {{
+        {% if FLAG_SCHEDULE %}
+            <h2>Sessions</h2>
+            <form>
+                <ul class="flex flex-col">
+                    {% for table_allocation in game.table_allocations %}
+                        <li class="flex flex-row">
+                            {# {{
                             render_partial('shared/partials/game_preference_rating.html.jinja', input_name="rating-" ~ table_allocation.id ,
                             enable_d20=true)
                         }} #}
-                        {# _="on click wait for htmx:afterOnLoad from #modal-content then showModal() on #modal-dialog then go to the top of #game-title-{{ game.id }}" #}
-                        <span
-                            hx-target="#modal-content"
-                            hx-get="/preferences?time_slot_id={{ table_allocation.time_slot.id }}"
-                            _="on click
+                            {# _="on click wait for htmx:afterOnLoad from #modal-content then showModal() on #modal-dialog then go to the top of #game-title-{{ game.id }}" #}
+                            <span
+                                hx-target="#modal-content"
+                                hx-get="/preferences?time_slot_id={{ table_allocation.time_slot.id }}"
+                                _="on click
                             wait for htmx:afterSettle from #modal-content
                             then showModal() on #modal-dialog
                             then add .text-accent to #game-title-{{ game.id }}
                             then go to the middle of #game-title-{{ game.id }}"
-                        >
-                            {{ table_allocation.time_slot.start_time.strftime('%H:%M') }} -
-                            {{ table_allocation.time_slot.end_time.strftime('%H:%M') }} on
-                            {{ table_allocation.time_slot.start_time.strftime('%A') }} @ Table
-                            {{ table_allocation.table_number }}
-                        </span>
-                    </li>
-                {% endfor %}
-            </ul>
-        </form>
+                            >
+                                {{ table_allocation.time_slot.start_time.strftime('%H:%M') }} -
+                                {{ table_allocation.time_slot.end_time.strftime('%H:%M') }} on
+                                {{ table_allocation.time_slot.start_time.strftime('%A') }} @ Table
+                                {{ table_allocation.table_number }}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </form>
+        {% endif %}
         <button
             type="button"
             class="btn btn-outline btn-secondary"

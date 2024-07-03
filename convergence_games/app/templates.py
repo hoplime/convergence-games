@@ -20,3 +20,6 @@ if SETTINGS.USE_HTTPS:
         return http_url.replace(scheme="https")
 
     templates.env.globals["url_for"] = urlx_for
+
+templates.env.globals["FLAG_SCHEDULE"] = SETTINGS.FLAG_SCHEDULE
+templates.env.globals["FLAG_USERS"] = SETTINGS.FLAG_USERS

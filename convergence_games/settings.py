@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     USE_HTTPS: bool = False
     INITIALISE_DATA: bool = True
     INITIAL_DATA_MODE: Literal["import", "mock"] = "import"
+    FLAG_SCHEDULE: bool = False
+    FLAG_USERS: bool = False
 
 
 SETTINGS = Settings()
