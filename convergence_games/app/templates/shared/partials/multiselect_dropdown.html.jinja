@@ -47,13 +47,21 @@
             {% endfor %}
         </ul>
         {% set input_filter = "<input[name=" + form_name + "/>" %}
-        <button
-            type="button"
-            class="btn btn-outline btn-secondary"
-            _="on click set {{ input_filter }}'s checked to false then trigger change"
-        >
-            Clear
-        </button>
-        {# <button type="button" class="btn btn-secondary btn-outline" _="on click set {{ input_filter }}'s checked to true then trigger change">Select All</button> #}
+        <div>
+            <button
+                type="button"
+                class="btn btn-outline btn-accent"
+                _="on click set {{ input_filter }}'s checked to false then trigger change"
+            >
+                Clear
+            </button>
+            <button
+                type="button"
+                class="btn btn-outline btn-accent"
+                _="on click set {{ input_filter }}'s checked to true then trigger change"
+            >
+                Select All
+            </button>
+        </div>
     </div>
 </div>

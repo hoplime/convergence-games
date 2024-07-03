@@ -38,9 +38,9 @@
             </form>
         {% endif %}
         <p class="text-sm text-warning">Note: Game details are subject to change until the schedule is finalised.</p>
-        <button
+        {# <button
             type="button"
-            class="btn btn-outline btn-secondary w-fit"
+            class="btn btn-outline btn-accent w-fit"
             hx-get="/games"
             hx-target="#content"
             hx-select="#content"
@@ -48,6 +48,6 @@
             hx-push-url="true"
         >
             Back to Games
-        </button>
+        </button> #}
     </div>
 {% endblock %}

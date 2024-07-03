@@ -34,12 +34,13 @@
             <nav class="navbar">
                 <div class="navbar-start">
                     <button
-                        class="btn btn-ghost hidden text-xl md:inline-flex"
+                        class="btn btn-ghost hidden text-xl text-accent md:inline-flex"
                         hx-get="/"
                         hx-target="#content"
                         hx-select="#content"
                         hx-push-url="true"
                         hx-swap="outerHTML"
+                        _="on load or htmx:load from #wrapper if window.location.pathname == '/' add .text-accent to me else remove .text-accent from me"
                     >
                         <img src="{{ url_for('static', path='images/convergence-logo-min.svg') }}" class="w-5" />
                         Convergence 2024

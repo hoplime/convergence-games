@@ -1,3 +1,10 @@
+const { default: daisyui } = require("daisyui");
+
+const theme_overrides = {
+    primary: "#d3c5db",
+    accent: "#a64253",
+};
+
 module.exports = {
     content: ["./convergence_games/app/templates/**/*.html", "./convergence_games/app/templates/**/*.html.jinja"],
     theme: {
@@ -37,4 +44,18 @@ module.exports = {
         "grid-cols-4",
         "md:w-[48rem]",
     ],
+    daisyui: {
+        themes: [
+            {
+                light: {
+                    ...require("daisyui/src/theming/themes")["light"],
+                    ...theme_overrides,
+                },
+                dark: {
+                    ...require("daisyui/src/theming/themes")["dark"],
+                    ...theme_overrides,
+                },
+            },
+        ],
+    },
 };
