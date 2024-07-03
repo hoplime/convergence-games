@@ -44,6 +44,7 @@ module.exports = {
         "grid-cols-4",
         "md:w-[48rem]",
     ],
+    darkMode: ["selector", '[data-theme="dark"]'],
     daisyui: {
         themes: [
             {
