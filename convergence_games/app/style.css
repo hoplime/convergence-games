@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* .btn-primary {
-    @apply bg-blue-500 text-white font-semibold py-2 px-4 rounded;
-} */
-
-/* mask-image: url("data:image/svg+xml,%3csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3e%3cpath fill='black' d='m100 0 100 100-100 100L0 100z' fill-rule='evenodd'/%3e%3c/svg%3e"); */
-
 .mask-d4 {
     mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20180%22%3E%3Cpath%20d%3D%22M50.754%2093.78c13.317-22.74%2026.388-45.202%2040.123-68.807l71.937%20123.659H19.139C29.733%20130.2%2040.12%20112.129%2050.754%2093.78z%22%2F%3E%3C%2Fsvg%3E");
 }
