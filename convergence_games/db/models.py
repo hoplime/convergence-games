@@ -12,6 +12,11 @@ class GameGenreLink(SQLModel, table=True):
     genre_id: int | None = Field(default=None, foreign_key="genre.id", primary_key=True)
 
 
+class GameContentWarningLink(SQLModel, table=True):
+    game_id: int | None = Field(default=None, foreign_key="game.id", primary_key=True)
+    content_warning_id: int | None = Field(default=None, foreign_key="contentwarning.id", primary_key=True)
+
+
 # endregion
 
 
@@ -74,6 +79,35 @@ class GenreUpdate(GenreBase):
 # endregion
 
 
+# region ContentWarning
+class ContentWarningBase(SQLModel):
+    name: str = Field(index=True, unique=True)
+
+
+class ContentWarning(ContentWarningBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    games: list["Game"] = Relationship(back_populates="content_warnings", link_model=GameContentWarningLink)
+
+
+class ContentWarningCreate(ContentWarningBase):
+    pass
+
+
+class ContentWarningRead(ContentWarningBase):
+    id: int
+
+
+class ContentWarningWithExtra(ContentWarningRead):
+    games: list["Game"]
+
+
+class ContentWarningUpdate(ContentWarningBase):
+    name: str | None = None
+
+
+# endregion
+
+
 # region Game
 class GameBase(SQLModel):
     title: str = Field(index=True)
@@ -94,6 +128,7 @@ class Game(GameBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     genres: list[Genre] = Relationship(back_populates="games", link_model=GameGenreLink)
+    content_warnings: list[ContentWarning] = Relationship(back_populates="games", link_model=GameContentWarningLink)
     gamemaster: "Person" = Relationship(back_populates="gmd_games")
     system: System = Relationship(back_populates="games")
     table_allocations: list["TableAllocation"] = Relationship(back_populates="game")
@@ -123,6 +158,7 @@ class GameUpdate(GameBase):
     crunch: GameCrunch | None = None
     narrativism: GameNarrativism | None = None
     tone: GameTone | None = None
+    content_warnings: str | None = None
     age_suitability: str | None = None
     minimum_players: int | None = None
     optimal_players: int | None = None
@@ -133,6 +169,7 @@ class GameUpdate(GameBase):
 
 class GameWithExtra(GameRead):
     genres: list[Genre] = []
+    content_warnings: list[ContentWarning] = []
     gamemaster: "Person"
     system: System
     table_allocations: list["TableAllocationWithSlot"] = []

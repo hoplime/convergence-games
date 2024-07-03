@@ -27,18 +27,14 @@ for boilerplate in boilerplates:
     ) -> None:
         table_name = table_type.__name__.lower()
 
-        print(f"Binding routes for {table_name}")
-
         primary_keys = inspect(table_type).primary_key
         primary_key_names = [pk.name for pk in primary_keys]
         primary_key_path = "/".join([f"{{{pk_name}}}" for pk_name in primary_key_names])
-        print(f"Primary key names: {primary_key_names}")
         id_args_model: BaseModel = create_model(
             f"IdArgs{table_type.__name__}",
             __config__=ConfigDict(populate_by_name=True),
             **{pk_name: (int, Path(alias=pk_name)) for pk_name in primary_key_names},
         )
-        print(f"Id args model: {id_args_model.model_fields}")
 
         @router.get(f"/{table_name}", name=f"Get all {table_name}s", tags=[table_name])
         async def get_all(session: Session) -> list[extra_type]:
@@ -49,7 +45,6 @@ for boilerplate in boilerplates:
 
         @router.get(f"/{table_name}/{primary_key_path}", name=f"Get {table_name} by id", tags=[table_name])
         async def get_by_id(session: Session, id_args=Depends(id_args_model)) -> extra_type:
-            print("ID ARGS", id_args.model_dump())
             with session:
                 result = session.get(table_type, id_args.model_dump())
                 if result is None:

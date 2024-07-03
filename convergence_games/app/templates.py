@@ -17,8 +17,6 @@ if SETTINGS.USE_HTTPS:
     def urlx_for(context: dict, name: str, **path_params: Any) -> str:
         request: Request = context["request"]
         http_url = request.url_for(name, **path_params)
-        print(http_url)
-        print(http_url.scheme)
         return http_url.replace(scheme="https")
 
     templates.env.globals["url_for"] = urlx_for

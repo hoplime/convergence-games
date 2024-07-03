@@ -207,7 +207,6 @@ async def signup_post(
                 },
             )
         session.refresh(user)
-    print(user, "signed up")
     return templates.TemplateResponse(
         name="main/profile.html.jinja",
         context={"request": request, "user": user},
@@ -233,7 +232,6 @@ async def preferences(
     session: Session,
     time_slot_id: Annotated[int, Query()] = 1,
 ) -> HTMLResponse:
-    print(f"Getting preferences for user {user.id} for time slot {time_slot_id}")
     with session:
         time_slot = session.get(TimeSlot, time_slot_id)
         statement = (
@@ -252,7 +250,6 @@ async def preferences(
             # .where(SessionPreference.person_id == user.id)
         )
         preferences_data = session.exec(statement).all()
-        print(preferences_data[0])
         preferences_data = [
             (
                 GameWithExtra.model_validate(game),
@@ -261,7 +258,6 @@ async def preferences(
             )
             for game, table_allocation, session_preference in preferences_data
         ]
-        print(preferences_data[0])
     return templates.TemplateResponse(
         name="shared/partials/preferences.html.jinja",
         context={

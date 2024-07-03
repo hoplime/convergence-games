@@ -9,6 +9,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 
 from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
 from convergence_games.db.models import Game, GameWithExtra, Genre, Person, System, TableAllocation, TimeSlot
+from convergence_games.db.sheets_importer import GoogleSheetsImporter
 from convergence_games.settings import SETTINGS
 
 engine = None
@@ -19,16 +20,22 @@ def get_session() -> Generator[Session, Any, None]:
         yield session
 
 
-def create_db_and_tables() -> None:
+def create_db_and_tables() -> bool:
     global engine
+
+    result = False
+
     engine_path = Path(SETTINGS.DATABASE_PATH)
     if SETTINGS.RECREATE_DATABASE and engine_path.exists():
         engine_path.unlink()
+        result = True
     engine = create_engine(f"sqlite:///{str(engine_path)}", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
 
+    return result
 
-def create_mock_time_slots(session: Session) -> list[TimeSlot]:
+
+def create_mock_time_slots() -> list[TimeSlot]:
     time_slots = [
         TimeSlot(
             name="Saturday Morning",
@@ -56,13 +63,24 @@ def create_mock_time_slots(session: Session) -> list[TimeSlot]:
             end_time=dt.datetime(2024, 9, 8, 16),
         ),
     ]
-    session.add_all(time_slots)
     return time_slots
 
 
+def create_imported_db() -> None:
+    time_slots = create_mock_time_slots()
+
+    with Session(engine) as session:
+        session.add_all(time_slots)
+
+        importer = GoogleSheetsImporter(csv_path=Path("games.csv"))
+        dbos = importer.import_sheet()
+        session.add_all(dbos)
+
+        session.commit()
+
+
 def create_mock_db() -> None:
-    if engine is None:
-        create_db_and_tables()
+    time_slots = create_mock_time_slots()
 
     with Session(engine) as session:
         gm_map: dict[str, Person] = {}
@@ -117,7 +135,7 @@ def create_mock_db() -> None:
         session.add_all(genre_map.values())
         session.add_all(game_map.values())
 
-        time_slots = create_mock_time_slots(session)
+        session.add_all(time_slots)
         with open("mock_data/Mock Convergence Data - Tables.csv") as f:
             for row in DictReader(f):
                 table_number = row["table_number"]
