@@ -164,10 +164,10 @@ if __name__ == "__main__":
 
     csv_path: Path = args.csv_path
 
-    if not csv_path.exists():
-        with open(csv_path, "w") as f:
-            sheet_contents = requests.get(args.sheet_url).text
-            f.write(sheet_contents)
+    # if not csv_path.exists():
+    with open(csv_path, "wb") as f:
+        sheet_contents = requests.get(args.sheet_url).content
+        f.write(sheet_contents)
 
     importer = GoogleSheetsImporter(csv_path=csv_path)
     for model in importer.import_sheet():

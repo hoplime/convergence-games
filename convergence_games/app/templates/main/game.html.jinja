@@ -6,7 +6,7 @@
         <h1 class="font-sans text-2xl font-semibold antialiased">{{ game.title }}</h1>
         <h2 class="font-sans text-xl antialiased">{{ game.system.name }} | Run by {{ game.gamemaster.name }}</h2>
         {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game) }}
-        <p>{{ game.description }}</p>
+        <p class="whitespace-pre-line">{{ game.description }}</p>
         {% if FLAG_SCHEDULE %}
             <h2>Sessions</h2>
             <form>
@@ -37,6 +37,7 @@
                 </ul>
             </form>
         {% endif %}
+        <p class="text-sm text-warning">Note: Game details are subject to change until the schedule is finalised.</p>
         <button
             type="button"
             class="btn btn-outline btn-secondary w-fit"
