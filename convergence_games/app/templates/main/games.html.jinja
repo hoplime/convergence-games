@@ -3,14 +3,7 @@
 {% block content %}
     <title>Games - Convergence 2024</title>
     <div class="mx-auto grid grid-cols-1 gap-4 xl:container">
-        <form
-            id="filter-form"
-            hx-get="/games"
-            hx-target="#game_list"
-            hx-trigger="change delay:200ms"
-            hx-select="#game_list"
-            hx-swap="outerHTML"
-        >
+        <form id="filter-form" hx-get="/games" hx-target="#game_list" hx-trigger="change delay:200ms">
             <div class="flex flex-col gap-4 md:flex-row">
                 {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=genre_options, title='Genre', form_name='genre', cols=3) }}
                 {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=system_options, title='System', form_name='system', cols=3) }}
@@ -21,9 +14,11 @@
             </div>
         </form>
         <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {% for game in games %}
-                {{ render_partial('shared/partials/game_card.html.jinja', game=game) }}
-            {% endfor %}
+            {% block game_list %}
+                {% for game in games %}
+                    {{ render_partial('shared/partials/game_card.html.jinja', game=game) }}
+                {% endfor %}
+            {% endblock %}
         </div>
     </div>
 {% endblock %}

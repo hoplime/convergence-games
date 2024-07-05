@@ -38,9 +38,7 @@
                         class="btn btn-ghost hidden text-xl text-accent md:inline-flex"
                         hx-get="/"
                         hx-target="#content"
-                        hx-select="#content"
                         hx-push-url="true"
-                        hx-swap="outerHTML"
                         _="on load or htmx:load from #wrapper if window.location.pathname == '/' add .text-accent to me else remove .text-accent from me"
                     >
                         <img src="{{ url_for('static', path='images/convergence-logo-min.svg') }}" class="w-5" />
@@ -53,9 +51,7 @@
                         class="btn btn-ghost flex-col gap-0 md:hidden"
                         hx-get="/"
                         hx-target="#content"
-                        hx-select="#content"
                         hx-push-url="true"
-                        hx-swap="outerHTML"
                         _="on load or htmx:load from #wrapper if window.location.pathname == '/' add .text-accent to me else remove .text-accent from me"
                     >
                         <svg
@@ -77,9 +73,7 @@
                         class="btn btn-ghost flex-col gap-0"
                         hx-get="/games"
                         hx-target="#content"
-                        hx-select="#content"
                         hx-push-url="true"
-                        hx-swap="outerHTML"
                         _="on load or htmx:load from #wrapper if window.location.pathname.startsWith('/games') add .text-accent to me else remove .text-accent from me"
                     >
                         <svg
@@ -102,9 +96,7 @@
                             class="btn btn-ghost flex-col gap-0"
                             hx-get="/me"
                             hx-target="#content"
-                            hx-select="#content"
                             hx-push-url="true"
-                            hx-swap="outerHTML"
                             _="
                         on load or htmx:load from #wrapper
                         if window.location.pathname.startsWith('/me')
@@ -135,21 +127,8 @@
                 </div>
             </nav>
             <main id="content" class="px-2">
-                {% block content %}{% endblock %}
-                <div class="toast">
-                    {% for alert in alerts %}
-                        <div
-                            class="{{ alert.alert_class }} alert transition-opacity duration-1000 ease-in-out"
-                            _="on load
-                            wait 1000ms
-                            then set my.style.opacity to 0
-                            then wait 1000ms
-                            then remove me"
-                        >
-                            {{ alert.message }}
-                        </div>
-                    {% endfor %}
-                </div>
+                {% block content %}
+                {% endblock %}
             </main>
             <footer class="footer footer-center gap-4 p-4">
                 <aside>

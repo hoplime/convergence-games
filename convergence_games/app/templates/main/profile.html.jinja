@@ -4,25 +4,7 @@
     <title>My Profile - Convergence 2024</title>
 
     {{ render_partial('shared/partials/profile_info.html.jinja', user=user) }}
-    <button
-        type="button"
-        class="btn btn-outline btn-error"
-        hx-post="/logout"
-        hx-target="#wrapper"
-        hx-select="#wrapper"
-        hx-push-url="false"
-        hx-swap="outerHTML"
-    >
+    <button type="button" class="btn btn-outline btn-error" hx-post="/logout" hx-target="#content" hx-push-url="false">
         Logout
     </button>
-    {# <button
-        class="btn btn-primary"
-        hx-target="#modal-content"
-        hx-get="/preferences?time_slot_id=1"
-        _="on click
-        wait for htmx:afterSettle from #modal-content
-        then showModal() on #modal-dialog"
-    >
-        Schedule Time Slot 1
-    </button> #}
 {% endblock %}

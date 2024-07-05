@@ -20,14 +20,5 @@
     <input class="input input-bordered" name="golden_d20s" type="number" value="{{ user.golden_d20s }}" />
     <button class="btn btn-primary" type="submit">Save</button>
     {# TODO: Only swap the form back #}
-    <button
-        class="btn btn-outline btn-error"
-        type="button"
-        hx-get="/me"
-        hx-target="#content"
-        hx-select="#content"
-        hx-swap="outerHTML"
-    >
-        Cancel
-    </button>
+    <button class="btn btn-outline btn-error" type="button" hx-get="/me" hx-target="#content">Cancel</button>
 </form>

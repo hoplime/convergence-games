@@ -3,13 +3,7 @@
 {% block content %}
     <title>Sign Up - Convergence 2024</title>
 
-    <form
-        hx-post="/signup"
-        hx-target="#content"
-        hx-select="#content"
-        hx-swap="outerHTML"
-        class="m-auto w-96 max-w-[90%]"
-    >
+    <form hx-post="/signup" hx-target="#content" class="m-auto w-96 max-w-[90%]">
         <h1 class="mb-4 text-2xl font-semibold antialiased">Sign Up</h1>
         <label class="input input-bordered flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 opacity-70">
@@ -31,6 +25,8 @@
             <input type="text" name="name" id="name" class="grow" placeholder="Full Name" value="{{ name }}" required />
         </label>
         <button type="submit" class="btn btn-primary mb-4 w-full">Sign Up</button>
-        <a hx-get="/login" hx-target="#content" hx-select="#content" class="link">Login Instead</a>
+        <a hx-get="/login" hx-target="#content" class="link">Login Instead</a>
     </form>
+
+    {{ render_partial('shared/partials/toast_alerts.html.jinja', alerts=alerts) }}
 {% endblock %}

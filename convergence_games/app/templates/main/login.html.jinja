@@ -3,13 +3,7 @@
 {% block content %}
     <title>Login - Convergence 2024</title>
 
-    <form
-        hx-post="/login"
-        hx-target="#content"
-        hx-select="#content"
-        hx-swap="outerHTML"
-        class="m-auto w-96 max-w-[90%]"
-    >
+    <form hx-post="/login" hx-target="#content" class="m-auto w-96 max-w-[90%]">
         <h1 class="mb-4 text-2xl font-semibold antialiased">Login</h1>
         <p class="italic">If you're a GM, please use the email you signed up with.</p>
         <label class="input input-bordered flex items-center gap-2">
@@ -24,6 +18,6 @@
             <input type="email" name="email" id="email" class="grow" placeholder="Email" required />
         </label>
         <button type="submit" class="btn btn-primary mb-4 w-full">Login</button>
-        <a hx-get="/signup" hx-target="#content" hx-select="#content" class="link">Sign Up Instead</a>
+        <a hx-get="/signup" hx-target="#content" class="link">Sign Up Instead</a>
     </form>
 {% endblock %}

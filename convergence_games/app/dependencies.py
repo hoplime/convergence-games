@@ -12,6 +12,7 @@ X_API_KEY = APIKeyHeader(name="X-API-Key", auto_error=True)
 
 
 def get_hx_target(request: Request) -> str | None:
+    print("HX-Target:", request.headers.get("hx-target"))
     return request.headers.get("hx-target")
 
 
