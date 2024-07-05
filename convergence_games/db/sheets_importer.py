@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "--sheet_url",
         type=str,
         help="URL of the Google Sheet to import",
-        default="https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=867665843&format=csv",
+        default="https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=1424049540&format=csv",
     )
     parser.add_argument("--csv_path", type=Path, help="Path to the CSV file to import", default=Path("games.csv"))
     args = parser.parse_args()
