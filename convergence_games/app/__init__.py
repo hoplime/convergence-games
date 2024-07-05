@@ -20,17 +20,18 @@ STATIC_PATH = Path(__file__).parent / "static"
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
-    recreated = create_db_and_tables()
+    fresh = create_db_and_tables()
 
-    if recreated and SETTINGS.INITIALISE_DATA:
+    if fresh and SETTINGS.INITIALISE_DATA:
         if SETTINGS.INITIAL_DATA_MODE == "import":
             create_imported_db()
+            print("Imported DB created")
         else:
             create_mock_db()
+            print("Mock DB created")
 
     db = get_startup_db_info()
 
-    print("Mock DB created")
     yield {"db": db}
     print("Shutdown")
 

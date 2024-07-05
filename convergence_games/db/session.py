@@ -23,16 +23,16 @@ def get_session() -> Generator[Session, Any, None]:
 def create_db_and_tables() -> bool:
     global engine
 
-    result = False
-
     engine_path = Path(SETTINGS.DATABASE_PATH)
-    if SETTINGS.RECREATE_DATABASE and engine_path.exists():
+    database_already_existed = engine_path.exists()
+    fresh = not database_already_existed or SETTINGS.RECREATE_DATABASE
+
+    if SETTINGS.RECREATE_DATABASE and database_already_existed:
         engine_path.unlink()
-        result = True
     engine = create_engine(f"sqlite:///{str(engine_path)}", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
 
-    return result
+    return fresh
 
 
 def create_mock_time_slots() -> list[TimeSlot]:
