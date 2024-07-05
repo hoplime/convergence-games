@@ -3,8 +3,8 @@
 {% block content %}
     <title>{{ game.title }} - Convergence 2024</title>
     <div class="flex flex-col gap-2">
-        <h1 class="font-sans text-2xl font-semibold antialiased">{{ game.title }}</h1>
-        <h2 class="font-sans text-xl antialiased">{{ game.system.name }} | Run by {{ game.gamemaster.name }}</h2>
+        <h1 class="text-2xl font-semibold antialiased">{{ game.title }}</h1>
+        <h2 class="text-xl antialiased">{{ game.system.name }} | Run by {{ game.gamemaster.name }}</h2>
         {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game) }}
         <p class="whitespace-pre-line">{{ game.description }}</p>
         {% if FLAG_SCHEDULE %}

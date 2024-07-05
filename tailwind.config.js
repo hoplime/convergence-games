@@ -1,4 +1,5 @@
 const { default: daisyui } = require("daisyui");
+const defaultTheme = require("tailwindcss/defaultTheme");
 
 const theme_overrides = {
     primary: "#d3c5db",
@@ -8,6 +9,10 @@ const theme_overrides = {
 module.exports = {
     content: ["./convergence_games/app/templates/**/*.html", "./convergence_games/app/templates/**/*.html.jinja"],
     theme: {
+        fontFamily: {
+            header: ['"Josefin Sans"', ...defaultTheme.fontFamily.sans],
+            sans: ['"Open Sans"', ...defaultTheme.fontFamily.sans],
+        },
         extend: {
             screens: {
                 "-2xl": { max: "1535px" },
