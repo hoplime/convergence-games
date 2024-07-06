@@ -2,7 +2,7 @@
 {% block title %}{{ game.title }} - Convergence 2024{% endblock %}
 {% block content %}
     <title>{{ game.title }} - Convergence 2024</title>
-    <div class="flex flex-col gap-2">
+    <div class="mx-auto flex max-w-screen-lg flex-col gap-2">
         <h1 class="text-2xl font-semibold antialiased">{{ game.title }}</h1>
         <h2 class="text-xl antialiased">{{ game.system.name }} | Run by {{ game.gamemaster.name }}</h2>
         {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game) }}
