@@ -116,7 +116,7 @@ async def games(
         Option(
             name=a,
             value=a,
-            checked=a in a if a is not None else False,
+            checked=a in tone if tone is not None else False,
         )
         for a in DEFINED_AGE_SUITABILITIES
     ]

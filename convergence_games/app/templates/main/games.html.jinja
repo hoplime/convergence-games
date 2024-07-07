@@ -3,19 +3,34 @@
 {% block content %}
     <title>Games - Convergence 2024</title>
     <div class="mx-auto grid grid-cols-1 gap-4 xl:container">
-        <form id="filter-form" hx-get="/games" hx-target="#game_list" hx-trigger="change delay:200ms">
-            <div class="flex flex-col gap-4 md:flex-row">
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=genre_options, title='Genre', form_name='genre', cols=3) }}
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=system_options, title='System', form_name='system', cols=3) }}
-                {% if FLAG_SCHEDULE %}
-                    {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=time_slot_options, title='Time Slot', form_name='time_slot', cols=3) }}
-                {% endif %}
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=crunch_options, title='Crunch', form_name='crunch', cols=1) }}
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=tone_options, title='Tone', form_name='tone', cols=1) }}
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=blocked_content_warning_options, title='Exclude Content', form_name='blocked_content_warnings', cols=1) }}
-                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=age_suitability_options, title='Ages', form_name='age_suitability', cols=1) }}
-            </div>
-        </form>
+        <div class="-md:collapse md:visible">
+            <input type="checkbox" class="md:hidden" />
+            <div class="collapse-title md:hidden">Show/hide filters</div>
+            <form
+                id="filter-form"
+                hx-get="/games"
+                hx-target="#game_list"
+                hx-trigger="change delay:200ms"
+                class="md:grid"
+                _="on load or resize from window
+                    if window.innerWidth < 768
+                    then add .collapse-content to me
+                    else remove .collapse-content from me
+                    end"
+            >
+                <div class="flex flex-col gap-4 md:flex-row">
+                    {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=genre_options, title='Genre', form_name='genre', cols=3) }}
+                    {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=system_options, title='System', form_name='system', cols=3) }}
+                    {% if FLAG_SCHEDULE %}
+                        {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=time_slot_options, title='Time Slot', form_name='time_slot', cols=3) }}
+                    {% endif %}
+                    {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=crunch_options, title='Crunch', form_name='crunch', cols=1) }}
+                    {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=tone_options, title='Tone', form_name='tone', cols=1) }}
+                    {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=blocked_content_warning_options, title='Exclude Content', form_name='blocked_content_warnings', cols=1, check_style='cross') }}
+                    {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=age_suitability_options, title='Ages', form_name='age_suitability', cols=1) }}
+                </div>
+            </form>
+        </div>
         <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {% block game_list %}
                 {% for game in games %}

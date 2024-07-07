@@ -27,6 +27,11 @@
     {# Content #}
     {% set cols = cols|default(2) %}
     {% set rem = 12 * cols %}
+    {% if check_style == 'cross' %}
+        {% set check_class = 'checkbox-crossed' %}
+    {% else %}
+        {% set check_class = '' %}
+    {% endif %}
     <div
         class="collapse-content dropdown-content z-[1] md:menu md:box-border md:w-[{{ rem }}rem] md:rounded-box md:bg-base-200 md:p-2 md:shadow"
     >
@@ -37,7 +42,7 @@
                         <span class="label-text">{{ option.name }}</span>
                         <input
                             type="checkbox"
-                            class="checkbox-accent checkbox"
+                            class="{{ check_class }} checkbox-accent checkbox"
                             value="{{ option.value }}"
                             name="{{ form_name }}"
                             {% if option.checked %}checked{% endif %}
