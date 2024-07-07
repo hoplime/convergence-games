@@ -11,6 +11,9 @@
                     {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=time_slot_options, title='Time Slot', form_name='time_slot', cols=3) }}
                 {% endif %}
                 {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=crunch_options, title='Crunch', form_name='crunch', cols=1) }}
+                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=tone_options, title='Tone', form_name='tone', cols=1) }}
+                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=blocked_content_warning_options, title='Exclude Content', form_name='blocked_content_warnings', cols=1) }}
+                {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=age_suitability_options, title='Ages', form_name='age_suitability', cols=1) }}
             </div>
         </form>
         <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

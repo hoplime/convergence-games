@@ -12,7 +12,7 @@ from sqlmodel import select
 from convergence_games.app.dependencies import HxTarget, Session, User, get_user
 from convergence_games.app.request_type import Request
 from convergence_games.app.templates import templates
-from convergence_games.db.extra_types import GameCrunch
+from convergence_games.db.extra_types import DEFINED_AGE_SUITABILITIES, DEFINED_CONTENT_WARNINGS, GameCrunch, GameTone
 from convergence_games.db.models import Game, GameWithExtra, Person, SessionPreference, TableAllocation, TimeSlot
 from convergence_games.db.session import Option
 
@@ -42,6 +42,9 @@ async def games(
     system: Annotated[list[int] | None, Query()] = None,
     time_slot: Annotated[list[int] | None, Query()] = None,
     crunch: Annotated[list[GameCrunch] | None, Query()] = None,
+    tone: Annotated[list[GameTone] | None, Query()] = None,
+    blocked_content_warnings: Annotated[list[str] | None, Query()] = None,
+    age_suitability: Annotated[list[str] | None, Query()] = None,
 ) -> HTMLResponse:
     games = request.state.db.all_games
 
@@ -65,6 +68,23 @@ async def games(
     if crunch is not None:
         games = [game for game in games if game.crunch in crunch]
 
+    if tone is not None:
+        games = [game for game in games if game.tone in tone]
+
+    if blocked_content_warnings is not None:
+        games = [
+            game
+            for game in games
+            if not any(
+                content_warning in [cw.name for cw in game.content_warnings]
+                for content_warning in blocked_content_warnings
+            )
+        ]
+
+    if age_suitability is not None:
+        games = [game for game in games if game.age_suitability in age_suitability]
+
+    # Determine dropdown options
     genre_options = [
         Option(name=o.name, value=o.value, checked=o.value in genre if genre is not None else False)
         for o in request.state.db.genre_options
@@ -81,6 +101,25 @@ async def games(
         Option(name=e.value, value=e.value, checked=e.value in crunch if crunch is not None else False)
         for e in GameCrunch
     ]
+    tone_options = [
+        Option(name=e.value, value=e.value, checked=e.value in tone if tone is not None else False) for e in GameTone
+    ]
+    blocked_content_warning_options = [
+        Option(
+            name=w,
+            value=w,
+            checked=w in blocked_content_warnings if blocked_content_warnings is not None else False,
+        )
+        for w in DEFINED_CONTENT_WARNINGS
+    ]
+    age_suitability_options = [
+        Option(
+            name=a,
+            value=a,
+            checked=a in a if a is not None else False,
+        )
+        for a in DEFINED_AGE_SUITABILITIES
+    ]
 
     push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
 
@@ -92,6 +131,9 @@ async def games(
             "system_options": system_options,
             "time_slot_options": time_slot_options,
             "crunch_options": crunch_options,
+            "tone_options": tone_options,
+            "blocked_content_warning_options": blocked_content_warning_options,
+            "age_suitability_options": age_suitability_options,
             "request": request,
             "user": user,
         },
@@ -107,6 +149,8 @@ async def game(
     hx_target: HxTarget,
     game_id: int,
 ) -> HTMLResponse:
+    if game_id not in request.state.db.game_map:
+        return HTMLResponse(status_code=404)
     game = request.state.db.game_map[game_id]
     return templates.TemplateResponse(
         name="main/game.html.jinja",

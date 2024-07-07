@@ -68,6 +68,8 @@ class GoogleSheetsImporter:
             return pl.col(col_name).cast(str).replace({"7+": 7}).cast(pl.Int8)
 
         result = df.select(
+            pl.col("Running").cast(bool).alias("running"),
+            pl.col("ID").cast(pl.Int32).alias("id"),
             pl.col("Email address").alias("gamemaster_email"),
             pl.col("Full Name").alias("gamemaster_name"),
             pl.col("Game Title").alias("title"),
@@ -94,7 +96,8 @@ class GoogleSheetsImporter:
             replace_seven_plus("Player Count Ranges [Minimum]").alias("minimum_players"),
             replace_seven_plus("Player Count Ranges [Sweet Spot]").alias("optimal_players"),
             replace_seven_plus("Player Count Ranges [Maximum]").alias("maximum_players"),
-        )
+        ).filter(pl.col("running"))
+        print(len(result), "games imported")
 
         return result
 
@@ -119,6 +122,7 @@ class GoogleSheetsImporter:
         )
         game_dbos = [
             Game(
+                id=row["id"],
                 title=row["title"],
                 description=row["description"],
                 crunch=row["crunch"],
