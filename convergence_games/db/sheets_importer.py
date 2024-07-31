@@ -24,6 +24,8 @@ SYSTEM_NAME_MAP = {
     "overkill 2nd Edition": "Overkill 2nd Edition",
     "Paranoia 2ed": "Paranoia 2nd Edition",
     "Homebrew system": "Sulphur",
+    "Starfinder 2e Playtest": "Starfinder 2e",
+    "Prismatic (Formerly known as Memories of Stone)": "Prismatic (Formerly Memories of Stone)",
 }
 
 
@@ -72,7 +74,7 @@ class GoogleSheetsImporter:
             pl.col("ID").cast(pl.Int32).alias("id"),
             pl.col("Email address").alias("gamemaster_email"),
             pl.col("Full Name").alias("gamemaster_name"),
-            pl.col("Game Title").alias("title"),
+            pl.col("Game Title").str.strip_chars().alias("title"),
             pl.col("System").str.strip_chars().replace(SYSTEM_NAME_MAP).alias("system_name"),
             pl.col("Genre(s)").str.split(", ").alias("genre_names"),
             pl.col("Description").alias("description"),
@@ -96,6 +98,12 @@ class GoogleSheetsImporter:
             replace_seven_plus("Player Count Ranges [Minimum]").alias("minimum_players"),
             replace_seven_plus("Player Count Ranges [Sweet Spot]").alias("optimal_players"),
             replace_seven_plus("Player Count Ranges [Maximum]").alias("maximum_players"),
+            pl.col("Is this system NZ made, or your own creation? (We'd love to give it a special shout out if so!)")
+            .str.contains("My own system that I am running|Kiwi made")
+            .alias("nz_made"),
+            pl.col("Is this system NZ made, or your own creation? (We'd love to give it a special shout out if so!)")
+            .str.contains("My own system that I am running")
+            .alias("designer_run"),
         ).filter(pl.col("running"))
         print(len(result), "games imported")
 
@@ -132,6 +140,8 @@ class GoogleSheetsImporter:
                 minimum_players=row["minimum_players"],
                 optimal_players=row["optimal_players"],
                 maximum_players=row["maximum_players"],
+                nz_made=row["nz_made"],
+                designer_run=row["nz_made"],
                 genres=[genre for genre in genre_dbos if genre.name in row["genre_names"]]
                 if row["genre_names"]
                 else [],

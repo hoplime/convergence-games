@@ -9,7 +9,7 @@
         <h3 class="font-sans antialiased">
             {{ game.system.name }} <span class="font-thin">|</span> Run by {{ game.gamemaster.name }}
         </h3>
-        {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game) }}
+        {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game, cols=4) }}
         {% if FLAG_SCHEDULE %}
             <div class="absolute bottom-4 right-4 flex flex-row items-center justify-items-center gap-1">
                 {% for day_name, session_flags in game.schedule %}

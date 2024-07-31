@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Generator
 
+from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
@@ -12,7 +13,7 @@ from convergence_games.db.models import Game, GameWithExtra, Genre, Person, Syst
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
 from convergence_games.settings import SETTINGS
 
-engine = None
+engine: Engine | None = None
 
 
 def get_session() -> Generator[Session, Any, None]:

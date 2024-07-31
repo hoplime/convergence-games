@@ -49,5 +49,13 @@
         "editor.indentSize": "tabSize",
         "editor.tabSize": 4
     },
-    "svg.preview.background": "editor"
+    "svg.preview.background": "editor",
+    "workbench.colorCustomizations": {
+        "statusBar.background": "#ffffff",
+        "statusBar.foreground": "#15202b",
+        "statusBarItem.hoverBackground": "#e6e6e6",
+        "statusBarItem.remoteBackground": "#ffffff",
+        "statusBarItem.remoteForeground": "#15202b",
+        "tab.activeBorder": "#ffffff"
+    }
 }

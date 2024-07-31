@@ -3,7 +3,6 @@ from pathlib import Path
 
 import arel
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import IntegrityError
