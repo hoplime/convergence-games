@@ -11,10 +11,14 @@ from convergence_games.db.models import ContentWarning, Game, Genre, Person, Sys
 
 # TODO: Decide consistent edition names
 SYSTEM_NAME_MAP = {
-    "Call of Cthulhu 7th Edition": "Call of Cthulhu 7th Edition",
-    "Call of Cthulhu 7th ed": "Call of Cthulhu 7th Edition",
+    "Call of Cthulhu": "Call of Cthulhu 7e",
+    "Call of Cthulhu 7th Edition": "Call of Cthulhu 7e",
+    "Call of Cthulhu 7th ed": "Call of Cthulhu 7e",
     "5e": "D&D 5e",
+    "DND 5e": "D&D 5e",
+    "DnD 5e": "D&D 5e",
     "5th Edition Dungeons and Dragons": "D&D 5e",
+    "5th Edition Dungeons & Dragons": "D&D 5e",
     "D&D5e": "D&D 5e",
     "Dungeons and Dragons 5e": "D&D 5e",
     "Dungeons and Dragons 5e (One D&D)": "D&D 5e",
@@ -25,7 +29,10 @@ SYSTEM_NAME_MAP = {
     "Paranoia 2ed": "Paranoia 2nd Edition",
     "Homebrew system": "Sulphur",
     "Starfinder 2e Playtest": "Starfinder 2e",
+    "Starfinder Second Edition Playtest": "Starfinder 2e",
     "Prismatic (Formerly known as Memories of Stone)": "Prismatic (Formerly Memories of Stone)",
+    "Daggerheart Open Beta 1.4.2": "Daggerheart",
+    "Tales System (RSS)": "Tales System",
 }
 
 
@@ -168,10 +175,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--sheet_url",
+        "--sheet-url",
         type=str,
         help="URL of the Google Sheet to import",
         default="https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=1424049540&format=csv",
+    )
+    parser.add_argument(
+        "--timetable-sheet-url",
+        type=str,
+        help="URL of the Google Sheet to import",
+        default="https://docs.google.com/spreadsheets/d/1_AZHowZkvRU_wBGnoaqV-uQFpXvTFXlr8zZBcAsS6Tc/edit?gid=0#gid=0",
     )
     parser.add_argument("--csv_path", type=Path, help="Path to the CSV file to import", default=Path("games.csv"))
     args = parser.parse_args()
