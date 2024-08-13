@@ -1,0 +1,11 @@
+# This is the base docker compose file, and is also used for production/Azure.
+
+services:
+  webapp:
+    image: jcheatley/waikato-rpg-convergence-games:dev
+    build: .
+    ports:
+      - "80:8000"
+    environment:
+      - TEST_KEY=TEST_VALUE
+      - DATABASE_PATH=/home/database.db
