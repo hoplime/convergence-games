@@ -291,7 +291,7 @@ class TableAllocationRead(TableAllocationBase):
 
 class TableAllocationWithExtra(TableAllocationRead):
     time_slot: TimeSlot
-    game: Game
+    game: GameWithExtra
     session_preferences: list["SessionPreference"]
 
 

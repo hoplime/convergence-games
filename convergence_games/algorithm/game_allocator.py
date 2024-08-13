@@ -175,29 +175,28 @@ class GameAllocator:
 
             for table_allocation in time_slot.table_allocations:
                 all_table_allocations.append(table_allocation)
-                table_allocation_lookup[table_allocation.id] = table_allocation
+                table_allocation_lookup[table_allocation.id] = TableAllocationWithExtra.model_validate(table_allocation)
                 for session_preference in table_allocation.session_preferences:
                     all_preferences_by_player.setdefault(session_preference.person_id, []).append(session_preference)
 
         # TODO: Golden D20s
 
         # Generate each players preference 'loss' for each table allocation
-        orderered_preferences_by_player = {
+        ordered_preferences_by_player = {
             player_id: self._order_preferences_for_player(preferences)
             for player_id, preferences in all_preferences_by_player.items()
         }
         print("Ordered Preferences by Player")
-        pprint(orderered_preferences_by_player)
+        pprint(ordered_preferences_by_player)
         loss_by_player_and_table: dict[player_id_t, dict[ta_id_t, ta_loss_t]] = {
-            player_id: {ta_id: ta_loss for ta_loss, ta_ids in orderered_preferences.items() for ta_id in ta_ids}
-            for player_id, orderered_preferences in orderered_preferences_by_player.items()
+            player_id: {ta_id: ta_loss for ta_loss, ta_ids in ordered_preferences.items() for ta_id in ta_ids}
+            for player_id, ordered_preferences in ordered_preferences_by_player.items()
         }
 
         def initial_allocate(
             current_allocations: dict[ta_id_t, list[player_id_t]],
             player_id: player_id_t,
-            ordered_preferences_by_player: dict[player_id_t, dict[ta_loss_t, list[ta_id_t]]],
-        ) -> dict[ta_id_t, list[player_id_t]]:
+        ) -> tuple[dict[ta_id_t, list[player_id_t]], bool]:
             our_preferences = ordered_preferences_by_player[player_id]
             for our_ta_loss, table_allocation_ids in our_preferences.items():
                 print(f"Player {player_id} testing {our_ta_loss}")
@@ -243,6 +242,60 @@ class GameAllocator:
 
             return current_allocations, False
 
+        def try_make_up_numbers(
+            current_allocations: dict[ta_id_t, list[player_id_t]],
+            ta_id: ta_id_t,
+            tables_with_more_than_sweet_spot: list[ta_id_t],
+        ) -> tuple[dict[ta_id_t, list[player_id_t]], bool]:
+            minimum_deficit = table_allocation_lookup[ta_id].game.minimum_players - len(current_allocations[ta_id])
+            sweetspot_deficit = table_allocation_lookup[ta_id].game.optimal_players - len(current_allocations[ta_id])
+            print(f"Table {ta_id} has {len(current_allocations[ta_id])} players, needs {minimum_deficit} more")
+            # Find players with an equal or higher preference for this table
+            possible_players_to_move: list[ta_id_t, player_id_t] = []
+            for other_ta_id in tables_with_more_than_sweet_spot:
+                if other_ta_id == ta_id:
+                    continue
+                for other_player_id in current_allocations[other_ta_id]:
+                    other_ta_loss = loss_by_player_and_table[other_player_id][other_ta_id]
+                    if other_ta_loss > loss_by_player_and_table[other_player_id][ta_id]:
+                        # The player has a higher preference for the table they're currently at, don't move
+                        continue
+                    if ta_id in ordered_preferences_by_player[other_player_id][other_ta_loss]:
+                        print(
+                            f"Player {other_player_id} has a preference for {other_ta_id} of {other_ta_loss} and this table of {loss_by_player_and_table[other_player_id][ta_id]}"
+                        )
+                        possible_players_to_move.append((other_ta_id, other_player_id))
+            print(f"Possible players to move: {possible_players_to_move}")
+            if len(possible_players_to_move) < minimum_deficit:
+                print("Not enough players to move")
+                return current_allocations, False
+
+            selected_players_to_move = []
+            for other_ta_id, other_player_id in random.sample(possible_players_to_move, len(possible_players_to_move)):
+                # If no longer above sweet spot in this game, don't move
+                current_players_in_other_ta_if_post_move = len(current_allocations[other_ta_id]) - len(
+                    [t for t, p in selected_players_to_move if t == other_ta_id]
+                )
+                if (
+                    current_players_in_other_ta_if_post_move
+                    <= table_allocation_lookup[other_ta_id].game.optimal_players
+                ):
+                    # Don't move this player as it would take the other table below the sweet spot
+                    continue
+                selected_players_to_move.append((other_ta_id, other_player_id))
+                if len(selected_players_to_move) == sweetspot_deficit:
+                    break
+
+            if len(selected_players_to_move) < minimum_deficit:
+                print("Not enough players to move without disrupting sweet spots")
+                return current_allocations, False
+
+            print(f"Moving {selected_players_to_move} players to table {ta_id}")
+            for other_ta_id, other_player_id in selected_players_to_move:
+                current_allocations[other_ta_id].remove(other_player_id)
+                current_allocations[ta_id].append(other_player_id)
+            return current_allocations, True
+
         def evaluate_total_loss(current_allocations: dict[ta_id_t, list[player_id_t]]) -> ta_loss_t:
             # Calculate the total loss for the current allocation
             total_loss = 0
@@ -260,11 +313,26 @@ class GameAllocator:
                     loss_breakdown[loss] = loss_breakdown.get(loss, 0) + 1
             return loss_breakdown
 
+        def evaluate_delta_from_sweetspot_breakdown(
+            current_allocations: dict[ta_id_t, list[player_id_t]],
+        ) -> dict[int, int]:
+            # Calculate the signed difference between the number of players at each table and the sweet spot
+            # Positive = too many players, negative = too few players
+            # Get a count of each delta
+            delta_from_sweetspot_breakdown: dict[int, int] = {}
+            for ta_id, player_ids in current_allocations.items():
+                delta = len(player_ids) - table_allocation_lookup[ta_id].game.optimal_players
+                delta_from_sweetspot_breakdown[delta] = delta_from_sweetspot_breakdown.get(delta, 0) + 1
+                if delta > 2:
+                    print(f"Table {ta_id} has {delta} too many players")
+                    print(table_allocation_lookup[ta_id].game)
+            return dict(sorted(delta_from_sweetspot_breakdown.items()))
+
         best_loss = None
         best_allocations = None
         best_loss_each_iteration = []
 
-        n_trials = 1
+        n_trials = 10
         for seed in range(1, n_trials + 1):
             current_allocations = {table_allocation.id: [] for table_allocation in all_table_allocations}
 
@@ -275,25 +343,46 @@ class GameAllocator:
             shuffled_player_ids = random.sample(list(all_preferences_by_player.keys()), len(all_preferences_by_player))
 
             for player_id in shuffled_player_ids:
-                current_allocations, success = initial_allocate(
-                    current_allocations, player_id, orderered_preferences_by_player
-                )
+                current_allocations, success = initial_allocate(current_allocations, player_id)
                 if not success:
+                    # TODO: This really really shouldn't ever happen
                     print(f"Failed to allocate player {player_id} in trial {seed}")
                     raise ValueError("Failed to allocate all players")
                 print("----")
 
             # print(current_allocations)
-            # Print number of games with less than the minimum number of players
-            games_with_too_few_players = [
-                ta.game.id for ta in all_table_allocations if len(current_allocations[ta.id]) < ta.game.minimum_players
-            ]
             # print(f"Games with too few players: {len(games_with_too_few_players)}")
-            games_with_too_many_players = [
-                ta.game.id for ta in all_table_allocations if len(current_allocations[ta.id]) > ta.game.maximum_players
+            tables_with_too_many_players = [
+                ta.id for ta in all_table_allocations if len(current_allocations[ta.id]) > ta.game.maximum_players
             ]
             # print(f"Games with too many players: {len(games_with_too_many_players)}")
-            assert not games_with_too_many_players
+            assert not tables_with_too_many_players
+
+            # Print number of games with less than the minimum number of players
+            tables_with_too_few_players = [
+                ta.id for ta in all_table_allocations if len(current_allocations[ta.id]) < ta.game.minimum_players
+            ]
+            print(f"Tables with too few players: {len(tables_with_too_few_players)}")
+
+            # Then find each table with less than the minimum number of players and
+            # move a player from a table with more than the sweet spot number of players to it if this doesn't result in a loss of preference
+            # Repeat until no more players can be moved
+            for ta_id in tables_with_too_few_players:
+                tables_with_more_than_sweet_spot = [
+                    ta.id for ta in all_table_allocations if len(current_allocations[ta.id]) > ta.game.optimal_players
+                ]
+                print(f"Tables with more than sweet spot: {len(tables_with_more_than_sweet_spot)}")
+                current_allocations, success = try_make_up_numbers(
+                    current_allocations, ta_id, tables_with_more_than_sweet_spot
+                )
+                if not success:
+                    # TODO: Remove this game from running
+                    print(f"Failed to make up numbers for table {ta_id} in trial {seed}")
+                    raise ValueError("Failed to make up numbers")
+            tables_with_too_few_players = [
+                ta.id for ta in all_table_allocations if len(current_allocations[ta.id]) < ta.game.minimum_players
+            ]
+            print(f"Tables with too few players after make up: {len(tables_with_too_few_players)}")
 
             loss = evaluate_total_loss(current_allocations)
             if best_loss is None or loss < best_loss:
@@ -301,10 +390,6 @@ class GameAllocator:
                 best_allocations = deepcopy(current_allocations)
 
             best_loss_each_iteration.append(best_loss)
-
-            # Then find each table with less than the minimum number of players and
-            # move a player from a table with more than the sweet spot number of players to it if this doesn't result in a loss of preference
-            # Repeat until no more players can be moved
 
         print("Best loss", best_loss)
         print("Best allocations")
@@ -314,6 +399,9 @@ class GameAllocator:
         loss_breakdown = evaluate_loss_breakdown(best_allocations)
         print("Loss breakdown")
         pprint(loss_breakdown)
+        delta_from_sweetspot_breakdown = evaluate_delta_from_sweetspot_breakdown(best_allocations)
+        print("Delta from sweetspot breakdown")
+        pprint(delta_from_sweetspot_breakdown)
 
         # print("All games")
         # pprint(
