@@ -36,6 +36,10 @@ N_GAMES = 30
 N_PLAYERS = 150
 N_POPULAR_GAMES = 10
 N_UNPOPULAR_GAMES = 10
+# N_GAMES = 5
+# N_PLAYERS = 20
+# N_POPULAR_GAMES = 1
+# N_UNPOPULAR_GAMES = 1
 
 assert N_GAMES >= N_POPULAR_GAMES + N_UNPOPULAR_GAMES
 
@@ -196,6 +200,7 @@ class GameAllocator:
         ) -> dict[ta_id_t, list[player_id_t]]:
             our_preferences = ordered_preferences_by_player[player_id]
             for our_ta_loss, table_allocation_ids in our_preferences.items():
+                print(f"Player {player_id} testing {our_ta_loss}")
                 # Politely try to join available tables with our highest preference
                 ta_ids_sorted_by_missing_players = sorted(
                     table_allocation_ids,
@@ -204,13 +209,17 @@ class GameAllocator:
                 )
                 # for ta_id in random.sample(table_allocation_ids, len(table_allocation_ids)):
                 for ta_id in ta_ids_sorted_by_missing_players:
+                    print(f"Player {player_id} trying table {ta_id}")
                     if len(current_allocations[ta_id]) < table_allocation_lookup[ta_id].game.maximum_players:
                         current_allocations[ta_id].append(player_id)
                         return current_allocations, True
 
+                print(f"Player {player_id} didn't find a table at {our_ta_loss}, attempting to move")
+
                 # All of our highest preference tables are full
                 # so we'll do one more try which is less polite and can move players as long as they don't lose preference
                 for ta_id in random.sample(table_allocation_ids, len(table_allocation_ids)):
+                    print(f"Player {player_id} trying move people from {ta_id}")
                     other_players_at_table = current_allocations[ta_id]
                     for other_player_id in other_players_at_table:
                         other_ta_loss = loss_by_player_and_table[other_player_id][ta_id]
@@ -224,6 +233,7 @@ class GameAllocator:
                                     len(current_allocations[other_ta_id])
                                     < table_allocation_lookup[other_ta_id].game.maximum_players
                                 ):
+                                    print("Moving player", other_player_id, "from", ta_id, "to", other_ta_id)
                                     # They have another table at the same loss level that isn't full
                                     # So we can move them there
                                     current_allocations[ta_id].remove(other_player_id)
@@ -271,6 +281,7 @@ class GameAllocator:
                 if not success:
                     print(f"Failed to allocate player {player_id} in trial {seed}")
                     raise ValueError("Failed to allocate all players")
+                print("----")
 
             # print(current_allocations)
             # Print number of games with less than the minimum number of players
