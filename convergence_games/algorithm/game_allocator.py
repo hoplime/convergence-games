@@ -346,6 +346,8 @@ class GameAllocator:
                 current_allocations, success = initial_allocate(current_allocations, player_id)
                 if not success:
                     # TODO: This really really shouldn't ever happen
+                    # It can only happen if there are more players than the sum of the maximum number of players for each game
+                    # In which case we should just give up and cry
                     print(f"Failed to allocate player {player_id} in trial {seed}")
                     raise ValueError("Failed to allocate all players")
                 print("----")
@@ -376,13 +378,15 @@ class GameAllocator:
                     current_allocations, ta_id, tables_with_more_than_sweet_spot
                 )
                 if not success:
-                    # TODO: Remove this game from running
+                    # TODO: Remove this game from running since we can't make up numbers
                     print(f"Failed to make up numbers for table {ta_id} in trial {seed}")
                     raise ValueError("Failed to make up numbers")
             tables_with_too_few_players = [
                 ta.id for ta in all_table_allocations if len(current_allocations[ta.id]) < ta.game.minimum_players
             ]
             print(f"Tables with too few players after make up: {len(tables_with_too_few_players)}")
+
+            # TODO: Now we have everyone allocated, trial moving players to minimise different to sweet spot
 
             loss = evaluate_total_loss(current_allocations)
             if best_loss is None or loss < best_loss:
