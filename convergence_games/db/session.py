@@ -39,26 +39,31 @@ def create_db_and_tables() -> bool:
 def create_mock_time_slots() -> list[TimeSlot]:
     time_slots = [
         TimeSlot(
+            id=1,
             name="Saturday Morning",
             start_time=dt.datetime(2024, 9, 7, 9),
             end_time=dt.datetime(2024, 9, 7, 12),
         ),
         TimeSlot(
+            id=2,
             name="Saturday Afternoon",
             start_time=dt.datetime(2024, 9, 7, 13),
             end_time=dt.datetime(2024, 9, 7, 16),
         ),
         TimeSlot(
+            id=3,
             name="Saturday Evening",
             start_time=dt.datetime(2024, 9, 7, 17),
             end_time=dt.datetime(2024, 9, 7, 21),
         ),
         TimeSlot(
+            id=4,
             name="Sunday Morning",
             start_time=dt.datetime(2024, 9, 8, 9),
             end_time=dt.datetime(2024, 9, 8, 12),
         ),
         TimeSlot(
+            id=5,
             name="Sunday Afternoon",
             start_time=dt.datetime(2024, 9, 8, 13),
             end_time=dt.datetime(2024, 9, 8, 16),
@@ -73,8 +78,8 @@ def create_imported_db() -> None:
     with Session(engine) as session:
         session.add_all(time_slots)
 
-        importer = GoogleSheetsImporter(csv_path=Path("games.csv"))
-        dbos = importer.import_sheet()
+        importer = GoogleSheetsImporter.from_urls()
+        dbos = importer.import_all()
         session.add_all(dbos)
 
         session.commit()

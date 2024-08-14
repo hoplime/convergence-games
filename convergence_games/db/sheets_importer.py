@@ -1,13 +1,13 @@
-from io import StringIO
+import tempfile
 from pathlib import Path
-from typing import Iterator, TypedDict
+from typing import Self, TypedDict
 
 import polars as pl
 import requests
 from sqlmodel import SQLModel
 
 from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
-from convergence_games.db.models import ContentWarning, Game, Genre, Person, System
+from convergence_games.db.models import ContentWarning, Game, Genre, Person, System, TableAllocation
 
 # TODO: Decide consistent edition names
 SYSTEM_NAME_MAP = {
@@ -39,7 +39,15 @@ SYSTEM_NAME_MAP = {
 }
 
 
+DEFAULT_GAME_SHEET_URL = "https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=1424049540&format=csv"
+DEFAULT_SCHEDULE_SHEET_URL = (
+    "https://docs.google.com/spreadsheets/d/1_AZHowZkvRU_wBGnoaqV-uQFpXvTFXlr8zZBcAsS6Tc/export?gid=0&format=csv"
+)
+
+
 class GameResponse(TypedDict):
+    running: bool
+    id: int
     gamemaster_email: str
     gamemaster_name: str
     title: str
@@ -54,28 +62,40 @@ class GameResponse(TypedDict):
     minimum_players: int
     optimal_players: int
     maximum_players: int
+    nz_made: bool
+    designer_run: bool
+
+
+class ScheduleResponse(TypedDict):
+    table_number: int
+    session_id: int
+    game_id: int
 
 
 class GoogleSheetsImporter:
-    def __init__(self, *, csv_path: Path | None = None, sheet_url: str | None = None):
-        if not (csv_path or sheet_url):
-            raise ValueError("Either csv_file or sheet_url must be provided")
-        self.csv_path = csv_path
-        self.sheet_url = sheet_url
+    def __init__(self, *, game_csv_path: Path, schedule_csv_path: Path):
+        self.game_df = pl.read_csv(game_csv_path)
+        self.schedule_df = pl.read_csv(schedule_csv_path)
 
-    def _load_sheet(self) -> pl.DataFrame | None:
-        if self.csv_path:
-            return pl.read_csv(self.csv_path)
+    @classmethod
+    def from_urls(cls, *, game_sheet_url: str | None = None, schedule_sheet_url: str | None = None) -> Self:
+        if game_sheet_url is None:
+            game_sheet_url = DEFAULT_GAME_SHEET_URL
+        if schedule_sheet_url is None:
+            schedule_sheet_url = DEFAULT_SCHEDULE_SHEET_URL
 
-        r = requests.get(self.sheet_url)
-        if r.status_code == 200:
-            data = StringIO(r.content.decode("utf-8"))
-            df = pl.read_csv(data)
-            return df
-        else:
-            return None
+        with tempfile.NamedTemporaryFile() as game_csv_file, tempfile.NamedTemporaryFile() as schedule_csv_file:
+            game_csv_file.write(requests.get(game_sheet_url).content)
+            game_csv_path = Path(game_csv_file.name)
+            schedule_csv_file.write(requests.get(schedule_sheet_url).content)
+            schedule_csv_path = Path(schedule_csv_file.name)
 
-    def _transform_sheet(self, df: pl.DataFrame) -> pl.DataFrame:
+            return cls(
+                game_csv_path=game_csv_path,
+                schedule_csv_path=schedule_csv_path,
+            )
+
+    def _transform_game_sheet(self, df: pl.DataFrame) -> pl.DataFrame:
         def replace_seven_plus(col_name: str) -> pl.Expr:
             return pl.col(col_name).cast(str).replace({"7+": 7}).cast(pl.Int8)
 
@@ -119,12 +139,9 @@ class GoogleSheetsImporter:
 
         return result
 
-    def _rows_to_game_responses(self, df: pl.DataFrame) -> Iterator[GameResponse]:
-        return df.iter_rows(named=True)
-
-    def import_sheet(self) -> list[SQLModel]:
-        df = self._transform_sheet(self._load_sheet())
-        all_rows = list(self._rows_to_game_responses(df))
+    def _import_game_sheet(self) -> list[SQLModel]:
+        df = self._transform_game_sheet(self.game_df)
+        all_rows: list[GameResponse] = list(df.iter_rows(named=True))
 
         genre_names = df["genre_names"].explode().unique().to_list()
         genre_dbos = [Genre(name=name) for name in genre_names if name is not None]
@@ -172,33 +189,84 @@ class GoogleSheetsImporter:
             *game_dbos,
         ]
 
+    def _transform_schedule_sheet(self, df: pl.DataFrame) -> pl.DataFrame:
+        def get_table_number(row_name: str) -> pl.Expr:
+            # Table numbers are in the format: "123" or "Note - 123"
+            return pl.col(row_name).str.extract(r"(\d+)$").cast(pl.Int8)
+
+        def get_game_id(row_name: str) -> pl.Expr:
+            # Game IDs are in the format: "123 - Game Title"
+            return pl.col(row_name).str.extract(r"^(\d+)").cast(pl.Int32)
+
+        per_table = df.select(
+            pl.col("Tables").alias("table_number"),
+            pl.col("Session 1 (3 hours)").alias("1"),
+            pl.col("Session 2 (3 hours)").alias("2"),
+            pl.col("Session 3 (4 hours)").alias("3"),
+            pl.col("Session 4 (3 hours)").alias("4"),
+            pl.col("Session 5 (4 hours)").alias("5"),
+        )
+        refined = per_table.select(
+            get_table_number("table_number"),
+            get_game_id("1"),
+            get_game_id("2"),
+            get_game_id("3"),
+            get_game_id("4"),
+            get_game_id("5"),
+        )
+        # Now we want to pivot the table so that we have a row for each game in each session
+        # We can then filter out the rows where the game ID is null
+        # Or duplicate games in the same session, keeping the first one
+        result = (
+            refined.melt(id_vars=["table_number"], variable_name="session_id", value_name="game_id")
+            .filter(pl.col("game_id").is_not_null())
+            .with_columns(pl.col("session_id").cast(pl.Int8))
+            .unique(("session_id", "game_id"), keep="first", maintain_order=True)
+        )
+        return result
+
+    def _import_schedule_sheet(self) -> list[SQLModel]:
+        df = self._transform_schedule_sheet(self.schedule_df)
+        all_rows: list[ScheduleResponse] = list(df.iter_rows(named=True))
+        table_allocation_dbos = [
+            TableAllocation(
+                table_number=row["table_number"],
+                time_slot_id=row["session_id"],
+                game_id=row["game_id"],
+                id=row["session_id"] * 10000 + row["game_id"],
+            )
+            for row in all_rows
+        ]
+        return table_allocation_dbos
+
+    def import_all(self) -> list[SQLModel]:
+        return [
+            *self._import_game_sheet(),
+            *self._import_schedule_sheet(),
+        ]
+
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--sheet-url",
+        "--game-sheet-url",
         type=str,
         help="URL of the Google Sheet to import",
-        default="https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=1424049540&format=csv",
+        default=DEFAULT_GAME_SHEET_URL,
     )
     parser.add_argument(
-        "--timetable-sheet-url",
+        "--schedule-sheet-url",
         type=str,
         help="URL of the Google Sheet to import",
-        default="https://docs.google.com/spreadsheets/d/1_AZHowZkvRU_wBGnoaqV-uQFpXvTFXlr8zZBcAsS6Tc/edit?gid=0#gid=0",
+        default=DEFAULT_SCHEDULE_SHEET_URL,
     )
-    parser.add_argument("--csv_path", type=Path, help="Path to the CSV file to import", default=Path("games.csv"))
     args = parser.parse_args()
 
-    csv_path: Path = args.csv_path
-
-    # if not csv_path.exists():
-    with open(csv_path, "wb") as f:
-        sheet_contents = requests.get(args.sheet_url).content
-        f.write(sheet_contents)
-
-    importer = GoogleSheetsImporter(csv_path=csv_path)
-    for model in importer.import_sheet():
+    importer = GoogleSheetsImporter.from_urls(
+        game_sheet_url=args.game_sheet_url,
+        schedule_sheet_url=args.schedule_sheet_url,
+    )
+    for model in importer.import_all():
         print(model)

@@ -8,7 +8,7 @@
         {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game) }}
         <p class="whitespace-pre-line">{{ game.description }}</p>
         {% if FLAG_SCHEDULE %}
-            <h2>Sessions</h2>
+            <h2 class="text-xl antialiased">Sessions</h2>
             <form>
                 <ul class="flex flex-col">
                     {% for table_allocation in game.table_allocations %}
@@ -19,13 +19,13 @@
                         }} #}
                             {# _="on click wait for htmx:afterOnLoad from #modal-content then showModal() on #modal-dialog then go to the top of #game-title-{{ game.id }}" #}
                             <span
-                                hx-target="#modal-content"
-                                hx-get="/preferences?time_slot_id={{ table_allocation.time_slot.id }}"
-                                _="on click
-                            wait for htmx:afterSettle from #modal-content
-                            then showModal() on #modal-dialog
-                            then add .text-accent to #game-title-{{ game.id }}
-                            then go to the middle of #game-title-{{ game.id }}"
+                                {% if FLAG_USERS %}
+                                    hx-target="#modal-content"
+                                    hx-get="/preferences?time_slot_id={{ table_allocation.time_slot.id }}" _="on click
+                                    wait for htmx:afterSettle from #modal-content then showModal() on #modal-dialog then
+                                    add .text-accent to #game-title-{{ game.id }} then go to the middle of
+                                    #game-title-{{ game.id }}"
+                                {% endif %}
                             >
                                 {{ table_allocation.time_slot.start_time.strftime('%H:%M') }} -
                                 {{ table_allocation.time_slot.end_time.strftime('%H:%M') }} on
