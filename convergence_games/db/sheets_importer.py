@@ -25,6 +25,7 @@ SYSTEM_NAME_MAP = {
     "Dnd 5e adjacent": "D&D 5e",
     "Dnd 5e (pregens provided)": "D&D 5e",
     "D&D (5e)": "D&D 5e",
+    "D&D 5th Edition": "D&D 5e",
     "Monsterhearts 2nd edition": "Monsterhearts 2",
     "Motherhship 1E": "Mothership 1E",
     "overkill 2nd Edition": "Overkill 2nd Edition",
@@ -36,6 +37,7 @@ SYSTEM_NAME_MAP = {
     "Prismatic (Formerly known as Memories of Stone)": "Prismatic (Formerly Memories of Stone)",
     "Daggerheart Open Beta 1.4.2": "Daggerheart",
     "Tales System (RSS)": "Tales System",
+    "Compatible with the Alien RPG by Free League": "Compatible with Alien RPG",
 }
 
 
