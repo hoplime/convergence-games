@@ -18,22 +18,25 @@ def get_session() -> Generator[Session, Any, None]:
         yield session
 
 
-def create_db_and_tables() -> bool:
+def create_db_and_tables(allow_recreate: bool = True) -> bool:
     global engine
+
+    actually_allow_recreate = allow_recreate and SETTINGS.RECREATE_DATABASE
 
     engine_path = Path(SETTINGS.DATABASE_PATH)
     database_already_existed = engine_path.exists()
-    fresh = not database_already_existed or SETTINGS.RECREATE_DATABASE
+    fresh = not database_already_existed or actually_allow_recreate
 
-    if SETTINGS.RECREATE_DATABASE and database_already_existed:
+    if actually_allow_recreate and database_already_existed:
         engine_path.unlink()
+
     engine = create_engine(f"sqlite:///{str(engine_path)}", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
 
     return fresh
 
 
-def create_imported_db() -> None:
+def add_imported_db() -> None:
     with Session(engine) as session:
         session.add_all(ALL_BASE_DATA)
 
