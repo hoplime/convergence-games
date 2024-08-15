@@ -84,7 +84,9 @@ BASE_TABLES = [
     Table(number=29, room=EXTRA_, private=False, id=29),
     Table(number=30, room=EXTRA_, private=False, id=30),
     # Special Rooms - Multitable
-    Table(number=7, room=MULTI_, private=False, id=100),
+    Table(number=0, room=MULTI_, private=False, id=100),
+    # Special Rooms - Overflow
+    Table(number=0, room=ROOM_S, private=False, id=404),
 ]
 
 ALL_BASE_DATA = [

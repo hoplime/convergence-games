@@ -274,8 +274,10 @@ class TableBase(SQLModel):
 
     @property
     def short_description(self) -> str:
-        if self.room:
-            return f"{self.number} ({self.room})"
+        if self.room and self.number:
+            return f"Table {self.number} ({self.room})"
+        elif self.room:
+            return self.room
         return str(self.number)
 
 
