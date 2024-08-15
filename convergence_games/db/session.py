@@ -40,8 +40,7 @@ def add_imported_db() -> None:
     with Session(engine) as session:
         session.add_all(ALL_BASE_DATA)
 
-        importer = GoogleSheetsImporter.from_urls()
-        dbos = importer.import_all()
+        dbos = GoogleSheetsImporter.from_urls().import_all()
         session.add_all(dbos)
 
         session.commit()

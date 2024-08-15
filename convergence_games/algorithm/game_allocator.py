@@ -1,7 +1,8 @@
+import argparse
 import random
+import shutil
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import datetime
 from itertools import groupby
 from pathlib import Path
 from pprint import pprint
@@ -10,16 +11,17 @@ from typing import TypeAlias
 from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, create_engine
 
+from convergence_games.db.base_data import ALL_BASE_DATA
 from convergence_games.db.models import (
     Game,
     Person,
     SessionPreference,
-    System,
     TableAllocation,
     TableAllocationWithExtra,
     TimeSlot,
     TimeSlotWithExtra,
 )
+from convergence_games.db.sheets_importer import GoogleSheetsImporter
 
 
 @dataclass
@@ -31,104 +33,33 @@ class MockSessionData:
     session_preferences: list[SessionPreference]
 
 
-N_GAMES = 30
-N_PLAYERS = 150
-N_POPULAR_GAMES = 10
-N_UNPOPULAR_GAMES = 10
-# N_GAMES = 5
-# N_PLAYERS = 20
-# N_POPULAR_GAMES = 1
-# N_UNPOPULAR_GAMES = 1
-
-assert N_GAMES >= N_POPULAR_GAMES + N_UNPOPULAR_GAMES
-
-POPULAR_GAMES = set(range(N_POPULAR_GAMES))
-UNPOPULAR_GAMES = set(range(N_POPULAR_GAMES, N_POPULAR_GAMES + N_UNPOPULAR_GAMES))
+POPULAR_GAMES = set()
+UNPOPULAR_GAMES = set()
 
 
-def create_mock_data() -> Engine:
-    random.seed(42)
+def create_mock_engine(force_recreate: bool = False) -> Engine:
+    mock_base_path = Path("mock_base.db")
+    if force_recreate and mock_base_path.exists():
+        mock_base_path.unlink()
 
-    mock_gms = [
-        Person(
-            id=i,
-            name=f"GM {i}",
-            email=f"gm{i}@email.com",
-        )
-        for i in range(N_GAMES)
-    ]
+    if not mock_base_path.exists():
+        mock_base_engine = create_engine(f"sqlite:///{str(mock_base_path)}")
+        SQLModel.metadata.create_all(mock_base_engine)
 
-    mock_players = [
-        Person(
-            id=N_GAMES + i,
-            name=f"Player {i}",
-            email=f"player{i}@email.com",
-            golden_d20s=random.choice([0, 0, 0, 0, 0, 1]),
-        )
-        for i in range(N_PLAYERS)
-    ]
+        with Session(mock_base_engine) as session:
+            session.add_all(ALL_BASE_DATA)
+            dbos = GoogleSheetsImporter.from_urls().import_all()
+            session.add_all(dbos)
+            session.commit()
 
-    mock_games = [
-        Game(
-            id=i,
-            title=f"Game {i}",
-            description=f"Description {i}",
-            gamemaster_id=i,
-            system_id=1,
-            minimum_players=(x := random.randint(2, 4)),
-            optimal_players=(y := random.randint(x, 5)),
-            maximum_players=(random.randint(y, 7)),
-        )
-        for i in range(N_GAMES)
-    ]
+    mock_runtime_path = Path("mock_runtime.db")
+    if mock_runtime_path.exists():
+        mock_runtime_path.unlink()
+    shutil.copy(mock_base_path, mock_runtime_path)
+    mock_runtime_engine = create_engine(f"sqlite:///{str(mock_runtime_path)}")
+    SQLModel.metadata.create_all(mock_runtime_engine)
 
-    mock_table_allocations = [
-        TableAllocation(
-            id=game.id,
-            game_id=game.id,
-            time_slot_id=1,
-            table_id=game.id,
-        )
-        for game in mock_games
-    ]
-
-    def make_preference(golden_d20s, game_index) -> int:
-        if game_index in POPULAR_GAMES:
-            # print(f"{game_index} is POPULAR")
-            return random.choice([3, 4, 5, 20] if golden_d20s else [3, 4, 5])
-        elif game_index in UNPOPULAR_GAMES:
-            # print(f"{game_index} is UNPOPULAR")
-            return random.choice([0, 0, 1, 2])
-
-        return random.choice([0, 1, 2, 3, 4, 5, 20] if golden_d20s else [0, 1, 2, 3, 4, 5])
-
-    mock_session_preferences = [
-        SessionPreference(
-            person_id=player.id,
-            table_allocation_id=table_allocation.id,
-            preference=make_preference(player.golden_d20s, table_allocation.id),
-        )
-        for player in mock_players
-        for table_allocation in mock_table_allocations
-    ]
-
-    engine_path = Path("mock_data.db")
-    if engine_path.exists():
-        engine_path.unlink()
-    engine = create_engine(f"sqlite:///{engine_path}")
-    SQLModel.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        session.add(System(id=1, name="Mock System"))
-        session.add(TimeSlot(id=1, name="Mock Time Slot 1", start_time=datetime.now(), end_time=datetime.now()))
-        session.add_all(mock_gms)
-        session.add_all(mock_players)
-        session.add_all(mock_games)
-        session.add_all(mock_table_allocations)
-        session.add_all(mock_session_preferences)
-        session.commit()
-
-    return engine
+    return mock_runtime_engine
 
 
 # Table allocation ID
@@ -169,8 +100,7 @@ class GameAllocator:
         all_preferences_by_player: dict[player_id_t, list[SessionPreference]] = {}
 
         with Session(self.engine) as session:
-            statement = session.get(TimeSlot, time_slot_id)
-            time_slot = TimeSlotWithExtra.model_validate(statement)
+            time_slot = TimeSlotWithExtra.model_validate(session.get(TimeSlot, time_slot_id))
 
             for table_allocation in time_slot.table_allocations:
                 all_table_allocations.append(table_allocation)
@@ -416,6 +346,10 @@ class GameAllocator:
 
 
 if __name__ == "__main__":
-    engine = create_mock_data()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force-recreate", action="store_true")
+    args = parser.parse_args()
+
+    engine = create_mock_engine(force_recreate=args.force_recreate)
     game_allocator = GameAllocator(engine)
     game_allocator.allocate(time_slot_id=1)

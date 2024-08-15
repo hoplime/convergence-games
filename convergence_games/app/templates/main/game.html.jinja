@@ -7,6 +7,12 @@
         <h2 class="text-xl antialiased">{{ game.system.name }} | Run by {{ game.gamemaster.name }}</h2>
         {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game) }}
         <p class="whitespace-pre-line">{{ game.description }}</p>
+        {% if game.content_warnings %}
+            <p>
+                Content Warnings:
+                {% for content_warning in game.content_warnings %}{{ content_warning.name }}{% if not loop.last %},&nbsp;{% endif %}{% endfor %}
+            </p>
+        {% endif %}
         {% if FLAG_SCHEDULE %}
             <h2 class="text-xl antialiased">Sessions</h2>
             <form>

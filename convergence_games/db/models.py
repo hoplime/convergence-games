@@ -160,7 +160,6 @@ class GameUpdate(GameBase):
     crunch: GameCrunch | None = None
     narrativism: GameNarrativism | None = None
     tone: GameTone | None = None
-    content_warnings: str | None = None
     age_suitability: str | None = None
     minimum_players: int | None = None
     optimal_players: int | None = None

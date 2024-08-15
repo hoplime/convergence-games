@@ -1,5 +1,3 @@
-from typing import Literal
-
 from pydantic_settings import BaseSettings
 
 
@@ -9,7 +7,6 @@ class Settings(BaseSettings):
     RECREATE_DATABASE: bool = True
     USE_HTTPS: bool = False
     INITIALISE_DATA: bool = True
-    INITIAL_DATA_MODE: Literal["import", "mock"] = "import"
     FLAG_SCHEDULE: bool = False
     FLAG_USERS: bool = False
 
