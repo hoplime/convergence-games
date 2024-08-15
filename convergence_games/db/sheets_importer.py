@@ -224,6 +224,9 @@ class GoogleSheetsImporter:
             .filter(pl.col("game_id").is_not_null())
             .with_columns(pl.col("session_id").cast(pl.Int8))
             .unique(("session_id", "game_id"), keep="first", maintain_order=True)
+            .with_columns(
+                table_number=pl.when(pl.col("game_id").is_in([45, 70])).then(100).otherwise(pl.col("table_number"))
+            )
         )
         return result
 
@@ -232,7 +235,7 @@ class GoogleSheetsImporter:
         all_rows: list[ScheduleResponse] = list(df.iter_rows(named=True))
         table_allocation_dbos = [
             TableAllocation(
-                table_number=row["table_number"],
+                table_id=row["table_number"],
                 time_slot_id=row["session_id"],
                 game_id=row["game_id"],
                 id=row["session_id"] * 10000 + row["game_id"],

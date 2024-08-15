@@ -1,6 +1,3 @@
-import datetime as dt
-import random
-from csv import DictReader
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Generator
@@ -8,8 +5,8 @@ from typing import Any, Generator
 from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 
-from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
-from convergence_games.db.models import Game, GameWithExtra, Genre, Person, System, TableAllocation, TimeSlot
+from convergence_games.db.base_data import ALL_BASE_DATA
+from convergence_games.db.models import Game, GameWithExtra, Genre, System, TimeSlot
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
 from convergence_games.settings import SETTINGS
 
@@ -36,123 +33,13 @@ def create_db_and_tables() -> bool:
     return fresh
 
 
-def create_mock_time_slots() -> list[TimeSlot]:
-    time_slots = [
-        TimeSlot(
-            id=1,
-            name="Saturday Morning",
-            start_time=dt.datetime(2024, 9, 7, 9),
-            end_time=dt.datetime(2024, 9, 7, 12),
-        ),
-        TimeSlot(
-            id=2,
-            name="Saturday Afternoon",
-            start_time=dt.datetime(2024, 9, 7, 13),
-            end_time=dt.datetime(2024, 9, 7, 16),
-        ),
-        TimeSlot(
-            id=3,
-            name="Saturday Evening",
-            start_time=dt.datetime(2024, 9, 7, 17),
-            end_time=dt.datetime(2024, 9, 7, 21),
-        ),
-        TimeSlot(
-            id=4,
-            name="Sunday Morning",
-            start_time=dt.datetime(2024, 9, 8, 9),
-            end_time=dt.datetime(2024, 9, 8, 12),
-        ),
-        TimeSlot(
-            id=5,
-            name="Sunday Afternoon",
-            start_time=dt.datetime(2024, 9, 8, 13),
-            end_time=dt.datetime(2024, 9, 8, 16),
-        ),
-    ]
-    return time_slots
-
-
 def create_imported_db() -> None:
-    time_slots = create_mock_time_slots()
-
     with Session(engine) as session:
-        session.add_all(time_slots)
+        session.add_all(ALL_BASE_DATA)
 
         importer = GoogleSheetsImporter.from_urls()
         dbos = importer.import_all()
         session.add_all(dbos)
-
-        session.commit()
-
-
-def create_mock_db() -> None:
-    time_slots = create_mock_time_slots()
-
-    with Session(engine) as session:
-        gm_map: dict[str, Person] = {}
-        genre_map: dict[str, Genre] = {}
-        system_map: dict[str, System] = {}
-        game_map: dict[str, Game] = {}
-
-        with open("mock_data/Mock Convergence Data - GMs.csv") as f:
-            for row in DictReader(f):
-                person = Person(name=row["name"], email=row["email"])
-                gm_map[row["name"]] = person
-
-        session.add_all(gm_map.values())
-
-        with open("mock_data/Mock Convergence Data - Games.csv") as f:
-            for row in DictReader(f):
-                genre_names = [name.strip() for name in row["genres"].split(",")]
-                system_name = row["system"]
-                crunch = random.choice(list(GameCrunch))
-                narrativism = random.choice(list(GameNarrativism))
-                tone = random.choice(list(GameTone))
-                gamemaster_name = row["gamemaster"]
-                title = row["title"]
-                description = row["description"]
-                age_suitability = row["age_suitability"]
-
-                if system_name not in system_map:
-                    system = System(name=system_name)
-                    system_map[system_name] = system
-
-                for genre_name in genre_names:
-                    if genre_name not in genre_map:
-                        genre = Genre(name=genre_name)
-                        genre_map[genre_name] = genre
-
-                gamemaster = gm_map[gamemaster_name]
-
-                game = Game(
-                    title=title,
-                    description=description,
-                    crunch=crunch,
-                    narrativism=narrativism,
-                    tone=tone,
-                    age_suitability=age_suitability,
-                    gamemaster=gamemaster,
-                    genres=[genre_map[genre_name] for genre_name in genre_names],
-                    system=system_map[system_name],
-                )
-                game_map[title] = game
-
-        session.add_all(system_map.values())
-        session.add_all(genre_map.values())
-        session.add_all(game_map.values())
-
-        session.add_all(time_slots)
-        with open("mock_data/Mock Convergence Data - Tables.csv") as f:
-            for row in DictReader(f):
-                table_number = row["table_number"]
-                for i, time_slot in enumerate(time_slots):
-                    game = game_map[row[f"time_slot_{i}"]]
-                    table_allocation = TableAllocation(
-                        table_number=table_number,
-                        game=game,
-                        time_slot=time_slot,
-                    )
-                    session.add(table_allocation)
 
         session.commit()
 
@@ -216,17 +103,3 @@ class StartupDBInfo:
 
 def get_startup_db_info() -> StartupDBInfo:
     return StartupDBInfo()
-
-
-if __name__ == "__main__":
-    create_mock_db()
-
-    engine_path = Path("database.db")
-    engine = create_engine(f"sqlite:///{str(engine_path)}")
-
-    with Session(engine) as session:
-        statement = select(Game)
-        games = session.exec(statement).all()
-        for game in games:
-            print(game)
-            print()

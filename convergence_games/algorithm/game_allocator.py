@@ -8,13 +8,12 @@ from pprint import pprint
 from typing import TypeAlias
 
 from sqlalchemy import Engine
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, SQLModel, create_engine
 
 from convergence_games.db.models import (
     Game,
     Person,
     SessionPreference,
-    SessionPreferenceWithExtra,
     System,
     TableAllocation,
     TableAllocationWithExtra,
@@ -78,7 +77,7 @@ def create_mock_data() -> Engine:
             system_id=1,
             minimum_players=(x := random.randint(2, 4)),
             optimal_players=(y := random.randint(x, 5)),
-            maximum_players=(z := random.randint(y, 7)),
+            maximum_players=(random.randint(y, 7)),
         )
         for i in range(N_GAMES)
     ]
@@ -88,7 +87,7 @@ def create_mock_data() -> Engine:
             id=game.id,
             game_id=game.id,
             time_slot_id=1,
-            table_number=game.id,
+            table_id=game.id,
         )
         for game in mock_games
     ]

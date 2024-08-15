@@ -199,6 +199,7 @@ class PersonBase(SQLModel):
     name: str = Field(index=True)
     email: str = Field(index=True)
     golden_d20s: int = Field(default=0)
+    compensation: int = Field(default=0)
 
 
 class Person(PersonBase, table=True):
@@ -265,9 +266,39 @@ class TimeSlotUpdate(TimeSlotBase):
 # endregion
 
 
+# region Table
+class TableBase(SQLModel):
+    number: int = Field(index=True)
+    room: str = Field(index=True, default="")
+    private: bool = Field(default=False)
+
+    @property
+    def short_description(self) -> str:
+        if self.room:
+            return f"{self.number} ({self.room})"
+        return str(self.number)
+
+
+class Table(TableBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+
+    table_allocations: list["TableAllocation"] = Relationship(back_populates="table")
+
+
+class TableCreate(TableBase):
+    pass
+
+
+class TableRead(TableBase):
+    id: int
+
+
+# endregion
+
+
 # region TableAllocation
 class TableAllocationBase(SQLModel):
-    table_number: int = Field(index=True)
+    table_id: int = Field(foreign_key="table.id")
     time_slot_id: int = Field(foreign_key="timeslot.id")
     game_id: int = Field(foreign_key="game.id")
 
@@ -275,10 +306,11 @@ class TableAllocationBase(SQLModel):
 class TableAllocation(TableAllocationBase, table=True):
     id: int | None = Field(primary_key=True)
 
+    table: Table = Relationship(back_populates="table_allocations")
     time_slot: TimeSlot = Relationship(back_populates="table_allocations")
     game: Game = Relationship(back_populates="table_allocations")
     session_preferences: list["SessionPreference"] = Relationship(back_populates="table_allocation")
-    __table_args__ = (UniqueConstraint("table_number", "time_slot_id", name="unique_table_allocation"),)
+    __table_args__ = (UniqueConstraint("table_id", "time_slot_id", name="unique_table_allocation"),)
 
 
 class TableAllocationCreate(TableAllocationBase):
@@ -290,18 +322,20 @@ class TableAllocationRead(TableAllocationBase):
 
 
 class TableAllocationWithExtra(TableAllocationRead):
+    table: Table
     time_slot: TimeSlot
     game: GameWithExtra
     session_preferences: list["SessionPreference"]
 
 
 class TableAllocationUpdate(TableAllocationBase):
-    table_number: int | None = None
+    table_id: int | None = None
     slot_id: int | None = None
     game_id: int | None = None
 
 
 class TableAllocationWithSlot(TableAllocationRead):
+    table: Table
     time_slot: TimeSlot
 
 
