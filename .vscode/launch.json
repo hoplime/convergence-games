@@ -18,7 +18,7 @@
             "env": {
                 "WATCHFILES_FORCE_POLLING": "1",
                 "FLAG_SCHEDULE": "True",
-                "FLAG_USERS": "False",
+                "FLAG_USERS": "True",
                 // "DEBUG": "True"
             }
         },
