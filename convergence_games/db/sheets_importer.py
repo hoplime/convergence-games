@@ -27,7 +27,7 @@ SYSTEM_NAME_MAP = {
     "D&D (5e)": "D&D 5e",
     "D&D 5th Edition": "D&D 5e",
     "Monsterhearts 2nd edition": "Monsterhearts 2",
-    "Motherhship 1E": "Mothership 1E",
+    "Motherhship 1E": "Mothership",
     "overkill 2nd Edition": "Overkill 2nd Edition",
     "Pathfinder 2nd Edition": "Pathfinder 2e",
     "Paranoia 2ed": "Paranoia 2nd Edition",

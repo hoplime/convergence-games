@@ -3,7 +3,7 @@ import datetime as dt
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Enum, Field, Relationship, SQLModel
 
-from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
+from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone, GroupHostingMode
 
 
 # region Links
@@ -206,6 +206,8 @@ class Person(PersonBase, table=True):
 
     gmd_games: list[Game] = Relationship(back_populates="gamemaster")
     session_preferences: list["SessionPreference"] = Relationship(back_populates="person")
+    session_settings: list["PersonSessionSettings"] = Relationship(back_populates="person")
+
     __table_args__ = (UniqueConstraint("email", name="unique_email"),)
 
 
@@ -242,6 +244,7 @@ class TimeSlot(TimeSlotBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     table_allocations: list["TableAllocation"] = Relationship(back_populates="time_slot")
+    session_settings: list["PersonSessionSettings"] = Relationship(back_populates="time_slot")
 
 
 class TimeSlotCreate(TimeSlotBase):
@@ -372,6 +375,46 @@ class SessionPreferenceUpdate(SessionPreferenceBase):
     weight: int | None = None
     person_id: int | None = None
     table_allocation_id: int | None = None
+
+
+# endregion
+
+
+# region PersonSessionSettings
+class PersonSessionSettingsBase(SQLModel):
+    person_id: int = Field(foreign_key="person.id")
+    time_slot_id: int = Field(foreign_key="timeslot.id")
+    checked_in: bool = Field(default=False)
+    group_hosting_mode: GroupHostingMode = Field(default=GroupHostingMode.NOT_IN_GROUP, sa_type=Enum(GroupHostingMode))
+    group_size: int = Field(default=1, ge=1, le=3)
+
+
+class PersonSessionSettings(PersonSessionSettingsBase, table=True):
+    id: int | None = Field(primary_key=True)
+
+    person: Person = Relationship(back_populates="session_settings")
+    time_slot: TimeSlot = Relationship(back_populates="session_settings")
+
+
+class PersonSessionSettingsCreate(PersonSessionSettingsBase):
+    pass
+
+
+class PersonSessionSettingsRead(PersonSessionSettingsBase):
+    id: int
+
+
+class PersonSessionSettingsWithExtra(PersonSessionSettingsRead):
+    person: Person
+    time_slot: TimeSlot
+
+
+class PersonSessionSettingsUpdate(PersonSessionSettingsBase):
+    person_id: int | None = None
+    time_slot_id: int | None = None
+    checked_in: bool | None = None
+    group_hosting_mode: GroupHostingMode | None = None
+    group_size: int | None = None
 
 
 # endregion
