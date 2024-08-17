@@ -17,6 +17,13 @@ class GameContentWarningLink(SQLModel, table=True):
     content_warning_id: int | None = Field(default=None, foreign_key="contentwarning.id", primary_key=True)
 
 
+class PersonSessionSettingsGroupMembersLink(SQLModel, table=True):
+    person_session_settings_id: int | None = Field(
+        default=None, foreign_key="personsessionsettings.id", primary_key=True
+    )
+    member_id: int | None = Field(default=None, foreign_key="person.id", primary_key=True)
+
+
 # endregion
 
 
@@ -207,6 +214,9 @@ class Person(PersonBase, table=True):
     gmd_games: list[Game] = Relationship(back_populates="gamemaster")
     session_preferences: list["SessionPreference"] = Relationship(back_populates="person")
     session_settings: list["PersonSessionSettings"] = Relationship(back_populates="person")
+    session_settings_groups: list["PersonSessionSettings"] = Relationship(
+        back_populates="group_members", link_model=PersonSessionSettingsGroupMembersLink
+    )
 
     __table_args__ = (UniqueConstraint("email", name="unique_email"),)
 
@@ -386,7 +396,6 @@ class PersonSessionSettingsBase(SQLModel):
     time_slot_id: int = Field(foreign_key="timeslot.id")
     checked_in: bool = Field(default=False)
     group_hosting_mode: GroupHostingMode = Field(default=GroupHostingMode.NOT_IN_GROUP, sa_type=Enum(GroupHostingMode))
-    group_size: int = Field(default=1, ge=1, le=3)
 
 
 class PersonSessionSettings(PersonSessionSettingsBase, table=True):
@@ -394,6 +403,9 @@ class PersonSessionSettings(PersonSessionSettingsBase, table=True):
 
     person: Person = Relationship(back_populates="session_settings")
     time_slot: TimeSlot = Relationship(back_populates="session_settings")
+    group_members: list[Person] = Relationship(
+        back_populates="session_settings_groups", link_model=PersonSessionSettingsGroupMembersLink
+    )
 
 
 class PersonSessionSettingsCreate(PersonSessionSettingsBase):
