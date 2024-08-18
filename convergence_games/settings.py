@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     INITIALISE_DATA: bool = True
     FLAG_SCHEDULE: bool = False
     FLAG_USERS: bool = False
+    FLAG_ALWAYS_ALLOW_CHECKINS: bool = True
 
 
 SETTINGS = Settings()

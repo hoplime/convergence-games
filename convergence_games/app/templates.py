@@ -1,6 +1,8 @@
+import datetime as dt
 from pathlib import Path
 from typing import Any
 
+import humanize
 import jinja_partials
 from fastapi import Request
 from jinja2 import pass_context
@@ -23,3 +25,6 @@ if SETTINGS.USE_HTTPS:
 
 templates.env.globals["FLAG_SCHEDULE"] = SETTINGS.FLAG_SCHEDULE
 templates.env.globals["FLAG_USERS"] = SETTINGS.FLAG_USERS
+templates.env.globals["FLAG_ALWAYS_ALLOW_CHECKINS"] = SETTINGS.FLAG_ALWAYS_ALLOW_CHECKINS
+templates.env.globals["now"] = dt.datetime.now
+templates.env.filters["naturaltime"] = humanize.naturaldelta

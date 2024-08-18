@@ -23,16 +23,6 @@ from convergence_games.db.models import (
 )
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
 
-
-@dataclass
-class MockSessionData:
-    games: list[Game]
-    table_allocations: list[TableAllocation]
-    gms: list[Person]
-    players: list[Person]
-    session_preferences: list[SessionPreference]
-
-
 POPULAR_GAMES = set()
 UNPOPULAR_GAMES = set()
 

@@ -256,6 +256,10 @@ class TimeSlot(TimeSlotBase, table=True):
     table_allocations: list["TableAllocation"] = Relationship(back_populates="time_slot")
     session_settings: list["PersonSessionSettings"] = Relationship(back_populates="time_slot")
 
+    @property
+    def open_time(self) -> dt.datetime:
+        return self.start_time - dt.timedelta(hours=48)
+
 
 class TimeSlotCreate(TimeSlotBase):
     pass
@@ -419,6 +423,7 @@ class PersonSessionSettingsRead(PersonSessionSettingsBase):
 class PersonSessionSettingsWithExtra(PersonSessionSettingsRead):
     person: Person
     time_slot: TimeSlot
+    group_members: list[Person]
 
 
 class PersonSessionSettingsUpdate(PersonSessionSettingsBase):

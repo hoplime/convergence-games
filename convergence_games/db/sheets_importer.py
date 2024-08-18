@@ -26,6 +26,8 @@ SYSTEM_NAME_MAP = {
     "Dnd 5e (pregens provided)": "D&D 5e",
     "D&D (5e)": "D&D 5e",
     "D&D 5th Edition": "D&D 5e",
+    "Dnd 5e": "D&D 5e",
+    "freeform": "Freeform",
     "Monsterhearts 2nd edition": "Monsterhearts 2",
     "Motherhship 1E": "Mothership",
     "overkill 2nd Edition": "Overkill 2nd Edition",

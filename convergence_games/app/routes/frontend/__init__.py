@@ -12,8 +12,23 @@ from sqlmodel import select
 from convergence_games.app.dependencies import HxTarget, Session, User, get_user
 from convergence_games.app.request_type import Request
 from convergence_games.app.templates import templates
-from convergence_games.db.extra_types import DEFINED_AGE_SUITABILITIES, DEFINED_CONTENT_WARNINGS, GameCrunch, GameTone
-from convergence_games.db.models import Game, GameWithExtra, Person, SessionPreference, TableAllocation, TimeSlot
+from convergence_games.db.extra_types import (
+    DEFINED_AGE_SUITABILITIES,
+    DEFINED_CONTENT_WARNINGS,
+    GameCrunch,
+    GameTone,
+    GroupHostingMode,
+)
+from convergence_games.db.models import (
+    Game,
+    GameWithExtra,
+    Person,
+    PersonSessionSettings,
+    PersonSessionSettingsWithExtra,
+    SessionPreference,
+    TableAllocation,
+    TimeSlot,
+)
 from convergence_games.db.session import Option
 
 router = APIRouter(tags=["frontend"], include_in_schema=False)
@@ -300,7 +315,21 @@ async def schedule(
     time_slot_id: Annotated[int, Query()] = 1,
 ) -> HTMLResponse:
     with session:
-        time_slot = session.get(TimeSlot, time_slot_id)
+        # Get the current settings for this time slot
+        statement = select(PersonSessionSettings).where(
+            (PersonSessionSettings.person_id == user.id) & (PersonSessionSettings.time_slot_id == time_slot_id)
+        )
+        person_session_settings = session.exec(statement).first()
+
+        if person_session_settings is None:
+            person_session_settings = PersonSessionSettings(person_id=user.id, time_slot_id=time_slot_id)
+            session.add(person_session_settings)
+            session.commit()
+            session.refresh(person_session_settings)
+
+        person_session_settings = PersonSessionSettingsWithExtra.model_validate(person_session_settings)
+
+        print("SETTINGS", person_session_settings)
 
         # Possibly GMing a game this time slot
         statement = (
@@ -312,11 +341,13 @@ async def schedule(
             .where(Game.gamemaster_id == user.id)
         )
         gm_game = session.exec(statement).first()
-        print("GMING", gm_game)
 
         if gm_game:
             gm_game = GameWithExtra.model_validate(gm_game)
 
+        print("GMING", gm_game)
+
+        # Get all of the games and existing preferences for this time slot
         statement = (
             select(Game, TableAllocation, SessionPreference)
             .join(
@@ -342,12 +373,16 @@ async def schedule(
             if not gm_game or game.id != gm_game.id
         ]
 
+        # And finally the actual time slot
+        time_slot = session.get(TimeSlot, time_slot_id)
+
     push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
 
     return templates.TemplateResponse(
         name="main/schedule.html.jinja",
         context={
             "preferences_data": preferences_data,
+            "session_settings": person_session_settings,
             "gm_game": gm_game,
             "time_slot": time_slot,
             "request": request,
@@ -392,33 +427,6 @@ class RatingForm(RootModel, Mapping[int, RatingValue]):
         return iter(self.root)
 
 
-@router.post("/preferences")
-async def preferences_post(
-    request: Request,
-    user: User,
-    session: Session,
-) -> HTMLResponse:
-    form_data = await request.form()
-    table_allocation_ratings = RatingForm.model_validate(form_data)
-    print(table_allocation_ratings)
-    person_id = user.id
-    with session:
-        session_preferences: list[SessionPreference] = []
-        for table_allocation_id, rating in table_allocation_ratings.items():
-            session_preference = SessionPreference(
-                preference=rating.numeric(), person_id=person_id, table_allocation_id=table_allocation_id
-            )
-
-            session_preferences.append(session_preference)
-        statement = sqlite_upsert(SessionPreference).values([pref.model_dump() for pref in session_preferences])
-        statement = statement.on_conflict_do_update(
-            set_={"preference": statement.excluded.preference},
-        )
-        session.exec(statement)
-        session.commit()
-    return HTMLResponse(status_code=204)
-
-
 @router.get("/edit_profile")
 async def user_edit(
     request: Request,
@@ -446,6 +454,65 @@ async def user_edit_post(
         name="shared/partials/profile_info.html.jinja",
         context={"request": request, "user": user},
     )
+
+
+# endregion
+
+# region Utility
+
+
+@router.post("/preferences")
+async def preferences_post(
+    request: Request,
+    user: User,
+    session: Session,
+) -> HTMLResponse:
+    form_data = await request.form()
+    table_allocation_ratings = RatingForm.model_validate(form_data)
+    print(table_allocation_ratings)
+    person_id = user.id
+    with session:
+        session_preferences: list[SessionPreference] = []
+        for table_allocation_id, rating in table_allocation_ratings.items():
+            session_preference = SessionPreference(
+                preference=rating.numeric(), person_id=person_id, table_allocation_id=table_allocation_id
+            )
+
+            session_preferences.append(session_preference)
+        statement = sqlite_upsert(SessionPreference).values([pref.model_dump() for pref in session_preferences])
+        statement = statement.on_conflict_do_update(
+            set_={"preference": statement.excluded.preference},
+        )
+        session.exec(statement)
+        session.commit()
+    return HTMLResponse(status_code=204)
+
+
+@router.post("/checkin")
+async def checkin_post(
+    request: Request,
+    user: User,
+    session: Session,
+    time_slot_id: Annotated[int, Query()],
+    checkin: Annotated[bool, Form()] = False,
+) -> HTMLResponse:
+    with session:
+        statement = select(PersonSessionSettings).where(
+            (PersonSessionSettings.person_id == user.id) & (PersonSessionSettings.time_slot_id == time_slot_id)
+        )
+        person_session_settings = session.exec(statement).first()
+        if person_session_settings is None:
+            person_session_settings = PersonSessionSettings(
+                person_id=user.id, time_slot_id=time_slot_id, checked_in=checkin
+            )
+            session.add(person_session_settings)
+            session.commit()
+            session.refresh(person_session_settings)
+        else:
+            person_session_settings.checked_in = checkin
+            session.add(person_session_settings)
+            session.commit()
+    return HTMLResponse(status_code=204)
 
 
 # endregion
