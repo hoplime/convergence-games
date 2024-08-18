@@ -5,7 +5,10 @@
         tabindex="0"
         class="collapse-title text-sm font-medium after:ml-1 after:inline-flex after:items-center after:text-xs after:transition-transform after:content-['▼'] peer-checked:after:-rotate-180 md:hidden"
     >
-        {{ title }}
+        {{ title }}<span
+            class="hidden font-bold text-accent group-has-[input[data-marker='filter-option']:checked]:inline"
+            >*</span
+        >
     </div>
     {# Dropdown Title #}
     <div
@@ -22,7 +25,10 @@
       on blur remove .opened from me
       "
     >
-        {{ title }}
+        {{ title }}<span
+            class="hidden font-bold text-accent group-has-[input[data-marker='filter-option']:checked]:inline"
+            >*</span
+        >
     </div>
     {# Content #}
     {% set cols = cols|default(2) %}
@@ -35,16 +41,17 @@
     <div
         class="collapse-content dropdown-content z-[1] md:menu md:box-border md:w-[{{ rem }}rem] md:rounded-box md:bg-base-200 md:p-2 md:shadow"
     >
-        <ul tabindex="0" class="grid-cols-{{ cols }} grid-flow-row gap-1 md:grid">
+        <ul tabindex="0" class="grid-cols-{{ cols }} select-options-class grid-flow-row gap-1 md:grid">
             {% for option in options %}
                 <li class="box-border">
                     <label class="label h-full cursor-pointer hover:bg-base-100">
                         <span class="label-text">{{ option.name }}</span>
                         <input
                             type="checkbox"
-                            class="{{ check_class }} checkbox-accent checkbox"
+                            class="{{ check_class }} magic-class checkbox-accent checkbox"
                             value="{{ option.value }}"
                             name="{{ form_name }}"
+                            data-marker="filter-option"
                             {% if option.checked %}checked{% endif %}
                         />
                     </label>
