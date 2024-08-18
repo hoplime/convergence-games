@@ -24,6 +24,7 @@ def create_db_and_tables(allow_recreate: bool = True) -> bool:
     actually_allow_recreate = allow_recreate and SETTINGS.RECREATE_DATABASE
 
     engine_path = Path(SETTINGS.DATABASE_PATH)
+    print("Database path:", engine_path)
     database_already_existed = engine_path.exists()
     fresh = not database_already_existed or actually_allow_recreate
 

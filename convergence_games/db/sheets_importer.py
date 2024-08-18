@@ -143,7 +143,6 @@ class GoogleSheetsImporter:
             .str.contains("My own system that I am running")
             .alias("designer_run"),
         ).filter(pl.col("running"))
-        print(result.filter(pl.col("id") == 42).select("content_warnings"))
         print(len(result), "games imported")
 
         return result

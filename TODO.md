@@ -14,17 +14,18 @@
 
 # Features - Backend + DB
 
+- [x] Maintaining database between restarts
 - [ ] Run the allocation
   - [ ] Don't try to allocate GMs during their sessions lol
 - [ ] Not painful table shifting from admins
 - [ ] Reimporting from spreadsheet
-- [ ] Importing game schedule from spreadsheet
-- [ ] Maintaining database between restarts
-- [ ] Database backing up
+- [x] Importing game schedule from spreadsheet
+- [x] Database backing up
+- [ ] Update caching for game updates
 
 # Features - Frontend
 
-- [ ] Check in? Or does this just need to be on the backend
+- [x] Check in? Or does this just need to be on the backend
 - [ ] Let people know what games they're in
 - [ ] Display smaller room games
 - [ ] Design changes based on Jane's feedback

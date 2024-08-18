@@ -8,4 +8,6 @@ services:
       - "80:8000"
     environment:
       - TEST_KEY=TEST_VALUE
-      - DATABASE_PATH=/home/database.db
+      - DATABASE_PATH=/home/site/wwwroot/database.db
+    volumes:
+      - /home/site/wwwroot:/home/site/wwwroot

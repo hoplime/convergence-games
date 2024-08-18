@@ -5,4 +5,4 @@ services:
     environment:
       - RECREATE_DATABASE=True
     volumes:
-      - ./docker-home:/home
+      - ./docker-site:/home/site/wwwroot
