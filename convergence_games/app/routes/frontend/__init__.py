@@ -217,7 +217,7 @@ async def login_post(
         return templates.TemplateResponse(
             name="main/profile.html.jinja",
             context={"request": request, "user": user},
-            headers={"Set-Cookie": f"email={email}; SameSite=Lax"},
+            headers={"Set-Cookie": f"email={email}; SameSite=Lax", "HX-Redirect": "/me"},
             block_name=hx_target,
         )
 
@@ -272,7 +272,7 @@ async def signup_post(
         session.refresh(user)
     return templates.TemplateResponse(
         name="main/profile.html.jinja",
-        context={"request": request, "user": user},
+        context={"request": request, "user": user, "HX-Redirect": "/me"},
         headers={"Set-Cookie": f"email={email}; SameSite=Lax"},
         block_name=hx_target,
     )
@@ -286,7 +286,7 @@ async def logout_post(
     return templates.TemplateResponse(
         name="main/login.html.jinja",
         context={"request": request, "user": None},
-        headers={"Set-Cookie": "email=; Max-Age=0; SameSite=Lax"},
+        headers={"Set-Cookie": "email=; Max-Age=0; SameSite=Lax", "HX-Redirect": "/me"},
         block_name=hx_target,
     )
 
