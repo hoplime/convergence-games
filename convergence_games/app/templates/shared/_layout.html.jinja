@@ -135,7 +135,7 @@
                             get (<span/> in me)
                             then
                                 if cookies.email
-                                set its innerText to '{{ user.name.split(" ")[0] }}'
+                                set its innerText to '{{ user.name.split(" ")[0] if user else "Profile" }}'
                                 else
                                 set its innerText to 'Login'
                             end

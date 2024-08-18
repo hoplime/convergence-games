@@ -301,30 +301,50 @@ async def schedule(
 ) -> HTMLResponse:
     with session:
         time_slot = session.get(TimeSlot, time_slot_id)
+
+        # Possibly GMing a game this time slot
         statement = (
-            select(Game, TableAllocation, SessionPreference)
+            select(Game)
             .join(
                 TableAllocation,
                 (TableAllocation.game_id == Game.id) & (TableAllocation.time_slot_id == time_slot_id),
             )
-            .outerjoin(
-                SessionPreference,
-                (SessionPreference.person_id == user.id)
-                & (SessionPreference.table_allocation_id == TableAllocation.id),
-            )
-            .group_by(Game.id)
-            .order_by(Game.title)
-            # .where(SessionPreference.person_id == user.id)
+            .where(Game.gamemaster_id == user.id)
         )
-        preferences_data = session.exec(statement).all()
-        preferences_data = [
-            (
-                GameWithExtra.model_validate(game),
-                table_allocation,
-                str(session_preference.preference if session_preference is not None else 3),
+        gming_game = session.exec(statement).first()
+        print("GMING", gming_game)
+
+        preferences_data = []
+        gming_this_session = False
+
+        if gming_game:
+            gming_game = GameWithExtra.model_validate(gming_game)
+            preferences_data = [(gming_game, None, None)]
+            gming_this_session = True
+        else:
+            statement = (
+                select(Game, TableAllocation, SessionPreference)
+                .join(
+                    TableAllocation,
+                    (TableAllocation.game_id == Game.id) & (TableAllocation.time_slot_id == time_slot_id),
+                )
+                .outerjoin(
+                    SessionPreference,
+                    (SessionPreference.person_id == user.id)
+                    & (SessionPreference.table_allocation_id == TableAllocation.id),
+                )
+                .group_by(Game.id)
+                .order_by(Game.title)
             )
-            for game, table_allocation, session_preference in preferences_data
-        ]
+            preferences_data = session.exec(statement).all()
+            preferences_data = [
+                (
+                    GameWithExtra.model_validate(game),
+                    table_allocation,
+                    str(session_preference.preference if session_preference is not None else 3),
+                )
+                for game, table_allocation, session_preference in preferences_data
+            ]
 
     push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
 
@@ -332,6 +352,7 @@ async def schedule(
         name="main/schedule.html.jinja",
         context={
             "preferences_data": preferences_data,
+            "gming_this_session": gming_this_session,
             "time_slot": time_slot,
             "request": request,
             "user": user,

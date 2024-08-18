@@ -16,27 +16,32 @@
             </select>
         </form>
 
-        <div id="schedule_contents" class="">
+        <div id="schedule_contents">
             {% block schedule_contents %}
                 <div class="grid grid-cols-1 gap-4">
-                    <h2 class="text-xl font-semibold antialiased">
-                        Adventuring Party
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            fill="currentColor"
-                            class="bi bi-people-fill inline"
-                            viewBox="0 0 16 16"
-                        >
-                            <path
-                                d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"
-                            />
-                        </svg>
-                    </h2>
-                    <p class="opacity-50">Form a group with up to 2 other Convergence goers for this session!</p>
-                    <p>TODO HAVE A LITTLE FORM TO ADD EMAILS OF PARTY MEMBERS FOR THIS SESSION</p>
-                    <h2 class="text-xl font-semibold antialiased">Game Preferences for {{ time_slot.name }}</h2>
+                    {% if gming_this_session %}
+                        <h2 class="text-xl font-semibold antialiased">Game Mastering on {{ time_slot.name }}</h2>
+                        <p class="opacity-50">You are running a game this session!</p>
+                    {% else %}
+                        <h2 class="text-xl font-semibold antialiased">
+                            Adventuring Party
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                fill="currentColor"
+                                class="bi bi-people-fill inline"
+                                viewBox="0 0 16 16"
+                            >
+                                <path
+                                    d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"
+                                />
+                            </svg>
+                        </h2>
+                        <p class="opacity-50">Form a group with up to 2 other Convergence goers for this session!</p>
+                        <p>TODO HAVE A LITTLE FORM TO ADD EMAILS OF PARTY MEMBERS FOR THIS SESSION</p>
+                        <h2 class="text-xl font-semibold antialiased">Game Preferences for {{ time_slot.name }}</h2>
+                    {% endif %}
                     <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {% block game_list %}
                             {% for game, table_allocation, session_preference in preferences_data %}
