@@ -19,9 +19,13 @@
         <div id="schedule_contents">
             {% block schedule_contents %}
                 <div class="grid grid-cols-1 gap-4">
-                    {% if gming_this_session %}
+                    {% if gm_game %}
                         <h2 class="text-xl font-semibold antialiased">Game Mastering on {{ time_slot.name }}</h2>
                         <p class="opacity-50">You are running a game this session!</p>
+                        {{ render_partial('shared/partials/game_card.html.jinja', game=gm_game, user=user) }}
+                        <p class="opacity-50">
+                            However, if there aren't enough players for your game to run, you may set preferences:
+                        </p>
                     {% else %}
                         <h2 class="text-xl font-semibold antialiased">
                             Adventuring Party
@@ -40,8 +44,8 @@
                         </h2>
                         <p class="opacity-50">Form a group with up to 2 other Convergence goers for this session!</p>
                         <p>TODO HAVE A LITTLE FORM TO ADD EMAILS OF PARTY MEMBERS FOR THIS SESSION</p>
-                        <h2 class="text-xl font-semibold antialiased">Game Preferences for {{ time_slot.name }}</h2>
                     {% endif %}
+                    <h2 class="text-xl font-semibold antialiased">Game Preferences for {{ time_slot.name }}</h2>
                     <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {% block game_list %}
                             {% for game, table_allocation, session_preference in preferences_data %}
