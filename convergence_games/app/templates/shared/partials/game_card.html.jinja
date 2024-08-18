@@ -4,6 +4,7 @@
     hx-target="#content"
     hx-push-url="true"
     hx-swap="innerHTML show:top"
+    hx-trigger="click[event.target.matches(':not(.rating-form *)')]"
 >
     <div class="card-body">
         <h2 class="card-title">{{ game.title }}</h2>
@@ -11,21 +12,20 @@
             {{ game.system.name }} <span class="font-thin">|</span> Run by {{ game.gamemaster.name }}
         </h3>
         {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game, cols=4) }}
-        {% if preference_time_slot %}
-            {# <div>Current preference: {{ current_preference }}</div> #}
+        {% if table_allocation_id %}
             <form
-                hx-put="/update_preference"
+                hx-post="/preferences"
                 hx-swap="none"
-                onclick="event.stopPropagation()"
-                class="inline-flex justify-around"
+                hx-trigger="change delay:200ms"
+                class="rating-form inline-flex justify-around"
             >
                 {{
-                    render_partial('shared/partials/game_preference_rating.html.jinja', input_name="rating-XYZ" ,
+                    render_partial('shared/partials/game_preference_rating.html.jinja', input_name="rating-" ~ table_allocation_id,
                     enable_d20=user.golden_d20s > 0, starting_value=current_preference|string)
                 }}
             </form>
         {% endif %}
-        {% if FLAG_SCHEDULE %}
+        {% if FLAG_SCHEDULE and not table_allocation_id %}
             <div class="absolute bottom-4 right-4 flex flex-row items-center justify-items-center gap-1">
                 {% for day_name, session_flags in game.schedule %}
                     <div class="flex flex-col items-center justify-items-center">

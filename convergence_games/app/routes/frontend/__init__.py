@@ -301,35 +301,6 @@ async def schedule(
 ) -> HTMLResponse:
     with session:
         time_slot = session.get(TimeSlot, time_slot_id)
-
-    push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
-
-    return templates.TemplateResponse(
-        name="main/schedule.html.jinja",
-        context={
-            "games": [],
-            "time_slot": time_slot,
-            "request": request,
-            "user": user,
-        },
-        headers={"HX-Push-Url": push_url},
-        block_name=hx_target,
-    )
-
-
-# endregion
-
-
-# region Partials
-@router.get("/preferences")
-async def preferences(
-    request: Request,
-    user: User,
-    session: Session,
-    time_slot_id: Annotated[int, Query()] = 1,
-) -> HTMLResponse:
-    with session:
-        time_slot = session.get(TimeSlot, time_slot_id)
         statement = (
             select(Game, TableAllocation, SessionPreference)
             .join(
@@ -354,15 +325,25 @@ async def preferences(
             )
             for game, table_allocation, session_preference in preferences_data
         ]
+
+    push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
+
     return templates.TemplateResponse(
-        name="shared/partials/preferences.html.jinja",
+        name="main/schedule.html.jinja",
         context={
-            "request": request,
-            "user": user,
             "preferences_data": preferences_data,
             "time_slot": time_slot,
+            "request": request,
+            "user": user,
         },
+        headers={"HX-Push-Url": push_url},
+        block_name=hx_target,
     )
+
+
+# endregion
+
+# region Partials
 
 
 class RatingValue(Enum):
@@ -399,13 +380,10 @@ async def preferences_post(
     request: Request,
     user: User,
     session: Session,
-    time_slot_id: Annotated[int, Query()],
-    # form: Annotated[RatingForm, Form()],
-    # time_slot_id: Annotated[int, Form()],
-    # game_ids: Annotated[list[int], Form()],
 ) -> HTMLResponse:
     form_data = await request.form()
     table_allocation_ratings = RatingForm.model_validate(form_data)
+    print(table_allocation_ratings)
     person_id = user.id
     with session:
         session_preferences: list[SessionPreference] = []
@@ -421,7 +399,7 @@ async def preferences_post(
         )
         session.exec(statement)
         session.commit()
-    return await preferences(request, user, session, time_slot_id)
+    return HTMLResponse(status_code=204)
 
 
 @router.get("/edit_profile")

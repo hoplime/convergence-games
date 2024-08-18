@@ -6,31 +6,44 @@
     <div class="mx-auto grid grid-cols-1 gap-4 xl:container">
         <h1 class="text-2xl font-semibold antialiased">My Schedule</h1>
 
-        <form
-            id="filter-form"
-            hx-get="/schedule"
-            hx-target="#schedule_contents"
-            hx-push-url="true"
-            hx-trigger="change delay:200ms"
-        >
+        <form id="filter-form" hx-get="/schedule" hx-target="#schedule_contents" hx-push-url="true" hx-trigger="change">
             <select name="time_slot_id" class="select select-bordered w-full max-w-lg">
-                <option value="1">Saturday Morning</option>
-                <option value="2">Saturday Afternoon</option>
-                <option value="3">Saturday Evening</option>
-                <option value="4">Sunday Morning</option>
-                <option value="5">Sunday Afternoon</option>
+                <option value="1" {% if time_slot.id == 1 %}selected{% endif %}>Saturday Morning</option>
+                <option value="2" {% if time_slot.id == 2 %}selected{% endif %}>Saturday Afternoon</option>
+                <option value="3" {% if time_slot.id == 3 %}selected{% endif %}>Saturday Evening</option>
+                <option value="4" {% if time_slot.id == 4 %}selected{% endif %}>Sunday Morning</option>
+                <option value="5" {% if time_slot.id == 5 %}selected{% endif %}>Sunday Afternoon</option>
             </select>
         </form>
 
-        <div id="schedule_contents">
+        <div id="schedule_contents" class="">
             {% block schedule_contents %}
-                <h2 class="">{{ time_slot.name }}</h2>
-                <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {% block game_list %}
-                        {% for game in games %}
-                            {{ render_partial('shared/partials/game_card.html.jinja', game=game, user=user, preference_time_slot=1) }}
-                        {% endfor %}
-                    {% endblock %}
+                <div class="grid grid-cols-1 gap-4">
+                    <h2 class="text-xl font-semibold antialiased">
+                        Adventuring Party
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            fill="currentColor"
+                            class="bi bi-people-fill inline"
+                            viewBox="0 0 16 16"
+                        >
+                            <path
+                                d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"
+                            />
+                        </svg>
+                    </h2>
+                    <p class="opacity-50">Form a group with up to 2 other Convergence goers for this session!</p>
+                    <p>TODO HAVE A LITTLE FORM TO ADD EMAILS OF PARTY MEMBERS FOR THIS SESSION</p>
+                    <h2 class="text-xl font-semibold antialiased">Game Preferences for {{ time_slot.name }}</h2>
+                    <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {% block game_list %}
+                            {% for game, table_allocation, session_preference in preferences_data %}
+                                {{ render_partial('shared/partials/game_card.html.jinja', game=game, user=user, table_allocation_id=table_allocation.id, current_preference=session_preference) }}
+                            {% endfor %}
+                        {% endblock %}
+                    </div>
                 </div>
             {% endblock %}
         </div>
