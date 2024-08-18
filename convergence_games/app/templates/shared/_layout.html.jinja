@@ -31,7 +31,7 @@
         {% endblock %}
     </head>
     <body>
-        <div id="wrapper">
+        <div id="wrapper" class="w-full">
             {% block wrapper %}
                 <nav class="navbar">
                     <div class="navbar-start hidden md:inline-flex">
@@ -46,7 +46,9 @@
                             <span class="font-header">Convergence 2024</span>
                         </button>
                     </div>
-                    <div class="navbar-end flex w-full justify-around justify-items-center md:w-1/2 md:justify-end">
+                    <div
+                        class="navbar-end flex w-full justify-around justify-items-center md:w-1/2 md:justify-end -md:mx-auto"
+                    >
                         {# Home #}
                         <button
                             class="btn btn-ghost flex-col gap-0 md:hidden"
@@ -92,28 +94,6 @@
                             <span class="text-xs">Games</span>
                         </button>
                         {% if FLAG_USERS and FLAG_SCHEDULE and user %}
-                            {# Party #}
-                            <button
-                                class="btn btn-ghost flex-col gap-0"
-                                hx-get="/party"
-                                hx-target="#content"
-                                hx-push-url="true"
-                                _="on load or htmx:load from #wrapper if window.location.pathname.startsWith('/party') add .text-accent to me else remove .text-accent from me"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    fill="currentColor"
-                                    class="bi bi-people-fill"
-                                    viewBox="0 0 16 16"
-                                >
-                                    <path
-                                        d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"
-                                    />
-                                </svg>
-                                <span class="text-xs">Party</span>
-                            </button>
                             {# Schedule #}
                             <button
                                 class="btn btn-ghost flex-col gap-0"
@@ -137,7 +117,7 @@
                                         d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"
                                     />
                                 </svg>
-                                <span class="text-xs">Schedule</span>
+                                <span class="text-xs">My Schedule</span>
                             </button>
                         {% endif %}
                         {% if FLAG_USERS %}
@@ -155,7 +135,7 @@
                             get (<span/> in me)
                             then
                                 if cookies.email
-                                set its innerText to 'Profile'
+                                set its innerText to '{{ user.name.split(" ")[0] }}'
                                 else
                                 set its innerText to 'Login'
                             end

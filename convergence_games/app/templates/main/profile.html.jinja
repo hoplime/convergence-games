@@ -3,8 +3,16 @@
 {% block content %}
     <title>My Profile - Convergence 2024</title>
 
-    {{ render_partial('shared/partials/profile_info.html.jinja', user=user) }}
-    <button type="button" class="btn btn-outline btn-error" hx-post="/logout" hx-target="#content" hx-push-url="false">
-        Logout
-    </button>
+    <div class="mx-auto grid grid-cols-1 gap-4 xl:container">
+        {{ render_partial('shared/partials/profile_info.html.jinja', user=user) }}
+        <button
+            type="button"
+            class="btn btn-outline btn-error"
+            hx-post="/logout"
+            hx-target="#content"
+            hx-push-url="false"
+        >
+            Logout
+        </button>
+    </div>
 {% endblock %}

@@ -291,6 +291,32 @@ async def logout_post(
     )
 
 
+@router.get("/schedule")
+async def schedule(
+    request: Request,
+    user: User,
+    session: Session,
+    hx_target: HxTarget,
+    time_slot_id: Annotated[int, Query()] = 1,
+) -> HTMLResponse:
+    with session:
+        time_slot = session.get(TimeSlot, time_slot_id)
+
+    push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
+
+    return templates.TemplateResponse(
+        name="main/schedule.html.jinja",
+        context={
+            "games": [],
+            "time_slot": time_slot,
+            "request": request,
+            "user": user,
+        },
+        headers={"HX-Push-Url": push_url},
+        block_name=hx_target,
+    )
+
+
 # endregion
 
 

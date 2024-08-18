@@ -1,8 +1,8 @@
-{% set common_rating_styles = "mask relative after:absolute after:left-1/2 after:after:m-auto after:block after:-translate-x-1/2 after:text-center after:align-middle after:font-bold after:text-base-100" %}
-<div class="rating rating-md">
+{% set common_rating_styles = "mask relative after:absolute after:left-1/2 after:after:m-auto checked:after:underline before:bg-text-base-100 after:block after:-translate-x-1/2 after:translate-y-1/2 after:leading-none after:text-center after:align-middle after:font-bold dark:after:text-base-100" %}
+<div class="rating rating-lg text-xl">
     <input
         type="radio"
-        class="rating-hidden"
+        class="{{ common_rating_styles }} before:content-[' '] mask-circle-smaller h-4 w-4 bg-gray-400 after:content-['0']"
         name="{{ input_name }}"
         value="0"
         {% if starting_value == "0" %}checked{% endif %}
@@ -16,7 +16,7 @@
     />
     <input
         type="radio"
-        class="mask-d6 {{ common_rating_styles }} bg-indigo-400 after:content-['6']"
+        class="mask-d6 {{ common_rating_styles }} bg-indigo-400 font-normal after:content-['6']"
         name="{{ input_name }}"
         value="2"
         {% if starting_value == "2" %}checked{% endif %}

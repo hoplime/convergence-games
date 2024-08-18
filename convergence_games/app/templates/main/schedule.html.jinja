@@ -1,0 +1,38 @@
+{% extends "shared/_layout.html.jinja" %}
+{% block title %}My Schedule - Convergence 2024{% endblock %}
+{% block content %}
+    <title>My Schedule - Convergence 2024</title>
+
+    <div class="mx-auto grid grid-cols-1 gap-4 xl:container">
+        <h1 class="text-2xl font-semibold antialiased">My Schedule</h1>
+
+        <form
+            id="filter-form"
+            hx-get="/schedule"
+            hx-target="#schedule_contents"
+            hx-push-url="true"
+            hx-trigger="change delay:200ms"
+        >
+            <select name="time_slot_id" class="select select-bordered w-full max-w-lg">
+                <option value="1">Saturday Morning</option>
+                <option value="2">Saturday Afternoon</option>
+                <option value="3">Saturday Evening</option>
+                <option value="4">Sunday Morning</option>
+                <option value="5">Sunday Afternoon</option>
+            </select>
+        </form>
+
+        <div id="schedule_contents">
+            {% block schedule_contents %}
+                <h2 class="">{{ time_slot.name }}</h2>
+                <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {% block game_list %}
+                        {% for game in games %}
+                            {{ render_partial('shared/partials/game_card.html.jinja', game=game, user=user, preference_time_slot=1) }}
+                        {% endfor %}
+                    {% endblock %}
+                </div>
+            {% endblock %}
+        </div>
+    </div>
+{% endblock %}
