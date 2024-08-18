@@ -218,6 +218,7 @@ async def login_post(
             name="main/profile.html.jinja",
             context={"request": request, "user": user},
             headers={"Set-Cookie": f"email={email}; SameSite=Lax"},
+            block_name=hx_target,
         )
 
 
@@ -414,11 +415,9 @@ async def user_edit_post(
     user: User,
     session: Session,
     name: Annotated[str, Form()],
-    golden_d20s: Annotated[int, Form()],
 ) -> HTMLResponse:
     with session:
         user.name = name
-        user.golden_d20s = golden_d20s
         session.add(user)
         session.commit()
         session.refresh(user)
