@@ -128,7 +128,11 @@ class GoogleSheetsImporter:
             .alias("narrativism"),
             pl.col("Tone").alias("tone"),
             pl.col("Age Suitability").alias("age_suitability"),
-            pl.col("Content Warnings").str.split(", ").alias("content_warnings"),
+            pl.col("Content Warnings")
+            .str.replace_all(r"([^\\]),\s", "$1[COMMABREAK]", literal=True)
+            .str.replace_all(r"\\,", ",")
+            .str.split("[COMMABREAK]")
+            .alias("content_warnings"),
             replace_seven_plus("Player Count Ranges [Minimum]").alias("minimum_players"),
             replace_seven_plus("Player Count Ranges [Sweet Spot]").alias("optimal_players"),
             replace_seven_plus("Player Count Ranges [Maximum]").alias("maximum_players"),
@@ -139,6 +143,7 @@ class GoogleSheetsImporter:
             .str.contains("My own system that I am running")
             .alias("designer_run"),
         ).filter(pl.col("running"))
+        print(result.filter(pl.col("id") == 42).select("content_warnings"))
         print(len(result), "games imported")
 
         return result
