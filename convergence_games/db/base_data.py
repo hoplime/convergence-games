@@ -6,32 +6,32 @@ BASE_TIME_SLOTS = [
     TimeSlot(
         id=1,
         name="Saturday Morning",
-        start_time=dt.datetime(2024, 9, 7, 9),
-        end_time=dt.datetime(2024, 9, 7, 12),
+        start_time=dt.datetime(2024, 9, 7, 9, 30),
+        end_time=dt.datetime(2024, 9, 7, 12, 30),
     ),
     TimeSlot(
         id=2,
         name="Saturday Afternoon",
-        start_time=dt.datetime(2024, 9, 7, 13),
-        end_time=dt.datetime(2024, 9, 7, 16),
+        start_time=dt.datetime(2024, 9, 7, 13, 30),
+        end_time=dt.datetime(2024, 9, 7, 16, 30),
     ),
     TimeSlot(
         id=3,
         name="Saturday Evening",
-        start_time=dt.datetime(2024, 9, 7, 17),
-        end_time=dt.datetime(2024, 9, 7, 21),
+        start_time=dt.datetime(2024, 9, 7, 18, 0),
+        end_time=dt.datetime(2024, 9, 7, 22, 0),
     ),
     TimeSlot(
         id=4,
         name="Sunday Morning",
-        start_time=dt.datetime(2024, 9, 8, 9),
-        end_time=dt.datetime(2024, 9, 8, 12),
+        start_time=dt.datetime(2024, 9, 8, 9, 15),
+        end_time=dt.datetime(2024, 9, 8, 12, 15),
     ),
     TimeSlot(
         id=5,
         name="Sunday Afternoon",
-        start_time=dt.datetime(2024, 9, 8, 13),
-        end_time=dt.datetime(2024, 9, 8, 16),
+        start_time=dt.datetime(2024, 9, 8, 14, 0),
+        end_time=dt.datetime(2024, 9, 8, 18, 0),
     ),
 ]
 
