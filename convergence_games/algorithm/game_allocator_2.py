@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from itertools import groupby
 from pathlib import Path
 from pprint import pprint
-from typing import TypeAlias
+from typing import Literal, Self, TypeAlias
 
 from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, create_engine, func, select
@@ -17,6 +17,8 @@ from convergence_games.db.models import (
     Game,
     Person,
     PersonSessionSettings,
+    PersonSessionSettingsWithExtra,
+    PersonWithExtra,
     SessionPreference,
     TableAllocation,
     TableAllocationWithExtra,
@@ -150,8 +152,104 @@ def data_generation_main(args: argparse.Namespace) -> None:
 
 
 # region Game Allocator
+person_id_t: TypeAlias = int
+table_allocation_id_t: TypeAlias = int
+time_slot_id_t: TypeAlias = int
+game_id_t: TypeAlias = int
+preference_score_t: TypeAlias = Literal[0, 1, 2, 3, 4, 5, 20]
+
+
+@dataclass
+class Group:
+    person_ids: list[person_id_t]
+    preferences: dict[table_allocation_id_t, preference_score_t]
+    average_compensation: float = 0.0
+
+    @classmethod
+    def from_person_and_session_settings(
+        cls, person: PersonWithExtra, session_settings: PersonSessionSettingsWithExtra
+    ) -> Self:
+        persons = [person] + (
+            list(session_settings.group_members)
+            if session_settings.group_hosting_mode == GroupHostingMode.HOSTING
+            else []
+        )
+        person_ids = {person.id for person in persons}
+        # Just in case, to deduplicate
+        persons = [[p for p in persons if p.id == person_id][0] for person_id in person_ids]
+        preferences = {
+            session_preference.table_allocation_id: session_preference.preference
+            for session_preference in person.session_preferences
+            if session_preference.table_allocation.time_slot_id == session_settings.time_slot_id
+        }
+        average_compensation = sum([person.compensation for person in persons]) / len(persons)
+        return cls(person_ids=person_ids, preferences=preferences, average_compensation=average_compensation)
+
+    def __len__(self) -> int:
+        return len(self.person_ids)
+
+
+@dataclass
+class GameAllocationResult:
+    group: Group
+    table_allocation_id: int
+
+
+class GameAllocator:
+    def __init__(self, engine: Engine, time_slot_id: time_slot_id_t) -> None:
+        self.engine = engine
+        self.time_slot_id = time_slot_id
+        self._setup()
+
+    def _setup(self) -> None:
+        # Get all the data we need from the database to do the allocation
+        # End result
+        # self.groups: list[Group] = []
+        # self.table_allocations: list[TableAllocationWithExtra] = []
+
+        with Session(self.engine) as session:
+            solo_or_hosts: list[tuple[Person, PersonSessionSettings]] = session.exec(
+                select(Person, PersonSessionSettings)
+                .join(Person, Person.id == PersonSessionSettings.person_id)
+                .filter(
+                    (PersonSessionSettings.time_slot_id == self.time_slot_id)
+                    & (
+                        (
+                            # Solo players
+                            (PersonSessionSettings.checked_in)
+                            & (PersonSessionSettings.group_hosting_mode == GroupHostingMode.NOT_IN_GROUP)
+                        )
+                        # Hosts
+                        | (PersonSessionSettings.group_hosting_mode == GroupHostingMode.HOSTING)
+                    )
+                )
+            ).all()
+            self.groups = [
+                Group.from_person_and_session_settings(
+                    PersonWithExtra.model_validate(person),
+                    PersonSessionSettingsWithExtra.model_validate(person_session_settings),
+                )
+                for person, person_session_settings in solo_or_hosts
+            ]
+
+    def allocate(self) -> list[GameAllocationResult]:
+        print("Groups")
+        pprint(self.groups)
+
+
+def allocate(engine: Engine, time_slot_id: time_slot_id_t) -> list[GameAllocationResult]:
+    game_allocator = GameAllocator(engine, time_slot_id)
+    return game_allocator.allocate()
+
+
 def end_to_end_main(args: argparse.Namespace) -> None:
-    print("END TO END")
+    # Setup
+    mock_runtime_engine = create_engine("sqlite:///mock_runtime.db")
+    SQLModel.metadata.create_all(mock_runtime_engine)
+
+    # Doing each round of allocations
+    for time_slot_id in range(1, 5 + 1):
+        allocate(mock_runtime_engine, time_slot_id)
 
 
 # endregion
