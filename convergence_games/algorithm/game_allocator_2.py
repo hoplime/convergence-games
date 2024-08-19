@@ -89,13 +89,15 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
         # SIMULATE SESSION PREFERENCES
         for person in persons:
             for table_allocation in table_allocations:
-                session.add(
-                    SessionPreference(
-                        preference=random.choice([0, 1, 2, 3, 4, 5, 20]),  # TODO: Weighted preferences
-                        person_id=person.id,
-                        table_allocation_id=table_allocation.id,
-                    )
+                session_preference = SessionPreference(
+                    preference=random.choice([0, 1, 2, 3, 4, 5, 20]),  # TODO: Weighted preferences
+                    person_id=person.id,
+                    table_allocation_id=table_allocation.id,
                 )
+                # We also simulate _not_ having a preference for a table allocation sometimes if it's a 3 - i.e. the default
+                if session_preference.preference == 3 and random.random() < 0.5:
+                    continue
+                session.add(session_preference)
 
         # SIMULATE PERSON SESSION SETTINGS
         for person in persons:
@@ -231,10 +233,20 @@ class GameAllocator:
                 )
                 for person, person_session_settings in solo_or_hosts
             ]
+            self.table_allocations = [
+                TableAllocationWithExtra.model_validate(table_allocation)
+                for table_allocation in session.exec(
+                    select(TableAllocation).filter(TableAllocation.time_slot_id == self.time_slot_id)
+                ).all()
+            ]
 
     def allocate(self) -> list[GameAllocationResult]:
         print("Groups")
-        pprint(self.groups)
+        # pprint(self.groups)
+        print(len(self.groups))
+        print("Table Allocations")
+        # pprint(self.table_allocations)
+        print(len(self.table_allocations))
 
 
 def allocate(engine: Engine, time_slot_id: time_slot_id_t) -> list[GameAllocationResult]:
@@ -247,8 +259,11 @@ def end_to_end_main(args: argparse.Namespace) -> None:
     mock_runtime_engine = create_engine("sqlite:///mock_runtime.db")
     SQLModel.metadata.create_all(mock_runtime_engine)
 
+    all_time_slot_ids = range(1, 5 + 1)
+    first_time_slot_ids = [1]
+
     # Doing each round of allocations
-    for time_slot_id in range(1, 5 + 1):
+    for time_slot_id in first_time_slot_ids:
         allocate(mock_runtime_engine, time_slot_id)
 
 
