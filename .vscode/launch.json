@@ -22,5 +22,13 @@
                 // "DEBUG": "True"
             }
         },
+        {
+            "name": "Python: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "args": "${command:pickArgs}",
+            "justMyCode": false,
+        }
     ]
 }
