@@ -129,7 +129,7 @@ class GoogleSheetsImporter:
             pl.col("Tone").alias("tone"),
             pl.col("Age Suitability").alias("age_suitability"),
             pl.col("Content Warnings")
-            .str.replace_all(r"([^\\]),\s", "$1[COMMABREAK]", literal=True)
+            .str.replace_all(r"([^\\]),\s", "$1[COMMABREAK]")
             .str.replace_all(r"\\,", ",")
             .str.split("[COMMABREAK]")
             .alias("content_warnings"),
