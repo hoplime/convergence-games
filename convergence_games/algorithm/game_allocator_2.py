@@ -3,6 +3,7 @@ import random
 import shutil
 from copy import deepcopy
 from dataclasses import dataclass
+from functools import cached_property
 from itertools import groupby
 from pathlib import Path
 from pprint import pprint
@@ -162,14 +163,59 @@ preference_score_t: TypeAlias = Literal[0, 1, 2, 3, 4, 5, 20]
 
 
 @dataclass
+class Tier:
+    is_golden_d20: bool
+
+    raw_preference: int
+    rank: int
+    compensation: float
+
+    # Sum of ranking (0, 1, 2, 3, 4, 5, 20 for d20) + compensation
+    # Note that someone with only N different tiers, regardless of whether they're 1, 2, 4, etc will have N different ranks
+    @property
+    def value(self) -> int:
+        return self.rank + self.compensation
+
+
+class TieredPreferences:
+    def __init__(
+        self,
+        *,
+        preferences: dict[table_allocation_id_t, preference_score_t],
+        average_compensation: float,
+        table_allocations: list[TableAllocationWithExtra],
+    ) -> None:
+        self.preferences = preferences
+        self.average_compensation = average_compensation
+        self.table_allocations = table_allocations
+        print("Setting up tiered preferences")
+
+        # Add missing preferences
+        for table_allocation in table_allocations:
+            if table_allocation.id not in preferences:
+                preferences[table_allocation.id] = 3
+
+        # Sort preferences by value
+        ordered_preferences = sorted(
+            preferences.items(),
+            key=lambda x: x[1],
+            reverse=True,  # Higher is first
+        )
+        grouped_preferences = list([g for g in groupby(ordered_preferences, key=lambda x: x[1])])
+        print(grouped_preferences)
+
+
+@dataclass
 class Group:
     person_ids: list[person_id_t]
-    preferences: dict[table_allocation_id_t, preference_score_t]
-    average_compensation: float = 0.0
+    tiered_preferences: TieredPreferences = None
 
     @classmethod
     def from_person_and_session_settings(
-        cls, person: PersonWithExtra, session_settings: PersonSessionSettingsWithExtra
+        cls,
+        person: PersonWithExtra,
+        session_settings: PersonSessionSettingsWithExtra,
+        table_allocations: list[TableAllocationWithExtra],
     ) -> Self:
         persons = [person] + (
             list(session_settings.group_members)
@@ -185,7 +231,14 @@ class Group:
             if session_preference.table_allocation.time_slot_id == session_settings.time_slot_id
         }
         average_compensation = sum([person.compensation for person in persons]) / len(persons)
-        return cls(person_ids=person_ids, preferences=preferences, average_compensation=average_compensation)
+        return cls(
+            person_ids=person_ids,
+            tiered_preferences=TieredPreferences(
+                preferences=preferences,
+                average_compensation=average_compensation,
+                table_allocations=table_allocations,
+            ),
+        )
 
     def __len__(self) -> int:
         return len(self.person_ids)
@@ -201,15 +254,23 @@ class GameAllocator:
     def __init__(self, engine: Engine, time_slot_id: time_slot_id_t) -> None:
         self.engine = engine
         self.time_slot_id = time_slot_id
-        self._setup()
-
-    def _setup(self) -> None:
         # Get all the data we need from the database to do the allocation
-        # End result
-        # self.groups: list[Group] = []
-        # self.table_allocations: list[TableAllocationWithExtra] = []
+        self.table_allocations = self._init_table_allocations()
+        self.groups = self._init_groups()
 
+    def _init_table_allocations(self) -> list[TableAllocationWithExtra]:
         with Session(self.engine) as session:
+            # All table allocations
+            return [
+                TableAllocationWithExtra.model_validate(table_allocation)
+                for table_allocation in session.exec(
+                    select(TableAllocation).filter(TableAllocation.time_slot_id == self.time_slot_id)
+                ).all()
+            ]
+
+    def _init_groups(self) -> list[Group]:
+        with Session(self.engine) as session:
+            # All groups
             solo_or_hosts: list[tuple[Person, PersonSessionSettings]] = session.exec(
                 select(Person, PersonSessionSettings)
                 .join(Person, Person.id == PersonSessionSettings.person_id)
@@ -226,27 +287,19 @@ class GameAllocator:
                     )
                 )
             ).all()
-            self.groups = [
+            return [
                 Group.from_person_and_session_settings(
                     PersonWithExtra.model_validate(person),
                     PersonSessionSettingsWithExtra.model_validate(person_session_settings),
+                    self.table_allocations,
                 )
-                for person, person_session_settings in solo_or_hosts
-            ]
-            self.table_allocations = [
-                TableAllocationWithExtra.model_validate(table_allocation)
-                for table_allocation in session.exec(
-                    select(TableAllocation).filter(TableAllocation.time_slot_id == self.time_slot_id)
-                ).all()
+                for person, person_session_settings in solo_or_hosts[:1]  # TODO: More than 1
             ]
 
     def allocate(self) -> list[GameAllocationResult]:
         print("Groups")
         # pprint(self.groups)
-        print(len(self.groups))
-        print("Table Allocations")
-        # pprint(self.table_allocations)
-        print(len(self.table_allocations))
+        print(self.groups)
 
 
 def allocate(engine: Engine, time_slot_id: time_slot_id_t) -> list[GameAllocationResult]:
