@@ -3,7 +3,7 @@ import random
 import shutil
 from copy import deepcopy
 from dataclasses import dataclass
-from functools import cached_property
+from functools import total_ordering
 from itertools import groupby
 from pathlib import Path
 from pprint import pprint
@@ -162,19 +162,40 @@ game_id_t: TypeAlias = int
 preference_score_t: TypeAlias = Literal[0, 1, 2, 3, 4, 5, 20]
 
 
-@dataclass
+@total_ordering
+@dataclass(eq=False)
 class Tier:
-    is_golden_d20: bool
-
     raw_preference: int
     rank: int
     compensation: float
+
+    @property
+    def is_golden_d20(self) -> bool:
+        return self.rank == 20
+
+    @property
+    def is_zero(self) -> bool:
+        return self.rank == 0
 
     # Sum of ranking (0, 1, 2, 3, 4, 5, 20 for d20) + compensation
     # Note that someone with only N different tiers, regardless of whether they're 1, 2, 4, etc will have N different ranks
     @property
     def value(self) -> int:
+        if self.is_zero:
+            return 0
         return self.rank + self.compensation
+
+    def __eq__(self, other: Self) -> bool:
+        if self.is_golden_d20 != other.is_golden_d20:
+            return False
+        return self.value == other.value
+
+    def __lt__(self, other: Self) -> bool:
+        if self.is_golden_d20 and not other.is_golden_d20:
+            return False
+        elif not self.is_golden_d20 and other.is_golden_d20:
+            return True
+        return self.value < other.value
 
 
 class TieredPreferences:
@@ -189,9 +210,26 @@ class TieredPreferences:
         self.average_compensation = average_compensation
         self.table_allocations = table_allocations
         print("Setting up tiered preferences")
+        self.tier_list = self._init_tier_list()
+        pprint(self.tier_list)
+        self.tier_by_table_allocation_id = {
+            table_allocation_id: tier
+            for tier, table_allocation_ids in self.tier_list
+            for table_allocation_id in table_allocation_ids
+        }
+
+    @property
+    def has_d20(self) -> bool:
+        return any(tier.is_golden_d20 for tier, _ in self.tier_list)
+
+    def get_tier(self, table_allocation_id: table_allocation_id_t) -> Tier:
+        return self.tier_by_table_allocation_id[table_allocation_id]
+
+    def _init_tier_list(self) -> list[tuple[Tier, list[table_allocation_id_t]]]:
+        preferences = self.preferences.copy()
 
         # Add missing preferences
-        for table_allocation in table_allocations:
+        for table_allocation in self.table_allocations:
             if table_allocation.id not in preferences:
                 preferences[table_allocation.id] = 3
 
@@ -201,8 +239,30 @@ class TieredPreferences:
             key=lambda x: x[1],
             reverse=True,  # Higher is first
         )
-        grouped_preferences = list([g for g in groupby(ordered_preferences, key=lambda x: x[1])])
+        grouped_preferences = [
+            (g_key, [ta_id for ta_id, _ in g_items])
+            for g_key, g_items in groupby(ordered_preferences, key=lambda x: x[1])
+        ]
+        number_of_tiers = len(grouped_preferences)
+        starts_with_d20 = grouped_preferences[0][0] == 20
+        ends_with_0 = grouped_preferences[-1][0] == 0
+        rankings = (([20] if starts_with_d20 else []) + list(range(5, -1, -1)))[:number_of_tiers]
+        if ends_with_0:
+            rankings[-1] = 0
+        assert len(rankings) == number_of_tiers
+        print("Rankings", rankings)
         print(grouped_preferences)
+
+        # Assign tiers
+        tier_map = []
+        for ranking, (raw_score, table_allocation_ids) in zip(rankings, grouped_preferences):
+            tier = Tier(
+                raw_preference=raw_score,
+                rank=ranking,
+                compensation=self.average_compensation,
+            )
+            tier_map.append((tier, table_allocation_ids))
+        return tier_map
 
 
 @dataclass
