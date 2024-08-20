@@ -2,7 +2,7 @@ import argparse
 import random
 import shutil
 from copy import deepcopy
-from dataclasses import Field, dataclass
+from dataclasses import dataclass, field
 from functools import total_ordering
 from itertools import groupby
 from pathlib import Path
@@ -68,7 +68,6 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
             Person(
                 name=f"Simulated {i:03d}",
                 email=f"simulated{i:03d}@email.com",
-                golden_d20s=1 if i < args.n_with_golden_d20 else 0,
             )
             for i in range(current_n_players + 1, args.n_players + 1)
         ]
@@ -90,8 +89,9 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
         # SIMULATE SESSION PREFERENCES
         for person in persons:
             for table_allocation in table_allocations:
+                possible_options = [0, 1, 2, 3, 4, 5, 20] if person.golden_d20s > 0 else [0, 1, 2, 3, 4, 5]
                 session_preference = SessionPreference(
-                    preference=random.choice([0, 1, 2, 3, 4, 5, 20]),  # TODO: Weighted preferences
+                    preference=random.choice(possible_options),  # TODO: Weighted preferences
                     person_id=person.id,
                     table_allocation_id=table_allocation.id,
                 )
@@ -264,6 +264,9 @@ class TieredPreferences:
             tier_map.append((tier, table_allocation_ids))
         return tier_map
 
+    def __repr__(self) -> str:
+        return f"TieredPreferences({self.tier_list})"
+
 
 @dataclass
 class Group:
@@ -311,7 +314,7 @@ class Group:
 @dataclass
 class CurrentGameAllocation:
     table_allocation: TableAllocationWithExtra
-    groups: list[Group] = Field(default_factory=list)
+    groups: list[Group] = field(default_factory=list)
 
     def value_of_group(self, group: Group) -> Tier:
         return group.tiered_preferences.get_tier(self.table_allocation.id)
@@ -338,6 +341,12 @@ class CurrentGameAllocation:
     @property
     def optimal_players(self) -> int:
         return self.table_allocation.game.optimal_players
+
+    def __repr__(self) -> str:
+        return f"{self.table_allocation.game.title} ({self.current_players}/{self.maximum_players})"
+
+    def __str__(self) -> str:
+        return f"{self.table_allocation.game.title} ({self.current_players}/{self.maximum_players})"
 
 
 class GameAllocator:
@@ -388,7 +397,7 @@ class GameAllocator:
                     PersonSessionSettingsWithExtra.model_validate(person_session_settings),
                     self.table_allocations,
                 )
-                for person, person_session_settings in solo_or_hosts[:1]  # TODO: More than 1
+                for person, person_session_settings in solo_or_hosts  # TODO: More than 1
             ]
 
     def _init_current_allocations(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
@@ -417,15 +426,82 @@ class GameAllocator:
         # We want to allocate all the groups to tables
         # STAGE 1 - Allocate D20 holders
         d20_groups = [group for group in self.groups if group.tiered_preferences.has_d20]
+        print(len(d20_groups), "D20 groups")
+        print(len(self.groups), "Total groups")
+        random.shuffle(d20_groups)
         for group in d20_groups:
-            pass
+            success = self._allocate_single_group(group)
+            if not success:
+                print("!R!@$!$!@$!@$!!", group)
+
+        return self.current_allocations
 
     def _score_trial(self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]) -> float:
         # TODO: Maybe just count the required compensation? Where we want to minimize the compensation
         return sum(current_allocation.value for current_allocation in trial_results.values())
 
-    def _initial_allocate_single_group(self, group: Group) -> None:
-        pass
+    def _allocate_single_group(
+        self,
+        group: Group,
+        *,
+        blocked_table_allocation_ids: set[table_allocation_id_t] | None = None,
+        allow_bumps: bool = True,
+        minimum_tier: Tier | None = None,
+    ) -> bool:
+        if blocked_table_allocation_ids is None:
+            blocked_table_allocation_ids = set()
+
+        for tier, table_allocation_ids in group.tiered_preferences.tier_list:
+            if tier.is_zero or (minimum_tier is not None and tier < minimum_tier):
+                break
+
+            # STAGE 1 - FREE SPACE ALLOCATION
+            # Greedily allocate to the first table that fits within this tier
+            for table_allocation_id in random.sample(table_allocation_ids, len(table_allocation_ids)):
+                if table_allocation_id in blocked_table_allocation_ids:
+                    continue
+
+                current_allocation = self.current_allocations[table_allocation_id]
+                if current_allocation.could_fit_group(group):
+                    current_allocation.groups.append(group)
+                    return True
+
+            if not allow_bumps:
+                continue
+
+            # STAGE 2 - BUMPING ALLOCATION
+            # If we couldn't allocate to a table without removing someone
+            # we get less polite - try to push groups out without reducing the tier value
+            for table_allocation_id in random.sample(table_allocation_ids, len(table_allocation_ids)):
+                if table_allocation_id in blocked_table_allocation_ids:
+                    continue
+
+                current_allocation = self.current_allocations[table_allocation_id]
+                other_groups_at_table = current_allocation.groups
+                for other_group in other_groups_at_table:
+                    # In order for the other group to be a possible candidate to move, it must be of an equal or lower tier
+                    other_group_tier_lower = current_allocation.value_of_group(
+                        other_group
+                    ) <= current_allocation.value_of_group(group)
+                    if not other_group_tier_lower:
+                        continue
+                    # And us joining the table must not put too many people at the table
+                    could_fit_if_swapped = (
+                        current_allocation.current_players - other_group.size + group.size
+                    ) <= current_allocation.maximum_players
+                    if not could_fit_if_swapped:
+                        continue
+                    # If they're a possible candidate, see if they can be moved without reducing their tier or bumping someone else
+                    if self._allocate_single_group(
+                        other_group,
+                        blocked_table_allocation_ids={table_allocation_id},
+                        allow_bumps=False,
+                        minimum_tier=current_allocation.value_of_group(other_group),
+                    ):
+                        current_allocation.groups.remove(other_group)
+                        current_allocation.groups.append(group)
+                        return True
+        return False
 
 
 def allocate(engine: Engine, time_slot_id: time_slot_id_t) -> dict[table_allocation_id_t, CurrentGameAllocation]:
@@ -443,7 +519,8 @@ def end_to_end_main(args: argparse.Namespace) -> None:
 
     # Doing each round of allocations
     for time_slot_id in first_time_slot_ids:
-        allocate(mock_runtime_engine, time_slot_id)
+        allocation_results = allocate(mock_runtime_engine, time_slot_id)
+        pprint(allocation_results)
 
 
 # endregion
