@@ -2,7 +2,7 @@ import argparse
 import random
 import shutil
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import Field, dataclass
 from functools import total_ordering
 from itertools import groupby
 from pathlib import Path
@@ -167,7 +167,7 @@ preference_score_t: TypeAlias = Literal[0, 1, 2, 3, 4, 5, 20]
 class Tier:
     raw_preference: int
     rank: int
-    compensation: float
+    compensation: float = 0
 
     @property
     def is_golden_d20(self) -> bool:
@@ -180,7 +180,7 @@ class Tier:
     # Sum of ranking (0, 1, 2, 3, 4, 5, 20 for d20) + compensation
     # Note that someone with only N different tiers, regardless of whether they're 1, 2, 4, etc will have N different ranks
     @property
-    def value(self) -> int:
+    def value(self) -> float:
         if self.is_zero:
             return 0
         return self.rank + self.compensation
@@ -303,11 +303,41 @@ class Group:
     def __len__(self) -> int:
         return len(self.person_ids)
 
+    @property
+    def size(self) -> int:
+        return len(self.person_ids)
+
 
 @dataclass
-class GameAllocationResult:
-    group: Group
-    table_allocation_id: int
+class CurrentGameAllocation:
+    table_allocation: TableAllocationWithExtra
+    groups: list[Group] = Field(default_factory=list)
+
+    def value_of_group(self, group: Group) -> Tier:
+        return group.tiered_preferences.get_tier(self.table_allocation.id)
+
+    def could_fit_group(self, group: Group) -> bool:
+        return self.current_players + group.size <= self.table_allocation.game.maximum_players
+
+    @property
+    def value(self) -> float:
+        return sum(self.value_of_group(group).value for group in self.groups)
+
+    @property
+    def current_players(self) -> int:
+        return sum(group.size for group in self.groups)
+
+    @property
+    def maximum_players(self) -> int:
+        return self.table_allocation.game.maximum_players
+
+    @property
+    def minimum_players(self) -> int:
+        return self.table_allocation.game.minimum_players
+
+    @property
+    def optimal_players(self) -> int:
+        return self.table_allocation.game.optimal_players
 
 
 class GameAllocator:
@@ -316,8 +346,13 @@ class GameAllocator:
         self.time_slot_id = time_slot_id
         # Get all the data we need from the database to do the allocation
         self.table_allocations = self._init_table_allocations()
+        self.table_allocations_map = {
+            table_allocation.id: table_allocation for table_allocation in self.table_allocations
+        }
         self.groups = self._init_groups()
+        self.current_allocations: dict[table_allocation_id_t, CurrentGameAllocation] = {}
 
+    # INITIALIZATION
     def _init_table_allocations(self) -> list[TableAllocationWithExtra]:
         with Session(self.engine) as session:
             # All table allocations
@@ -356,13 +391,44 @@ class GameAllocator:
                 for person, person_session_settings in solo_or_hosts[:1]  # TODO: More than 1
             ]
 
-    def allocate(self) -> list[GameAllocationResult]:
-        print("Groups")
-        # pprint(self.groups)
-        print(self.groups)
+    def _init_current_allocations(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
+        return {
+            table_allocation.id: CurrentGameAllocation(table_allocation=table_allocation)
+            for table_allocation in self.table_allocations
+        }
+
+    # ALLOCATION
+    def allocate(self, *, n_trials: int = 1) -> dict[table_allocation_id_t, CurrentGameAllocation]:
+        best_result: dict[table_allocation_id_t, CurrentGameAllocation] | None = None
+        best_score: float | None = None
+        for trial_seed in range(100, 100 + n_trials):
+            random.seed(trial_seed)
+            trial_results = self._allocate_trial()
+            trial_score = self._score_trial(trial_results)
+            if best_result is None or trial_score > best_score:
+                best_result = trial_results
+                best_score = trial_score
+        return best_result
+
+    def _allocate_trial(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
+        # Set up empty allocations
+        self.current_allocations = self._init_current_allocations()
+
+        # We want to allocate all the groups to tables
+        # STAGE 1 - Allocate D20 holders
+        d20_groups = [group for group in self.groups if group.tiered_preferences.has_d20]
+        for group in d20_groups:
+            pass
+
+    def _score_trial(self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]) -> float:
+        # TODO: Maybe just count the required compensation? Where we want to minimize the compensation
+        return sum(current_allocation.value for current_allocation in trial_results.values())
+
+    def _initial_allocate_single_group(self, group: Group) -> None:
+        pass
 
 
-def allocate(engine: Engine, time_slot_id: time_slot_id_t) -> list[GameAllocationResult]:
+def allocate(engine: Engine, time_slot_id: time_slot_id_t) -> dict[table_allocation_id_t, CurrentGameAllocation]:
     game_allocator = GameAllocator(engine, time_slot_id)
     return game_allocator.allocate()
 
