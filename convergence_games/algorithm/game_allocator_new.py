@@ -415,7 +415,7 @@ class GameAllocator:
         }
 
     # ALLOCATION
-    def allocate(self, *, n_trials: int = 1) -> dict[table_allocation_id_t, CurrentGameAllocation]:
+    def allocate(self, *, n_trials: int = 1000) -> dict[table_allocation_id_t, CurrentGameAllocation]:
         best_result: dict[table_allocation_id_t, CurrentGameAllocation] | None = None
         best_score: float | None = None
         for trial_seed in range(100, 100 + n_trials):
@@ -425,7 +425,7 @@ class GameAllocator:
             if best_result is None or trial_score > best_score:
                 best_result = trial_results
                 best_score = trial_score
-        self._summary(best_result)
+                self._summary(best_result, label=f"trial_{trial_seed}.score_{trial_score}")
         return best_result
 
     def _allocate_trial(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
@@ -435,17 +435,17 @@ class GameAllocator:
         # We want to allocate all the groups to tables
         # STAGE 1 - Allocate D20 holders
         d20_groups = [group for group in self.groups if group.tiered_preferences.has_d20]
-        print(len(d20_groups), "D20 groups")
-        print(len(self.groups), "Total groups")
+        # print(len(d20_groups), "D20 groups")
+        # print(len(self.groups), "Total groups")
         random.shuffle(d20_groups)
         for group in d20_groups:
             success = self._allocate_single_group(group)
             if not success:
-                print("!R!@$!$!@$!@$!!", group)
+                # print("!R!@$!$!@$!@$!!", group)
                 raise ValueError("D20 group could not be allocated")
 
-        print("D20 groups allocated")
-        pprint(self.current_allocations)
+        # print("D20 groups allocated")
+        # pprint(self.current_allocations)
 
         # STAGE 2 - Allocate non-D20 holders
         non_d20_groups = [group for group in self.groups if not group.tiered_preferences.has_d20]
@@ -453,7 +453,7 @@ class GameAllocator:
         for group in non_d20_groups:
             success = self._allocate_single_group(group)
             if not success:
-                print("!R!@$!$!@$!@$!!", group)
+                # print("!R!@$!$!@$!@$!!", group)
                 raise ValueError("Non-D20 group could not be allocated")
 
         return self.current_allocations
@@ -528,7 +528,9 @@ class GameAllocator:
         # TODO: Maybe just count the required compensation? Where we want to minimize the compensation
         return sum(current_allocation.value for current_allocation in trial_results.values())
 
-    def _summary(self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]) -> None:
+    def _summary(
+        self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation], label: str = "latest"
+    ) -> None:
         current_allocations = list(trial_results.values())
 
         game_centric_rows: list[dict[str, Any]] = []
@@ -544,7 +546,7 @@ class GameAllocator:
                 }
             )
         game_centric_df = pl.DataFrame(game_centric_rows)
-        game_centric_df.write_csv("summary_games.csv")
+        game_centric_df.write_csv(f"summary_games.{label}.csv")
 
         group_centric_rows: list[dict[str, Any]] = []
         for current_allocation in current_allocations:
@@ -556,20 +558,19 @@ class GameAllocator:
                     }
                 )
         group_centric_df = pl.DataFrame(group_centric_rows)
-        group_centric_df.write_csv("summary_groups.csv")
+        group_centric_df.write_csv(f"summary_groups.{label}.csv")
+        group_centric_df.group_by("tier_rank").agg(pl.count()).sort(pl.col("tier_rank")).write_csv(
+            f"summary_groups_tier_counts.{label}.csv"
+        )
+
         player_centric_df = group_centric_df.select(
             pl.exclude("number_of_players").repeat_by("number_of_players").explode()
         )
-        player_centric_df.write_csv("summary_players.csv")
+        player_centric_df.write_csv(f"summary_players.{label}.csv")
         # Bar chart of number of players per tier
         player_centric_df.group_by("tier_rank").agg(pl.count()).sort(pl.col("tier_rank")).write_csv(
-            "summary_tier_counts.csv"
+            f"summary_players_tier_counts.{label}.csv"
         )
-
-
-def allocate(engine: Engine, time_slot_id: time_slot_id_t) -> dict[table_allocation_id_t, CurrentGameAllocation]:
-    game_allocator = GameAllocator(engine, time_slot_id)
-    return game_allocator.allocate()
 
 
 def end_to_end_main(args: argparse.Namespace) -> None:
@@ -582,7 +583,9 @@ def end_to_end_main(args: argparse.Namespace) -> None:
 
     # Doing each round of allocations
     for time_slot_id in first_time_slot_ids:
-        allocation_results = allocate(mock_runtime_engine, time_slot_id)
+        # allocation_results = allocate(mock_runtime_engine, time_slot_id)
+        game_allocator = GameAllocator(mock_runtime_engine, time_slot_id)
+        allocation_results = game_allocator.allocate(n_trials=args.n_trials)
         pprint(allocation_results)
 
 
@@ -601,6 +604,7 @@ if __name__ == "__main__":
     data_generation_parser.add_argument("--n-groups-of-3", type=int, default=10)  # 3 * 10 = 30
     # end_to_end
     end_to_end_parser = subparsers.add_parser("end_to_end")
+    end_to_end_parser.add_argument("--n-trials", type=int, default=1)
     end_to_end_parser.set_defaults(func=end_to_end_main)
 
     args = parser.parse_args()
