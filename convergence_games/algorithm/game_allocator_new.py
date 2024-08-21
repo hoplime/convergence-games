@@ -183,7 +183,17 @@ class Tier:
         if self.is_zero or self.raw_preference < 1:
             # Zero, or in the case of overflow - which is always 0.5, no value
             return 0
-        return self.rank + self.compensation
+        # The fudge factor means that two 4s is better than a 5 and a 3, for example
+        # TODO: This doesn't actually work if we don't have a swapping stage that considers new sums
+        fudge = 0
+        # fudge = {
+        #     5: 0.07,
+        #     4: 0.13,
+        #     3: 0.18,
+        #     2: 0.22,
+        #     1: 0.25,
+        # }.get(self.rank, 0)
+        return self.rank + self.compensation + fudge
 
     def __eq__(self, other: Self) -> bool:
         if self.is_golden_d20 != other.is_golden_d20:
