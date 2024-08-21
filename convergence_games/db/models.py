@@ -128,6 +128,7 @@ class GameBase(SQLModel):
     maximum_players: int = Field(default=6)
     nz_made: bool = Field(default=False)
     designer_run: bool = Field(default=False)
+    hidden: bool = Field(default=False)
 
     gamemaster_id: int = Field(foreign_key="person.id")
     system_id: int = Field(foreign_key="system.id")
@@ -175,6 +176,7 @@ class GameUpdate(GameBase):
     system_id: int | None = None
     nz_made: bool | None = None
     designer_run: bool | None = None
+    hidden: bool | None = None
 
 
 class GameWithExtra(GameRead):

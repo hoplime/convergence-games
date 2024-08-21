@@ -1,6 +1,7 @@
 import datetime as dt
 
-from convergence_games.db.models import Table, TimeSlot
+from convergence_games.db.extra_types import GameTone
+from convergence_games.db.models import Game, Person, System, Table, TableAllocation, TimeSlot
 
 BASE_TIME_SLOTS = [
     TimeSlot(
@@ -86,10 +87,31 @@ BASE_TABLES = [
     # Special Rooms - Multitable
     Table(number=0, room=MULTI_, private=False, id=100),
     # Special Rooms - Overflow
-    Table(number=0, room=ROOM_S, private=False, id=404),
+    overflow_table := Table(number=0, room=ROOM_S, private=False, id=404),
 ]
+
+BASE_OVERFLOW_GAMES = [
+    Game(
+        id=0,
+        title="Overflow",
+        description="This is a placeholder game for overflow tables.\nIt looks like all the games you were interested in are too full to fit your group!",
+        tone=GameTone.SERIOUS,
+        minimum_players=0,
+        optimal_players=0,
+        maximum_players=1000,
+        hidden=True,
+        gamemaster=Person(name="An Amazing Volunteer", email="waikatoroleplayingguild@gmail.com"),
+        system=System(
+            name="Mystery",
+            description="This is a placeholder system for overflow tables.",
+        ),
+        table_allocations=[TableAllocation(table=overflow_table, time_slot=time_slot) for time_slot in BASE_TIME_SLOTS],
+    )
+]
+
 
 ALL_BASE_DATA = [
     *BASE_TIME_SLOTS,
     *BASE_TABLES,
+    *BASE_OVERFLOW_GAMES,
 ]

@@ -159,13 +159,13 @@ person_id_t: TypeAlias = int
 table_allocation_id_t: TypeAlias = int
 time_slot_id_t: TypeAlias = int
 game_id_t: TypeAlias = int
-preference_score_t: TypeAlias = Literal[0, 1, 2, 3, 4, 5, 20]
+preference_score_t: TypeAlias = Literal[0, 1, 2, 3, 4, 5, 20] | float  # 0.5 = overflow
 
 
 @total_ordering
 @dataclass(eq=False)
 class Tier:
-    raw_preference: int
+    raw_preference: int | float  # 0.5 = overflow
     rank: int
     compensation: float = 0
 
@@ -175,13 +175,14 @@ class Tier:
 
     @property
     def is_zero(self) -> bool:
-        return self.rank == 0
+        return self.rank == 0 and self.raw_preference == 0
 
     # Sum of ranking (0, 1, 2, 3, 4, 5, 20 for d20) + compensation
     # Note that someone with only N different tiers, regardless of whether they're 1, 2, 4, etc will have N different ranks
     @property
     def value(self) -> float:
-        if self.is_zero:
+        if self.is_zero or self.raw_preference < 1:
+            # Zero, or in the case of overflow - which is always 0.5, no value
             return 0
         return self.rank + self.compensation
 
@@ -246,7 +247,7 @@ class TieredPreferences:
         number_of_tiers = len(grouped_preferences)
         starts_with_d20 = grouped_preferences[0][0] == 20
         ends_with_0 = grouped_preferences[-1][0] == 0
-        rankings = (([20] if starts_with_d20 else []) + list(range(5, -1, -1)))[:number_of_tiers]
+        rankings = (([20] if starts_with_d20 else []) + list(range(5, -2, -1)))[:number_of_tiers]
         if ends_with_0:
             rankings[-1] = 0
         assert len(rankings) == number_of_tiers
@@ -254,15 +255,15 @@ class TieredPreferences:
         print(grouped_preferences)
 
         # Assign tiers
-        tier_map = []
+        tier_list = []
         for ranking, (raw_score, table_allocation_ids) in zip(rankings, grouped_preferences):
             tier = Tier(
                 raw_preference=raw_score,
                 rank=ranking,
                 compensation=self.average_compensation,
             )
-            tier_map.append((tier, table_allocation_ids))
-        return tier_map
+            tier_list.append((tier, table_allocation_ids))
+        return tier_list
 
     def __repr__(self) -> str:
         return f"TieredPreferences({self.tier_list})"
@@ -279,6 +280,7 @@ class Group:
         person: PersonWithExtra,
         session_settings: PersonSessionSettingsWithExtra,
         table_allocations: list[TableAllocationWithExtra],
+        preference_overrides: dict[table_allocation_id_t, preference_score_t] = None,
     ) -> Self:
         persons = [person] + (
             list(session_settings.group_members)
@@ -293,6 +295,8 @@ class Group:
             for session_preference in person.session_preferences
             if session_preference.table_allocation.time_slot_id == session_settings.time_slot_id
         }
+        if preference_overrides is not None:
+            preferences.update(preference_overrides)
         average_compensation = sum([person.compensation for person in persons]) / len(persons)
         return cls(
             person_ids=person_ids,
@@ -391,11 +395,16 @@ class GameAllocator:
                     )
                 )
             ).all()
+            overflow_table_allocation_id = session.exec(
+                select(TableAllocation.id).filter(TableAllocation.game_id == 0)
+            ).first()
+            preference_overrides = {overflow_table_allocation_id: 0.5}
             return [
                 Group.from_person_and_session_settings(
                     PersonWithExtra.model_validate(person),
                     PersonSessionSettingsWithExtra.model_validate(person_session_settings),
                     self.table_allocations,
+                    preference_overrides=preference_overrides,
                 )
                 for person, person_session_settings in solo_or_hosts  # TODO: More than 1
             ]
@@ -433,6 +442,19 @@ class GameAllocator:
             success = self._allocate_single_group(group)
             if not success:
                 print("!R!@$!$!@$!@$!!", group)
+                raise ValueError("D20 group could not be allocated")
+
+        print("D20 groups allocated")
+        pprint(self.current_allocations)
+
+        # STAGE 2 - Allocate non-D20 holders
+        non_d20_groups = [group for group in self.groups if not group.tiered_preferences.has_d20]
+        random.shuffle(non_d20_groups)
+        for group in non_d20_groups:
+            success = self._allocate_single_group(group)
+            if not success:
+                print("!R!@$!$!@$!@$!!", group)
+                raise ValueError("Non-D20 group could not be allocated")
 
         return self.current_allocations
 
@@ -453,7 +475,7 @@ class GameAllocator:
 
         for tier, table_allocation_ids in group.tiered_preferences.tier_list:
             if tier.is_zero or (minimum_tier is not None and tier < minimum_tier):
-                break
+                continue
 
             # STAGE 1 - FREE SPACE ALLOCATION
             # Greedily allocate to the first table that fits within this tier
@@ -501,6 +523,8 @@ class GameAllocator:
                         current_allocation.groups.remove(other_group)
                         current_allocation.groups.append(group)
                         return True
+
+        # We couldn't allocate the group - there is no space or no game above zero preference
         return False
 
 

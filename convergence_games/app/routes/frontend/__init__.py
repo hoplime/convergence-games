@@ -61,7 +61,7 @@ async def games(
     blocked_content_warnings: Annotated[list[str] | None, Query()] = None,
     age_suitability: Annotated[list[str] | None, Query()] = None,
 ) -> HTMLResponse:
-    games = request.state.db.all_games
+    games = [game for game in request.state.db.all_games if not game.hidden]
 
     # Determine filters
     if genre is not None:
@@ -360,6 +360,7 @@ async def schedule(
                 & (SessionPreference.table_allocation_id == TableAllocation.id),
             )
             .group_by(Game.id)
+            .filter(~Game.hidden)
             .order_by(Game.title)
         )
         preferences_data = session.exec(statement).all()
