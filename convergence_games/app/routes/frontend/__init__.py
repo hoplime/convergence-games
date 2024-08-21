@@ -5,7 +5,7 @@ from typing import Annotated, Iterator, Literal
 
 from fastapi import APIRouter, Form, Query
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, BeforeValidator, ConfigDict, RootModel
+from pydantic import BeforeValidator, RootModel
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from sqlmodel import select
 
@@ -17,7 +17,6 @@ from convergence_games.db.extra_types import (
     DEFINED_CONTENT_WARNINGS,
     GameCrunch,
     GameTone,
-    GroupHostingMode,
 )
 from convergence_games.db.models import (
     Game,

@@ -26,7 +26,7 @@ humanize = "^4.10.0"
 
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.4.4"
+ruff = "^0.6.1"
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]

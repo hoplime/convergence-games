@@ -2,7 +2,6 @@ import argparse
 import random
 import shutil
 from copy import deepcopy
-from dataclasses import dataclass
 from itertools import groupby
 from pathlib import Path
 from pprint import pprint
@@ -13,10 +12,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from convergence_games.db.base_data import ALL_BASE_DATA
 from convergence_games.db.models import (
-    Game,
-    Person,
     SessionPreference,
-    TableAllocation,
     TableAllocationWithExtra,
     TimeSlot,
     TimeSlotWithExtra,

@@ -1,14 +1,14 @@
 import argparse
 import random
 import shutil
-from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import total_ordering
 from itertools import groupby
 from pathlib import Path
 from pprint import pprint
-from typing import Literal, Self, TypeAlias
+from typing import Any, Literal, Self, TypeAlias
 
+import polars as pl
 from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, create_engine, func, select
 
@@ -24,7 +24,6 @@ from convergence_games.db.models import (
     TableAllocation,
     TableAllocationWithExtra,
     TimeSlot,
-    TimeSlotWithExtra,
 )
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
 
@@ -426,6 +425,7 @@ class GameAllocator:
             if best_result is None or trial_score > best_score:
                 best_result = trial_results
                 best_score = trial_score
+        self._summary(best_result)
         return best_result
 
     def _allocate_trial(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
@@ -457,10 +457,6 @@ class GameAllocator:
                 raise ValueError("Non-D20 group could not be allocated")
 
         return self.current_allocations
-
-    def _score_trial(self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]) -> float:
-        # TODO: Maybe just count the required compensation? Where we want to minimize the compensation
-        return sum(current_allocation.value for current_allocation in trial_results.values())
 
     def _allocate_single_group(
         self,
@@ -526,6 +522,49 @@ class GameAllocator:
 
         # We couldn't allocate the group - there is no space or no game above zero preference
         return False
+
+    # SCORING
+    def _score_trial(self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]) -> float:
+        # TODO: Maybe just count the required compensation? Where we want to minimize the compensation
+        return sum(current_allocation.value for current_allocation in trial_results.values())
+
+    def _summary(self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]) -> None:
+        current_allocations = list(trial_results.values())
+
+        game_centric_rows: list[dict[str, Any]] = []
+        for current_allocation in current_allocations:
+            game_centric_rows.append(
+                {
+                    "game": current_allocation.table_allocation.game.title,
+                    "current_players": current_allocation.current_players,
+                    "minimum_players": current_allocation.minimum_players,
+                    "optimal_players": current_allocation.optimal_players,
+                    "maximum_players": current_allocation.maximum_players,
+                    "value": current_allocation.value,
+                }
+            )
+        game_centric_df = pl.DataFrame(game_centric_rows)
+        game_centric_df.write_csv("summary_games.csv")
+
+        group_centric_rows: list[dict[str, Any]] = []
+        for current_allocation in current_allocations:
+            for group in current_allocation.groups:
+                group_centric_rows.append(
+                    {
+                        "number_of_players": group.size,
+                        "tier_rank": current_allocation.value_of_group(group).rank,
+                    }
+                )
+        group_centric_df = pl.DataFrame(group_centric_rows)
+        group_centric_df.write_csv("summary_groups.csv")
+        player_centric_df = group_centric_df.select(
+            pl.exclude("number_of_players").repeat_by("number_of_players").explode()
+        )
+        player_centric_df.write_csv("summary_players.csv")
+        # Bar chart of number of players per tier
+        player_centric_df.group_by("tier_rank").agg(pl.count()).sort(pl.col("tier_rank")).write_csv(
+            "summary_tier_counts.csv"
+        )
 
 
 def allocate(engine: Engine, time_slot_id: time_slot_id_t) -> dict[table_allocation_id_t, CurrentGameAllocation]:
