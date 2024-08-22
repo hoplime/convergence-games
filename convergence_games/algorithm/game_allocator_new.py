@@ -374,6 +374,11 @@ class GameAllocator:
         self.groups = self._init_groups()
         self.current_allocations: dict[table_allocation_id_t, CurrentGameAllocation] = {}
 
+        self.summary_dir = Path("summaries")
+        if self.summary_dir.exists():
+            shutil.rmtree(self.summary_dir)
+        self.summary_dir.mkdir(parents=True)
+
     # INITIALIZATION
     def _init_table_allocations(self) -> list[TableAllocationWithExtra]:
         with Session(self.engine) as session:
@@ -555,8 +560,9 @@ class GameAllocator:
                     "value": current_allocation.value,
                 }
             )
+
         game_centric_df = pl.DataFrame(game_centric_rows)
-        game_centric_df.write_csv(f"summary_games.{label}.csv")
+        game_centric_df.write_csv(self.summary_dir / f"games.{label}.csv")
 
         group_centric_rows: list[dict[str, Any]] = []
         for current_allocation in current_allocations:
@@ -568,18 +574,18 @@ class GameAllocator:
                     }
                 )
         group_centric_df = pl.DataFrame(group_centric_rows)
-        group_centric_df.write_csv(f"summary_groups.{label}.csv")
-        group_centric_df.group_by("tier_rank").agg(pl.count()).sort(pl.col("tier_rank")).write_csv(
-            f"summary_groups_tier_counts.{label}.csv"
+        group_centric_df.write_csv(self.summary_dir / f"groups.{label}.csv")
+        group_centric_df.group_by("tier_rank").agg(pl.len()).sort(pl.col("tier_rank")).write_csv(
+            self.summary_dir / f"groups_tier_counts.{label}.csv"
         )
 
         player_centric_df = group_centric_df.select(
             pl.exclude("number_of_players").repeat_by("number_of_players").explode()
         )
-        player_centric_df.write_csv(f"summary_players.{label}.csv")
+        player_centric_df.write_csv(self.summary_dir / f"players.{label}.csv")
         # Bar chart of number of players per tier
-        player_centric_df.group_by("tier_rank").agg(pl.count()).sort(pl.col("tier_rank")).write_csv(
-            f"summary_players_tier_counts.{label}.csv"
+        player_centric_df.group_by("tier_rank").agg(pl.len()).sort(pl.col("tier_rank")).write_csv(
+            self.summary_dir / f"players_tier_counts.{label}.csv"
         )
 
 
