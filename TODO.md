@@ -2,13 +2,13 @@
 
 # Bugs - Frontend
 
-- [ ] The profile cancel edit buttons etc break the page #content because of the hx-target based replacements and block logic
+- [x] The profile cancel edit buttons etc break the page #content because of the hx-target based replacements and block logic
 
 # Features - Algorithm
 
 - [ ] Deal with games which don't end up with enough players
 - [ ] Deal with the case where there are too many games
-- [ ] D20s
+- [x] D20s
 - [ ] Multiple people in a group
 - [ ] Annealing based swapping trials?
 

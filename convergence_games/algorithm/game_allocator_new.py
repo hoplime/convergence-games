@@ -1,6 +1,8 @@
 import argparse
+import enum
 import random
 import shutil
+from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import total_ordering
 from itertools import groupby
@@ -206,6 +208,11 @@ class Tier:
         elif not self.is_golden_d20 and other.is_golden_d20:
             return True
         return self.value < other.value
+
+
+class AllocationPriorityMode(enum.Enum):
+    RANDOM = enum.auto()
+    BY_PLAYERS_TO_OPTIMAL = enum.auto()
 
 
 class TieredPreferences:
@@ -471,7 +478,69 @@ class GameAllocator:
                 # print("!R!@$!$!@$!@$!!", group)
                 raise ValueError("Non-D20 group could not be allocated")
 
+        print("Pre-filled tables")
+        pprint(self.current_allocations)
+
+        # STAGE 3 - Try to move players to underfilled tables
+        insufficiently_filled_tables = [
+            current_allocation
+            for current_allocation in self.current_allocations.values()
+            if current_allocation.current_players < current_allocation.minimum_players
+        ]
+        # Sort by how close to minimum they are
+        insufficiently_filled_tables = sorted(
+            insufficiently_filled_tables,
+            key=lambda ca: ca.minimum_players - ca.current_players,
+        )
+        unfillable_tables: list[CurrentGameAllocation] = []
+        print("Insufficiently filled tables", insufficiently_filled_tables)
+        print("----")
+        for current_allocation in insufficiently_filled_tables:
+            print("Trying to fill", current_allocation)
+            success = self._try_to_fill_table(current_allocation)
+            if not success:
+                print("Couldn't fill", current_allocation)
+                unfillable_tables.append(current_allocation)
+            else:
+                print("Filled", current_allocation)
+            print("----")
+
+        # STAGE 3.5? - Try to combine otherwise unfillable tables
+
+        # STAGE 4 - Move players from unfillable tables to other tables
+        unfillable_ids = {current_allocation.table_allocation.id for current_allocation in unfillable_tables}
+        for current_allocation in unfillable_tables:
+            print("Trying to move players from", current_allocation)
+            for group in current_allocation.groups:
+                success = self._allocate_single_group(
+                    group,
+                    allow_bumps=False,
+                    blocked_table_allocation_ids=unfillable_ids,
+                    priority_mode=AllocationPriorityMode.BY_PLAYERS_TO_OPTIMAL,
+                )
+                if not success:
+                    raise ValueError("Unfillable group could not be allocated")
+            current_allocation.groups = []
+            print("Moved players from", current_allocation)
+            print("----")
+
         return self.current_allocations
+
+    def _order_table_allocation_ids(
+        self,
+        table_allocation_ids: list[table_allocation_id_t],
+        priority_mode: AllocationPriorityMode,
+    ) -> list[table_allocation_id_t]:
+        if priority_mode == AllocationPriorityMode.RANDOM:
+            return random.sample(table_allocation_ids, len(table_allocation_ids))
+        elif priority_mode == AllocationPriorityMode.BY_PLAYERS_TO_OPTIMAL:
+            return sorted(
+                table_allocation_ids,
+                key=lambda ta_id: self.current_allocations[ta_id].current_players
+                - self.current_allocations[ta_id].optimal_players,
+            )
+        else:
+            raise ValueError(f"Unknown priority mode: {priority_mode}")
 
     def _allocate_single_group(
         self,
@@ -480,6 +549,7 @@ class GameAllocator:
         blocked_table_allocation_ids: set[table_allocation_id_t] | None = None,
         allow_bumps: bool = True,
         minimum_tier: Tier | None = None,
+        priority_mode: AllocationPriorityMode = AllocationPriorityMode.RANDOM,
     ) -> bool:
         if blocked_table_allocation_ids is None:
             blocked_table_allocation_ids = set()
@@ -490,7 +560,7 @@ class GameAllocator:
 
             # STAGE 1 - FREE SPACE ALLOCATION
             # Greedily allocate to the first table that fits within this tier
-            for table_allocation_id in random.sample(table_allocation_ids, len(table_allocation_ids)):
+            for table_allocation_id in self._order_table_allocation_ids(table_allocation_ids, priority_mode):
                 if table_allocation_id in blocked_table_allocation_ids:
                     continue
 
@@ -505,7 +575,7 @@ class GameAllocator:
             # STAGE 2 - BUMPING ALLOCATION
             # If we couldn't allocate to a table without removing someone
             # we get less polite - try to push groups out without reducing the tier value
-            for table_allocation_id in random.sample(table_allocation_ids, len(table_allocation_ids)):
+            for table_allocation_id in self._order_table_allocation_ids(table_allocation_ids, priority_mode):
                 if table_allocation_id in blocked_table_allocation_ids:
                     continue
 
@@ -537,6 +607,75 @@ class GameAllocator:
 
         # We couldn't allocate the group - there is no space or no game above zero preference
         return False
+
+    def _try_to_fill_table(self, underfilled: CurrentGameAllocation) -> bool:
+        number_of_players_required = underfilled.minimum_players - underfilled.current_players
+        number_of_players_maximum = underfilled.maximum_players - underfilled.current_players
+        candidate_groups: dict[table_allocation_id_t, tuple[int, list[Group]]] = {}
+
+        tables_over_sweet_spot = [
+            current_allocation
+            for current_allocation in self.current_allocations.values()
+            if current_allocation.current_players > current_allocation.optimal_players
+        ]
+        print("Tables over sweet spot", tables_over_sweet_spot)
+        for table_allocation_id in random.sample(
+            [ca.table_allocation.id for ca in tables_over_sweet_spot], len(tables_over_sweet_spot)
+        ):
+            candidate_table = self.current_allocations[table_allocation_id]
+            groups_at_table = candidate_table.groups
+            for group in groups_at_table:
+                # Check if removing the group wouldn't make the table underfilled
+                if candidate_table.current_players - group.size < candidate_table.minimum_players:
+                    continue
+                # Check if the group's preference for the underfilled table is at least as high as the current table
+                if group.tiered_preferences.get_tier(underfilled.table_allocation.id) < candidate_table.value_of_group(
+                    group
+                ):
+                    continue
+                if table_allocation_id not in candidate_groups:
+                    allowable_players_to_take = candidate_table.current_players - candidate_table.minimum_players
+                    candidate_groups[table_allocation_id] = (allowable_players_to_take, [])
+                candidate_groups[table_allocation_id][1].append(group)
+
+        print("Candidate groups", candidate_groups)
+        total_feasible_players = sum(
+            [min(n, sum(group.size for group in groups)) for n, groups in candidate_groups.values()]
+        )
+        print("Total feasible players", total_feasible_players)
+        if total_feasible_players < number_of_players_required:
+            return False
+
+        # We have enough players to fill the table - pick groups to move
+        while number_of_players_required > 0:
+            candidate_group_items = list(candidate_groups.items())
+            for table_allocation_id, (allowable_players_to_take, groups) in random.sample(
+                candidate_group_items, len(candidate_groups)
+            ):
+                if number_of_players_required <= 0:
+                    break
+
+                # Randomly pick a group to move
+                group = random.choice(groups)
+
+                # If the group is too large to move from or to a table, skip it
+                if group.size > allowable_players_to_take or group.size > number_of_players_maximum:
+                    continue
+
+                # Move the group
+                # Remove it from further candidate groups
+                print("Moving group", group, "from", self.current_allocations[table_allocation_id], "to", underfilled)
+                candidate_groups[table_allocation_id] = (
+                    allowable_players_to_take - group.size,
+                    [g for g in groups if g != group],
+                )
+                # Update the number of players required
+                number_of_players_required -= group.size
+                number_of_players_maximum -= group.size
+                self.current_allocations[table_allocation_id].groups.remove(group)
+                underfilled.groups.append(group)
+
+        return True
 
     # SCORING
     def _score_trial(self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]) -> float:
