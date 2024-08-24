@@ -18,6 +18,10 @@ def get_session() -> Generator[Session, Any, None]:
         yield session
 
 
+def get_engine() -> Engine:
+    return engine
+
+
 def create_db_and_tables(allow_recreate: bool = True) -> bool:
     global engine
 

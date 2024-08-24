@@ -268,15 +268,13 @@ class TieredPreferences:
         if ends_with_0:
             rankings[-1] = 0
         assert len(rankings) == number_of_tiers
-        print("Rankings", rankings)
-        print(grouped_preferences)
 
         # Assign tiers
         tier_list = []
         for ranking, (raw_score, table_allocation_ids) in zip(rankings, grouped_preferences):
             tier = Tier(
                 raw_preference=raw_score,
-                rank=ranking,
+                rank=ranking if raw_score >= 1 else 0,
                 compensation=self.average_compensation,
             )
             tier_list.append((tier, table_allocation_ids))

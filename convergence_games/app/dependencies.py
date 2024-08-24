@@ -2,11 +2,12 @@ from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader
+from sqlalchemy import Engine
 from sqlmodel import Session as SqlModelSession
 from sqlmodel import select
 
 from convergence_games.db.models import Person
-from convergence_games.db.session import get_session
+from convergence_games.db.session import get_engine, get_session
 from convergence_games.settings import SETTINGS
 
 X_API_KEY = APIKeyHeader(name="X-API-Key", auto_error=True)
@@ -19,6 +20,7 @@ def get_hx_target(request: Request) -> str | None:
 
 Session = Annotated[SqlModelSession, Depends(get_session)]
 HxTarget = Annotated[str | None, Depends(get_hx_target)]
+EngineDependency = Annotated[Engine, Depends(get_engine)]
 
 
 def get_user(session: Session, email: Annotated[str | None, Cookie()] = None) -> Person | None:
