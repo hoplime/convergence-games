@@ -514,6 +514,7 @@ class GameAllocator:
                 best_score = trial_score
                 self._summary(best_result, label=f"trial_{trial_seed}.score_{trial_score}")
         compensation_values = self._get_compensation_values(best_result)
+        d20s_spent = self._get_d20s_spent(best_result)
         pprint(compensation_values)
         return best_result
 
@@ -817,6 +818,28 @@ class GameAllocator:
                         "which had",
                         group.tiered_preferences.get_tier(current_allocation.table_allocation.id),
                     )
+        return result
+
+    def _get_d20s_spent(
+        self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]
+    ) -> dict[person_id_t, int]:
+        result: dict = {}
+        for current_allocation in trial_results.values():
+            for group in current_allocation.groups:
+                if (
+                    group.tiered_preferences.has_d20
+                    and group.tiered_preferences.get_tier(current_allocation.table_allocation.id).is_golden_d20
+                ):
+                    for person_id in group.person_ids:
+                        result[person_id] = 1
+                        print(
+                            "D20 spent by",
+                            person_id,
+                            "for",
+                            current_allocation,
+                            "which had",
+                            group.tiered_preferences.get_tier(current_allocation.table_allocation.id),
+                        )
         return result
 
     def _summary(
