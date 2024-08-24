@@ -295,22 +295,26 @@ class Group:
     def from_person_and_session_settings(
         cls,
         person: PersonWithExtra,
-        session_settings: PersonSessionSettingsWithExtra,
+        session_settings: PersonSessionSettingsWithExtra | time_slot_id_t,
         table_allocations: list[TableAllocationWithExtra],
         preference_overrides: dict[table_allocation_id_t, preference_score_t] = None,
     ) -> Self:
-        persons = [person] + (
-            list(session_settings.group_members)
-            if session_settings.group_hosting_mode == GroupHostingMode.HOSTING
-            else []
-        )
+        if isinstance(session_settings, time_slot_id_t):
+            persons = [person]
+        else:
+            persons = [person] + (
+                list(session_settings.group_members)
+                if session_settings.group_hosting_mode == GroupHostingMode.HOSTING
+                else []
+            )
         person_ids = {person.id for person in persons}
         # Just in case, to deduplicate
         persons = [[p for p in persons if p.id == person_id][0] for person_id in person_ids]
         preferences = {
             session_preference.table_allocation_id: session_preference.preference
             for session_preference in person.session_preferences
-            if session_preference.table_allocation.time_slot_id == session_settings.time_slot_id
+            if session_preference.table_allocation.time_slot_id
+            == (session_settings if isinstance(session_settings, time_slot_id_t) else session_settings.time_slot_id)
         }
         if preference_overrides is not None:
             preferences.update(preference_overrides)
@@ -410,6 +414,7 @@ class GameAllocator:
             table_allocation.id: table_allocation for table_allocation in self.table_allocations
         }
         self.groups = self._init_groups()
+        self.gamemasters_by_table_allocation_id = self._init_game_masters_by_table_allocation_id()
         self.current_allocations: dict[table_allocation_id_t, CurrentGameAllocation] = {}
 
         self.summary_dir = Path("summaries")
@@ -460,6 +465,29 @@ class GameAllocator:
                 )
                 for person, person_session_settings in solo_or_hosts  # TODO: More than 1
             ]
+
+    def _init_game_masters_by_table_allocation_id(self) -> dict[table_allocation_id_t, Group]:
+        def session_settings_for_gm(gm: PersonWithExtra) -> PersonSessionSettingsWithExtra | time_slot_id_t:
+            possible_session_settings = [ss for ss in gm.session_settings if ss.time_slot_id == self.time_slot_id]
+            if not possible_session_settings:
+                return self.time_slot_id
+            assert len(possible_session_settings) == 1
+            return PersonSessionSettingsWithExtra.model_validate(possible_session_settings[0])
+
+        with Session(self.engine) as session:
+            overflow_table_allocation_id = session.exec(
+                select(TableAllocation.id).filter(TableAllocation.game_id == 0)
+            ).first()
+            preference_overrides = {overflow_table_allocation_id: 0.5}
+            return {
+                table_allocation.id: Group.from_person_and_session_settings(
+                    PersonWithExtra.model_validate(table_allocation.game.gamemaster),
+                    session_settings_for_gm(table_allocation.game.gamemaster),
+                    self.table_allocations,
+                    preference_overrides=preference_overrides,
+                )
+                for table_allocation in self.table_allocations
+            }
 
     def _init_current_allocations(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
         return {
@@ -542,6 +570,14 @@ class GameAllocator:
         unfillable_ids = {current_allocation.table_allocation.id for current_allocation in unfillable_tables}
         for current_allocation in unfillable_tables:
             print("Trying to move players from", current_allocation)
+            # Allocate the GM
+            self._allocate_single_group(
+                self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id],
+                allow_bumps=False,
+                blocked_table_allocation_ids=unfillable_ids,
+                priority_mode=AllocationPriorityMode.BY_PLAYERS_TO_OPTIMAL,
+            )
+            # And allocate all the remaining players
             for group in current_allocation.groups:
                 success = self._allocate_single_group(
                     group,
