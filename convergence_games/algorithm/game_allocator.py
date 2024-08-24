@@ -453,7 +453,9 @@ class GameAllocator:
                 )
             ).all()
             overflow_table_allocation_id = session.exec(
-                select(TableAllocation.id).filter(TableAllocation.game_id == 0)
+                select(TableAllocation.id).filter(
+                    (TableAllocation.game_id == 0) & (TableAllocation.time_slot_id == self.time_slot_id)
+                )
             ).first()
             preference_overrides = {overflow_table_allocation_id: 0.5}
             return [
@@ -511,6 +513,8 @@ class GameAllocator:
                 best_result = trial_results
                 best_score = trial_score
                 self._summary(best_result, label=f"trial_{trial_seed}.score_{trial_score}")
+        compensation_values = self._get_compensation_values(best_result)
+        pprint(compensation_values)
         return best_result
 
     def _allocate_trial(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
@@ -786,6 +790,35 @@ class GameAllocator:
             ),
         )
 
+    def _get_compensation_values(
+        self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]
+    ) -> dict[person_id_t, int]:
+        # Players get 1, 2, 3, ... points of compensation for each tier down from their highest from the game they've been allocated in
+        # D20s get their D20 refunded and 6 points of compensation
+        # GMs that didn't run get an extra point of compensation too
+        result: dict = {}
+        for current_allocation in trial_results.values():
+            for group in current_allocation.groups:
+                for person_id in group.person_ids:
+                    allocated_tier_rank = group.tiered_preferences.get_tier(current_allocation.table_allocation.id).rank
+                    highest_tier_rank = group.tiered_preferences.tier_list[0][0].rank
+                    if allocated_tier_rank == 20:
+                        allocated_tier_rank = 6
+                    if highest_tier_rank == 20:
+                        highest_tier_rank = 6
+                    result[person_id] = highest_tier_rank - allocated_tier_rank
+                    print(
+                        "Compensation for",
+                        person_id,
+                        "is",
+                        result[person_id],
+                        "for",
+                        current_allocation,
+                        "which had",
+                        group.tiered_preferences.get_tier(current_allocation.table_allocation.id),
+                    )
+        return result
+
     def _summary(
         self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation], label: str = "latest"
     ) -> None:
@@ -841,7 +874,7 @@ def end_to_end_main(args: argparse.Namespace) -> None:
     first_time_slot_ids = [1]
 
     # Doing each round of allocations
-    for time_slot_id in first_time_slot_ids:
+    for time_slot_id in all_time_slot_ids:
         # allocation_results = allocate(mock_runtime_engine, time_slot_id)
         game_allocator = GameAllocator(mock_runtime_engine, time_slot_id)
         allocation_results = game_allocator.allocate(n_trials=args.n_trials)
