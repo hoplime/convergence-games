@@ -404,6 +404,13 @@ class TrialScore:
         return f"{self.score}|{self.number_of_unfilled_tables}"
 
 
+@dataclass
+class GameAllocationResults:
+    current_allocations: dict[table_allocation_id_t, CurrentGameAllocation]
+    compensation_values: dict[person_id_t, int]
+    d20s_spent: dict[person_id_t, int]
+
+
 class GameAllocator:
     def __init__(self, engine: Engine, time_slot_id: time_slot_id_t) -> None:
         self.engine = engine
@@ -505,7 +512,7 @@ class GameAllocator:
         }
 
     # ALLOCATION
-    def allocate(self, *, n_trials: int = 1000) -> dict[table_allocation_id_t, CurrentGameAllocation]:
+    def allocate(self, *, n_trials: int = 1000) -> GameAllocationResults:
         best_result: dict[table_allocation_id_t, CurrentGameAllocation] | None = None
         best_score: TrialScore | None = None
         for trial_seed in range(100, 100 + n_trials):
@@ -519,7 +526,7 @@ class GameAllocator:
         compensation_values = self._get_compensation_values(best_result)
         d20s_spent = self._get_d20s_spent(best_result)
         pprint(compensation_values)
-        return best_result
+        return GameAllocationResults(best_result, compensation_values, d20s_spent)
 
     def _allocate_trial(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
         # Set up empty allocations
@@ -900,11 +907,13 @@ def end_to_end_main(args: argparse.Namespace) -> None:
     first_time_slot_ids = [1]
 
     # Doing each round of allocations
-    for time_slot_id in all_time_slot_ids:
+    for time_slot_id in first_time_slot_ids:
         # allocation_results = allocate(mock_runtime_engine, time_slot_id)
         game_allocator = GameAllocator(mock_runtime_engine, time_slot_id)
         allocation_results = game_allocator.allocate(n_trials=args.n_trials)
-        pprint(allocation_results)
+        pprint(allocation_results.current_allocations)
+        pprint(allocation_results.compensation_values)
+        pprint(allocation_results.d20s_spent)
 
 
 # endregion
