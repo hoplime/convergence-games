@@ -13,7 +13,7 @@ from typing import Any, Literal, Self, TypeAlias
 
 import polars as pl
 from sqlalchemy import Engine
-from sqlmodel import Session, SQLModel, create_engine, func, select
+from sqlmodel import Session, SQLModel, col, create_engine, func, select
 
 from convergence_games.db.base_data import ALL_BASE_DATA
 from convergence_games.db.extra_types import GroupHostingMode
@@ -435,6 +435,8 @@ class GameAllocator:
 
     def _init_groups(self) -> list[Group]:
         with Session(self.engine) as session:
+            # People GMing this session
+            gm_ids = [ta.game.gamemaster_id for ta in self.table_allocations]
             # All groups
             solo_or_hosts: list[tuple[Person, PersonSessionSettings]] = session.exec(
                 select(Person, PersonSessionSettings)
@@ -450,6 +452,7 @@ class GameAllocator:
                         # Hosts
                         | (PersonSessionSettings.group_hosting_mode == GroupHostingMode.HOSTING)
                     )
+                    & col(Person.id).not_in(gm_ids)
                 )
             ).all()
             overflow_table_allocation_id = session.exec(
@@ -465,7 +468,7 @@ class GameAllocator:
                     self.table_allocations,
                     preference_overrides=preference_overrides,
                 )
-                for person, person_session_settings in solo_or_hosts  # TODO: More than 1
+                for person, person_session_settings in solo_or_hosts
             ]
 
     def _init_game_masters_by_table_allocation_id(self) -> dict[table_allocation_id_t, Group]:
