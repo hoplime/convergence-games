@@ -1,5 +1,6 @@
 import argparse
 import enum
+import itertools
 import random
 import shutil
 from collections import defaultdict
@@ -331,6 +332,18 @@ class Group:
         return len(self.person_ids)
 
 
+def sums_possible_with_numbers(numbers: list[int]) -> set[int]:
+    result = {0}
+    for combination_size in range(1, len(numbers) + 1):
+        for combination in itertools.combinations(numbers, combination_size):
+            result.add(sum(combination))
+    return result
+
+
+def sums_extractable(numbers: list[int], maximum: int) -> set[int]:
+    return {s for s in sums_possible_with_numbers(numbers) if s <= maximum}
+
+
 @dataclass
 class CurrentGameAllocation:
     table_allocation: TableAllocationWithExtra
@@ -363,10 +376,28 @@ class CurrentGameAllocation:
         return self.table_allocation.game.optimal_players
 
     def __repr__(self) -> str:
-        return f"{self.table_allocation.game.title} ({self.current_players}/{self.maximum_players})"
+        return f"{self.table_allocation.game.title} [{self.table_allocation.id}] ({self.current_players}/{self.maximum_players})"
 
     def __str__(self) -> str:
-        return f"{self.table_allocation.game.title} ({self.current_players}/{self.maximum_players})"
+        return f"{self.table_allocation.game.title} [{self.table_allocation.id}] ({self.current_players}/{self.maximum_players})"
+
+
+@total_ordering
+@dataclass(eq=False)
+class TrialScore:
+    score: float
+    number_of_unfilled_tables: int
+
+    def __lt__(self, other: Self) -> bool:
+        if self.score == other.score:
+            return self.number_of_unfilled_tables > other.number_of_unfilled_tables
+        return self.score < other.score
+
+    def __eq__(self, other: Self) -> bool:
+        return self.score == other.score and self.number_of_unfilled_tables == other.number_of_unfilled_tables
+
+    def __repr__(self) -> str:
+        return f"{self.score}|{self.number_of_unfilled_tables}"
 
 
 class GameAllocator:
@@ -439,12 +470,12 @@ class GameAllocator:
     # ALLOCATION
     def allocate(self, *, n_trials: int = 1000) -> dict[table_allocation_id_t, CurrentGameAllocation]:
         best_result: dict[table_allocation_id_t, CurrentGameAllocation] | None = None
-        best_score: float | None = None
+        best_score: TrialScore | None = None
         for trial_seed in range(100, 100 + n_trials):
             random.seed(trial_seed)
             trial_results = self._allocate_trial()
             trial_score = self._score_trial(trial_results)
-            if best_result is None or trial_score > best_score:
+            if best_score is None or trial_score > best_score:
                 best_result = trial_results
                 best_score = trial_score
                 self._summary(best_result, label=f"trial_{trial_seed}.score_{trial_score}")
@@ -638,25 +669,119 @@ class GameAllocator:
                     candidate_groups[table_allocation_id] = (allowable_players_to_take, [])
                 candidate_groups[table_allocation_id][1].append(group)
 
-        print("Candidate groups", candidate_groups)
-        total_feasible_players = sum(
-            [min(n, sum(group.size for group in groups)) for n, groups in candidate_groups.values()]
-        )
+        # Now figure out how many players you can _actually_ take from each candidate table
+        # e.g. if you can take 4 from a table, but the groups are [2, 3, 3] you can only take max 3,
+        # because you can take 0, 2, 3, but not 5 or 8 (too many) players
+        for table_allocation_id, (allowable_players_to_take, groups) in candidate_groups.items():
+            candidate_groups[table_allocation_id] = (
+                min(
+                    allowable_players_to_take,
+                    max(sums_extractable([g.size for g in groups], allowable_players_to_take)),
+                ),
+                groups,
+            )
+
+        print("Candidate groups")
+        pprint(candidate_groups)
+        total_feasible_players = sum([n for n, _ in candidate_groups.values()])
         print("Total feasible players", total_feasible_players)
         if total_feasible_players < number_of_players_required:
             return False
 
+        # Now which different combinations are feasible?
+        table_possible_extractable = [
+            sums_extractable([g.size for g in groups], min(allowable_players_to_take, number_of_players_maximum))
+            for allowable_players_to_take, groups in candidate_groups.values()
+        ]
+        print("Table possible extractable")
+        pprint(table_possible_extractable)
+        possible_player_numbers_to_take = {sum(product) for product in itertools.product(*table_possible_extractable)}
+        print("Products")
+        pprint(possible_player_numbers_to_take)
+        required_player_numbers_to_take = set(range(number_of_players_required, number_of_players_maximum + 1))
+        print("Required")
+        pprint(required_player_numbers_to_take)
+        if not possible_player_numbers_to_take & required_player_numbers_to_take:
+            # No combination of players can fill the table :(
+            print("No combination of players can fill the table")
+            return False
+
         # We have enough players to fill the table - pick groups to move
+        failure_count = 0
         while number_of_players_required > 0:
+            print("Number of players required", number_of_players_required)
             candidate_group_items = list(candidate_groups.items())
+            failure_count += 1
             for table_allocation_id, (allowable_players_to_take, groups) in random.sample(
                 candidate_group_items, len(candidate_groups)
             ):
                 if number_of_players_required <= 0:
                     break
 
+                if not groups:
+                    continue
+
+                # There's an edge case where we take a group that's too small but prevents us from taking a larger group and completing filling the table
+                # So we have to exclude groups that do that
+                groups_to_try: list[Group] = []
+                for group in groups:
+                    would_complete_table = group.size >= number_of_players_required
+                    if would_complete_table:
+                        groups_to_try.append(group)
+                        continue
+
+                    # If it wouldn't complete the table by itself, we need to safely be able to complete the table from what _would_ be left
+                    # So we need to check if there's a group that would be able to complete the table if we took this group
+                    # If there isn't such a group, we can't take this group
+                    there_is_another_valid_group = False
+                    # First check this table assuming a smaller number of players available to take
+                    allowable_players_to_take_without_this_group = allowable_players_to_take - group.size
+                    remaining_max_players_to_fill_after_this_group = number_of_players_maximum - group.size
+
+                    for other_group in groups:
+                        if other_group == group:
+                            # Same group
+                            continue
+                        if other_group.size > allowable_players_to_take_without_this_group:
+                            # This would mean taking too many players from the other table
+                            continue
+                        if other_group.size > remaining_max_players_to_fill_after_this_group:
+                            # This would mean we couldn't fit it into the table we're trying to fill
+                            continue
+
+                        there_is_another_valid_group = True
+                        break
+
+                    if there_is_another_valid_group:
+                        groups_to_try.append(group)
+                        continue
+
+                    # Then also check the other tables for the same thing
+                    for other_table_allocation_id, (
+                        other_allowable_players_to_take,
+                        other_groups,
+                    ) in candidate_group_items:
+                        if other_table_allocation_id == table_allocation_id:
+                            # Same table
+                            continue
+                        for other_group in other_groups:
+                            if other_group.size > other_allowable_players_to_take:
+                                # This would mean taking too many players from the other table
+                                continue
+                            if other_group.size > remaining_max_players_to_fill_after_this_group:
+                                # This would mean we couldn't fit it into the table we're trying to fill
+                                continue
+                            there_is_another_valid_group = True
+                            break
+
+                    if there_is_another_valid_group:
+                        groups_to_try.append(group)
+
+                if not groups_to_try:
+                    continue
+
                 # Randomly pick a group to move
-                group = random.choice(groups)
+                group = random.choice(groups_to_try)
 
                 # If the group is too large to move from or to a table, skip it
                 if group.size > allowable_players_to_take or group.size > number_of_players_maximum:
@@ -669,6 +794,8 @@ class GameAllocator:
                     allowable_players_to_take - group.size,
                     [g for g in groups if g != group],
                 )
+                if candidate_groups[table_allocation_id][0] == 0 or not candidate_groups[table_allocation_id][1]:
+                    del candidate_groups[table_allocation_id]
                 # Update the number of players required
                 number_of_players_required -= group.size
                 number_of_players_maximum -= group.size
@@ -678,9 +805,16 @@ class GameAllocator:
         return True
 
     # SCORING
-    def _score_trial(self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]) -> float:
+    def _score_trial(self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation]) -> TrialScore:
         # TODO: Maybe just count the required compensation? Where we want to minimize the compensation
-        return sum(current_allocation.value for current_allocation in trial_results.values())
+        score_value = sum(current_allocation.value for current_allocation in trial_results.values())
+        return TrialScore(
+            score=score_value,
+            number_of_unfilled_tables=sum(
+                current_allocation.current_players < current_allocation.minimum_players
+                for current_allocation in trial_results.values()
+            ),
+        )
 
     def _summary(
         self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation], label: str = "latest"
