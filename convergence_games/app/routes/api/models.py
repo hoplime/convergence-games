@@ -16,6 +16,11 @@ from convergence_games.db.models import (
     Person,
     PersonCreate,
     PersonRead,
+    PersonSessionSettings,
+    PersonSessionSettingsCreate,
+    PersonSessionSettingsRead,
+    PersonSessionSettingsUpdate,
+    PersonSessionSettingsWithExtra,
     PersonUpdate,
     PersonWithExtra,
     SessionPreference,
@@ -28,11 +33,16 @@ from convergence_games.db.models import (
     SystemRead,
     SystemUpdate,
     SystemWithExtra,
+    Table,
     TableAllocation,
     TableAllocationCreate,
     TableAllocationRead,
     TableAllocationUpdate,
     TableAllocationWithExtra,
+    TableCreate,
+    TableRead,
+    TableUpdate,
+    TableWithExtra,
     TimeSlot,
     TimeSlotCreate,
     TimeSlotRead,
@@ -50,12 +60,12 @@ class ModelBoilerplate:
     update: type[SQLModel] | None = None
 
 
-SYSTEM = ModelBoilerplate(
-    table=System,
-    create=SystemCreate,
-    read=SystemRead,
-    extra=SystemWithExtra,
-    update=SystemUpdate,
+GAME = ModelBoilerplate(
+    table=Game,
+    create=GameCreate,
+    read=GameRead,
+    extra=GameWithExtra,
+    update=GameUpdate,
 )
 
 GENRE = ModelBoilerplate(
@@ -66,13 +76,6 @@ GENRE = ModelBoilerplate(
     update=GenreUpdate,
 )
 
-GAME = ModelBoilerplate(
-    table=Game,
-    create=GameCreate,
-    read=GameRead,
-    extra=GameWithExtra,
-    update=GameUpdate,
-)
 
 PERSON = ModelBoilerplate(
     table=Person,
@@ -82,20 +85,12 @@ PERSON = ModelBoilerplate(
     update=PersonUpdate,
 )
 
-TIMESLOT = ModelBoilerplate(
-    table=TimeSlot,
-    create=TimeSlotCreate,
-    read=TimeSlotRead,
-    extra=TimeSlotWithExtra,
-    update=TimeSlotUpdate,
-)
-
-TABLE_ALLOCATION = ModelBoilerplate(
-    table=TableAllocation,
-    create=TableAllocationCreate,
-    read=TableAllocationRead,
-    extra=TableAllocationWithExtra,
-    update=TableAllocationUpdate,
+PERSON_SESSION_SETTINGS = ModelBoilerplate(
+    table=PersonSessionSettings,
+    create=PersonSessionSettingsCreate,
+    read=PersonSessionSettingsRead,
+    extra=PersonSessionSettingsWithExtra,
+    update=PersonSessionSettingsUpdate,
 )
 
 SESSION_PREFERENCE = ModelBoilerplate(
@@ -106,13 +101,46 @@ SESSION_PREFERENCE = ModelBoilerplate(
     update=SessionPreferenceUpdate,
 )
 
+SYSTEM = ModelBoilerplate(
+    table=System,
+    create=SystemCreate,
+    read=SystemRead,
+    extra=SystemWithExtra,
+    update=SystemUpdate,
+)
+
+TABLE = ModelBoilerplate(
+    table=Table,
+    create=TableCreate,
+    read=TableRead,
+    extra=TableWithExtra,
+    update=TableUpdate,
+)
+
+TABLE_ALLOCATION = ModelBoilerplate(
+    table=TableAllocation,
+    create=TableAllocationCreate,
+    read=TableAllocationRead,
+    extra=TableAllocationWithExtra,
+    update=TableAllocationUpdate,
+)
+
+TIMESLOT = ModelBoilerplate(
+    table=TimeSlot,
+    create=TimeSlotCreate,
+    read=TimeSlotRead,
+    extra=TimeSlotWithExtra,
+    update=TimeSlotUpdate,
+)
 
 boilerplates = [
-    SYSTEM,
-    GENRE,
     GAME,
+    GENRE,
     PERSON,
+    PERSON_SESSION_SETTINGS,
+    SESSION_PREFERENCE,
+    SYSTEM,
+    TABLE,
     TIMESLOT,
     TABLE_ALLOCATION,
-    SESSION_PREFERENCE,
 ]

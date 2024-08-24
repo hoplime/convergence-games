@@ -315,6 +315,16 @@ class TableRead(TableBase):
     id: int
 
 
+class TableWithExtra(TableRead):
+    table_allocations: list["TableAllocationWithExtra"]
+
+
+class TableUpdate(TableBase):
+    number: int | None = None
+    room: str | None = None
+    private: bool | None = None
+
+
 # endregion
 
 
