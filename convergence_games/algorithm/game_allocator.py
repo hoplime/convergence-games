@@ -642,14 +642,18 @@ class GameAllocator:
     def _try_to_fill_table(self, underfilled: CurrentGameAllocation) -> bool:
         number_of_players_required = underfilled.minimum_players - underfilled.current_players
         number_of_players_maximum = underfilled.maximum_players - underfilled.current_players
+        required_player_numbers_to_take = set(range(number_of_players_required, number_of_players_maximum + 1))
         candidate_groups: dict[table_allocation_id_t, tuple[int, list[Group]]] = {}
 
+        # Find tables that are over the sweet spot as possible sources of players
         tables_over_sweet_spot = [
             current_allocation
             for current_allocation in self.current_allocations.values()
             if current_allocation.current_players > current_allocation.optimal_players
         ]
         print("Tables over sweet spot", tables_over_sweet_spot)
+
+        # Get groups that could be moved to the underfilled table
         for table_allocation_id in random.sample(
             [ca.table_allocation.id for ca in tables_over_sweet_spot], len(tables_over_sweet_spot)
         ):
@@ -669,139 +673,58 @@ class GameAllocator:
                     candidate_groups[table_allocation_id] = (allowable_players_to_take, [])
                 candidate_groups[table_allocation_id][1].append(group)
 
-        # Now figure out how many players you can _actually_ take from each candidate table
-        # e.g. if you can take 4 from a table, but the groups are [2, 3, 3] you can only take max 3,
-        # because you can take 0, 2, 3, but not 5 or 8 (too many) players
-        for table_allocation_id, (allowable_players_to_take, groups) in candidate_groups.items():
-            candidate_groups[table_allocation_id] = (
-                min(
-                    allowable_players_to_take,
-                    max(sums_extractable([g.size for g in groups], allowable_players_to_take)),
-                ),
-                groups,
-            )
+        def all_table_subset_combinations(groups: list[Group], max_player_count: int) -> list[tuple[Group, ...]]:
+            result = [()]  # Empty list - i.e. no groups
+            for i in range(1, len(groups) + 1):
+                subsets = itertools.combinations(groups, i)
+                for subset in subsets:
+                    if sum([group.size for group in subset]) <= max_player_count:
+                        result.append(subset)
+            return result
 
         print("Candidate groups")
         pprint(candidate_groups)
-        total_feasible_players = sum([n for n, _ in candidate_groups.values()])
-        print("Total feasible players", total_feasible_players)
-        if total_feasible_players < number_of_players_required:
-            return False
-
-        # Now which different combinations are feasible?
-        table_possible_extractable = [
-            sums_extractable([g.size for g in groups], min(allowable_players_to_take, number_of_players_maximum))
-            for allowable_players_to_take, groups in candidate_groups.values()
+        candidate_subsets_by_table: dict[table_allocation_id_t, list[tuple[Group, ...]]] = {
+            table_allocation_id: all_table_subset_combinations(groups, allowable_players_to_take)
+            for table_allocation_id, (allowable_players_to_take, groups) in candidate_groups.items()
+        }
+        # print("Candidate subsets by table")
+        # pprint(candidate_subsets_by_table)
+        candidate_subsets_across_all = [
+            list(zip(candidate_subsets_by_table.keys(), prod))
+            for prod in itertools.product(*candidate_subsets_by_table.values())
         ]
-        print("Table possible extractable")
-        pprint(table_possible_extractable)
-        possible_player_numbers_to_take = {sum(product) for product in itertools.product(*table_possible_extractable)}
-        print("Products")
-        pprint(possible_player_numbers_to_take)
-        required_player_numbers_to_take = set(range(number_of_players_required, number_of_players_maximum + 1))
-        print("Required")
-        pprint(required_player_numbers_to_take)
-        if not possible_player_numbers_to_take & required_player_numbers_to_take:
-            # No combination of players can fill the table :(
-            print("No combination of players can fill the table")
+        # print("Candidate subsets across all")
+        # pprint(candidate_subsets_across_all)
+        candidate_subsets_with_sufficient_players = [
+            candidate_subset
+            for candidate_subset in candidate_subsets_across_all
+            if sum(  # Sum of all group sizes from all tables
+                [
+                    sum([group.size for group in groups])  # Sum of all group sizes from this table
+                    for ta_id, groups in candidate_subset
+                ]
+            )
+            in required_player_numbers_to_take
+        ]
+        # print("Candidate subsets with sufficient players")
+        # pprint(candidate_subsets_with_sufficient_players)
+
+        if not candidate_subsets_with_sufficient_players:
             return False
 
-        # We have enough players to fill the table - pick groups to move
-        failure_count = 0
-        while number_of_players_required > 0:
-            print("Number of players required", number_of_players_required)
-            candidate_group_items = list(candidate_groups.items())
-            failure_count += 1
-            for table_allocation_id, (allowable_players_to_take, groups) in random.sample(
-                candidate_group_items, len(candidate_groups)
-            ):
-                if number_of_players_required <= 0:
-                    break
-
-                if not groups:
-                    continue
-
-                # There's an edge case where we take a group that's too small but prevents us from taking a larger group and completing filling the table
-                # So we have to exclude groups that do that
-                groups_to_try: list[Group] = []
-                for group in groups:
-                    would_complete_table = group.size >= number_of_players_required
-                    if would_complete_table:
-                        groups_to_try.append(group)
-                        continue
-
-                    # If it wouldn't complete the table by itself, we need to safely be able to complete the table from what _would_ be left
-                    # So we need to check if there's a group that would be able to complete the table if we took this group
-                    # If there isn't such a group, we can't take this group
-                    there_is_another_valid_group = False
-                    # First check this table assuming a smaller number of players available to take
-                    allowable_players_to_take_without_this_group = allowable_players_to_take - group.size
-                    remaining_max_players_to_fill_after_this_group = number_of_players_maximum - group.size
-
-                    for other_group in groups:
-                        if other_group == group:
-                            # Same group
-                            continue
-                        if other_group.size > allowable_players_to_take_without_this_group:
-                            # This would mean taking too many players from the other table
-                            continue
-                        if other_group.size > remaining_max_players_to_fill_after_this_group:
-                            # This would mean we couldn't fit it into the table we're trying to fill
-                            continue
-
-                        there_is_another_valid_group = True
-                        break
-
-                    if there_is_another_valid_group:
-                        groups_to_try.append(group)
-                        continue
-
-                    # Then also check the other tables for the same thing
-                    for other_table_allocation_id, (
-                        other_allowable_players_to_take,
-                        other_groups,
-                    ) in candidate_group_items:
-                        if other_table_allocation_id == table_allocation_id:
-                            # Same table
-                            continue
-                        for other_group in other_groups:
-                            if other_group.size > other_allowable_players_to_take:
-                                # This would mean taking too many players from the other table
-                                continue
-                            if other_group.size > remaining_max_players_to_fill_after_this_group:
-                                # This would mean we couldn't fit it into the table we're trying to fill
-                                continue
-                            there_is_another_valid_group = True
-                            break
-
-                    if there_is_another_valid_group:
-                        groups_to_try.append(group)
-
-                if not groups_to_try:
-                    continue
-
-                # Randomly pick a group to move
-                group = random.choice(groups_to_try)
-
-                # If the group is too large to move from or to a table, skip it
-                if group.size > allowable_players_to_take or group.size > number_of_players_maximum:
-                    continue
-
-                # Move the group
-                # Remove it from further candidate groups
-                print("Moving group", group, "from", self.current_allocations[table_allocation_id], "to", underfilled)
-                candidate_groups[table_allocation_id] = (
-                    allowable_players_to_take - group.size,
-                    [g for g in groups if g != group],
-                )
-                if candidate_groups[table_allocation_id][0] == 0 or not candidate_groups[table_allocation_id][1]:
-                    del candidate_groups[table_allocation_id]
-                # Update the number of players required
-                number_of_players_required -= group.size
-                number_of_players_maximum -= group.size
-                self.current_allocations[table_allocation_id].groups.remove(group)
+        # Now we have all the possible combinations of groups that could be moved to the underfilled table
+        # Pick one at random
+        chosen_subset = random.choice(candidate_subsets_with_sufficient_players)
+        print("Chosen subset")
+        pprint(chosen_subset)
+        # And actually move the players
+        for table_allocation_id, groups in chosen_subset:
+            candidate_table = self.current_allocations[table_allocation_id]
+            for group in groups:
+                candidate_table.groups.remove(group)
                 underfilled.groups.append(group)
-
+                print("Moved", group, "to", underfilled)
         return True
 
     # SCORING
