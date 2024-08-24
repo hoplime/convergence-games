@@ -234,6 +234,8 @@ class PersonRead(PersonBase):
 class PersonWithExtra(PersonRead):
     gmd_games: list[Game]
     session_preferences: list["SessionPreference"]
+    session_settings: list["PersonSessionSettings"]
+    session_settings_groups: list["PersonSessionSettings"]
 
 
 class PersonUpdate(PersonBase):

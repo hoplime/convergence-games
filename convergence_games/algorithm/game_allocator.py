@@ -467,22 +467,26 @@ class GameAllocator:
             ]
 
     def _init_game_masters_by_table_allocation_id(self) -> dict[table_allocation_id_t, Group]:
-        def session_settings_for_gm(gm: PersonWithExtra) -> PersonSessionSettingsWithExtra | time_slot_id_t:
-            possible_session_settings = [ss for ss in gm.session_settings if ss.time_slot_id == self.time_slot_id]
-            if not possible_session_settings:
-                return self.time_slot_id
-            assert len(possible_session_settings) == 1
-            return PersonSessionSettingsWithExtra.model_validate(possible_session_settings[0])
-
         with Session(self.engine) as session:
+
+            def session_settings_for_gm(gm: PersonWithExtra) -> PersonSessionSettingsWithExtra | time_slot_id_t:
+                print("Checking session settings for", gm)
+                possible_session_settings = [ss for ss in gm.session_settings if ss.time_slot_id == self.time_slot_id]
+                if not possible_session_settings:
+                    return self.time_slot_id
+                assert len(possible_session_settings) == 1
+                return PersonSessionSettingsWithExtra.model_validate(possible_session_settings[0])
+
             overflow_table_allocation_id = session.exec(
                 select(TableAllocation.id).filter(TableAllocation.game_id == 0)
             ).first()
             preference_overrides = {overflow_table_allocation_id: 0.5}
             return {
                 table_allocation.id: Group.from_person_and_session_settings(
-                    PersonWithExtra.model_validate(table_allocation.game.gamemaster),
-                    session_settings_for_gm(table_allocation.game.gamemaster),
+                    gm := PersonWithExtra.model_validate(
+                        session.get(Person, table_allocation.game.gamemaster.id)
+                    ),  # Can't have stuff detached!
+                    session_settings_for_gm(gm),
                     self.table_allocations,
                     preference_overrides=preference_overrides,
                 )
@@ -520,8 +524,8 @@ class GameAllocator:
         # print(len(self.groups), "Total groups")
         random.shuffle(d20_groups)
         for group in d20_groups:
-            success = self._allocate_single_group(group)
-            if not success:
+            allocated_table_id = self._allocate_single_group(group)
+            if allocated_table_id is None:
                 # print("!R!@$!$!@$!@$!!", group)
                 raise ValueError("D20 group could not be allocated")
 
@@ -532,8 +536,8 @@ class GameAllocator:
         non_d20_groups = [group for group in self.groups if not group.tiered_preferences.has_d20]
         random.shuffle(non_d20_groups)
         for group in non_d20_groups:
-            success = self._allocate_single_group(group)
-            if not success:
+            allocated_table_id = self._allocate_single_group(group)
+            if allocated_table_id is None:
                 # print("!R!@$!$!@$!@$!!", group)
                 raise ValueError("Non-D20 group could not be allocated")
 
@@ -556,8 +560,8 @@ class GameAllocator:
         print("----")
         for current_allocation in insufficiently_filled_tables:
             print("Trying to fill", current_allocation)
-            success = self._try_to_fill_table(current_allocation)
-            if not success:
+            allocated_table_id = self._try_to_fill_table(current_allocation)
+            if not allocated_table_id:
                 print("Couldn't fill", current_allocation)
                 unfillable_tables.append(current_allocation)
             else:
@@ -571,21 +575,25 @@ class GameAllocator:
         for current_allocation in unfillable_tables:
             print("Trying to move players from", current_allocation)
             # Allocate the GM
-            self._allocate_single_group(
+            allocated_table_id = self._allocate_single_group(
                 self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id],
                 allow_bumps=False,
                 blocked_table_allocation_ids=unfillable_ids,
                 priority_mode=AllocationPriorityMode.BY_PLAYERS_TO_OPTIMAL,
             )
+            if allocated_table_id is None:
+                raise ValueError("Unfillable GM could not be allocated")
+            print("Moved GM", self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id])
+
             # And allocate all the remaining players
             for group in current_allocation.groups:
-                success = self._allocate_single_group(
+                allocated_table_id = self._allocate_single_group(
                     group,
                     allow_bumps=False,
                     blocked_table_allocation_ids=unfillable_ids,
                     priority_mode=AllocationPriorityMode.BY_PLAYERS_TO_OPTIMAL,
                 )
-                if not success:
+                if allocated_table_id is None:
                     raise ValueError("Unfillable group could not be allocated")
             current_allocation.groups = []
             print("Moved players from", current_allocation)
@@ -617,7 +625,7 @@ class GameAllocator:
         allow_bumps: bool = True,
         minimum_tier: Tier | None = None,
         priority_mode: AllocationPriorityMode = AllocationPriorityMode.RANDOM,
-    ) -> bool:
+    ) -> table_allocation_id_t | None:
         if blocked_table_allocation_ids is None:
             blocked_table_allocation_ids = set()
 
@@ -634,7 +642,7 @@ class GameAllocator:
                 current_allocation = self.current_allocations[table_allocation_id]
                 if current_allocation.could_fit_group(group):
                     current_allocation.groups.append(group)
-                    return True
+                    return table_allocation_id
 
             if not allow_bumps:
                 continue
@@ -662,18 +670,21 @@ class GameAllocator:
                     if not could_fit_if_swapped:
                         continue
                     # If they're a possible candidate, see if they can be moved without reducing their tier or bumping someone else
-                    if self._allocate_single_group(
-                        other_group,
-                        blocked_table_allocation_ids={table_allocation_id},
-                        allow_bumps=False,
-                        minimum_tier=current_allocation.value_of_group(other_group),
+                    if (
+                        self._allocate_single_group(
+                            other_group,
+                            blocked_table_allocation_ids={table_allocation_id},
+                            allow_bumps=False,
+                            minimum_tier=current_allocation.value_of_group(other_group),
+                        )
+                        is not None
                     ):
                         current_allocation.groups.remove(other_group)
                         current_allocation.groups.append(group)
-                        return True
+                        return table_allocation_id
 
         # We couldn't allocate the group - there is no space or no game above zero preference
-        return False
+        return None
 
     def _try_to_fill_table(self, underfilled: CurrentGameAllocation) -> bool:
         number_of_players_required = underfilled.minimum_players - underfilled.current_players
