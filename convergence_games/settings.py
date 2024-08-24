@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     FLAG_SCHEDULE: bool = False
     FLAG_USERS: bool = False
     FLAG_ALWAYS_ALLOW_CHECKINS: bool = True
+    API_KEY: str = "api-key"
 
 
 SETTINGS = Settings()
