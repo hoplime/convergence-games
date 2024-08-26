@@ -27,6 +27,8 @@ SYSTEM_NAME_MAP = {
     "D&D (5e)": "D&D 5e",
     "D&D 5th Edition": "D&D 5e",
     "Dnd 5e": "D&D 5e",
+    "Dnd5e": "D&D 5e",
+    "5e (with guns)": "D&D 5e",
     "freeform": "Freeform",
     "Monsterhearts 2nd edition": "Monsterhearts 2",
     "Motherhship 1E": "Mothership",
@@ -40,6 +42,8 @@ SYSTEM_NAME_MAP = {
     "Daggerheart Open Beta 1.4.2": "Daggerheart",
     "Tales System (RSS)": "Tales System",
     "Compatible with the Alien RPG by Free League": "Compatible with Alien RPG",
+    "The Dark Eye (5th Edition)": "The Dark Eye",
+    "Pathfinder 1st Edition": "Pathfinder 1e",
 }
 
 
