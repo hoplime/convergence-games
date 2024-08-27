@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, status
 from pydantic import BaseModel, ConfigDict, create_model
 from sqlmodel import SQLModel, inspect, select
 
-from convergence_games.algorithm.game_allocator import GameAllocator
+from convergence_games.algorithm.game_allocator import CurrentGameAllocationModel, GameAllocator
 from convergence_games.app.dependencies import Auth, EngineDependency, Session
 from convergence_games.app.routes.api.models import boilerplates
 from convergence_games.settings import SETTINGS
@@ -86,7 +86,7 @@ for boilerplate in boilerplates:
 
 
 @router.post("/allocate_draft/{time_slot_id}", tags=["admin"])
-async def allocate_draft(time_slot_id: int, engine: EngineDependency) -> None:
+async def allocate_draft(time_slot_id: int, engine: EngineDependency) -> list[CurrentGameAllocationModel]:
     game_allocator = GameAllocator(engine, time_slot_id)
     result = game_allocator.allocate(n_trials=200)
-    print(result)
+    return [r.to_serializable() for r in result.values()]

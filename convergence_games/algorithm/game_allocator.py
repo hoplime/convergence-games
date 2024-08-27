@@ -3,7 +3,6 @@ import enum
 import itertools
 import random
 import shutil
-from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import total_ordering
 from itertools import groupby
@@ -12,6 +11,7 @@ from pprint import pprint
 from typing import Any, Literal, Self, TypeAlias
 
 import polars as pl
+from pydantic import BaseModel
 from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, col, create_engine, func, select
 
@@ -29,6 +29,16 @@ from convergence_games.db.models import (
     TimeSlot,
 )
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
+
+
+def maybe_print(*args: Any, **kwargs: Any) -> None:
+    if False:
+        print(*args, **kwargs)
+
+
+def maybe_pprint(*args: Any, **kwargs: Any) -> None:
+    if False:
+        pprint(*args, **kwargs)
 
 
 # region Database initialization
@@ -109,7 +119,7 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
 
         # SIMULATE GROUPS
         for time_slot in time_slots:
-            print("Time Slot:", time_slot)
+            maybe_print("Time Slot:", time_slot)
             players_gming_this_session = session.exec(
                 select(Person)
                 .join(Game, Game.gamemaster_id == Person.id)
@@ -117,16 +127,16 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
                 .join(TimeSlot, TimeSlot.id == TableAllocation.time_slot_id)
                 .filter(TimeSlot.id == time_slot.id)
             ).all()
-            # print("GMing", len(players_gming_this_session))
+            # maybe_print("GMing", len(players_gming_this_session))
             # Exclude GMs from the list of players to group
             players_eligible_to_group = [person for person in persons if person not in players_gming_this_session]
-            # print("GROUPABLE", len(players_eligible_to_group))
+            # maybe_print("GROUPABLE", len(players_eligible_to_group))
             for group_size, n_groups in [(2, args.n_groups_of_2), (3, args.n_groups_of_3)]:
                 for _ in range(n_groups):
                     group = random.sample(players_eligible_to_group, group_size)
                     for person in group:
                         players_eligible_to_group.remove(person)
-                    print([person.name for person in group])
+                    maybe_print([person.name for person in group])
                     host_person_session_settings: PersonSessionSettings = session.exec(
                         select(PersonSessionSettings).filter(
                             (PersonSessionSettings.person_id == group[0].id)
@@ -227,9 +237,9 @@ class TieredPreferences:
         self.preferences = preferences
         self.average_compensation = average_compensation
         self.table_allocations = table_allocations
-        print("Setting up tiered preferences")
+        maybe_print("Setting up tiered preferences")
         self.tier_list = self._init_tier_list()
-        pprint(self.tier_list)
+        maybe_pprint(self.tier_list)
         self.tier_by_table_allocation_id = {
             table_allocation_id: tier
             for tier, table_allocation_ids in self.tier_list
@@ -286,6 +296,7 @@ class TieredPreferences:
 
 @dataclass
 class Group:
+    leader_id: person_id_t
     person_ids: list[person_id_t]
     tiered_preferences: TieredPreferences = None
 
@@ -318,6 +329,7 @@ class Group:
             preferences.update(preference_overrides)
         average_compensation = sum([person.compensation for person in persons]) / len(persons)
         return cls(
+            leader_id=person.id,
             person_ids=person_ids,
             tiered_preferences=TieredPreferences(
                 preferences=preferences,
@@ -346,6 +358,11 @@ def sums_extractable(numbers: list[int], maximum: int) -> set[int]:
     return {s for s in sums_possible_with_numbers(numbers) if s <= maximum}
 
 
+class CurrentGameAllocationModel(BaseModel):
+    table_allocation_id: table_allocation_id_t
+    group_leaders: list[person_id_t]
+
+
 @dataclass
 class CurrentGameAllocation:
     table_allocation: TableAllocationWithExtra
@@ -356,6 +373,12 @@ class CurrentGameAllocation:
 
     def could_fit_group(self, group: Group) -> bool:
         return self.current_players + group.size <= self.table_allocation.game.maximum_players
+
+    def to_serializable(self) -> CurrentGameAllocationModel:
+        return CurrentGameAllocationModel(
+            table_allocation_id=self.table_allocation.id,
+            group_leaders=[group.leader_id for group in self.groups],
+        )
 
     @property
     def value(self) -> float:
@@ -480,7 +503,7 @@ class GameAllocator:
         with Session(self.engine) as session:
 
             def session_settings_for_gm(gm: PersonWithExtra) -> PersonSessionSettingsWithExtra | time_slot_id_t:
-                print("Checking session settings for", gm)
+                maybe_print("Checking session settings for", gm)
                 possible_session_settings = [ss for ss in gm.session_settings if ss.time_slot_id == self.time_slot_id]
                 if not possible_session_settings:
                     return self.time_slot_id
@@ -510,7 +533,7 @@ class GameAllocator:
         }
 
     # ALLOCATION
-    def allocate(self, *, n_trials: int = 1000) -> GameAllocationResults:
+    def allocate(self, *, n_trials: int = 1000) -> dict[table_allocation_id_t, CurrentGameAllocation]:
         best_result: dict[table_allocation_id_t, CurrentGameAllocation] | None = None
         best_score: TrialScore | None = None
         for trial_seed in range(100, 100 + n_trials):
@@ -521,9 +544,13 @@ class GameAllocator:
                 best_result = trial_results
                 best_score = trial_score
                 self._summary(best_result, label=f"trial_{trial_seed}.score_{trial_score}")
+        return best_result
+
+    def get_final_results(
+        self, best_result: dict[table_allocation_id_t, CurrentGameAllocation]
+    ) -> GameAllocationResults:
         compensation_values = self._get_compensation_values(best_result)
         d20s_spent = self._get_d20s_spent(best_result)
-        pprint(compensation_values)
         return GameAllocationResults(best_result, compensation_values, d20s_spent)
 
     def _allocate_trial(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
@@ -533,17 +560,17 @@ class GameAllocator:
         # We want to allocate all the groups to tables
         # STAGE 1 - Allocate D20 holders
         d20_groups = [group for group in self.groups if group.tiered_preferences.has_d20]
-        # print(len(d20_groups), "D20 groups")
-        # print(len(self.groups), "Total groups")
+        # maybe_print(len(d20_groups), "D20 groups")
+        # maybe_print(len(self.groups), "Total groups")
         random.shuffle(d20_groups)
         for group in d20_groups:
             allocated_table_id = self._allocate_single_group(group)
             if allocated_table_id is None:
-                # print("!R!@$!$!@$!@$!!", group)
+                # maybe_print("!R!@$!$!@$!@$!!", group)
                 raise ValueError("D20 group could not be allocated")
 
-        # print("D20 groups allocated")
-        # pprint(self.current_allocations)
+        # maybe_print("D20 groups allocated")
+        # maybe_pprint(self.current_allocations)
 
         # STAGE 2 - Allocate non-D20 holders
         non_d20_groups = [group for group in self.groups if not group.tiered_preferences.has_d20]
@@ -551,11 +578,11 @@ class GameAllocator:
         for group in non_d20_groups:
             allocated_table_id = self._allocate_single_group(group)
             if allocated_table_id is None:
-                # print("!R!@$!$!@$!@$!!", group)
+                # maybe_print("!R!@$!$!@$!@$!!", group)
                 raise ValueError("Non-D20 group could not be allocated")
 
-        print("Pre-filled tables")
-        pprint(self.current_allocations)
+        maybe_print("Pre-filled tables")
+        maybe_pprint(self.current_allocations)
 
         # STAGE 3 - Try to move players to underfilled tables
         insufficiently_filled_tables = [
@@ -569,24 +596,24 @@ class GameAllocator:
             key=lambda ca: ca.minimum_players - ca.current_players,
         )
         unfillable_tables: list[CurrentGameAllocation] = []
-        print("Insufficiently filled tables", insufficiently_filled_tables)
-        print("----")
+        maybe_print("Insufficiently filled tables", insufficiently_filled_tables)
+        maybe_print("----")
         for current_allocation in insufficiently_filled_tables:
-            print("Trying to fill", current_allocation)
+            maybe_print("Trying to fill", current_allocation)
             allocated_table_id = self._try_to_fill_table(current_allocation)
             if not allocated_table_id:
-                print("Couldn't fill", current_allocation)
+                maybe_print("Couldn't fill", current_allocation)
                 unfillable_tables.append(current_allocation)
             else:
-                print("Filled", current_allocation)
-            print("----")
+                maybe_print("Filled", current_allocation)
+            maybe_print("----")
 
         # STAGE 3.5? - Try to combine otherwise unfillable tables
 
         # STAGE 4 - Move players from unfillable tables to other tables
         unfillable_ids = {current_allocation.table_allocation.id for current_allocation in unfillable_tables}
         for current_allocation in unfillable_tables:
-            print("Trying to move players from", current_allocation)
+            maybe_print("Trying to move players from", current_allocation)
             # Allocate the GM
             allocated_table_id = self._allocate_single_group(
                 self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id],
@@ -596,7 +623,7 @@ class GameAllocator:
             )
             if allocated_table_id is None:
                 raise ValueError("Unfillable GM could not be allocated")
-            print("Moved GM", self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id])
+            maybe_print("Moved GM", self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id])
 
             # And allocate all the remaining players
             for group in current_allocation.groups:
@@ -609,8 +636,8 @@ class GameAllocator:
                 if allocated_table_id is None:
                     raise ValueError("Unfillable group could not be allocated")
             current_allocation.groups = []
-            print("Moved players from", current_allocation)
-            print("----")
+            maybe_print("Moved players from", current_allocation)
+            maybe_print("----")
 
         return self.current_allocations
 
@@ -711,7 +738,7 @@ class GameAllocator:
             for current_allocation in self.current_allocations.values()
             if current_allocation.current_players > current_allocation.optimal_players
         ]
-        print("Tables over sweet spot", tables_over_sweet_spot)
+        maybe_print("Tables over sweet spot", tables_over_sweet_spot)
 
         # Get groups that could be moved to the underfilled table
         for table_allocation_id in random.sample(
@@ -742,20 +769,20 @@ class GameAllocator:
                         result.append(subset)
             return result
 
-        print("Candidate groups")
-        pprint(candidate_groups)
+        maybe_print("Candidate groups")
+        maybe_pprint(candidate_groups)
         candidate_subsets_by_table: dict[table_allocation_id_t, list[tuple[Group, ...]]] = {
             table_allocation_id: all_table_subset_combinations(groups, allowable_players_to_take)
             for table_allocation_id, (allowable_players_to_take, groups) in candidate_groups.items()
         }
-        # print("Candidate subsets by table")
-        # pprint(candidate_subsets_by_table)
+        # maybe_print("Candidate subsets by table")
+        # maybe_pprint(candidate_subsets_by_table)
         candidate_subsets_across_all = [
             list(zip(candidate_subsets_by_table.keys(), prod))
             for prod in itertools.product(*candidate_subsets_by_table.values())
         ]
-        # print("Candidate subsets across all")
-        # pprint(candidate_subsets_across_all)
+        # maybe_print("Candidate subsets across all")
+        # maybe_pprint(candidate_subsets_across_all)
         candidate_subsets_with_sufficient_players = [
             candidate_subset
             for candidate_subset in candidate_subsets_across_all
@@ -767,8 +794,8 @@ class GameAllocator:
             )
             in required_player_numbers_to_take
         ]
-        # print("Candidate subsets with sufficient players")
-        # pprint(candidate_subsets_with_sufficient_players)
+        # maybe_print("Candidate subsets with sufficient players")
+        # maybe_pprint(candidate_subsets_with_sufficient_players)
 
         if not candidate_subsets_with_sufficient_players:
             return False
@@ -776,15 +803,15 @@ class GameAllocator:
         # Now we have all the possible combinations of groups that could be moved to the underfilled table
         # Pick one at random
         chosen_subset = random.choice(candidate_subsets_with_sufficient_players)
-        print("Chosen subset")
-        pprint(chosen_subset)
+        maybe_print("Chosen subset")
+        maybe_pprint(chosen_subset)
         # And actually move the players
         for table_allocation_id, groups in chosen_subset:
             candidate_table = self.current_allocations[table_allocation_id]
             for group in groups:
                 candidate_table.groups.remove(group)
                 underfilled.groups.append(group)
-                print("Moved", group, "to", underfilled)
+                maybe_print("Moved", group, "to", underfilled)
         return True
 
     # SCORING
@@ -816,7 +843,7 @@ class GameAllocator:
                     if highest_tier_rank == 20:
                         highest_tier_rank = 6
                     result[person_id] = highest_tier_rank - allocated_tier_rank
-                    print(
+                    maybe_print(
                         "Compensation for",
                         person_id,
                         "is",
@@ -840,7 +867,7 @@ class GameAllocator:
                 ):
                     for person_id in group.person_ids:
                         result[person_id] = 1
-                        print(
+                        maybe_print(
                             "D20 spent by",
                             person_id,
                             "for",
@@ -909,9 +936,9 @@ def end_to_end_main(args: argparse.Namespace) -> None:
         # allocation_results = allocate(mock_runtime_engine, time_slot_id)
         game_allocator = GameAllocator(mock_runtime_engine, time_slot_id)
         allocation_results = game_allocator.allocate(n_trials=args.n_trials)
-        pprint(allocation_results.current_allocations)
-        pprint(allocation_results.compensation_values)
-        pprint(allocation_results.d20s_spent)
+        maybe_pprint(allocation_results.current_allocations)
+        maybe_pprint(allocation_results.compensation_values)
+        maybe_pprint(allocation_results.d20s_spent)
 
 
 # endregion
