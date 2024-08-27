@@ -28,8 +28,7 @@ SYSTEM_NAME_MAP = {
     "D&D 5th Edition": "D&D 5e",
     "Dnd 5e": "D&D 5e",
     "Dnd5e": "D&D 5e",
-    "5e (with guns)": "D&D 5e",
-    "freeform": "Freeform",
+    "5e (with guns)": "D&D 5e (with guns)",
     "Monsterhearts 2nd edition": "Monsterhearts 2",
     "Motherhship 1E": "Mothership",
     "overkill 2nd Edition": "Overkill 2nd Edition",
@@ -44,13 +43,19 @@ SYSTEM_NAME_MAP = {
     "Compatible with the Alien RPG by Free League": "Compatible with Alien RPG",
     "The Dark Eye (5th Edition)": "The Dark Eye",
     "Pathfinder 1st Edition": "Pathfinder 1e",
+    "freeform narrative": "Freeform Narrative",
 }
 
 
-DEFAULT_GAME_SHEET_URL = "https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=1424049540&format=csv"
-DEFAULT_SCHEDULE_SHEET_URL = (
-    "https://docs.google.com/spreadsheets/d/1_AZHowZkvRU_wBGnoaqV-uQFpXvTFXlr8zZBcAsS6Tc/export?gid=0&format=csv"
+# DEFAULT_GAME_SHEET_URL = "https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=1424049540&format=csv"
+# DEFAULT_SCHEDULE_SHEET_URL = (
+#     "https://docs.google.com/spreadsheets/d/1_AZHowZkvRU_wBGnoaqV-uQFpXvTFXlr8zZBcAsS6Tc/export?gid=0&format=csv"
+# )
+
+DEFAULT_GAME_SHEET_URL = (
+    "https://docs.google.com/spreadsheets/d/1cq0cis4cXgEMTh_EH1EnJb8NokdPp0Kzc4OwkSJCPnM/export?gid=0&format=csv"
 )
+DEFAULT_SCHEDULE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1cq0cis4cXgEMTh_EH1EnJb8NokdPp0Kzc4OwkSJCPnM/export?gid=1950232425&format=csv"
 
 
 class GameResponse(TypedDict):
@@ -179,8 +184,8 @@ class GoogleSheetsImporter:
                 minimum_players=row["minimum_players"],
                 optimal_players=row["optimal_players"],
                 maximum_players=row["maximum_players"],
-                nz_made=row["nz_made"],
-                designer_run=row["nz_made"],
+                nz_made=row["nz_made"] or False,
+                designer_run=row["nz_made"] or False,
                 genres=[genre for genre in genre_dbos if genre.name in row["genre_names"]]
                 if row["genre_names"]
                 else [],

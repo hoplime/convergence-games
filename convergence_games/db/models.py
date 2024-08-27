@@ -205,7 +205,7 @@ class GameWithExtra(GameRead):
 # region Person
 class PersonBase(SQLModel):
     name: str = Field(index=True)
-    email: str = Field(index=True)
+    email: str = Field(index=True, unique=True)
     golden_d20s: int = Field(default=0)
     compensation: int = Field(default=0)
 
@@ -219,8 +219,6 @@ class Person(PersonBase, table=True):
     session_settings_groups: list["PersonSessionSettings"] = Relationship(
         back_populates="group_members", link_model=PersonSessionSettingsGroupMembersLink
     )
-
-    __table_args__ = (UniqueConstraint("email", name="unique_email"),)
 
 
 class PersonCreate(PersonBase):

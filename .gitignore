@@ -5,3 +5,4 @@ __pycache__/
 *.db
 docker-home/
 *.csv
+ignore/

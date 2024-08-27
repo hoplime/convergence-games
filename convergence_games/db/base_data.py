@@ -1,7 +1,9 @@
 import datetime as dt
 
 from convergence_games.db.extra_types import GameTone
-from convergence_games.db.models import Game, Person, System, Table, TableAllocation, TimeSlot
+from convergence_games.db.models import Game, Genre, Person, System, Table, TableAllocation, TimeSlot
+
+# We have to, very boringly, define all of the IDs for the base data.
 
 BASE_TIME_SLOTS = [
     TimeSlot(
@@ -90,6 +92,16 @@ BASE_TABLES = [
     overflow_table := Table(number=0, room=ROOM_S, private=False, id=404),
 ]
 
+BASE_PERSONS = [Person(id=0, name="An Amazing Volunteer", email="waikatoroleplayingguild@gmail.com")]
+
+BASE_SYSTEMS = [
+    System(
+        id=0,
+        name="Mystery",
+        description="This is a placeholder system for overflow tables.",
+    )
+]
+
 BASE_OVERFLOW_GAMES = [
     Game(
         id=0,
@@ -100,18 +112,26 @@ BASE_OVERFLOW_GAMES = [
         optimal_players=0,
         maximum_players=1000,
         hidden=True,
-        gamemaster=Person(name="An Amazing Volunteer", email="waikatoroleplayingguild@gmail.com"),
-        system=System(
-            name="Mystery",
-            description="This is a placeholder system for overflow tables.",
-        ),
-        table_allocations=[TableAllocation(table=overflow_table, time_slot=time_slot) for time_slot in BASE_TIME_SLOTS],
+        gamemaster_id=BASE_PERSONS[0].id,
+        system_id=BASE_SYSTEMS[0].id,
     )
 ]
 
+BASE_TABLE_ALLOCATIONS = [
+    TableAllocation(
+        id=time_slot.id,
+        table_id=overflow_table.id,
+        time_slot_id=time_slot.id,
+        game_id=BASE_OVERFLOW_GAMES[0].id,
+    )
+    for time_slot in BASE_TIME_SLOTS
+]
 
 ALL_BASE_DATA = [
     *BASE_TIME_SLOTS,
     *BASE_TABLES,
+    *BASE_PERSONS,
+    *BASE_SYSTEMS,
     *BASE_OVERFLOW_GAMES,
+    *BASE_TABLE_ALLOCATIONS,
 ]
