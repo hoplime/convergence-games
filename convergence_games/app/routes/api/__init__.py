@@ -7,7 +7,6 @@ from sqlmodel import SQLModel, inspect, select
 from convergence_games.algorithm.game_allocator import GameAllocator
 from convergence_games.app.dependencies import Auth, EngineDependency, Session
 from convergence_games.app.routes.api.models import boilerplates
-from convergence_games.db.session import add_imported_db
 from convergence_games.settings import SETTINGS
 
 router = APIRouter(prefix="/api", dependencies=[Auth])
@@ -91,8 +90,3 @@ async def allocate_draft(time_slot_id: int, engine: EngineDependency) -> None:
     game_allocator = GameAllocator(engine, time_slot_id)
     result = game_allocator.allocate(n_trials=200)
     print(result)
-
-
-@router.post("/reimport", tags=["admin"])
-async def reimport() -> None:
-    add_imported_db()

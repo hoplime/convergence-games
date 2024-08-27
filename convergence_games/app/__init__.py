@@ -11,7 +11,7 @@ from starlette import status
 from convergence_games.app.routes.api import router as api_router
 from convergence_games.app.routes.frontend import router as frontend_router
 from convergence_games.app.templates import templates
-from convergence_games.db.session import add_imported_db, create_db_and_tables, get_startup_db_info
+from convergence_games.db.session import create_db_and_tables, get_startup_db_info
 from convergence_games.settings import SETTINGS
 
 STATIC_PATH = Path(__file__).parent / "static"
@@ -20,10 +20,6 @@ STATIC_PATH = Path(__file__).parent / "static"
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
     fresh = create_db_and_tables()
-
-    if fresh and SETTINGS.INITIALISE_DATA:
-        add_imported_db()
-        print("Imported DB created")
 
     db = get_startup_db_info()
 

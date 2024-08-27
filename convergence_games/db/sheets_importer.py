@@ -30,6 +30,7 @@ SYSTEM_NAME_MAP = {
     "Dnd5e": "D&D 5e",
     "5e (with guns)": "D&D 5e (with guns)",
     "Monsterhearts 2nd edition": "Monsterhearts 2",
+    "Monster of the Week 1st Edition": "Monster of the Week",
     "Motherhship 1E": "Mothership",
     "overkill 2nd Edition": "Overkill 2nd Edition",
     "Pathfinder 2nd Edition": "Pathfinder 2e",
@@ -47,15 +48,15 @@ SYSTEM_NAME_MAP = {
 }
 
 
-# DEFAULT_GAME_SHEET_URL = "https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=1424049540&format=csv"
-# DEFAULT_SCHEDULE_SHEET_URL = (
-#     "https://docs.google.com/spreadsheets/d/1_AZHowZkvRU_wBGnoaqV-uQFpXvTFXlr8zZBcAsS6Tc/export?gid=0&format=csv"
-# )
-
-DEFAULT_GAME_SHEET_URL = (
-    "https://docs.google.com/spreadsheets/d/1cq0cis4cXgEMTh_EH1EnJb8NokdPp0Kzc4OwkSJCPnM/export?gid=0&format=csv"
+DEFAULT_GAME_SHEET_URL = "https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=1424049540&format=csv"
+DEFAULT_SCHEDULE_SHEET_URL = (
+    "https://docs.google.com/spreadsheets/d/1_AZHowZkvRU_wBGnoaqV-uQFpXvTFXlr8zZBcAsS6Tc/export?gid=0&format=csv"
 )
-DEFAULT_SCHEDULE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1cq0cis4cXgEMTh_EH1EnJb8NokdPp0Kzc4OwkSJCPnM/export?gid=1950232425&format=csv"
+
+# DEFAULT_GAME_SHEET_URL = (
+#     "https://docs.google.com/spreadsheets/d/1cq0cis4cXgEMTh_EH1EnJb8NokdPp0Kzc4OwkSJCPnM/export?gid=0&format=csv"
+# )
+# DEFAULT_SCHEDULE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1cq0cis4cXgEMTh_EH1EnJb8NokdPp0Kzc4OwkSJCPnM/export?gid=1950232425&format=csv"
 
 
 class GameResponse(TypedDict):

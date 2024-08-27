@@ -41,10 +41,10 @@ def create_mock_engine(force_recreate: bool = False) -> Engine:
         mock_base_engine = create_engine(f"sqlite:///{str(mock_base_path)}")
         SQLModel.metadata.create_all(mock_base_engine)
 
+        imported_dbos = GoogleSheetsImporter.from_urls().import_all()
         with Session(mock_base_engine) as session:
             session.add_all(ALL_BASE_DATA)
-            dbos = GoogleSheetsImporter.from_urls().import_all()
-            session.add_all(dbos)
+            session.add_all(imported_dbos)
             session.commit()
 
     mock_runtime_path = Path("mock_runtime.db")

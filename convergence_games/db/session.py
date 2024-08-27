@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Generator, TypeAlias
+from typing import Any, Generator
 
-from sqlalchemy import Engine, Inspector
-from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
-from sqlmodel import Session, SQLModel, and_, column, create_engine, inspect, select
+from sqlalchemy import Engine
+from sqlmodel import Session, SQLModel, create_engine, select
 
 from convergence_games.db.base_data import ALL_BASE_DATA
 from convergence_games.db.models import Game, GameWithExtra, Genre, System, TimeSlot
@@ -39,18 +38,14 @@ def create_db_and_tables(allow_recreate: bool = True) -> bool:
     engine = create_engine(f"sqlite:///{str(engine_path)}", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
 
-    with Session(engine) as session:
-        session.add_all(ALL_BASE_DATA)
-        session.commit()
+    if fresh:
+        imported_dbos = GoogleSheetsImporter.from_urls().import_all()
+        with Session(engine) as session:
+            session.add_all(ALL_BASE_DATA)
+            session.add_all(imported_dbos)
+            session.commit()
 
     return fresh
-
-
-def add_imported_db() -> None:
-    dbos = GoogleSheetsImporter.from_urls().import_all()
-    with Session(engine) as session:
-        session.add_all(dbos)
-        session.commit()
 
 
 @dataclass
@@ -116,5 +111,4 @@ def get_startup_db_info() -> StartupDBInfo:
 
 if __name__ == "__main__":
     create_db_and_tables()
-    add_imported_db()
     print("Database created and populated.")
