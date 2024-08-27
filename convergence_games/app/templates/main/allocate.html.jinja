@@ -1,0 +1,85 @@
+{% extends "shared/_layout.html.jinja" %}
+{% block title %}Allocate - Convergence 2024{% endblock %}
+{% block content %}
+    <title>Allocate - Convergence 2024</title>
+    <div class="mx-auto grid grid-cols-1 gap-4 xl:container">
+        <h1 class="text-2xl font-semibold antialiased">Player Allocation</h1>
+
+        <label class="input input-bordered flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 opacity-70">
+                <path
+                    fill-rule="evenodd"
+                    d="M14 6a4 4 0 0 1-4.899 3.899l-1.955 1.955a.5.5 0 0 1-.353.146H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2.293a.5.5 0 0 1 .146-.353l3.955-3.955A4 4 0 1 1 14 6Zm-4-2a.75.75 0 0 0 0 1.5.5.5 0 0 1 .5.5.75.75 0 0 0 1.5 0 2 2 0 0 0-2-2Z"
+                    clip-rule="evenodd"
+                />
+            </svg>
+            <input type="password" class="grow" value="" placeholder="API Key" />
+        </label>
+
+        <form
+            id="filter-form"
+            hx-get="/allocate_admin"
+            hx-target="#allocate_contents"
+            hx-push-url="true"
+            hx-trigger="change"
+        >
+            <select name="time_slot_id" class="select select-bordered w-full max-w-lg">
+                <option value="1" {% if time_slot.id == 1 %}selected{% endif %}>Saturday Morning</option>
+                <option value="2" {% if time_slot.id == 2 %}selected{% endif %}>Saturday Afternoon</option>
+                <option value="3" {% if time_slot.id == 3 %}selected{% endif %}>Saturday Evening</option>
+                <option value="4" {% if time_slot.id == 4 %}selected{% endif %}>Sunday Morning</option>
+                <option value="5" {% if time_slot.id == 5 %}selected{% endif %}>Sunday Afternoon</option>
+            </select>
+        </form>
+
+        <div id="allocate_contents">
+            {% block allocate_contents %}
+                <p>{{ time_slot.id }}</p>
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {% for table_allocation in table_allocations %}
+                        {% set game = table_allocation.game %}
+                        {% set current_players = table_summaries[table_allocation.id].total_players %}
+                        <div class="card w-full bg-base-200 shadow-xl">
+                            <div class="card-body">
+                                {% set title_classes = ("text-success" if current_players == game.optimal_players else "text-error" if current_players < game.minimum_players or current_players > game.maximum_players) %}
+                                <h2 class="{{ title_classes }} card-title">{{ table_allocation.game.title }}</h2>
+                                <h3 class="font-sans antialiased">
+                                    {{ table_allocation.table.short_description }} | {{ game.gamemaster.name }}
+                                </h3>
+                                <div
+                                    class="absolute bottom-4 right-4 flex flex-row items-center justify-items-center gap-1"
+                                >
+                                    {% if game.maximum_players <= 30 %}
+                                        {% for player_count in range(1, game.maximum_players + 1) %}
+                                            <div class="flex flex-col items-center justify-items-center">
+                                                <span class="font-mono text-[8px]"
+                                                    >{{ 'min' if player_count == game.minimum_players else 'opt' if player_count == game.optimal_players else 'max' if player_count == game.maximum_players else '.' }}</span
+                                                >
+                                                <div class="flex flex-row">
+                                                    {% set highlight_class = "bg-success" if current_players == game.optimal_players else "bg-error" if current_players < game.minimum_players or current_players > game.maximum_players %}
+                                                    {% set classes = (highlight_class if player_count <= current_players else "border-[1px] border-neutral") %}
+                                                    <div class="{{ classes }} h-2 w-3"></div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div>{{ current_players }}</div>
+                                    {% endif %}
+                                </div>
+                                {% for group in table_groups[table_allocation.id] %}
+                                    <div>
+                                        <ul>
+                                            {% for player in group.group_members %}
+                                                <li>{{ player.name }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endblock %}
+        </div>
+    </div>
+{% endblock %}

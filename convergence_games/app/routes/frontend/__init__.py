@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import Annotated, Iterator, Literal
+from typing import Annotated, Any, Iterator, Literal
 
 from fastapi import APIRouter, Form, Query
 from fastapi.responses import HTMLResponse
@@ -19,6 +19,7 @@ from convergence_games.db.extra_types import (
     GameTone,
 )
 from convergence_games.db.models import (
+    AllocationResult,
     Game,
     GameWithExtra,
     Person,
@@ -26,6 +27,8 @@ from convergence_games.db.models import (
     PersonSessionSettingsWithExtra,
     SessionPreference,
     TableAllocation,
+    TableAllocationResultView,
+    TableAllocationWithExtra,
     TimeSlot,
 )
 from convergence_games.db.session import Option
@@ -513,6 +516,69 @@ async def checkin_post(
             session.add(person_session_settings)
             session.commit()
     return HTMLResponse(status_code=204)
+
+
+# endregion
+
+
+# region Admin
+@router.get("/allocate_admin")
+async def allocate(
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+    time_slot_id: Annotated[int, Query()] = 1,
+) -> HTMLResponse:
+    with session:
+        # Get all of the allocation results for this time slot
+        statement = (
+            select(TableAllocation)
+            .where(TableAllocation.time_slot_id == time_slot_id)
+            .order_by(TableAllocation.table_id)
+        )
+        table_allocations = session.exec(statement).all()
+        table_allocations = [
+            TableAllocationResultView.model_validate(table_allocation) for table_allocation in table_allocations
+        ]
+
+        # And finally the actual time slot
+        time_slot = session.get(TimeSlot, time_slot_id)
+
+    push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
+
+    table_groups: dict[int, list[dict[str, Any]]] = {}
+    table_summaries: dict[int, dict[str, Any]] = {}
+    for table_allocation in table_allocations:
+        if table_allocation.id not in table_groups:
+            table_groups[table_allocation.id] = []
+        for allocation_result in table_allocation.allocation_results:
+            session_settings_this_session = next(
+                (ss for ss in allocation_result.person.session_settings if ss.time_slot_id == time_slot_id), None
+            )
+            table_groups[table_allocation.id].append(
+                {
+                    "leader_id": allocation_result.person_id,
+                    "group_members": [allocation_result.person] + session_settings_this_session.group_members
+                    if session_settings_this_session
+                    else [allocation_result.person],
+                }
+            )
+        table_summaries[table_allocation.id] = {
+            "total_players": sum(len(group["group_members"]) for group in table_groups[table_allocation.id]),
+        }
+
+    return templates.TemplateResponse(
+        name="main/allocate.html.jinja",
+        context={
+            "time_slot": time_slot,
+            "table_allocations": table_allocations,
+            "table_groups": table_groups,
+            "table_summaries": table_summaries,
+            "request": request,
+        },
+        headers={"HX-Push-Url": push_url},
+        block_name=hx_target,
+    )
 
 
 # endregion

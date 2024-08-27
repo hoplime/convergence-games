@@ -1,12 +1,13 @@
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel, ConfigDict, create_model
 from sqlmodel import SQLModel, inspect, select
 
 from convergence_games.algorithm.game_allocator import CurrentGameAllocationModel, GameAllocator
 from convergence_games.app.dependencies import Auth, EngineDependency, Session
 from convergence_games.app.routes.api.models import boilerplates
+from convergence_games.db.models import AllocationResult, TableAllocation
 from convergence_games.settings import SETTINGS
 
 router = APIRouter(prefix="/api", dependencies=[Auth])
@@ -86,7 +87,35 @@ for boilerplate in boilerplates:
 
 
 @router.post("/allocate_draft/{time_slot_id}", tags=["admin"])
-async def allocate_draft(time_slot_id: int, engine: EngineDependency) -> list[CurrentGameAllocationModel]:
+async def allocate_draft(
+    time_slot_id: int,
+    session: Session,
+    engine: EngineDependency,
+    force_override: Annotated[bool, Query()] = False,
+) -> list[AllocationResult]:
     game_allocator = GameAllocator(engine, time_slot_id)
     result = game_allocator.allocate(n_trials=200)
-    return [r.to_serializable() for r in result.values()]
+    allocation_results = [x for r in result.values() for x in r.to_serializable()]
+    with session:
+        # Check if there already exists any allocation results for the given time slot
+        existing_results = session.exec(
+            select(AllocationResult)
+            .join(TableAllocation, AllocationResult.table_allocation_id == TableAllocation.id)
+            .where(TableAllocation.time_slot_id == time_slot_id)
+        ).all()
+        if existing_results and not force_override:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Allocation results already exist for time slot {time_slot_id}",
+            )
+
+        # Delete existing allocation results for the given time slot
+        for existing_result in existing_results:
+            session.delete(existing_result)
+
+        # Add new allocation results
+        session.add_all(allocation_results)
+        session.commit()
+        for result in allocation_results:
+            session.refresh(result)
+    return allocation_results

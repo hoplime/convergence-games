@@ -219,6 +219,7 @@ class Person(PersonBase, table=True):
     session_settings_groups: list["PersonSessionSettings"] = Relationship(
         back_populates="group_members", link_model=PersonSessionSettingsGroupMembersLink
     )
+    allocation_results: list["AllocationResult"] = Relationship(back_populates="person")
 
 
 class PersonCreate(PersonBase):
@@ -234,6 +235,7 @@ class PersonWithExtra(PersonRead):
     session_preferences: list["SessionPreference"]
     session_settings: list["PersonSessionSettings"]
     session_settings_groups: list["PersonSessionSettings"]
+    allocation_results: list["AllocationResult"]
 
 
 class PersonUpdate(PersonBase):
@@ -340,6 +342,7 @@ class TableAllocation(TableAllocationBase, table=True):
     time_slot: TimeSlot = Relationship(back_populates="table_allocations")
     game: Game = Relationship(back_populates="table_allocations")
     session_preferences: list["SessionPreference"] = Relationship(back_populates="table_allocation")
+    allocation_results: list["AllocationResult"] = Relationship(back_populates="table_allocation")
     __table_args__ = (UniqueConstraint("table_id", "time_slot_id", name="unique_table_allocation"),)
 
 
@@ -356,6 +359,7 @@ class TableAllocationWithExtra(TableAllocationRead):
     time_slot: TimeSlot
     game: GameWithExtra
     session_preferences: list["SessionPreference"]
+    allocation_results: list["AllocationResult"]
 
 
 class TableAllocationUpdate(TableAllocationBase):
@@ -443,7 +447,60 @@ class PersonSessionSettingsUpdate(PersonSessionSettingsBase):
     time_slot_id: int | None = None
     checked_in: bool | None = None
     group_hosting_mode: GroupHostingMode | None = None
-    group_size: int | None = None
+
+
+# endregion
+
+
+# region GameAllocationRelatedStuff
+class AllocationResultBase(SQLModel):
+    table_allocation_id: int = Field(foreign_key="tableallocation.id")
+    person_id: int = Field(foreign_key="person.id")
+
+
+class AllocationResult(AllocationResultBase, table=True):
+    id: int | None = Field(primary_key=True)
+
+    table_allocation: TableAllocation = Relationship(back_populates="allocation_results")
+    person: Person = Relationship(back_populates="allocation_results")
+
+
+class AllocationResultCreate(AllocationResultBase):
+    pass
+
+
+class AllocationResultRead(AllocationResultBase):
+    id: int
+
+
+class AllocationResultWithExtra(AllocationResultRead):
+    table_allocation: TableAllocation
+    person: Person
+
+
+class AllocationResultUpdate(AllocationResultBase):
+    table_allocation_id: int | None = None
+    person_id: int | None = None
+
+
+# endregion
+
+
+# region TableAllocationResultView
+class TableAllocationResultView(TableAllocationRead):
+    table: Table
+    time_slot: TimeSlot
+    game: GameWithExtra
+    allocation_results: list["AllocationResultResultView"]
+
+
+class AllocationResultResultView(AllocationResultRead):
+    person: "PersonResultView"
+
+
+class PersonResultView(PersonWithExtra):
+    session_settings: list["PersonSessionSettingsWithExtra"]
+    session_settings_groups: list["PersonSessionSettingsWithExtra"]
 
 
 # endregion

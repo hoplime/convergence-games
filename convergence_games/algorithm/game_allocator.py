@@ -18,6 +18,7 @@ from sqlmodel import Session, SQLModel, col, create_engine, func, select
 from convergence_games.db.base_data import ALL_BASE_DATA
 from convergence_games.db.extra_types import GroupHostingMode
 from convergence_games.db.models import (
+    AllocationResult,
     Game,
     Person,
     PersonSessionSettings,
@@ -374,11 +375,14 @@ class CurrentGameAllocation:
     def could_fit_group(self, group: Group) -> bool:
         return self.current_players + group.size <= self.table_allocation.game.maximum_players
 
-    def to_serializable(self) -> CurrentGameAllocationModel:
-        return CurrentGameAllocationModel(
-            table_allocation_id=self.table_allocation.id,
-            group_leaders=[group.leader_id for group in self.groups],
-        )
+    def to_serializable(self) -> list[AllocationResult]:
+        return [
+            AllocationResult(
+                table_allocation_id=self.table_allocation.id,
+                person_id=group.leader_id,
+            )
+            for group in self.groups
+        ]
 
     @property
     def value(self) -> float:
