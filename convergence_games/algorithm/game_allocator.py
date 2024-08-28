@@ -31,14 +31,16 @@ from convergence_games.db.models import (
 )
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
 
+PRINT = False
+
 
 def maybe_print(*args: Any, **kwargs: Any) -> None:
-    if False:
+    if PRINT:
         print(*args, **kwargs)
 
 
 def maybe_pprint(*args: Any, **kwargs: Any) -> None:
-    if False:
+    if PRINT:
         pprint(*args, **kwargs)
 
 
@@ -367,6 +369,7 @@ class CurrentGameAllocationModel(BaseModel):
 @dataclass
 class CurrentGameAllocation:
     table_allocation: TableAllocationWithExtra
+    game_master: Group | None = None
     groups: list[Group] = field(default_factory=list)
 
     def value_of_group(self, group: Group) -> Tier:
@@ -532,7 +535,10 @@ class GameAllocator:
 
     def _init_current_allocations(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
         return {
-            table_allocation.id: CurrentGameAllocation(table_allocation=table_allocation)
+            table_allocation.id: CurrentGameAllocation(
+                table_allocation=table_allocation,
+                game_master=self.gamemasters_by_table_allocation_id[table_allocation.id],
+            )
             for table_allocation in self.table_allocations
         }
 
@@ -612,15 +618,23 @@ class GameAllocator:
                 maybe_print("Filled", current_allocation)
             maybe_print("----")
 
-        # STAGE 3.5? - Try to combine otherwise unfillable tables
-
         # STAGE 4 - Move players from unfillable tables to other tables
-        unfillable_ids = {current_allocation.table_allocation.id for current_allocation in unfillable_tables}
-        for current_allocation in unfillable_tables:
+        # Start with the tables furthest from running
+        unfillable_ids = set()
+        for current_allocation in sorted(
+            unfillable_tables, key=lambda ca: ca.minimum_players - ca.current_players, reverse=True
+        ):
+            if current_allocation.current_players >= current_allocation.minimum_players:
+                # We've filled this table from this process
+                continue
+
+            # Don't try to go allocate some people backwards
+            unfillable_ids.add(current_allocation.table_allocation.id)
             maybe_print("Trying to move players from", current_allocation)
+
             # Allocate the GM
             allocated_table_id = self._allocate_single_group(
-                self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id],
+                current_allocation.game_master,
                 allow_bumps=False,
                 blocked_table_allocation_ids=unfillable_ids,
                 priority_mode=AllocationPriorityMode.BY_PLAYERS_TO_OPTIMAL,
@@ -628,6 +642,7 @@ class GameAllocator:
             if allocated_table_id is None:
                 raise ValueError("Unfillable GM could not be allocated")
             maybe_print("Moved GM", self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id])
+            current_allocation.game_master = None
 
             # And allocate all the remaining players
             for group in current_allocation.groups:
@@ -940,9 +955,9 @@ def end_to_end_main(args: argparse.Namespace) -> None:
         # allocation_results = allocate(mock_runtime_engine, time_slot_id)
         game_allocator = GameAllocator(mock_runtime_engine, time_slot_id)
         allocation_results = game_allocator.allocate(n_trials=args.n_trials)
-        maybe_pprint(allocation_results.current_allocations)
-        maybe_pprint(allocation_results.compensation_values)
-        maybe_pprint(allocation_results.d20s_spent)
+        # maybe_pprint(allocation_results.current_allocations)
+        # maybe_pprint(allocation_results.compensation_values)
+        # maybe_pprint(allocation_results.d20s_spent)
 
 
 # endregion
