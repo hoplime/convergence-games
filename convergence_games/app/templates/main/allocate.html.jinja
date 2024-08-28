@@ -1,4 +1,5 @@
 {% extends "shared/_layout.html.jinja" %}
+{% set auth_headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}' %}
 {% block title %}Allocate - Convergence 2024{% endblock %}
 {% block content %}
     <title>Allocate - Convergence 2024</title>
@@ -13,7 +14,7 @@
                     clip-rule="evenodd"
                 />
             </svg>
-            <input type="password" class="grow" value="" placeholder="API Key" />
+            <input type="password" name="X-API-Key" class="grow" value="" placeholder="API Key" />
         </label>
 
         <form
@@ -34,6 +35,67 @@
 
         <div id="allocate_contents">
             {% block allocate_contents %}
+                <div class="flex flex-row gap-4">
+                    <label class="label cursor-pointer justify-start gap-4">
+                        <input type="checkbox" name="force_override" class="peer checkbox-accent checkbox" />
+                        <span class="label-text">Show Actions</span>
+                        <button
+                            class="group btn btn-outline hidden peer-checked:flex"
+                            hx-post="/api/allocate_draft/{{ time_slot.id }}"
+                            hx-headers="{{ auth_headers }}"
+                            hx-confirm="Are you sure you want to rerun the allocation?"
+                        >
+                            <span class="inline group-[.htmx-request]:hidden">Reallocate</span>
+                            <span class="hidden group-[.htmx-request]:inline">
+                                Allocating
+                                <svg
+                                    class="inline"
+                                    fill="currentColor"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <style>
+                                        .spinner_qM83 {
+                                            animation: spinner_8HQG 1.05s infinite;
+                                        }
+                                        .spinner_oXPr {
+                                            animation-delay: 0.1s;
+                                        }
+                                        .spinner_ZTLf {
+                                            animation-delay: 0.2s;
+                                        }
+                                        @keyframes spinner_8HQG {
+                                            0%,
+                                            57.14% {
+                                                animation-timing-function: cubic-bezier(0.33, 0.66, 0.66, 1);
+                                                transform: translate(0);
+                                            }
+                                            28.57% {
+                                                animation-timing-function: cubic-bezier(0.33, 0, 0.66, 0.33);
+                                                transform: translateY(-6px);
+                                            }
+                                            100% {
+                                                transform: translate(0);
+                                            }
+                                        }
+                                    </style>
+                                    <circle class="spinner_qM83" cx="4" cy="12" r="3" />
+                                    <circle class="spinner_qM83 spinner_oXPr" cx="12" cy="12" r="3" />
+                                    <circle class="spinner_qM83 spinner_ZTLf" cx="20" cy="12" r="3" />
+                                </svg>
+                            </span>
+                        </button>
+                        <button
+                            class="btn btn-primary hidden peer-checked:flex"
+                            hx-post="/api/log/{{ time_slot.id }}"
+                            hx-confirm="Are you sure you want to commit the allocation?"
+                        >
+                            Commit
+                        </button>
+                    </label>
+                </div>
                 <p>{{ time_slot.id }}</p>
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {% for table_allocation in table_allocations %}
@@ -67,12 +129,15 @@
                                     {% endif %}
                                 </div>
                                 {% for group in table_groups[table_allocation.id] %}
-                                    <div>
-                                        <ul>
+                                    <div
+                                        class="flex max-w-96 flex-row items-start justify-between rounded border border-primary p-2"
+                                    >
+                                        <ul class="flex flex-col">
                                             {% for player in group.group_members %}
                                                 <li>{{ player.name }}</li>
                                             {% endfor %}
                                         </ul>
+                                        <button class="btn btn-outline btn-accent btn-sm self-end">Move</button>
                                     </div>
                                 {% endfor %}
                             </div>
