@@ -88,13 +88,22 @@
                             </span>
                         </button>
                         <button
-                            class="btn btn-primary hidden peer-checked:flex"
+                            class="btn btn-outline hidden peer-checked:flex"
                             hx-post="/commit_allocate/{{ time_slot.id }}"
                             hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
                             hx-target="#allocate_contents"
                             hx-confirm="Are you sure you want to commit the allocation?"
                         >
                             Commit
+                        </button>
+                        <button
+                            class="btn btn-outline hidden peer-checked:flex"
+                            hx-post="/rollback_allocate/{{ time_slot.id }}"
+                            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+                            hx-target="#allocate_contents"
+                            hx-confirm="Are you sure you want to rollback the allocation to the last commit?"
+                        >
+                            Rollback
                         </button>
                     </label>
                 </div>

@@ -536,6 +536,41 @@ async def run_allocate(
     return await allocate_admin(request, session, hx_target, time_slot_id)
 
 
+def do_commit_or_rollback(
+    session: Session,
+    time_slot_id: int,
+    *,
+    from_table: type[CommittedAllocationResult] | type[AllocationResult],
+    to_table: type[CommittedAllocationResult] | type[AllocationResult],
+):
+    with session:
+        # Delete all existing in to_table for this time slot
+        statement = (
+            select(to_table)
+            .join(TableAllocation, TableAllocation.id == to_table.table_allocation_id)
+            .where(TableAllocation.time_slot_id == time_slot_id)
+        )
+        existing_results = session.exec(statement).all()
+        for existing_result in existing_results:
+            session.delete(existing_result)
+
+        # Copy all from from_table for this time slot to to_table
+        statement = (
+            select(from_table)
+            .join(TableAllocation, TableAllocation.id == from_table.table_allocation_id)
+            .where(TableAllocation.time_slot_id == time_slot_id)
+        )
+        allocation_results = session.exec(statement).all()
+
+        for allocation_result in allocation_results:
+            session.add(
+                to_table(
+                    table_allocation_id=allocation_result.table_allocation_id, person_id=allocation_result.person_id
+                )
+            )
+        session.commit()
+
+
 @router.post("/commit_allocate/{time_slot_id}", dependencies=[Auth])
 async def commit_allocate(
     request: Request,
@@ -543,32 +578,18 @@ async def commit_allocate(
     hx_target: HxTarget,
     time_slot_id: int,
 ) -> HTMLResponse:
-    with session:
-        # Delete all existing CommittedAllocationResult for this time slot
-        statement = (
-            select(CommittedAllocationResult)
-            .join(TableAllocation, TableAllocation.id == CommittedAllocationResult.table_allocation_id)
-            .where(TableAllocation.time_slot_id == time_slot_id)
-        )
-        existing_results = session.exec(statement).all()
-        for existing_result in existing_results:
-            session.delete(existing_result)
+    do_commit_or_rollback(session, time_slot_id, from_table=AllocationResult, to_table=CommittedAllocationResult)
+    return await allocate_admin(request, session, hx_target, time_slot_id)
 
-        # Copy all AllocationResult for this time slot to CommittedAllocationResult
-        statement = (
-            select(AllocationResult)
-            .join(TableAllocation, TableAllocation.id == AllocationResult.table_allocation_id)
-            .where(TableAllocation.time_slot_id == time_slot_id)
-        )
-        allocation_results = session.exec(statement).all()
-        for allocation_result in allocation_results:
-            session.add(
-                CommittedAllocationResult(
-                    table_allocation_id=allocation_result.table_allocation_id, person_id=allocation_result.person_id
-                )
-            )
-        session.commit()
 
+@router.post("/rollback_allocate/{time_slot_id}", dependencies=[Auth])
+async def rollback_allocate(
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+    time_slot_id: int,
+) -> HTMLResponse:
+    do_commit_or_rollback(session, time_slot_id, from_table=CommittedAllocationResult, to_table=AllocationResult)
     return await allocate_admin(request, session, hx_target, time_slot_id)
 
 
