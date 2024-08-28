@@ -554,11 +554,14 @@ async def allocate_admin(
             TableAllocationResultView.model_validate(table_allocation) for table_allocation in table_allocations
         ]
 
-        # And finally the actual time slot
+        # Get the actual time slot
         time_slot = session.get(TimeSlot, time_slot_id)
 
     table_groups: dict[int, list[dict[str, Any]]] = {}
     table_summaries: dict[int, dict[str, Any]] = {}
+
+    gm_ids = {table_allocation.game.gamemaster_id for table_allocation in table_allocations}
+
     for table_allocation in table_allocations:
         if table_allocation.id not in table_groups:
             table_groups[table_allocation.id] = []
@@ -572,10 +575,19 @@ async def allocate_admin(
                     "group_members": [allocation_result.person] + session_settings_this_session.group_members
                     if session_settings_this_session
                     else [allocation_result.person],
+                    "is_gm": allocation_result.person_id == table_allocation.game.gamemaster_id,
+                    "is_gm_any_game": allocation_result.person_id in gm_ids,
                 }
             )
+            # Put the GM at the front of the list always
+            gm_index = next((i for i, group in enumerate(table_groups[table_allocation.id]) if group["is_gm"]), None)
+            if gm_index is not None:
+                table_groups[table_allocation.id].insert(0, table_groups[table_allocation.id].pop(gm_index))
         table_summaries[table_allocation.id] = {
-            "total_players": sum(len(group["group_members"]) for group in table_groups[table_allocation.id]),
+            "has_gm": any(group["is_gm"] for group in table_groups[table_allocation.id]),
+            "total_players": sum(
+                len(group["group_members"]) for group in table_groups[table_allocation.id] if not group["is_gm"]
+            ),
         }
 
     return templates.TemplateResponse(

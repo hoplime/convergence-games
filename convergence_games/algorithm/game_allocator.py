@@ -379,13 +379,19 @@ class CurrentGameAllocation:
         return self.current_players + group.size <= self.table_allocation.game.maximum_players
 
     def to_serializable(self) -> list[AllocationResult]:
-        return [
+        result = (
+            [AllocationResult(table_allocation_id=self.table_allocation.id, person_id=self.game_master.leader_id)]
+            if self.game_master
+            else []
+        )
+        result += [
             AllocationResult(
                 table_allocation_id=self.table_allocation.id,
                 person_id=group.leader_id,
             )
             for group in self.groups
         ]
+        return result
 
     @property
     def value(self) -> float:
