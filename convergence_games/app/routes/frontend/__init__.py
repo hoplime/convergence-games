@@ -21,6 +21,7 @@ from convergence_games.db.extra_types import (
 )
 from convergence_games.db.models import (
     AllocationResult,
+    CommittedAllocationResult,
     Game,
     GameWithExtra,
     Person,
@@ -535,6 +536,42 @@ async def run_allocate(
     return await allocate_admin(request, session, hx_target, time_slot_id)
 
 
+@router.post("/commit_allocate/{time_slot_id}", dependencies=[Auth])
+async def commit_allocate(
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+    time_slot_id: int,
+) -> HTMLResponse:
+    with session:
+        # Delete all existing CommittedAllocationResult for this time slot
+        statement = (
+            select(CommittedAllocationResult)
+            .join(TableAllocation, TableAllocation.id == CommittedAllocationResult.table_allocation_id)
+            .where(TableAllocation.time_slot_id == time_slot_id)
+        )
+        existing_results = session.exec(statement).all()
+        for existing_result in existing_results:
+            session.delete(existing_result)
+
+        # Copy all AllocationResult for this time slot to CommittedAllocationResult
+        statement = (
+            select(AllocationResult)
+            .join(TableAllocation, TableAllocation.id == AllocationResult.table_allocation_id)
+            .where(TableAllocation.time_slot_id == time_slot_id)
+        )
+        allocation_results = session.exec(statement).all()
+        for allocation_result in allocation_results:
+            session.add(
+                CommittedAllocationResult(
+                    table_allocation_id=allocation_result.table_allocation_id, person_id=allocation_result.person_id
+                )
+            )
+        session.commit()
+
+    return await allocate_admin(request, session, hx_target, time_slot_id)
+
+
 @router.get("/allocate_admin")
 async def allocate_admin(
     request: Request,
@@ -569,6 +606,10 @@ async def allocate_admin(
             session_settings_this_session = next(
                 (ss for ss in allocation_result.person.session_settings if ss.time_slot_id == time_slot_id), None
             )
+            committed_person_ids = {
+                committed_allocation_result.person_id
+                for committed_allocation_result in table_allocation.committed_allocation_results
+            }
             table_groups[table_allocation.id].append(
                 {
                     "leader_id": allocation_result.person_id,
@@ -577,6 +618,7 @@ async def allocate_admin(
                     else [allocation_result.person],
                     "is_gm": allocation_result.person_id == table_allocation.game.gamemaster_id,
                     "is_gm_any_game": allocation_result.person_id in gm_ids,
+                    "is_committed": allocation_result.person_id in committed_person_ids,
                 }
             )
             # Put the GM at the front of the list always

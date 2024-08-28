@@ -89,14 +89,16 @@
                         </button>
                         <button
                             class="btn btn-primary hidden peer-checked:flex"
-                            hx-post="/api/log/{{ time_slot.id }}"
+                            hx-post="/commit_allocate/{{ time_slot.id }}"
+                            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+                            hx-target="#allocate_contents"
                             hx-confirm="Are you sure you want to commit the allocation?"
                         >
                             Commit
                         </button>
                     </label>
                 </div>
-                <p>{{ time_slot.id }}</p>
+
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {% for table_allocation in table_allocations %}
                         {% set game = table_allocation.game %}
@@ -152,6 +154,15 @@
                                                     {% if group.is_gm %}
                                                         <span class="badge badge-outline gap-2 text-yellow-400">
                                                             GM
+                                                        </span>
+                                                    {% elif group.is_gm_any_game %}
+                                                        <span class="badge badge-outline gap-2 text-red-400">
+                                                            GM Another
+                                                        </span>
+                                                    {% endif %}
+                                                    {% if not group.is_committed %}
+                                                        <span class="badge badge-outline gap-2 text-red-400">
+                                                            Uncommitted
                                                         </span>
                                                     {% endif %}
                                                 </li>

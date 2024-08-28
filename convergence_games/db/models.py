@@ -220,6 +220,7 @@ class Person(PersonBase, table=True):
         back_populates="group_members", link_model=PersonSessionSettingsGroupMembersLink
     )
     allocation_results: list["AllocationResult"] = Relationship(back_populates="person")
+    committed_allocation_results: list["CommittedAllocationResult"] = Relationship(back_populates="person")
 
 
 class PersonCreate(PersonBase):
@@ -236,6 +237,7 @@ class PersonWithExtra(PersonRead):
     session_settings: list["PersonSessionSettings"]
     session_settings_groups: list["PersonSessionSettings"]
     allocation_results: list["AllocationResult"]
+    committed_allocation_results: list["CommittedAllocationResult"]
 
 
 class PersonUpdate(PersonBase):
@@ -343,6 +345,7 @@ class TableAllocation(TableAllocationBase, table=True):
     game: Game = Relationship(back_populates="table_allocations")
     session_preferences: list["SessionPreference"] = Relationship(back_populates="table_allocation")
     allocation_results: list["AllocationResult"] = Relationship(back_populates="table_allocation")
+    committed_allocation_results: list["CommittedAllocationResult"] = Relationship(back_populates="table_allocation")
     __table_args__ = (UniqueConstraint("table_id", "time_slot_id", name="unique_table_allocation"),)
 
 
@@ -360,6 +363,7 @@ class TableAllocationWithExtra(TableAllocationRead):
     game: GameWithExtra
     session_preferences: list["SessionPreference"]
     allocation_results: list["AllocationResult"]
+    committed_allocation_results: list["CommittedAllocationResult"]
 
 
 class TableAllocationUpdate(TableAllocationBase):
@@ -483,6 +487,13 @@ class AllocationResultUpdate(AllocationResultBase):
     person_id: int | None = None
 
 
+class CommittedAllocationResult(AllocationResultBase, table=True):
+    id: int | None = Field(primary_key=True)
+
+    table_allocation: TableAllocation = Relationship(back_populates="committed_allocation_results")
+    person: Person = Relationship(back_populates="committed_allocation_results")
+
+
 # endregion
 
 
@@ -492,6 +503,7 @@ class TableAllocationResultView(TableAllocationRead):
     time_slot: TimeSlot
     game: GameWithExtra
     allocation_results: list["AllocationResultResultView"]
+    committed_allocation_results: list["AllocationResultResultView"]
 
 
 class AllocationResultResultView(AllocationResultRead):
