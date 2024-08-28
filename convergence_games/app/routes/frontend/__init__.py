@@ -9,8 +9,9 @@ from pydantic import BeforeValidator, RootModel
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from sqlmodel import select
 
-from convergence_games.app.dependencies import HxTarget, Session, User, get_user
+from convergence_games.app.dependencies import Auth, EngineDependency, HxTarget, Session, User, get_user
 from convergence_games.app.request_type import Request
+from convergence_games.app.shared.do_allocation import do_allocation
 from convergence_games.app.templates import templates
 from convergence_games.db.extra_types import (
     DEFINED_AGE_SUITABILITIES,
@@ -26,9 +27,9 @@ from convergence_games.db.models import (
     PersonSessionSettings,
     PersonSessionSettingsWithExtra,
     SessionPreference,
+    Table,
     TableAllocation,
     TableAllocationResultView,
-    TableAllocationWithExtra,
     TimeSlot,
 )
 from convergence_games.db.session import Option
@@ -522,8 +523,20 @@ async def checkin_post(
 
 
 # region Admin
+@router.post("/run_allocate/{time_slot_id}", dependencies=[Auth])
+async def run_allocate(
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+    time_slot_id: int,
+    engine: EngineDependency,
+) -> HTMLResponse:
+    allocation_results = do_allocation(time_slot_id, engine, force_override=True)
+    return await allocate_admin(request, session, hx_target, time_slot_id)
+
+
 @router.get("/allocate_admin")
-async def allocate(
+async def allocate_admin(
     request: Request,
     session: Session,
     hx_target: HxTarget,
@@ -543,8 +556,6 @@ async def allocate(
 
         # And finally the actual time slot
         time_slot = session.get(TimeSlot, time_slot_id)
-
-    push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
 
     table_groups: dict[int, list[dict[str, Any]]] = {}
     table_summaries: dict[int, dict[str, Any]] = {}
@@ -576,9 +587,97 @@ async def allocate(
             "table_summaries": table_summaries,
             "request": request,
         },
-        headers={"HX-Push-Url": push_url},
         block_name=hx_target,
     )
+
+
+@router.get("/move_menu")
+async def move_menu(
+    request: Request,
+    session: Session,
+    leader_id: Annotated[int, Query()],
+    current_table_allocation_id: Annotated[int, Query()],
+) -> HTMLResponse:
+    with session:
+        current_table_allocation = session.get(TableAllocation, current_table_allocation_id)
+        statement = (
+            select(
+                TableAllocation.id.label("table_allocation_id"),
+                Game.title.label("title"),
+                SessionPreference.preference.label("preference"),
+                Table.number.label("table_number"),
+            )
+            .where(TableAllocation.time_slot_id == current_table_allocation.time_slot_id)
+            .join(Game, Game.id == TableAllocation.game_id)
+            .join(Table, Table.id == TableAllocation.table_id)
+            .outerjoin(
+                SessionPreference,
+                (SessionPreference.person_id == leader_id)
+                & (SessionPreference.table_allocation_id == TableAllocation.id),
+            )
+            .order_by(TableAllocation.table_id)
+        )
+        query_results = session.exec(statement).all()
+        print(statement.column_descriptions)
+        candidates = [
+            {description["name"]: value for description, value in zip(statement.column_descriptions, row)}
+            for row in query_results
+        ]
+
+    return templates.TemplateResponse(
+        name="shared/partials/move_menu.html.jinja",
+        context={
+            "request": request,
+            "leader_id": leader_id,
+            "current_table_allocation_id": current_table_allocation_id,
+            "candidates": candidates,
+        },
+    )
+
+
+@router.get("/move_button")
+async def move_button(
+    request: Request,
+    leader_id: Annotated[int, Query()],
+    current_table_allocation_id: Annotated[int, Query()],
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        name="shared/partials/move_button.html.jinja",
+        context={
+            "request": request,
+            "leader_id": leader_id,
+            "current_table_allocation_id": current_table_allocation_id,
+        },
+    )
+
+
+@router.put("/move", dependencies=[Auth])
+async def move(
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+    leader_id: Annotated[int, Query()],
+    table_allocation_id: Annotated[int, Form()],
+) -> HTMLResponse:
+    with session:
+        current_table_allocation_and_result = session.exec(
+            select(TableAllocation, AllocationResult)
+            .join(AllocationResult, TableAllocation.id == AllocationResult.table_allocation_id)
+            .where(AllocationResult.person_id == leader_id)
+        ).first()
+        if current_table_allocation_and_result is None:
+            return HTMLResponse(status_code=400)
+
+        new_table_allocation = session.get(TableAllocation, table_allocation_id)
+        if new_table_allocation is None:
+            return HTMLResponse(status_code=400)
+
+        current_table_allocation, current_allocation_result = current_table_allocation_and_result
+        session.delete(current_allocation_result)
+        new_table_allocation.allocation_results.append(AllocationResult(person_id=leader_id))
+        session.commit()
+        time_slot_id = new_table_allocation.time_slot_id
+    return await allocate_admin(request, session, hx_target, time_slot_id)
 
 
 # endregion

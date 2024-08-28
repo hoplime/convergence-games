@@ -1,5 +1,4 @@
 {% extends "shared/_layout.html.jinja" %}
-{% set auth_headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}' %}
 {% block title %}Allocate - Convergence 2024{% endblock %}
 {% block content %}
     <title>Allocate - Convergence 2024</title>
@@ -41,8 +40,9 @@
                         <span class="label-text">Show Actions</span>
                         <button
                             class="group btn btn-outline hidden peer-checked:flex"
-                            hx-post="/api/allocate_draft/{{ time_slot.id }}"
-                            hx-headers="{{ auth_headers }}"
+                            hx-post="/run_allocate/{{ time_slot.id }}"
+                            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+                            hx-target="#allocate_contents"
                             hx-confirm="Are you sure you want to rerun the allocation?"
                         >
                             <span class="inline group-[.htmx-request]:hidden">Reallocate</span>
@@ -118,7 +118,7 @@
                                                     >{{ 'min' if player_count == game.minimum_players else 'opt' if player_count == game.optimal_players else 'max' if player_count == game.maximum_players else '.' }}</span
                                                 >
                                                 <div class="flex flex-row">
-                                                    {% set highlight_class = "bg-success" if current_players == game.optimal_players else "bg-error" if current_players < game.minimum_players or current_players > game.maximum_players %}
+                                                    {% set highlight_class = "bg-success" if current_players == game.optimal_players else "bg-error" if current_players < game.minimum_players or current_players > game.maximum_players else "bg-current" %}
                                                     {% set classes = (highlight_class if player_count <= current_players else "border-[1px] border-neutral") %}
                                                     <div class="{{ classes }} h-2 w-3"></div>
                                                 </div>
@@ -130,14 +130,14 @@
                                 </div>
                                 {% for group in table_groups[table_allocation.id] %}
                                     <div
-                                        class="flex max-w-96 flex-row items-start justify-between rounded border border-primary p-2"
+                                        class="flex max-w-96 flex-col items-start justify-between rounded border border-primary p-2"
                                     >
                                         <ul class="flex flex-col">
                                             {% for player in group.group_members %}
                                                 <li>{{ player.name }}</li>
                                             {% endfor %}
                                         </ul>
-                                        <button class="btn btn-outline btn-accent btn-sm self-end">Move</button>
+                                        {{ render_partial('shared/partials/move_button.html.jinja', leader_id=group.leader_id, current_table_allocation_id=table_allocation.id) }}
                                     </div>
                                 {% endfor %}
                             </div>

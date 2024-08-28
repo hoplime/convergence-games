@@ -16,7 +16,7 @@
     />
     <input
         type="radio"
-        class="mask-d6 {{ common_rating_styles }} bg-indigo-400 font-normal after:content-['6']"
+        class="mask-d6 {{ common_rating_styles }} bg-indigo-400 after:content-['6']"
         name="{{ input_name }}"
         value="2"
         {% if starting_value == "2" %}checked{% endif %}
@@ -45,7 +45,7 @@
     {% if enable_d20 %}
         <input
             type="radio"
-            class="mask-d20 {{ common_rating_styles }} checked:out bg-yellow-400 after:content-['20']"
+            class="mask-d20 {{ common_rating_styles }} bg-yellow-400 after:content-['20']"
             name="{{ input_name }}"
             value="20"
             {% if starting_value == "20" %}checked{% endif %}
