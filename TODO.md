@@ -4,6 +4,7 @@
 
 - [x] The profile cancel edit buttons etc break the page #content because of the hx-target based replacements and block logic
 - [ ] After sign up, you don't get an updated nav bar
+- [ ] Check in status not properly updating when time slot changes
 
 # Features - Algorithm
 
@@ -21,12 +22,13 @@
 - [x] Not painful table shifting from admins
 - [x] Importing game schedule from spreadsheet
 - [x] Database backing up
+- [x] Make commit actually do something
+- [x] Keep group preferences together after an allocation even if the group changes (ahh we need a Group table concept or something)
+- [ ] Enforce D20s in groups properly
+- [x] Do the commits
+- [ ] Disallow editing group members if you're committed
 - [ ] Reimporting from spreadsheet
 - [ ] Update caching for game updates
-- [ ] Make commit actually do something
-- [ ] Keep group preferences together after an allocation even if the group changes (ahh we need a Group table concept or something)
-- [ ] Enforce D20s in groups properly
-- [ ] Do the commits
 
 # Features - Frontend
 
@@ -40,3 +42,7 @@
 - [ ] Show people the games they're in
 - [ ] Update the home page
 - [ ] Design changes based on Jane's feedback
+- [ ] Allow leaving groups
+- [ ] Improve feedback for sign up related errors
+- [ ] Improve feedback for not having an API-Key lol
+- [ ] Pool of people not checked in
