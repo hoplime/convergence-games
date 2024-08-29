@@ -608,6 +608,27 @@ async def rollback_allocate(
     return await allocate_admin(request, session, hx_target, time_slot_id)
 
 
+@router.post("/uncommit_allocate/{time_slot_id}", dependencies=[Auth])
+async def uncommit_allocate(
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+    time_slot_id: int,
+) -> HTMLResponse:
+    with session:
+        # Delete all existing in CommittedAllocationResult for this time slot
+        statement = (
+            select(CommittedAllocationResult)
+            .join(TableAllocation, TableAllocation.id == CommittedAllocationResult.table_allocation_id)
+            .where(TableAllocation.time_slot_id == time_slot_id)
+        )
+        existing_results = session.exec(statement).all()
+        for existing_result in existing_results:
+            session.delete(existing_result)
+        session.commit()
+    return await allocate_admin(request, session, hx_target, time_slot_id)
+
+
 def extract_table_summary(
     table_allocation: TableAllocationResultView, time_slot_id: int, gm_ids: set
 ) -> dict[str, Any]:

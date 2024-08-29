@@ -35,76 +35,87 @@
         <div id="allocate_contents">
             {% block allocate_contents %}
                 <div class="flex flex-row gap-4">
-                    <label class="label cursor-pointer justify-start gap-4">
+                    <label class="label cursor-pointer flex-wrap justify-start gap-4">
                         <input type="checkbox" name="force_override" class="peer checkbox-accent checkbox" />
                         <span class="label-text">Show Actions</span>
-                        <button
-                            class="group btn btn-outline hidden peer-checked:flex"
-                            hx-post="/run_allocate/{{ time_slot.id }}"
-                            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
-                            hx-target="#allocate_contents"
-                            hx-confirm="Are you sure you want to rerun the allocation?"
-                        >
-                            <span class="inline group-[.htmx-request]:hidden">Reallocate</span>
-                            <span class="hidden group-[.htmx-request]:inline">
-                                Allocating
-                                <svg
-                                    class="inline"
-                                    fill="currentColor"
-                                    width="24"
-                                    height="24"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <style>
-                                        .spinner_qM83 {
-                                            animation: spinner_8HQG 1.05s infinite;
-                                        }
-                                        .spinner_oXPr {
-                                            animation-delay: 0.1s;
-                                        }
-                                        .spinner_ZTLf {
-                                            animation-delay: 0.2s;
-                                        }
-                                        @keyframes spinner_8HQG {
-                                            0%,
-                                            57.14% {
-                                                animation-timing-function: cubic-bezier(0.33, 0.66, 0.66, 1);
-                                                transform: translate(0);
+                        <div class="hidden grid-cols-4 gap-2 peer-checked:grid">
+                            <button
+                                class="group btn btn-outline"
+                                hx-post="/run_allocate/{{ time_slot.id }}"
+                                hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+                                hx-target="#allocate_contents"
+                                hx-confirm="Are you sure you want to rerun the allocation?"
+                            >
+                                <span class="inline group-[.htmx-request]:hidden">Reallocate</span>
+                                <span class="hidden group-[.htmx-request]:inline">
+                                    Allocating
+                                    <svg
+                                        class="inline"
+                                        fill="currentColor"
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <style>
+                                            .spinner_qM83 {
+                                                animation: spinner_8HQG 1.05s infinite;
                                             }
-                                            28.57% {
-                                                animation-timing-function: cubic-bezier(0.33, 0, 0.66, 0.33);
-                                                transform: translateY(-6px);
+                                            .spinner_oXPr {
+                                                animation-delay: 0.1s;
                                             }
-                                            100% {
-                                                transform: translate(0);
+                                            .spinner_ZTLf {
+                                                animation-delay: 0.2s;
                                             }
-                                        }
-                                    </style>
-                                    <circle class="spinner_qM83" cx="4" cy="12" r="3" />
-                                    <circle class="spinner_qM83 spinner_oXPr" cx="12" cy="12" r="3" />
-                                    <circle class="spinner_qM83 spinner_ZTLf" cx="20" cy="12" r="3" />
-                                </svg>
-                            </span>
-                        </button>
-                        <button
-                            class="btn btn-outline hidden peer-checked:flex"
-                            hx-post="/commit_allocate/{{ time_slot.id }}"
-                            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
-                            hx-target="#allocate_contents"
-                            hx-confirm="Are you sure you want to commit the allocation?"
-                        >
-                            Commit
-                        </button>
-                        <button
-                            class="btn btn-outline hidden peer-checked:flex"
-                            hx-post="/rollback_allocate/{{ time_slot.id }}"
-                            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
-                            hx-target="#allocate_contents"
-                            hx-confirm="Are you sure you want to rollback the allocation to the last commit?"
-                        >
-                            Rollback
-                        </button>
+                                            @keyframes spinner_8HQG {
+                                                0%,
+                                                57.14% {
+                                                    animation-timing-function: cubic-bezier(0.33, 0.66, 0.66, 1);
+                                                    transform: translate(0);
+                                                }
+                                                28.57% {
+                                                    animation-timing-function: cubic-bezier(0.33, 0, 0.66, 0.33);
+                                                    transform: translateY(-6px);
+                                                }
+                                                100% {
+                                                    transform: translate(0);
+                                                }
+                                            }
+                                        </style>
+                                        <circle class="spinner_qM83" cx="4" cy="12" r="3" />
+                                        <circle class="spinner_qM83 spinner_oXPr" cx="12" cy="12" r="3" />
+                                        <circle class="spinner_qM83 spinner_ZTLf" cx="20" cy="12" r="3" />
+                                    </svg>
+                                </span>
+                            </button>
+                            <button
+                                class="btn btn-outline"
+                                hx-post="/commit_allocate/{{ time_slot.id }}"
+                                hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+                                hx-target="#allocate_contents"
+                                hx-confirm="Are you sure you want to commit the allocation?"
+                            >
+                                Commit
+                            </button>
+                            <button
+                                class="btn btn-outline"
+                                hx-post="/rollback_allocate/{{ time_slot.id }}"
+                                hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+                                hx-target="#allocate_contents"
+                                hx-confirm="Are you sure you want to rollback the allocation to the last commit?"
+                            >
+                                Rollback
+                            </button>
+                            <button
+                                class="btn btn-outline"
+                                hx-post="/uncommit_allocate/{{ time_slot.id }}"
+                                hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+                                hx-target="#allocate_contents"
+                                hx-confirm="Are you sure you want to delete all committed allocations?"
+                            >
+                                Uncommit
+                            </button>
+                        </div>
                     </label>
                 </div>
 
