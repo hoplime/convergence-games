@@ -20,4 +20,6 @@
         <button type="submit" class="btn btn-primary mb-4 w-full">Login</button>
         <a hx-get="/signup" hx-target="#content" class="link">Sign Up Instead</a>
     </form>
+
+    {{ render_partial('shared/partials/toast_alerts.html.jinja', alerts=alerts) }}
 {% endblock %}
