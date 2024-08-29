@@ -57,5 +57,6 @@
         "statusBarItem.remoteBackground": "#ffffff",
         "statusBarItem.remoteForeground": "#15202b",
         "tab.activeBorder": "#ffffff"
-    }
+    },
+    "todo-tree.tree.showBadges": true
 }

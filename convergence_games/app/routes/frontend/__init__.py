@@ -9,7 +9,7 @@ from fastapi import APIRouter, Form, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BeforeValidator, RootModel
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
-from sqlmodel import select
+from sqlmodel import exists, select
 
 from convergence_games.app.dependencies import Auth, EngineDependency, HxTarget, Session, User, get_user
 from convergence_games.app.request_type import Request
@@ -29,6 +29,7 @@ from convergence_games.db.models import (
     Game,
     GameWithExtra,
     Person,
+    PersonAdventuringGroupLink,
     PersonWithExtra,
     SessionPreference,
     Table,
@@ -313,6 +314,31 @@ async def logout_post(
     )
 
 
+def create_initial_adventuring_group(
+    session: Session, person: Person, time_slot_id: int, checked_in: bool = False
+) -> None:
+    for trial in range(100):
+        random_code = get_random_group_code(seed=hash(person.email + str(trial)))
+        existing_group = session.exec(
+            select(AdventuringGroup).where(
+                (AdventuringGroup.name == random_code) & (AdventuringGroup.time_slot_id == time_slot_id)
+            )
+        ).first()
+        if existing_group is None:
+            break
+
+    adventuring_group = AdventuringGroup(
+        name=random_code,
+        members=[person],
+        time_slot_id=time_slot_id,
+        checked_in=checked_in,
+    )
+    session.add(adventuring_group)
+    session.commit()
+    session.refresh(adventuring_group)
+    return adventuring_group
+
+
 def get_random_group_code(seed: int = 0) -> str:
     random.seed(seed)
     return "".join(random.choices(string.ascii_uppercase, k=6))
@@ -330,23 +356,7 @@ def get_adventuring_group_from_user_and_time_slot_id(
     print("GROUP", adventuring_group)
 
     if adventuring_group is None:
-        for trial in range(100):
-            random_code = get_random_group_code(seed=hash(person_with_extra.email + str(trial)))
-            existing_group = session.exec(
-                select(AdventuringGroup).where(
-                    (AdventuringGroup.name == random_code) & (AdventuringGroup.time_slot_id == time_slot_id)
-                )
-            ).first()
-            if existing_group is None:
-                break
-        adventuring_group = AdventuringGroup(
-            name=random_code,
-            members=[person],
-            time_slot_id=time_slot_id,
-        )
-        session.add(adventuring_group)
-        session.commit()
-        session.refresh(adventuring_group)
+        adventuring_group = create_initial_adventuring_group(session, person, time_slot_id)
 
     return adventuring_group
 
@@ -521,7 +531,7 @@ async def schedule(
         if committed_table_allocation:
             committed_table_allocation = TableAllocationResultView.model_validate(committed_table_allocation)
             table_summary = extract_table_summary(
-                committed_table_allocation, time_slot_id, {committed_table_allocation.game.gamemaster_id}
+                committed_table_allocation, {committed_table_allocation.game.gamemaster_id}
             )
         else:
             table_summary = None
@@ -757,9 +767,7 @@ async def uncommit_allocate(
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
-def extract_table_summary(
-    table_allocation: TableAllocationResultView, time_slot_id: int, gm_ids: set
-) -> dict[str, Any]:
+def extract_table_summary(table_allocation: TableAllocationResultView, gm_ids: set) -> dict[str, Any]:
     table_groups: list[dict[str, Any]] = []
     for allocation_result in table_allocation.allocation_results:
         adventuring_group = allocation_result.adventuring_group
@@ -815,7 +823,41 @@ async def admin_allocate(
     gm_ids = {table_allocation.game.gamemaster_id for table_allocation in table_allocations}
 
     for table_allocation in table_allocations:
-        table_summaries[table_allocation.id] = extract_table_summary(table_allocation, time_slot_id, gm_ids)
+        table_summaries[table_allocation.id] = extract_table_summary(table_allocation, gm_ids)
+
+    with session:
+        # Get everyone not in a group
+        statement = select(Person).where(
+            ~exists(
+                select(AdventuringGroup)
+                .where(AdventuringGroup.time_slot_id == time_slot_id)
+                .join(
+                    PersonAdventuringGroupLink, PersonAdventuringGroupLink.adventuring_group_id == AdventuringGroup.id
+                )
+                .where(PersonAdventuringGroupLink.member_id == Person.id)
+            )
+        )
+        ungrouped_people = session.exec(statement).all()
+        print(f"UNGROUPED: {ungrouped_people}")
+        # Create a default group for them
+        if ungrouped_people:
+            for person in ungrouped_people:
+                create_initial_adventuring_group(session, person, time_slot_id, checked_in=False)
+            session.commit()
+
+        # Get every group not assigned anywhere
+        statement = (
+            select(AdventuringGroup)
+            .where(AdventuringGroup.time_slot_id == time_slot_id)
+            .outerjoin(AllocationResult, AllocationResult.adventuring_group_id == AdventuringGroup.id)
+            .where(AllocationResult.id.is_(None))
+        )
+        unallocated_groups = session.exec(statement).all()
+        unallocated_groups = sorted(
+            [AdventuringGroupWithExtra.model_validate(group) for group in unallocated_groups],
+            key=lambda group: group.members[0].name.lower(),
+        )
+        print(f"UNALLOCATED: {unallocated_groups}")
 
     return templates.TemplateResponse(
         name="main/allocate.html.jinja",
@@ -823,6 +865,7 @@ async def admin_allocate(
             "time_slot": time_slot,
             "table_allocations": table_allocations,
             "table_summaries": table_summaries,
+            "unallocated_groups": unallocated_groups,
             "request": request,
         },
         block_name=hx_target,

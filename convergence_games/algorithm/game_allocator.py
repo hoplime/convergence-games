@@ -12,7 +12,7 @@ from typing import Any, Generator, Literal, Self, TypeAlias
 
 import polars as pl
 from sqlalchemy import Engine
-from sqlmodel import Session, SQLModel, create_engine, func, select
+from sqlmodel import Session, SQLModel, create_engine, exists, func, select
 
 from convergence_games.db.base_data import ALL_BASE_DATA
 from convergence_games.db.models import (
@@ -499,9 +499,23 @@ class GameAllocator:
             preference_overrides = {overflow_table_allocation_id: 0.5}
 
             # Get all groups this session
-            adventuring_groups = session.exec(
-                select(AdventuringGroup).where(AdventuringGroup.time_slot_id == self.time_slot_id)
-            ).all()
+            # Include only checked in _or_ GM groups
+            statement = select(AdventuringGroup).where(
+                (AdventuringGroup.time_slot_id == self.time_slot_id)
+                & (
+                    AdventuringGroup.checked_in
+                    | exists(
+                        select(Person)
+                        .join(
+                            PersonAdventuringGroupLink,
+                            PersonAdventuringGroupLink.member_id == Person.id,
+                        )
+                        .where(PersonAdventuringGroupLink.adventuring_group_id == AdventuringGroup.id)
+                        .where(Person.id.in_(gm_ids.keys()))
+                    )
+                )
+            )
+            adventuring_groups = session.exec(statement).all()
             adventuring_groups_with_extra = [AdventuringGroupWithExtra.model_validate(ag) for ag in adventuring_groups]
 
             groups = [
@@ -519,6 +533,8 @@ class GameAllocator:
             return gm_groups, non_gm_groups
 
     def _init_current_allocations(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
+        print("INITIALIZING CURRENT ALLOCATIONS")
+        pprint(self.gamemasters_by_table_allocation_id)
         return {
             table_allocation.id: CurrentGameAllocation(
                 table_allocation=table_allocation,

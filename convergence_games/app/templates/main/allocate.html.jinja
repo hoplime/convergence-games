@@ -118,8 +118,8 @@
                         </div>
                     </label>
                 </div>
-
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {# Main Allocated #}
                     {% for table_allocation in table_allocations %}
                         {% set game = table_allocation.game %}
                         {% set current_players = table_summaries[table_allocation.id].total_players %}
@@ -194,6 +194,30 @@
                             </div>
                         </div>
                     {% endfor %}
+                    {# Unallocated Groups #}
+                    <div class="card w-full bg-base-200 shadow-xl">
+                        <div class="card-body">
+                            <h2 class="card-title">Unallocated Groups</h2>
+                            {# Group Lists #}
+                            {% for group in unallocated_groups %}
+                                <div class="flex max-w-96 flex-col items-start justify-between rounded border p-2">
+                                    <ul class="flex flex-col">
+                                        {% for player in group.members %}
+                                            <li>
+                                                {{ player.name }} ({{ player.email }})
+                                                {% if not group.checked_in %}
+                                                    <span class="badge badge-outline gap-2 text-red-400"
+                                                        >Not Checked In</span
+                                                    >
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                    {# {{ render_partial('shared/partials/move_button.html.jinja', group_id=group.id, current_table_allocation_id=table_allocation.id) }} #}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             {% endblock %}
         </div>
