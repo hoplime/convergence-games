@@ -993,7 +993,7 @@ async def move_button(
         name="shared/partials/move_button.html.jinja",
         context={
             "request": request,
-            "leader_id": group_id,
+            "group_id": group_id,
             "time_slot_id": time_slot_id,
         },
     )
