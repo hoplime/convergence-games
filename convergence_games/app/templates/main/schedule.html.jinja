@@ -19,7 +19,27 @@
         <div id="schedule_contents">
             {% block schedule_contents %}
                 <div class="grid grid-cols-1 gap-4">
-                    {% if gm_game %}
+                    {% if committed_table_allocation %}
+                        <h2 class="text-xl font-semibold antialiased">You are playing in:</h2>
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {{ render_partial('shared/partials/game_card.html.jinja', game=committed_table_allocation.game, user=user) }}
+                        </div>
+                        <h2 class="text-lg font-semibold antialiased">
+                            At table {{ committed_table_allocation.table.short_description }}
+                        </h2>
+                        <div class="flex flex-col">
+                            {% for group in table_summary.groups %}
+                                {% for player in group.group_members %}
+                                    <span>
+                                        {{ player.name }}
+                                        {% if group.is_gm %}
+                                            <span class="badge badge-outline gap-2 text-yellow-400"> GM </span>
+                                        {% endif %}
+                                    </span>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    {% elif gm_game %}
                         <h2 class="text-xl font-semibold antialiased">Game Mastering on {{ time_slot.name }}</h2>
                         <p class="opacity-50">You are running a game this session!</p>
 

@@ -381,6 +381,19 @@ async def schedule(
         # And finally the actual time slot
         time_slot = session.get(TimeSlot, time_slot_id)
 
+        # TODO: Logic to get group preference and committed status, for now assume no groups
+        statement = (
+            select(TableAllocation)
+            .join(CommittedAllocationResult, TableAllocation.id == CommittedAllocationResult.table_allocation_id)
+            .where((CommittedAllocationResult.person_id == user.id) & (TableAllocation.time_slot_id == time_slot_id))
+        )
+        committed_table_allocation = session.exec(statement).first()
+        if committed_table_allocation:
+            committed_table_allocation = TableAllocationResultView.model_validate(committed_table_allocation)
+            table_summary = extract_table_summary(
+                committed_table_allocation, time_slot_id, {committed_table_allocation.game.gamemaster_id}
+            )
+
     push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
 
     return templates.TemplateResponse(
@@ -390,6 +403,8 @@ async def schedule(
             "session_settings": person_session_settings,
             "gm_game": gm_game,
             "time_slot": time_slot,
+            "committed_table_allocation": committed_table_allocation,
+            "table_summary": table_summary,
             "request": request,
             "user": user,
         },
@@ -593,6 +608,41 @@ async def rollback_allocate(
     return await allocate_admin(request, session, hx_target, time_slot_id)
 
 
+def extract_table_summary(
+    table_allocation: TableAllocationResultView, time_slot_id: int, gm_ids: set
+) -> dict[str, Any]:
+    table_groups: list[dict[str, Any]] = []
+    for allocation_result in table_allocation.allocation_results:
+        session_settings_this_session = next(
+            (ss for ss in allocation_result.person.session_settings if ss.time_slot_id == time_slot_id), None
+        )
+        committed_person_ids = {
+            committed_allocation_result.person_id
+            for committed_allocation_result in table_allocation.committed_allocation_results
+        }
+        table_groups.append(
+            {
+                "leader_id": allocation_result.person_id,
+                "group_members": [allocation_result.person] + session_settings_this_session.group_members
+                if session_settings_this_session
+                else [allocation_result.person],
+                "is_gm": allocation_result.person_id == table_allocation.game.gamemaster_id,
+                "is_gm_any_game": allocation_result.person_id in gm_ids,
+                "is_committed": allocation_result.person_id in committed_person_ids,
+            }
+        )
+        # Put the GM at the front of the list always
+        gm_index = next((i for i, group in enumerate(table_groups) if group["is_gm"]), None)
+        if gm_index is not None:
+            table_groups.insert(0, table_groups.pop(gm_index))
+    table_summary = {
+        "has_gm": any(group["is_gm"] for group in table_groups),
+        "total_players": sum(len(group["group_members"]) for group in table_groups if not group["is_gm"]),
+        "groups": table_groups,
+    }
+    return table_summary
+
+
 @router.get("/allocate_admin")
 async def allocate_admin(
     request: Request,
@@ -615,50 +665,18 @@ async def allocate_admin(
         # Get the actual time slot
         time_slot = session.get(TimeSlot, time_slot_id)
 
-    table_groups: dict[int, list[dict[str, Any]]] = {}
     table_summaries: dict[int, dict[str, Any]] = {}
 
     gm_ids = {table_allocation.game.gamemaster_id for table_allocation in table_allocations}
 
     for table_allocation in table_allocations:
-        if table_allocation.id not in table_groups:
-            table_groups[table_allocation.id] = []
-        for allocation_result in table_allocation.allocation_results:
-            session_settings_this_session = next(
-                (ss for ss in allocation_result.person.session_settings if ss.time_slot_id == time_slot_id), None
-            )
-            committed_person_ids = {
-                committed_allocation_result.person_id
-                for committed_allocation_result in table_allocation.committed_allocation_results
-            }
-            table_groups[table_allocation.id].append(
-                {
-                    "leader_id": allocation_result.person_id,
-                    "group_members": [allocation_result.person] + session_settings_this_session.group_members
-                    if session_settings_this_session
-                    else [allocation_result.person],
-                    "is_gm": allocation_result.person_id == table_allocation.game.gamemaster_id,
-                    "is_gm_any_game": allocation_result.person_id in gm_ids,
-                    "is_committed": allocation_result.person_id in committed_person_ids,
-                }
-            )
-            # Put the GM at the front of the list always
-            gm_index = next((i for i, group in enumerate(table_groups[table_allocation.id]) if group["is_gm"]), None)
-            if gm_index is not None:
-                table_groups[table_allocation.id].insert(0, table_groups[table_allocation.id].pop(gm_index))
-        table_summaries[table_allocation.id] = {
-            "has_gm": any(group["is_gm"] for group in table_groups[table_allocation.id]),
-            "total_players": sum(
-                len(group["group_members"]) for group in table_groups[table_allocation.id] if not group["is_gm"]
-            ),
-        }
+        table_summaries[table_allocation.id] = extract_table_summary(table_allocation, time_slot_id, gm_ids)
 
     return templates.TemplateResponse(
         name="main/allocate.html.jinja",
         context={
             "time_slot": time_slot,
             "table_allocations": table_allocations,
-            "table_groups": table_groups,
             "table_summaries": table_summaries,
             "request": request,
         },

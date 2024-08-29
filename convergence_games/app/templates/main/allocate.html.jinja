@@ -151,7 +151,7 @@
                                 </div>
 
                                 {# Group Lists #}
-                                {% for group in table_groups[table_allocation.id] %}
+                                {% for group in table_summaries[table_allocation.id].groups %}
                                     {% set gm_classes = ("border-yellow-400" if group.is_gm else "border-red-400" if group.is_gm_any_game else "border-current") %}
                                     <div
                                         class="{{ gm_classes }} flex max-w-96 flex-col items-start justify-between rounded border p-2"
