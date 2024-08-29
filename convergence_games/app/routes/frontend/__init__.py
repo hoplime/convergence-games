@@ -49,14 +49,14 @@ from convergence_games.db.session import Option
 router = APIRouter(tags=["frontend"], include_in_schema=False)
 
 
-def alerts_template_response(alerts: list["Alert"], request: Request, retarget: str) -> HTMLResponse:
+def alerts_template_response(alerts: list["Alert"], request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         name="shared/partials/toast_alerts.html.jinja",
         context={
             "request": request,
             "alerts": alerts,
         },
-        headers={"HX-Retarget": retarget, "HX-Reswap": "beforeend"},
+        headers={"HX-Retarget": "#content", "HX-Reswap": "beforeend"},
     )
 
 
@@ -394,11 +394,15 @@ async def change_group_name(
     with session:
         group = session.get(AdventuringGroup, adventuring_group_id)
         if user.id not in {member.id for member in group.members}:
-            return HTMLResponse(status_code=403)
+            return alerts_template_response([Alert("You are not in this party", "error")], request)
 
         group.name = host_code.upper()
         session.add(group)
-        session.commit()
+        try:
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            return alerts_template_response([Alert("Code already in use, did you mean to join?", "error")], request)
         session.refresh(group)
     return await schedule(request, user, session, hx_target, group.time_slot_id)
 
@@ -432,11 +436,7 @@ async def join_group(
     hx_target: HxTarget,
 ) -> HTMLResponse:
     with session:
-        if (
-            alerts := maybe_alerts_if_group_locked(
-                request, session, current_adventuring_group_id, retarget=f"#{hx_target}"
-            )
-        ) is not None:
+        if (alerts := maybe_alerts_if_group_locked(request, session, current_adventuring_group_id)) is not None:
             return alerts
 
         person = session.get(Person, user.id)
@@ -449,17 +449,15 @@ async def join_group(
             )
         ).first()
 
-        if (
-            alerts := maybe_alerts_if_group_locked(request, session, new_group.id, retarget=f"#{hx_target}")
-        ) is not None:
+        if (alerts := maybe_alerts_if_group_locked(request, session, new_group.id)) is not None:
             return alerts
 
         if new_group is None:
-            return alerts_template_response([Alert("Party not found", "error")], request, retarget=f"#{hx_target}")
+            return alerts_template_response([Alert("Party not found", "error")], request)
 
         # Group limits!
         if len(new_group.members) >= 3:
-            return alerts_template_response([Alert("Party is full", "error")], request, retarget=f"#{hx_target}")
+            return alerts_template_response([Alert("Party is full (max 3 members)", "error")], request)
 
         # Remove from current group
         remove_person_from_group(session, current_group, person.id)
@@ -481,9 +479,7 @@ async def leave_group(
     hx_target: HxTarget,
 ) -> HTMLResponse:
     with session:
-        if (
-            alerts := maybe_alerts_if_group_locked(request, session, adventuring_group_id, retarget=f"#{hx_target}")
-        ) is not None:
+        if (alerts := maybe_alerts_if_group_locked(request, session, adventuring_group_id)) is not None:
             print("ALERTS", alerts)
             return alerts
         current_group = session.get(AdventuringGroup, adventuring_group_id)
@@ -500,7 +496,7 @@ def maybe_alerts_if_group_locked(
     if session.exec(statement).first() is None:
         return None
     return alerts_template_response(
-        [Alert("Party is already committed, cannot edit - please refresh", "error")], request, retarget=retarget
+        [Alert("Party is already committed, you can't take this action - please refresh", "error")], request
     )
 
 
@@ -727,13 +723,11 @@ async def checkin_post(
 # region Admin
 
 
-def maybe_alerts_from_auth(
-    auth: tuple[bool, list[Exception]], request: Request, retarget: str = "#allocate_contents"
-) -> Response | None:
+def maybe_alerts_from_auth(auth: tuple[bool, list[Exception]], request: Request) -> Response | None:
     if auth[0]:
         return None
     alerts = [Alert(str(e), "error") for e in auth[1]]
-    return alerts_template_response(alerts, request, retarget)
+    return alerts_template_response(alerts, request)
 
 
 @router.post("/admin/run_allocate/{time_slot_id}")
@@ -1049,7 +1043,7 @@ async def move(
 
         new_table_allocation = session.get(TableAllocation, table_allocation_id)
         if new_table_allocation is None:
-            return HTMLResponse(status_code=400)
+            return alerts_template_response([Alert("Table not found, woops", "error")], request)
 
         if current_table_allocation_and_result is not None:
             current_table_allocation, current_allocation_result = current_table_allocation_and_result

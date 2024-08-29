@@ -5,6 +5,7 @@
 - [x] The profile cancel edit buttons etc break the page #content because of the hx-target based replacements and block logic
 - [x] After sign up, you don't get an updated nav bar
 - [x] Check in status not properly updating when time slot changes
+- [ ] Have to toggle dark theme/light theme to fix colors of ratings?
 
 # Features - Algorithm
 
@@ -25,11 +26,11 @@
 - [x] Make commit actually do something
 - [x] Keep group preferences together after an allocation even if the group changes (ahh we need a Group table concept or something)
 - [x] Do the commits
-- [ ] Disallow editing group members if you're committed
+- [x] Disallow editing group members if you're committed
+- [x] Allow force checking in/out people
 - [ ] Enforce D20s in groups properly
 - [ ] Reimporting from spreadsheet
 - [ ] Update caching for game updates
-- [ ] Allow force checking in/out people
 
 # Features - Frontend
 
