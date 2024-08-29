@@ -533,8 +533,8 @@ class GameAllocator:
             return gm_groups, non_gm_groups
 
     def _init_current_allocations(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
-        print("INITIALIZING CURRENT ALLOCATIONS")
-        pprint(self.gamemasters_by_table_allocation_id)
+        # print("INITIALIZING CURRENT ALLOCATIONS")
+        # pprint(self.gamemasters_by_table_allocation_id)
         return {
             table_allocation.id: CurrentGameAllocation(
                 table_allocation=table_allocation,

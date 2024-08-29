@@ -364,7 +364,6 @@ def get_adventuring_group_from_user_and_time_slot_id(
         (group for group in person_with_extra.adventuring_groups if group.time_slot_id == time_slot_id),
         None,
     )
-    print("GROUP", adventuring_group)
 
     if adventuring_group is None:
         adventuring_group = create_initial_adventuring_group(session, person, time_slot_id)
@@ -497,8 +496,6 @@ async def schedule(
 
         if gm_game:
             gm_game = GameWithExtra.model_validate(gm_game)
-
-        print("GMING", gm_game)
 
         # Get all of the games and existing preferences for this time slot
         statement = (
@@ -642,7 +639,6 @@ async def preferences_post(
 ) -> HTMLResponse:
     form_data = await request.form()
     table_allocation_ratings = RatingForm.model_validate(form_data)
-    print(table_allocation_ratings)
     with session:
         session_preferences: list[SessionPreference] = []
         for table_allocation_id, rating in table_allocation_ratings.items():
@@ -888,7 +884,6 @@ async def admin_allocate(
             )
         )
         ungrouped_people = session.exec(statement).all()
-        print(f"UNGROUPED: {ungrouped_people}")
         # Create a default group for them
         if ungrouped_people:
             for person in ungrouped_people:
@@ -918,7 +913,6 @@ async def admin_allocate(
             )
             for group in unallocated_groups
         ]
-        print(f"UNALLOCATED: {unallocated_groups}")
 
     return templates.TemplateResponse(
         name="main/allocate.html.jinja",
@@ -959,7 +953,6 @@ async def move_menu(
             .order_by(TableAllocation.table_id)
         )
         query_results = session.exec(statement).all()
-        print(statement.column_descriptions)
         candidates = [
             {description["name"]: value for description, value in zip(statement.column_descriptions, row)}
             for row in query_results
@@ -1027,6 +1020,26 @@ async def move(
 
         new_table_allocation.allocation_results.append(AllocationResult(adventuring_group_id=group_id))
         time_slot_id = new_table_allocation.time_slot_id
+        session.commit()
+    return await admin_allocate(request, session, hx_target, time_slot_id)
+
+
+@router.put("/admin/checkin")
+async def checkin(
+    auth: AuthWithHandler,
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+    group_id: Annotated[int, Query()],
+    checkin: Annotated[bool, Query()] = False,
+) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+    with session:
+        adventuring_group = session.get(AdventuringGroup, group_id)
+        adventuring_group.checked_in = checkin
+        time_slot_id = adventuring_group.time_slot_id
+        session.add(adventuring_group)
         session.commit()
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
