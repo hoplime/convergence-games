@@ -266,6 +266,10 @@ class Alert:
     def alert_class(self) -> str:
         return f"alert-{self.type}"
 
+    @property
+    def text_class(self) -> str:
+        return f"text-{self.type}"
+
 
 @router.post("/signup")
 async def signup_post(
