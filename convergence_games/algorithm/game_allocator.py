@@ -29,7 +29,7 @@ from convergence_games.db.models import (
 )
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
 
-PRINT = True
+PRINT = False
 
 
 def maybe_print(*args: Any, **kwargs: Any) -> None:

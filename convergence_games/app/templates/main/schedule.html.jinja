@@ -65,11 +65,10 @@
                             </svg>
                         </h2>
                         <p class="opacity-50">Form a group with up to 2 other Convergence goers for this session!</p>
-                        <p>{{ adventuring_group }}</p>
                         {% if adventuring_group.members|length == 1 %}
                             {{ render_partial('shared/partials/adventuring_party_alone.html.jinja', adventuring_group=adventuring_group) }}
                         {% else %}
-                            <p>TODO GROUP</p>
+                            {{ render_partial('shared/partials/adventuring_party_joined.html.jinja', adventuring_group=adventuring_group) }}
                         {% endif %}
                     {% endif %}
                     <h2 class="text-xl font-semibold antialiased">Game Preferences for {{ time_slot.name }}</h2>

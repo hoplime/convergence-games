@@ -466,7 +466,7 @@ class AllocationResultRead(AllocationResultBase):
 
 class AllocationResultWithExtra(AllocationResultRead):
     table_allocation: TableAllocation
-    adventuring_group: AdventuringGroup
+    adventuring_group: AdventuringGroupWithExtra
 
 
 class AllocationResultUpdate(AllocationResultBase):
@@ -481,6 +481,11 @@ class CommittedAllocationResult(AllocationResultBase, table=True):
     adventuring_group: AdventuringGroup = Relationship(back_populates="committed_allocation_results")
 
 
+class CommittedAllocationResultWithExtra(AllocationResultRead):
+    table_allocation: TableAllocation
+    adventuring_group: AdventuringGroupWithExtra
+
+
 # endregion
 
 
@@ -489,8 +494,8 @@ class TableAllocationResultView(TableAllocationRead):
     table: Table
     time_slot: TimeSlot
     game: GameWithExtra
-    allocation_results: list["AllocationResult"]
-    committed_allocation_results: list["CommittedAllocationResult"]
+    allocation_results: list["AllocationResultWithExtra"]
+    committed_allocation_results: list["CommittedAllocationResultWithExtra"]
 
 
 # endregion

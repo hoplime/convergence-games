@@ -143,7 +143,7 @@ async def games(
         for a in DEFINED_AGE_SUITABILITIES
     ]
 
-    push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
+    push_url = "/games" + ("?" + request.url.query if request.url.query else "")
 
     return templates.TemplateResponse(
         name="main/games.html.jinja",
@@ -351,6 +351,80 @@ def get_adventuring_group_from_user_and_time_slot_id(
     return adventuring_group
 
 
+@router.put("/change_group_name")
+async def change_group_name(
+    request: Request,
+    user: User,
+    session: Session,
+    adventuring_group_id: Annotated[int, Query()],
+    host_code: Annotated[str, Form()],
+    hx_target: HxTarget,
+) -> HTMLResponse:
+    # TODO: Assertions that groups can't change after commitment!
+    with session:
+        group = session.get(AdventuringGroup, adventuring_group_id)
+        if user.id not in {member.id for member in group.members}:
+            return HTMLResponse(status_code=403)
+
+        group.name = host_code.upper()
+        session.add(group)
+        session.commit()
+        session.refresh(group)
+    return await schedule(request, user, session, hx_target, group.time_slot_id)
+
+
+@router.put("/join_group")
+async def join_group(
+    request: Request,
+    user: User,
+    session: Session,
+    current_adventuring_group_id: Annotated[int, Query()],
+    join_code: Annotated[str, Form()],
+    hx_target: HxTarget,
+) -> HTMLResponse:
+    # TODO: Assertions that groups can't change after commitment!
+    with session:
+        person = session.get(Person, user.id)
+        current_group = session.get(AdventuringGroup, current_adventuring_group_id)
+
+        new_group = session.exec(
+            select(AdventuringGroup).where(
+                (AdventuringGroup.name == join_code.upper())
+                & (current_group.time_slot_id == AdventuringGroup.time_slot_id)
+            )
+        ).first()
+        if new_group is None:
+            print("GROUP NOT FOUND TODO ERRORS")
+            return HTMLResponse(status_code=404)
+
+        # Group limits!
+        if len(new_group.members) >= 3:
+            print("GROUP IS TOO FULL TODO ERRORS")
+            return HTMLResponse(status_code=403)
+
+        # Remove from current group
+        current_group.members = [member for member in current_group.members if member.id != user.id]
+        if not current_group.members:
+            print("DELETING OLD GROUP")
+            for session_preference in current_group.session_preferences:
+                session.delete(session_preference)
+            session.commit()  # TODO: There's got to be a nicer way (cascade delete?) but for now delete each thing in turn
+            for allocation_result in current_group.allocation_results:
+                session.delete(allocation_result)
+            session.commit()
+            for committed_allocation_result in current_group.committed_allocation_results:
+                session.delete(committed_allocation_result)
+            session.commit()
+            session.delete(current_group)
+        else:
+            session.add(current_group)
+
+        new_group.members.append(person)
+        session.add(new_group)
+        session.commit()
+    return await schedule(request, user, session, hx_target, new_group.time_slot_id)
+
+
 @router.get("/schedule")
 async def schedule(
     request: Request,
@@ -359,6 +433,7 @@ async def schedule(
     hx_target: HxTarget,
     time_slot_id: Annotated[int, Query()] = 1,
 ) -> HTMLResponse:
+    # TODO: Assertions that groups can't change after commitment!
     with session:
         # Get the current adventuring group for this time slot
         adventuring_group = get_adventuring_group_from_user_and_time_slot_id(session, user.id, time_slot_id)
@@ -427,7 +502,7 @@ async def schedule(
         else:
             table_summary = None
 
-    push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
+    push_url = "/schedule" + ("?" + request.url.query if request.url.query else "")
 
     return templates.TemplateResponse(
         name="main/schedule.html.jinja",
@@ -608,7 +683,8 @@ def do_commit_or_rollback(
         for allocation_result in allocation_results:
             session.add(
                 to_table(
-                    table_allocation_id=allocation_result.table_allocation_id, person_id=allocation_result.person_id
+                    table_allocation_id=allocation_result.table_allocation_id,
+                    adventuring_group_id=allocation_result.adventuring_group_id,
                 )
             )
         session.commit()
@@ -662,22 +738,18 @@ def extract_table_summary(
 ) -> dict[str, Any]:
     table_groups: list[dict[str, Any]] = []
     for allocation_result in table_allocation.allocation_results:
-        session_settings_this_session = next(
-            (ss for ss in allocation_result.person.session_settings if ss.time_slot_id == time_slot_id), None
-        )
-        committed_person_ids = {
-            committed_allocation_result.person_id
+        adventuring_group = allocation_result.adventuring_group
+        comitted_group_ids = {
+            committed_allocation_result.adventuring_group_id
             for committed_allocation_result in table_allocation.committed_allocation_results
         }
         table_groups.append(
             {
-                "leader_id": allocation_result.person_id,
-                "group_members": [allocation_result.person] + session_settings_this_session.group_members
-                if session_settings_this_session
-                else [allocation_result.person],
-                "is_gm": allocation_result.person_id == table_allocation.game.gamemaster_id,
-                "is_gm_any_game": allocation_result.person_id in gm_ids,
-                "is_committed": allocation_result.person_id in committed_person_ids,
+                "id": adventuring_group.id,
+                "group_members": adventuring_group.members,
+                "is_gm": adventuring_group.members[0].id == table_allocation.game.gamemaster_id,
+                "is_gm_any_game": adventuring_group.members[0].id in gm_ids,
+                "is_committed": adventuring_group.id in comitted_group_ids,
             }
         )
         # Put the GM at the front of the list always
@@ -737,7 +809,7 @@ async def allocate_admin(
 async def move_menu(
     request: Request,
     session: Session,
-    leader_id: Annotated[int, Query()],
+    group_id: Annotated[int, Query()],
     current_table_allocation_id: Annotated[int, Query()],
 ) -> HTMLResponse:
     with session:
@@ -754,7 +826,7 @@ async def move_menu(
             .join(Table, Table.id == TableAllocation.table_id)
             .outerjoin(
                 SessionPreference,
-                (SessionPreference.person_id == leader_id)
+                (SessionPreference.adventuring_group_id == group_id)
                 & (SessionPreference.table_allocation_id == TableAllocation.id),
             )
             .order_by(TableAllocation.table_id)
@@ -770,7 +842,7 @@ async def move_menu(
         name="shared/partials/move_menu.html.jinja",
         context={
             "request": request,
-            "leader_id": leader_id,
+            "group_id": group_id,
             "current_table_allocation_id": current_table_allocation_id,
             "candidates": candidates,
         },
@@ -780,14 +852,14 @@ async def move_menu(
 @router.get("/move_button")
 async def move_button(
     request: Request,
-    leader_id: Annotated[int, Query()],
+    group_id: Annotated[int, Query()],
     current_table_allocation_id: Annotated[int, Query()],
 ) -> HTMLResponse:
     return templates.TemplateResponse(
         name="shared/partials/move_button.html.jinja",
         context={
             "request": request,
-            "leader_id": leader_id,
+            "leader_id": group_id,
             "current_table_allocation_id": current_table_allocation_id,
         },
     )
@@ -798,14 +870,14 @@ async def move(
     request: Request,
     session: Session,
     hx_target: HxTarget,
-    leader_id: Annotated[int, Query()],
+    group_id: Annotated[int, Query()],
     table_allocation_id: Annotated[int, Form()],
 ) -> HTMLResponse:
     with session:
         current_table_allocation_and_result = session.exec(
             select(TableAllocation, AllocationResult)
             .join(AllocationResult, TableAllocation.id == AllocationResult.table_allocation_id)
-            .where(AllocationResult.person_id == leader_id)
+            .where(AllocationResult.adventuring_group_id == group_id)
         ).first()
         if current_table_allocation_and_result is None:
             return HTMLResponse(status_code=400)
@@ -816,7 +888,7 @@ async def move(
 
         current_table_allocation, current_allocation_result = current_table_allocation_and_result
         session.delete(current_allocation_result)
-        new_table_allocation.allocation_results.append(AllocationResult(person_id=leader_id))
+        new_table_allocation.allocation_results.append(AllocationResult(adventuring_group_id=group_id))
         session.commit()
         time_slot_id = new_table_allocation.time_slot_id
     return await allocate_admin(request, session, hx_target, time_slot_id)

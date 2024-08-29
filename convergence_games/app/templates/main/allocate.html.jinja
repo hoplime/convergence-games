@@ -188,7 +188,7 @@
                                                 </li>
                                             {% endfor %}
                                         </ul>
-                                        {{ render_partial('shared/partials/move_button.html.jinja', leader_id=group.leader_id, current_table_allocation_id=table_allocation.id) }}
+                                        {{ render_partial('shared/partials/move_button.html.jinja', group_id=group.id, current_table_allocation_id=table_allocation.id) }}
                                     </div>
                                 {% endfor %}
                             </div>

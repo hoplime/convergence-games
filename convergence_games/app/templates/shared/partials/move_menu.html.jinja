@@ -29,7 +29,7 @@
     <div class="flex flex-row">
         <button
             class="btn btn-primary btn-sm"
-            hx-put="/move?leader_id={{ leader_id }}"
+            hx-put="/move?group_id={{ group_id }}"
             hx-include="[name='table_allocation_id']"
             hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
             hx-target="#allocate_contents"
