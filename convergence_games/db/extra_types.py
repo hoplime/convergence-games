@@ -20,12 +20,6 @@ class GameTone(enum.StrEnum):
     DARK = "Dark"
 
 
-class GroupHostingMode(enum.IntEnum):
-    NOT_IN_GROUP = 0
-    HOSTING = 1
-    JOINED = 2
-
-
 DEFINED_CONTENT_WARNINGS = [
     "Extreme Violence",
     "Horror",

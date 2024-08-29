@@ -8,22 +8,20 @@ from functools import total_ordering
 from itertools import groupby
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Literal, Self, TypeAlias
+from typing import Any, Generator, Literal, Self, TypeAlias
 
 import polars as pl
-from pydantic import BaseModel
 from sqlalchemy import Engine
-from sqlmodel import Session, SQLModel, col, create_engine, func, select
+from sqlmodel import Session, SQLModel, create_engine, func, select
 
 from convergence_games.db.base_data import ALL_BASE_DATA
-from convergence_games.db.extra_types import GroupHostingMode
 from convergence_games.db.models import (
+    AdventuringGroup,
+    AdventuringGroupWithExtra,
     AllocationResult,
     Game,
     Person,
-    PersonSessionSettings,
-    PersonSessionSettingsWithExtra,
-    PersonWithExtra,
+    PersonAdventuringGroupLink,
     SessionPreference,
     TableAllocation,
     TableAllocationWithExtra,
@@ -31,7 +29,7 @@ from convergence_games.db.models import (
 )
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
 
-PRINT = False
+PRINT = True
 
 
 def maybe_print(*args: Any, **kwargs: Any) -> None:
@@ -101,24 +99,22 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
             person.golden_d20s = 1
         session.add_all(people_with_golden_d20)
 
-        # SIMULATE SESSION PREFERENCES
-        for person in persons:
+        def simulate_session_preferences(time_slot_id: time_slot_id_t) -> list[SessionPreference]:
+            result = []
             for table_allocation in table_allocations:
+                if table_allocation.time_slot_id != time_slot_id:
+                    continue
+
                 possible_options = [0, 1, 2, 3, 4, 5, 20] if person.golden_d20s > 0 else [0, 1, 2, 3, 4, 5]
                 session_preference = SessionPreference(
                     preference=random.choice(possible_options),  # TODO: Weighted preferences
-                    person_id=person.id,
                     table_allocation_id=table_allocation.id,
                 )
                 # We also simulate _not_ having a preference for a table allocation sometimes if it's a 3 - i.e. the default
                 if session_preference.preference == 3 and random.random() < 0.5:
                     continue
-                session.add(session_preference)
-
-        # SIMULATE PERSON SESSION SETTINGS
-        for person in persons:
-            for time_slot in time_slots:
-                session.add(PersonSessionSettings(person_id=person.id, time_slot_id=time_slot.id, checked_in=True))
+                result.append(session_preference)
+            return result
 
         # SIMULATE GROUPS
         for time_slot in time_slots:
@@ -130,34 +126,34 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
                 .join(TimeSlot, TimeSlot.id == TableAllocation.time_slot_id)
                 .filter(TimeSlot.id == time_slot.id)
             ).all()
-            # maybe_print("GMing", len(players_gming_this_session))
+            maybe_print("GMing", len(players_gming_this_session))
+
             # Exclude GMs from the list of players to group
             players_eligible_to_group = [person for person in persons if person not in players_gming_this_session]
-            # maybe_print("GROUPABLE", len(players_eligible_to_group))
             for group_size, n_groups in [(2, args.n_groups_of_2), (3, args.n_groups_of_3)]:
                 for _ in range(n_groups):
-                    group = random.sample(players_eligible_to_group, group_size)
-                    for person in group:
+                    group_members = random.sample(players_eligible_to_group, group_size)
+                    for person in group_members:
                         players_eligible_to_group.remove(person)
-                    maybe_print([person.name for person in group])
-                    host_person_session_settings: PersonSessionSettings = session.exec(
-                        select(PersonSessionSettings).filter(
-                            (PersonSessionSettings.person_id == group[0].id)
-                            & (PersonSessionSettings.time_slot_id == time_slot.id)
-                        )
-                    ).first()
-                    host_person_session_settings.group_hosting_mode = GroupHostingMode.HOSTING
-                    host_person_session_settings.group_members = group[1:]
-                    session.add(host_person_session_settings)
-                    for person in group[1:]:
-                        person_session_settings: PersonSessionSettings = session.exec(
-                            select(PersonSessionSettings).filter(
-                                (PersonSessionSettings.person_id == person.id)
-                                & (PersonSessionSettings.time_slot_id == time_slot.id)
-                            )
-                        ).first()
-                        person_session_settings.group_hosting_mode = GroupHostingMode.JOINED
-                        session.add(person_session_settings)
+                    maybe_print([person.name for person in group_members])
+                    group = AdventuringGroup(
+                        name=f"Simulated Group {group_members[0].name}",
+                        time_slot_id=time_slot.id,
+                        members=group_members,
+                        checked_in=True,
+                        session_preferences=simulate_session_preferences(time_slot_id=time_slot.id),
+                    )
+                    session.add(group)
+
+            for remaining_player in players_eligible_to_group:
+                group = AdventuringGroup(
+                    name=f"Simulated Solo {remaining_player.name}",
+                    time_slot_id=time_slot.id,
+                    members=[remaining_player],
+                    checked_in=True,
+                    session_preferences=simulate_session_preferences(time_slot_id=time_slot.id),
+                )
+                session.add(group)
 
         session.commit()
 
@@ -171,6 +167,7 @@ def data_generation_main(args: argparse.Namespace) -> None:
 
 # region Game Allocator
 person_id_t: TypeAlias = int
+group_id_t: TypeAlias = int
 table_allocation_id_t: TypeAlias = int
 time_slot_id_t: TypeAlias = int
 game_id_t: TypeAlias = int
@@ -299,41 +296,33 @@ class TieredPreferences:
 
 @dataclass
 class Group:
-    leader_id: person_id_t
-    person_ids: list[person_id_t]
+    group_id: group_id_t
+    member_ids: list[person_id_t]
     tiered_preferences: TieredPreferences = None
 
     @classmethod
-    def from_person_and_session_settings(
+    def from_adventuring_group(
         cls,
-        person: PersonWithExtra,
-        session_settings: PersonSessionSettingsWithExtra | time_slot_id_t,
+        adventuring_group: AdventuringGroupWithExtra,
         table_allocations: list[TableAllocationWithExtra],
         preference_overrides: dict[table_allocation_id_t, preference_score_t] = None,
     ) -> Self:
-        if isinstance(session_settings, time_slot_id_t):
-            persons = [person]
-        else:
-            persons = [person] + (
-                list(session_settings.group_members)
-                if session_settings.group_hosting_mode == GroupHostingMode.HOSTING
-                else []
-            )
-        person_ids = {person.id for person in persons}
-        # Just in case, to deduplicate
-        persons = [[p for p in persons if p.id == person_id][0] for person_id in person_ids]
+        members = adventuring_group.members
+        member_ids = [person.id for person in members]
+
         preferences = {
             session_preference.table_allocation_id: session_preference.preference
-            for session_preference in person.session_preferences
-            if session_preference.table_allocation.time_slot_id
-            == (session_settings if isinstance(session_settings, time_slot_id_t) else session_settings.time_slot_id)
+            for session_preference in adventuring_group.session_preferences
+            # Technically should be redudannt since table_allocation_ids should only exist where the time_slot matches the group, but just in case, we filter
+            if session_preference.table_allocation_id in {ta.id for ta in table_allocations}
         }
         if preference_overrides is not None:
             preferences.update(preference_overrides)
-        average_compensation = sum([person.compensation for person in persons]) / len(persons)
+        average_compensation = sum([person.compensation for person in members]) / len(members)
+
         return cls(
-            leader_id=person.id,
-            person_ids=person_ids,
+            group_id=adventuring_group.id,
+            member_ids=member_ids,
             tiered_preferences=TieredPreferences(
                 preferences=preferences,
                 average_compensation=average_compensation,
@@ -342,11 +331,11 @@ class Group:
         )
 
     def __len__(self) -> int:
-        return len(self.person_ids)
+        return len(self.member_ids)
 
     @property
     def size(self) -> int:
-        return len(self.person_ids)
+        return len(self.member_ids)
 
 
 def sums_possible_with_numbers(numbers: list[int]) -> set[int]:
@@ -359,11 +348,6 @@ def sums_possible_with_numbers(numbers: list[int]) -> set[int]:
 
 def sums_extractable(numbers: list[int], maximum: int) -> set[int]:
     return {s for s in sums_possible_with_numbers(numbers) if s <= maximum}
-
-
-class CurrentGameAllocationModel(BaseModel):
-    table_allocation_id: table_allocation_id_t
-    group_leaders: list[person_id_t]
 
 
 @dataclass
@@ -380,14 +364,18 @@ class CurrentGameAllocation:
 
     def to_serializable(self) -> list[AllocationResult]:
         result = (
-            [AllocationResult(table_allocation_id=self.table_allocation.id, person_id=self.game_master.leader_id)]
+            [
+                AllocationResult(
+                    table_allocation_id=self.table_allocation.id, adventuring_group_id=self.game_master.group_id
+                )
+            ]
             if self.game_master
             else []
         )
         result += [
             AllocationResult(
                 table_allocation_id=self.table_allocation.id,
-                person_id=group.leader_id,
+                adventuring_group_id=group.group_id,
             )
             for group in self.groups
         ]
@@ -414,10 +402,10 @@ class CurrentGameAllocation:
         return self.table_allocation.game.optimal_players
 
     def __repr__(self) -> str:
-        return f"{self.table_allocation.game.title} [{self.table_allocation.id}] ({self.current_players}/{self.maximum_players})"
+        return f"{self.table_allocation.game.title} [{self.table_allocation.id}] ({'GM+ ' if self.game_master is not None else ''}{self.current_players}/{self.maximum_players})"
 
     def __str__(self) -> str:
-        return f"{self.table_allocation.game.title} [{self.table_allocation.id}] ({self.current_players}/{self.maximum_players})"
+        return f"{self.table_allocation.game.title} [{self.table_allocation.id}] ({'GM+ ' if self.game_master is not None else ''}{self.current_players}/{self.maximum_players})"
 
 
 @total_ordering
@@ -454,8 +442,7 @@ class GameAllocator:
         self.table_allocations_map = {
             table_allocation.id: table_allocation for table_allocation in self.table_allocations
         }
-        self.groups = self._init_groups()
-        self.gamemasters_by_table_allocation_id = self._init_game_masters_by_table_allocation_id()
+        self.gamemasters_by_table_allocation_id, self.groups = self._init_groups()
         self.current_allocations: dict[table_allocation_id_t, CurrentGameAllocation] = {}
 
         self.summary_dir = Path("summaries")
@@ -474,70 +461,62 @@ class GameAllocator:
                 ).all()
             ]
 
-    def _init_groups(self) -> list[Group]:
+    def _init_groups(self) -> tuple[dict[table_allocation_id_t, Group], list[Group]]:
         with Session(self.engine) as session:
             # People GMing this session
-            gm_ids = [ta.game.gamemaster_id for ta in self.table_allocations]
-            # All groups
-            solo_or_hosts: list[tuple[Person, PersonSessionSettings]] = session.exec(
-                select(Person, PersonSessionSettings)
-                .join(Person, Person.id == PersonSessionSettings.person_id)
-                .filter(
-                    (PersonSessionSettings.time_slot_id == self.time_slot_id)
-                    & (
-                        (
-                            # Solo players
-                            (PersonSessionSettings.checked_in)
-                            & (PersonSessionSettings.group_hosting_mode == GroupHostingMode.NOT_IN_GROUP)
-                        )
-                        # Hosts
-                        | (PersonSessionSettings.group_hosting_mode == GroupHostingMode.HOSTING)
+            gm_ids = {ta.game.gamemaster_id: ta.id for ta in self.table_allocations}
+            gms_by_id = {ta.game.gamemaster_id: ta.game.gamemaster for ta in self.table_allocations}
+
+            # Create default GM groups if they don't exist
+            for gm_id, gm in gms_by_id.items():
+                if not session.exec(
+                    select(AdventuringGroup)
+                    .join(
+                        PersonAdventuringGroupLink,
+                        PersonAdventuringGroupLink.adventuring_group_id == AdventuringGroup.id,
                     )
-                    & col(Person.id).not_in(gm_ids)
-                )
-            ).all()
+                    .filter(
+                        (AdventuringGroup.time_slot_id == self.time_slot_id)
+                        & (PersonAdventuringGroupLink.member_id == gm_id)
+                    )
+                ).first():
+                    session.add(
+                        AdventuringGroup(
+                            name=f"gm-group-{gm_id}-{self.time_slot_id}",
+                            time_slot_id=self.time_slot_id,
+                            members=[gm],
+                            checked_in=True,
+                        )
+                    )
+                    session.commit()
+
+            # Get overflow table
             overflow_table_allocation_id = session.exec(
                 select(TableAllocation.id).filter(
                     (TableAllocation.game_id == 0) & (TableAllocation.time_slot_id == self.time_slot_id)
                 )
             ).first()
             preference_overrides = {overflow_table_allocation_id: 0.5}
-            return [
-                Group.from_person_and_session_settings(
-                    PersonWithExtra.model_validate(person),
-                    PersonSessionSettingsWithExtra.model_validate(person_session_settings),
+
+            # Get all groups this session
+            adventuring_groups = session.exec(
+                select(AdventuringGroup).where(AdventuringGroup.time_slot_id == self.time_slot_id)
+            ).all()
+            adventuring_groups_with_extra = [AdventuringGroupWithExtra.model_validate(ag) for ag in adventuring_groups]
+
+            groups = [
+                Group.from_adventuring_group(
+                    adventuring_group,
                     self.table_allocations,
                     preference_overrides=preference_overrides,
                 )
-                for person, person_session_settings in solo_or_hosts
+                for adventuring_group in adventuring_groups_with_extra
             ]
-
-    def _init_game_masters_by_table_allocation_id(self) -> dict[table_allocation_id_t, Group]:
-        with Session(self.engine) as session:
-
-            def session_settings_for_gm(gm: PersonWithExtra) -> PersonSessionSettingsWithExtra | time_slot_id_t:
-                maybe_print("Checking session settings for", gm)
-                possible_session_settings = [ss for ss in gm.session_settings if ss.time_slot_id == self.time_slot_id]
-                if not possible_session_settings:
-                    return self.time_slot_id
-                assert len(possible_session_settings) == 1
-                return PersonSessionSettingsWithExtra.model_validate(possible_session_settings[0])
-
-            overflow_table_allocation_id = session.exec(
-                select(TableAllocation.id).filter(TableAllocation.game_id == 0)
-            ).first()
-            preference_overrides = {overflow_table_allocation_id: 0.5}
-            return {
-                table_allocation.id: Group.from_person_and_session_settings(
-                    gm := PersonWithExtra.model_validate(
-                        session.get(Person, table_allocation.game.gamemaster.id)
-                    ),  # Can't have stuff detached!
-                    session_settings_for_gm(gm),
-                    self.table_allocations,
-                    preference_overrides=preference_overrides,
-                )
-                for table_allocation in self.table_allocations
-            }
+            gm_groups = {ta_id: group for group in groups if (ta_id := gm_ids.get(group.member_ids[0])) is not None}
+            non_gm_groups = [
+                group for group in groups if all(person_id not in gm_ids for person_id in group.member_ids)
+            ]
+            return gm_groups, non_gm_groups
 
     def _init_current_allocations(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
         return {
@@ -572,21 +551,22 @@ class GameAllocator:
     def _allocate_trial(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
         # Set up empty allocations
         self.current_allocations = self._init_current_allocations()
+        maybe_pprint(self.current_allocations)
 
         # We want to allocate all the groups to tables
         # STAGE 1 - Allocate D20 holders
         d20_groups = [group for group in self.groups if group.tiered_preferences.has_d20]
-        # maybe_print(len(d20_groups), "D20 groups")
-        # maybe_print(len(self.groups), "Total groups")
+        maybe_print(len(d20_groups), "D20 groups")
+        maybe_print(len(self.groups), "Total groups")
         random.shuffle(d20_groups)
         for group in d20_groups:
             allocated_table_id = self._allocate_single_group(group)
             if allocated_table_id is None:
-                # maybe_print("!R!@$!$!@$!@$!!", group)
+                maybe_print("!R!@$!$!@$!@$!!", group)
                 raise ValueError("D20 group could not be allocated")
 
-        # maybe_print("D20 groups allocated")
-        # maybe_pprint(self.current_allocations)
+        maybe_print("D20 groups allocated")
+        maybe_pprint(self.current_allocations)
 
         # STAGE 2 - Allocate non-D20 holders
         non_d20_groups = [group for group in self.groups if not group.tiered_preferences.has_d20]
@@ -594,7 +574,7 @@ class GameAllocator:
         for group in non_d20_groups:
             allocated_table_id = self._allocate_single_group(group)
             if allocated_table_id is None:
-                # maybe_print("!R!@$!$!@$!@$!!", group)
+                maybe_print("!R!@$!$!@$!@$!!", group)
                 raise ValueError("Non-D20 group could not be allocated")
 
         maybe_print("Pre-filled tables")
@@ -663,6 +643,8 @@ class GameAllocator:
             current_allocation.groups = []
             maybe_print("Moved players from", current_allocation)
             maybe_print("----")
+
+        maybe_print("ALLOCATION TRIAL COMPLETE")
 
         return self.current_allocations
 
@@ -785,49 +767,50 @@ class GameAllocator:
                     candidate_groups[table_allocation_id] = (allowable_players_to_take, [])
                 candidate_groups[table_allocation_id][1].append(group)
 
-        def all_table_subset_combinations(groups: list[Group], max_player_count: int) -> list[tuple[Group, ...]]:
-            result = [()]  # Empty list - i.e. no groups
+        def all_table_subset_combinations(
+            groups: list[Group], max_player_count: int
+        ) -> Generator[tuple[Group, ...], Any, None]:
+            yield ()  # Empty list - i.e. no groups
             for i in range(1, len(groups) + 1):
                 subsets = itertools.combinations(groups, i)
                 for subset in subsets:
                     if sum([group.size for group in subset]) <= max_player_count:
-                        result.append(subset)
-            return result
+                        yield subset
 
         maybe_print("Candidate groups")
-        maybe_pprint(candidate_groups)
+        # maybe_pprint(candidate_groups)
         candidate_subsets_by_table: dict[table_allocation_id_t, list[tuple[Group, ...]]] = {
             table_allocation_id: all_table_subset_combinations(groups, allowable_players_to_take)
             for table_allocation_id, (allowable_players_to_take, groups) in candidate_groups.items()
         }
-        # maybe_print("Candidate subsets by table")
+        maybe_print("Candidate subsets by table")
         # maybe_pprint(candidate_subsets_by_table)
-        candidate_subsets_across_all = [
+        candidate_subsets_across_all = (
             list(zip(candidate_subsets_by_table.keys(), prod))
             for prod in itertools.product(*candidate_subsets_by_table.values())
-        ]
-        # maybe_print("Candidate subsets across all")
+        )
+        maybe_print("Candidate subsets across all")
         # maybe_pprint(candidate_subsets_across_all)
-        candidate_subsets_with_sufficient_players = [
-            candidate_subset
-            for candidate_subset in candidate_subsets_across_all
-            if sum(  # Sum of all group sizes from all tables
-                [
-                    sum([group.size for group in groups])  # Sum of all group sizes from this table
-                    for ta_id, groups in candidate_subset
-                ]
-            )
-            in required_player_numbers_to_take
-        ]
-        # maybe_print("Candidate subsets with sufficient players")
-        # maybe_pprint(candidate_subsets_with_sufficient_players)
+        chosen_subset = next(
+            (
+                candidate_subset
+                for candidate_subset in candidate_subsets_across_all
+                if sum(  # Sum of all group sizes from all tables
+                    [
+                        sum([group.size for group in groups])  # Sum of all group sizes from this table
+                        for ta_id, groups in candidate_subset
+                    ]
+                )
+                in required_player_numbers_to_take
+            ),
+            None,
+        )
 
-        if not candidate_subsets_with_sufficient_players:
+        if chosen_subset is None:
             return False
 
         # Now we have all the possible combinations of groups that could be moved to the underfilled table
         # Pick one at random
-        chosen_subset = random.choice(candidate_subsets_with_sufficient_players)
         maybe_print("Chosen subset")
         maybe_pprint(chosen_subset)
         # And actually move the players
@@ -860,7 +843,7 @@ class GameAllocator:
         result: dict = {}
         for current_allocation in trial_results.values():
             for group in current_allocation.groups:
-                for person_id in group.person_ids:
+                for person_id in group.member_ids:
                     allocated_tier_rank = group.tiered_preferences.get_tier(current_allocation.table_allocation.id).rank
                     highest_tier_rank = group.tiered_preferences.tier_list[0][0].rank
                     if allocated_tier_rank == 20:
@@ -890,7 +873,7 @@ class GameAllocator:
                     group.tiered_preferences.has_d20
                     and group.tiered_preferences.get_tier(current_allocation.table_allocation.id).is_golden_d20
                 ):
-                    for person_id in group.person_ids:
+                    for person_id in group.member_ids:
                         result[person_id] = 1
                         maybe_print(
                             "D20 spent by",
@@ -961,9 +944,7 @@ def end_to_end_main(args: argparse.Namespace) -> None:
         # allocation_results = allocate(mock_runtime_engine, time_slot_id)
         game_allocator = GameAllocator(mock_runtime_engine, time_slot_id)
         allocation_results = game_allocator.allocate(n_trials=args.n_trials)
-        # maybe_pprint(allocation_results.current_allocations)
-        # maybe_pprint(allocation_results.compensation_values)
-        # maybe_pprint(allocation_results.d20s_spent)
+        maybe_pprint(allocation_results)
 
 
 # endregion

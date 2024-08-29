@@ -3,7 +3,7 @@ import datetime as dt
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Enum, Field, Relationship, SQLModel
 
-from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone, GroupHostingMode
+from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
 
 
 # region Links
@@ -17,10 +17,8 @@ class GameContentWarningLink(SQLModel, table=True):
     content_warning_id: int | None = Field(default=None, foreign_key="contentwarning.id", primary_key=True)
 
 
-class PersonSessionSettingsGroupMembersLink(SQLModel, table=True):
-    person_session_settings_id: int | None = Field(
-        default=None, foreign_key="personsessionsettings.id", primary_key=True
-    )
+class PersonAdventuringGroupLink(SQLModel, table=True):
+    adventuring_group_id: int | None = Field(default=None, foreign_key="adventuringgroup.id", primary_key=True)
     member_id: int | None = Field(default=None, foreign_key="person.id", primary_key=True)
 
 
@@ -214,13 +212,10 @@ class Person(PersonBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     gmd_games: list[Game] = Relationship(back_populates="gamemaster")
-    session_preferences: list["SessionPreference"] = Relationship(back_populates="person")
-    session_settings: list["PersonSessionSettings"] = Relationship(back_populates="person")
-    session_settings_groups: list["PersonSessionSettings"] = Relationship(
-        back_populates="group_members", link_model=PersonSessionSettingsGroupMembersLink
+    # TOOD: Some constraint on being in multiple groups in the same session?
+    adventuring_groups: list["AdventuringGroup"] = Relationship(
+        back_populates="members", link_model=PersonAdventuringGroupLink
     )
-    allocation_results: list["AllocationResult"] = Relationship(back_populates="person")
-    committed_allocation_results: list["CommittedAllocationResult"] = Relationship(back_populates="person")
 
 
 class PersonCreate(PersonBase):
@@ -233,11 +228,7 @@ class PersonRead(PersonBase):
 
 class PersonWithExtra(PersonRead):
     gmd_games: list[Game]
-    session_preferences: list["SessionPreference"]
-    session_settings: list["PersonSessionSettings"]
-    session_settings_groups: list["PersonSessionSettings"]
-    allocation_results: list["AllocationResult"]
-    committed_allocation_results: list["CommittedAllocationResult"]
+    adventuring_groups: list["AdventuringGroup"]
 
 
 class PersonUpdate(PersonBase):
@@ -260,7 +251,7 @@ class TimeSlot(TimeSlotBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     table_allocations: list["TableAllocation"] = Relationship(back_populates="time_slot")
-    session_settings: list["PersonSessionSettings"] = Relationship(back_populates="time_slot")
+    adventuring_groups: list["AdventuringGroup"] = Relationship(back_populates="time_slot")
 
     @property
     def open_time(self) -> dt.datetime:
@@ -383,12 +374,12 @@ class TableAllocationWithSlot(TableAllocationRead):
 # region SessionPreference
 class SessionPreferenceBase(SQLModel):
     preference: int = Field(default=3)
-    person_id: int = Field(primary_key=True, foreign_key="person.id")
+    adventuring_group_id: int = Field(primary_key=True, foreign_key="adventuringgroup.id")
     table_allocation_id: int = Field(primary_key=True, foreign_key="tableallocation.id")
 
 
 class SessionPreference(SessionPreferenceBase, table=True):
-    person: Person = Relationship(back_populates="session_preferences")
+    adventuring_group: "AdventuringGroup" = Relationship(back_populates="session_preferences")
     table_allocation: TableAllocation = Relationship(back_populates="session_preferences")
 
 
@@ -401,56 +392,52 @@ class SessionPreferenceRead(SessionPreferenceBase):
 
 
 class SessionPreferenceWithExtra(SessionPreferenceRead):
-    person: Person
+    adventuring_group: "AdventuringGroup"
     table_allocation: TableAllocation
 
 
 class SessionPreferenceUpdate(SessionPreferenceBase):
-    weight: int | None = None
-    person_id: int | None = None
+    preference: int | None = None
+    adventuring_group_id: int | None = None
     table_allocation_id: int | None = None
 
 
 # endregion
 
 
-# region PersonSessionSettings
-class PersonSessionSettingsBase(SQLModel):
-    person_id: int = Field(foreign_key="person.id")
+# region AdventuringGroup
+class AdventuringGroupBase(SQLModel):
+    name: str
     time_slot_id: int = Field(foreign_key="timeslot.id")
     checked_in: bool = Field(default=False)
-    group_hosting_mode: GroupHostingMode = Field(default=GroupHostingMode.NOT_IN_GROUP, sa_type=Enum(GroupHostingMode))
 
 
-class PersonSessionSettings(PersonSessionSettingsBase, table=True):
+class AdventuringGroup(AdventuringGroupBase, table=True):
     id: int | None = Field(primary_key=True)
 
-    person: Person = Relationship(back_populates="session_settings")
-    time_slot: TimeSlot = Relationship(back_populates="session_settings")
-    group_members: list[Person] = Relationship(
-        back_populates="session_settings_groups", link_model=PersonSessionSettingsGroupMembersLink
-    )
+    time_slot: TimeSlot = Relationship(back_populates="adventuring_groups")
+    members: list[Person] = Relationship(back_populates="adventuring_groups", link_model=PersonAdventuringGroupLink)
+    session_preferences: list["SessionPreference"] = Relationship(back_populates="adventuring_group")
+    allocation_results: list["AllocationResult"] = Relationship(back_populates="adventuring_group")
+    committed_allocation_results: list["CommittedAllocationResult"] = Relationship(back_populates="adventuring_group")
+
+    __table_args__ = (UniqueConstraint("name", "time_slot_id", name="unique_adventuring_group"),)
 
 
-class PersonSessionSettingsCreate(PersonSessionSettingsBase):
+class AdventuringGroupCreate(AdventuringGroupBase):
     pass
 
 
-class PersonSessionSettingsRead(PersonSessionSettingsBase):
+class AdventuringGroupRead(AdventuringGroupBase):
     id: int
 
 
-class PersonSessionSettingsWithExtra(PersonSessionSettingsRead):
-    person: Person
+class AdventuringGroupWithExtra(AdventuringGroupRead):
     time_slot: TimeSlot
-    group_members: list[Person]
-
-
-class PersonSessionSettingsUpdate(PersonSessionSettingsBase):
-    person_id: int | None = None
-    time_slot_id: int | None = None
-    checked_in: bool | None = None
-    group_hosting_mode: GroupHostingMode | None = None
+    members: list[Person]
+    session_preferences: list["SessionPreference"]
+    allocation_results: list["AllocationResult"]
+    committed_allocation_results: list["CommittedAllocationResult"]
 
 
 # endregion
@@ -459,14 +446,14 @@ class PersonSessionSettingsUpdate(PersonSessionSettingsBase):
 # region GameAllocationRelatedStuff
 class AllocationResultBase(SQLModel):
     table_allocation_id: int = Field(foreign_key="tableallocation.id")
-    person_id: int = Field(foreign_key="person.id")
+    adventuring_group_id: int = Field(foreign_key="adventuringgroup.id")
 
 
 class AllocationResult(AllocationResultBase, table=True):
     id: int | None = Field(primary_key=True)
 
     table_allocation: TableAllocation = Relationship(back_populates="allocation_results")
-    person: Person = Relationship(back_populates="allocation_results")
+    adventuring_group: AdventuringGroup = Relationship(back_populates="allocation_results")
 
 
 class AllocationResultCreate(AllocationResultBase):
@@ -479,19 +466,19 @@ class AllocationResultRead(AllocationResultBase):
 
 class AllocationResultWithExtra(AllocationResultRead):
     table_allocation: TableAllocation
-    person: Person
+    adventuring_group: AdventuringGroup
 
 
 class AllocationResultUpdate(AllocationResultBase):
     table_allocation_id: int | None = None
-    person_id: int | None = None
+    adventuring_group_id: int | None = None
 
 
 class CommittedAllocationResult(AllocationResultBase, table=True):
     id: int | None = Field(primary_key=True)
 
     table_allocation: TableAllocation = Relationship(back_populates="committed_allocation_results")
-    person: Person = Relationship(back_populates="committed_allocation_results")
+    adventuring_group: AdventuringGroup = Relationship(back_populates="committed_allocation_results")
 
 
 # endregion
@@ -502,17 +489,8 @@ class TableAllocationResultView(TableAllocationRead):
     table: Table
     time_slot: TimeSlot
     game: GameWithExtra
-    allocation_results: list["AllocationResultResultView"]
-    committed_allocation_results: list["AllocationResultResultView"]
-
-
-class AllocationResultResultView(AllocationResultRead):
-    person: "PersonResultView"
-
-
-class PersonResultView(PersonWithExtra):
-    session_settings: list["PersonSessionSettingsWithExtra"]
-    session_settings_groups: list["PersonSessionSettingsWithExtra"]
+    allocation_results: list["AllocationResult"]
+    committed_allocation_results: list["CommittedAllocationResult"]
 
 
 # endregion

@@ -1,7 +1,7 @@
 import datetime as dt
 
 from convergence_games.db.extra_types import GameTone
-from convergence_games.db.models import Game, Genre, Person, System, Table, TableAllocation, TimeSlot
+from convergence_games.db.models import Game, Person, System, Table, TableAllocation, TimeSlot
 
 # We have to, very boringly, define all of the IDs for the base data.
 
