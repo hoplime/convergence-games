@@ -29,7 +29,7 @@
     <div class="flex flex-row gap-2">
         <button
             class="btn btn-primary btn-sm"
-            hx-put="/move?group_id={{ group_id }}"
+            hx-put="/admin/move?group_id={{ group_id }}"
             hx-include="[name='table_allocation_id']"
             hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
             hx-target="#allocate_contents"
@@ -38,7 +38,7 @@
         </button>
         <button
             class="btn btn-outline btn-accent btn-sm self-end"
-            hx-get="/move_button?group_id={{ group_id }}&time_slot_id={{ time_slot_id }}"
+            hx-get="/admin/move_button?group_id={{ group_id }}&time_slot_id={{ time_slot_id }}"
             hx-swap="outerHTML"
         >
             Cancel

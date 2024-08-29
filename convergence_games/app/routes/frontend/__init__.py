@@ -699,7 +699,7 @@ def maybe_alerts_from_auth(
     )
 
 
-@router.post("/run_allocate/{time_slot_id}")
+@router.post("/admin/run_allocate/{time_slot_id}")
 async def run_allocate(
     auth: AuthWithHandler,
     request: Request,
@@ -750,7 +750,7 @@ def do_commit_or_rollback(
         session.commit()
 
 
-@router.post("/commit_allocate/{time_slot_id}")
+@router.post("/admin/commit_allocate/{time_slot_id}")
 async def commit_allocate(
     auth: AuthWithHandler,
     request: Request,
@@ -764,7 +764,7 @@ async def commit_allocate(
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
-@router.post("/rollback_allocate/{time_slot_id}")
+@router.post("/admin/rollback_allocate/{time_slot_id}")
 async def rollback_allocate(
     auth: AuthWithHandler,
     request: Request,
@@ -778,7 +778,7 @@ async def rollback_allocate(
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
-@router.post("/uncommit_allocate/{time_slot_id}")
+@router.post("/admin/uncommit_allocate/{time_slot_id}")
 async def uncommit_allocate(
     auth: AuthWithHandler,
     request: Request,
@@ -927,7 +927,7 @@ async def admin_allocate(
     )
 
 
-@router.get("/move_menu")
+@router.get("/admin/move_menu")
 async def move_menu(
     request: Request,
     session: Session,
@@ -976,7 +976,7 @@ async def move_menu(
     )
 
 
-@router.get("/move_button")
+@router.get("/admin/move_button")
 async def move_button(
     request: Request,
     group_id: Annotated[int, Query()],
@@ -992,7 +992,7 @@ async def move_button(
     )
 
 
-@router.put("/move")
+@router.put("/admin/move")
 async def move(
     auth: AuthWithHandler,
     request: Request,
