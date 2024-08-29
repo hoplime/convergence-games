@@ -1,0 +1,22 @@
+{% set gm_classes = ("border-yellow-400" if group.is_gm else "border-red-400" if group.is_gm_any_game else "border-current") %}
+<div class="{{ gm_classes }} flex max-w-96 flex-col items-start justify-between rounded border p-2">
+    <ul class="flex flex-col">
+        {% for player in group.members %}
+            <li>
+                {{ player.name }}
+                {% if group.is_gm %}
+                    <span class="badge badge-outline gap-2 text-yellow-400">GM</span>
+                {% elif group.is_gm_any_game %}
+                    <span class="badge badge-outline gap-2 text-red-400">GM Another</span>
+                {% endif %}
+                {% if not group.is_committed %}
+                    <span class="badge badge-outline gap-2 text-red-400">Uncommitted</span>
+                {% endif %}
+                {% if not group.is_checked_in %}
+                    <span class="badge badge-outline gap-2 text-red-400">Not Checked In</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+    {{ render_partial('shared/partials/move_button.html.jinja', group_id=group.id, time_slot_id=time_slot_id, checkin=not group.is_checked_in) }}
+</div>

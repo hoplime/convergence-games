@@ -767,8 +767,18 @@ async def uncommit_allocate(
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
+@dataclass
+class GroupSummary:
+    id: int
+    members: list[Person]
+    is_gm: bool
+    is_gm_any_game: bool
+    is_committed: bool
+    is_checked_in: bool
+
+
 def extract_table_summary(table_allocation: TableAllocationResultView, gm_ids: set) -> dict[str, Any]:
-    table_groups: list[dict[str, Any]] = []
+    table_groups: list[GroupSummary] = []
     for allocation_result in table_allocation.allocation_results:
         adventuring_group = allocation_result.adventuring_group
         comitted_group_ids = {
@@ -776,21 +786,22 @@ def extract_table_summary(table_allocation: TableAllocationResultView, gm_ids: s
             for committed_allocation_result in table_allocation.committed_allocation_results
         }
         table_groups.append(
-            {
-                "id": adventuring_group.id,
-                "group_members": adventuring_group.members,
-                "is_gm": adventuring_group.members[0].id == table_allocation.game.gamemaster_id,
-                "is_gm_any_game": adventuring_group.members[0].id in gm_ids,
-                "is_committed": adventuring_group.id in comitted_group_ids,
-            }
+            GroupSummary(
+                id=adventuring_group.id,
+                members=adventuring_group.members,
+                is_gm=adventuring_group.members[0].id == table_allocation.game.gamemaster_id,
+                is_gm_any_game=adventuring_group.members[0].id in gm_ids,
+                is_committed=adventuring_group.id in comitted_group_ids,
+                is_checked_in=adventuring_group.checked_in,
+            )
         )
         # Put the GM at the front of the list always
-        gm_index = next((i for i, group in enumerate(table_groups) if group["is_gm"]), None)
+        gm_index = next((i for i, group in enumerate(table_groups) if group.is_gm), None)
         if gm_index is not None:
             table_groups.insert(0, table_groups.pop(gm_index))
     table_summary = {
-        "has_gm": any(group["is_gm"] for group in table_groups),
-        "total_players": sum(len(group["group_members"]) for group in table_groups if not group["is_gm"]),
+        "has_gm": any(group.is_gm for group in table_groups),
+        "total_players": sum(len(group.members) for group in table_groups if not group.is_gm),
         "groups": table_groups,
     }
     return table_summary
@@ -857,6 +868,17 @@ async def admin_allocate(
             [AdventuringGroupWithExtra.model_validate(group) for group in unallocated_groups],
             key=lambda group: group.members[0].name.lower(),
         )
+        unallocated_groups = [
+            GroupSummary(
+                id=group.id,
+                members=group.members,
+                is_gm=False,
+                is_gm_any_game=group.members[0].id in gm_ids,
+                is_committed=False,
+                is_checked_in=group.checked_in,
+            )
+            for group in unallocated_groups
+        ]
         print(f"UNALLOCATED: {unallocated_groups}")
 
     return templates.TemplateResponse(
@@ -877,10 +899,9 @@ async def move_menu(
     request: Request,
     session: Session,
     group_id: Annotated[int, Query()],
-    current_table_allocation_id: Annotated[int, Query()],
+    time_slot_id: Annotated[int, Query()],
 ) -> HTMLResponse:
     with session:
-        current_table_allocation = session.get(TableAllocation, current_table_allocation_id)
         statement = (
             select(
                 TableAllocation.id.label("table_allocation_id"),
@@ -888,7 +909,7 @@ async def move_menu(
                 SessionPreference.preference.label("preference"),
                 Table.number.label("table_number"),
             )
-            .where(TableAllocation.time_slot_id == current_table_allocation.time_slot_id)
+            .where(TableAllocation.time_slot_id == time_slot_id)
             .join(Game, Game.id == TableAllocation.game_id)
             .join(Table, Table.id == TableAllocation.table_id)
             .outerjoin(
@@ -905,11 +926,18 @@ async def move_menu(
             for row in query_results
         ]
 
+        current_table_allocation_id = session.exec(
+            select(TableAllocation.id)
+            .join(AllocationResult, AllocationResult.table_allocation_id == TableAllocation.id)
+            .where(AllocationResult.adventuring_group_id == group_id)
+        ).first()
+
     return templates.TemplateResponse(
         name="shared/partials/move_menu.html.jinja",
         context={
             "request": request,
             "group_id": group_id,
+            "time_slot_id": time_slot_id,
             "current_table_allocation_id": current_table_allocation_id,
             "candidates": candidates,
         },
@@ -920,14 +948,14 @@ async def move_menu(
 async def move_button(
     request: Request,
     group_id: Annotated[int, Query()],
-    current_table_allocation_id: Annotated[int, Query()],
+    time_slot_id: Annotated[int, Query()],
 ) -> HTMLResponse:
     return templates.TemplateResponse(
         name="shared/partials/move_button.html.jinja",
         context={
             "request": request,
             "leader_id": group_id,
-            "current_table_allocation_id": current_table_allocation_id,
+            "time_slot_id": time_slot_id,
         },
     )
 
@@ -946,18 +974,18 @@ async def move(
             .join(AllocationResult, TableAllocation.id == AllocationResult.table_allocation_id)
             .where(AllocationResult.adventuring_group_id == group_id)
         ).first()
-        if current_table_allocation_and_result is None:
-            return HTMLResponse(status_code=400)
 
         new_table_allocation = session.get(TableAllocation, table_allocation_id)
         if new_table_allocation is None:
             return HTMLResponse(status_code=400)
 
-        current_table_allocation, current_allocation_result = current_table_allocation_and_result
-        session.delete(current_allocation_result)
+        if current_table_allocation_and_result is not None:
+            current_table_allocation, current_allocation_result = current_table_allocation_and_result
+            session.delete(current_allocation_result)
+
         new_table_allocation.allocation_results.append(AllocationResult(adventuring_group_id=group_id))
-        session.commit()
         time_slot_id = new_table_allocation.time_slot_id
+        session.commit()
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 

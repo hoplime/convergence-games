@@ -142,6 +142,7 @@
                                             <div class="{{ gm_highlight_class }} h-2 w-3"></div>
                                         </div>
                                     </div>
+
                                     {# Player Squares #}
                                     {% if game.maximum_players <= 30 %}
                                         {% for player_count in range(1, game.maximum_players + 1) %}
@@ -163,33 +164,7 @@
 
                                 {# Group Lists #}
                                 {% for group in table_summaries[table_allocation.id].groups %}
-                                    {% set gm_classes = ("border-yellow-400" if group.is_gm else "border-red-400" if group.is_gm_any_game else "border-current") %}
-                                    <div
-                                        class="{{ gm_classes }} flex max-w-96 flex-col items-start justify-between rounded border p-2"
-                                    >
-                                        <ul class="flex flex-col">
-                                            {% for player in group.group_members %}
-                                                <li>
-                                                    {{ player.name }}
-                                                    {% if group.is_gm %}
-                                                        <span class="badge badge-outline gap-2 text-yellow-400">
-                                                            GM
-                                                        </span>
-                                                    {% elif group.is_gm_any_game %}
-                                                        <span class="badge badge-outline gap-2 text-red-400">
-                                                            GM Another
-                                                        </span>
-                                                    {% endif %}
-                                                    {% if not group.is_committed %}
-                                                        <span class="badge badge-outline gap-2 text-red-400">
-                                                            Uncommitted
-                                                        </span>
-                                                    {% endif %}
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                        {{ render_partial('shared/partials/move_button.html.jinja', group_id=group.id, current_table_allocation_id=table_allocation.id) }}
-                                    </div>
+                                    {{ render_partial('shared/partials/group_summary.html.jinja', group=group, time_slot_id=time_slot.id) }}
                                 {% endfor %}
                             </div>
                         </div>
@@ -200,21 +175,7 @@
                             <h2 class="card-title">Unallocated Groups</h2>
                             {# Group Lists #}
                             {% for group in unallocated_groups %}
-                                <div class="flex max-w-96 flex-col items-start justify-between rounded border p-2">
-                                    <ul class="flex flex-col">
-                                        {% for player in group.members %}
-                                            <li>
-                                                {{ player.name }} ({{ player.email }})
-                                                {% if not group.checked_in %}
-                                                    <span class="badge badge-outline gap-2 text-red-400"
-                                                        >Not Checked In</span
-                                                    >
-                                                {% endif %}
-                                            </li>
-                                        {% endfor %}
-                                    </ul>
-                                    {# {{ render_partial('shared/partials/move_button.html.jinja', group_id=group.id, current_table_allocation_id=table_allocation.id) }} #}
-                                </div>
+                                {{ render_partial('shared/partials/group_summary.html.jinja', group=group, time_slot_id=time_slot.id) }}
                             {% endfor %}
                         </div>
                     </div>
