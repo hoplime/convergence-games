@@ -2,7 +2,7 @@
     <div class="toast">
         {% for alert in alerts %}
             <div
-                class="{{ alert.alert_class }} alert transition-opacity duration-1000 ease-in-out"
+                class="{{ alert.alert_class }} alert max-w-full text-wrap transition-opacity duration-1000 ease-in-out"
                 _="on load
                             wait 3000ms
                             then set my.style.opacity to 0

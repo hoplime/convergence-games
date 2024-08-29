@@ -49,6 +49,17 @@ from convergence_games.db.session import Option
 router = APIRouter(tags=["frontend"], include_in_schema=False)
 
 
+def alerts_template_response(alerts: list["Alert"], request: Request, retarget: str) -> HTMLResponse:
+    return templates.TemplateResponse(
+        name="shared/partials/toast_alerts.html.jinja",
+        context={
+            "request": request,
+            "alerts": alerts,
+        },
+        headers={"HX-Retarget": retarget, "HX-Reswap": "beforeend"},
+    )
+
+
 # region Main Pages
 @router.get("/")
 async def home(
@@ -380,7 +391,6 @@ async def change_group_name(
     host_code: Annotated[str, Form()],
     hx_target: HxTarget,
 ) -> HTMLResponse:
-    # TODO: Assertions that groups can't change after commitment!
     with session:
         group = session.get(AdventuringGroup, adventuring_group_id)
         if user.id not in {member.id for member in group.members}:
@@ -421,8 +431,14 @@ async def join_group(
     join_code: Annotated[str, Form()],
     hx_target: HxTarget,
 ) -> HTMLResponse:
-    # TODO: Assertions that groups can't change after commitment!
     with session:
+        if (
+            alerts := maybe_alerts_if_group_locked(
+                request, session, current_adventuring_group_id, retarget=f"#{hx_target}"
+            )
+        ) is not None:
+            return alerts
+
         person = session.get(Person, user.id)
         current_group = session.get(AdventuringGroup, current_adventuring_group_id)
 
@@ -432,14 +448,18 @@ async def join_group(
                 & (current_group.time_slot_id == AdventuringGroup.time_slot_id)
             )
         ).first()
+
+        if (
+            alerts := maybe_alerts_if_group_locked(request, session, new_group.id, retarget=f"#{hx_target}")
+        ) is not None:
+            return alerts
+
         if new_group is None:
-            print("GROUP NOT FOUND TODO ERRORS")
-            return HTMLResponse(status_code=404)
+            return alerts_template_response([Alert("Party not found", "error")], request, retarget=f"#{hx_target}")
 
         # Group limits!
         if len(new_group.members) >= 3:
-            print("GROUP IS TOO FULL TODO ERRORS")
-            return HTMLResponse(status_code=403)
+            return alerts_template_response([Alert("Party is full", "error")], request, retarget=f"#{hx_target}")
 
         # Remove from current group
         remove_person_from_group(session, current_group, person.id)
@@ -460,13 +480,28 @@ async def leave_group(
     adventuring_group_id: Annotated[int, Query()],
     hx_target: HxTarget,
 ) -> HTMLResponse:
-    # TODO: Assertions that groups can't change after commitment!
     with session:
+        if (
+            alerts := maybe_alerts_if_group_locked(request, session, adventuring_group_id, retarget=f"#{hx_target}")
+        ) is not None:
+            print("ALERTS", alerts)
+            return alerts
         current_group = session.get(AdventuringGroup, adventuring_group_id)
         time_slot_id = current_group.time_slot_id
         remove_person_from_group(session, current_group, user.id)
         session.commit()
     return await schedule(request, user, session, hx_target, time_slot_id)
+
+
+def maybe_alerts_if_group_locked(
+    request: Request, session: Session, group_id: int, retarget: str = ""
+) -> Response | None:
+    statement = select(CommittedAllocationResult).where(CommittedAllocationResult.adventuring_group_id == group_id)
+    if session.exec(statement).first() is None:
+        return None
+    return alerts_template_response(
+        [Alert("Party is already committed, cannot edit - please refresh", "error")], request, retarget=retarget
+    )
 
 
 @router.get("/schedule")
@@ -477,7 +512,14 @@ async def schedule(
     hx_target: HxTarget,
     time_slot_id: Annotated[int, Query()] = 1,
 ) -> HTMLResponse:
-    # TODO: Assertions that groups can't change after commitment!
+    if user is None:
+        return templates.TemplateResponse(
+            name="main/login.html.jinja",
+            context={"request": request, "alerts": [Alert("Please log in to view your schedule", "warning")]},
+            block_name=hx_target,
+            headers={"HX-Redirect": "/me", "HX-Push-Url": "/me"},
+        )
+
     with session:
         # Get the current adventuring group for this time slot
         adventuring_group = get_adventuring_group_from_user_and_time_slot_id(session, user.id, time_slot_id)
@@ -544,7 +586,7 @@ async def schedule(
         else:
             table_summary = None
 
-    push_url = "/schedule" + ("?" + request.url.query if request.url.query else "")
+    push_url = "/schedule"
 
     return templates.TemplateResponse(
         name="main/schedule.html.jinja",
@@ -683,20 +725,15 @@ async def checkin_post(
 
 
 # region Admin
+
+
 def maybe_alerts_from_auth(
     auth: tuple[bool, list[Exception]], request: Request, retarget: str = "#allocate_contents"
 ) -> Response | None:
     if auth[0]:
         return None
     alerts = [Alert(str(e), "error") for e in auth[1]]
-    return templates.TemplateResponse(
-        name="shared/partials/toast_alerts.html.jinja",
-        context={
-            "request": request,
-            "alerts": alerts,
-        },
-        headers={"HX-Retarget": retarget, "HX-Reswap": "beforeend"},
-    )
+    return alerts_template_response(alerts, request, retarget)
 
 
 @router.post("/admin/run_allocate/{time_slot_id}")

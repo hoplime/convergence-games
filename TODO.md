@@ -25,8 +25,8 @@
 - [x] Make commit actually do something
 - [x] Keep group preferences together after an allocation even if the group changes (ahh we need a Group table concept or something)
 - [x] Do the commits
-- [ ] Enforce D20s in groups properly
 - [ ] Disallow editing group members if you're committed
+- [ ] Enforce D20s in groups properly
 - [ ] Reimporting from spreadsheet
 - [ ] Update caching for game updates
 - [ ] Allow force checking in/out people
