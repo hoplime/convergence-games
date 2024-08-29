@@ -373,6 +373,25 @@ async def change_group_name(
     return await schedule(request, user, session, hx_target, group.time_slot_id)
 
 
+def remove_person_from_group(session: Session, current_group: AdventuringGroup, person_id: int) -> None:
+    print("Removing", person_id, "from", current_group.id)
+    current_group.members = [member for member in current_group.members if member.id != person_id]
+    if not current_group.members:
+        print("DELETING OLD GROUP")
+        for session_preference in current_group.session_preferences:
+            session.delete(session_preference)
+        session.commit()  # TODO: There's got to be a nicer way (cascade delete?) but for now delete each thing in turn
+        for allocation_result in current_group.allocation_results:
+            session.delete(allocation_result)
+        session.commit()
+        for committed_allocation_result in current_group.committed_allocation_results:
+            session.delete(committed_allocation_result)
+        session.commit()
+        session.delete(current_group)
+    else:
+        session.add(current_group)
+
+
 @router.put("/join_group")
 async def join_group(
     request: Request,
@@ -403,26 +422,31 @@ async def join_group(
             return HTMLResponse(status_code=403)
 
         # Remove from current group
-        current_group.members = [member for member in current_group.members if member.id != user.id]
-        if not current_group.members:
-            print("DELETING OLD GROUP")
-            for session_preference in current_group.session_preferences:
-                session.delete(session_preference)
-            session.commit()  # TODO: There's got to be a nicer way (cascade delete?) but for now delete each thing in turn
-            for allocation_result in current_group.allocation_results:
-                session.delete(allocation_result)
-            session.commit()
-            for committed_allocation_result in current_group.committed_allocation_results:
-                session.delete(committed_allocation_result)
-            session.commit()
-            session.delete(current_group)
-        else:
-            session.add(current_group)
+        remove_person_from_group(session, current_group, person.id)
 
         new_group.members.append(person)
+        time_slot_id = new_group.time_slot_id
         session.add(new_group)
         session.commit()
-    return await schedule(request, user, session, hx_target, new_group.time_slot_id)
+
+        return await schedule(request, user, session, hx_target, time_slot_id)
+
+
+@router.put("/leave_group")
+async def leave_group(
+    request: Request,
+    user: User,
+    session: Session,
+    adventuring_group_id: Annotated[int, Query()],
+    hx_target: HxTarget,
+) -> HTMLResponse:
+    # TODO: Assertions that groups can't change after commitment!
+    with session:
+        current_group = session.get(AdventuringGroup, adventuring_group_id)
+        time_slot_id = current_group.time_slot_id
+        remove_person_from_group(session, current_group, user.id)
+        session.commit()
+    return await schedule(request, user, session, hx_target, time_slot_id)
 
 
 @router.get("/schedule")

@@ -64,8 +64,10 @@
                                 />
                             </svg>
                         </h2>
-                        <p class="opacity-50">Form a group with up to 2 other Convergence goers for this session!</p>
                         {% if adventuring_group.members|length == 1 %}
+                            <p class="opacity-50">
+                                Form a group with up to 2 other Convergence goers for this session!
+                            </p>
                             {{ render_partial('shared/partials/adventuring_party_alone.html.jinja', adventuring_group=adventuring_group) }}
                         {% else %}
                             {{ render_partial('shared/partials/adventuring_party_joined.html.jinja', adventuring_group=adventuring_group) }}

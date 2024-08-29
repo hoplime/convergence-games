@@ -33,6 +33,11 @@
         <li>{{ member.name }}</li>
     {% endfor %}
 </ul>
-<button class="btn btn-outline btn-accent" hx-confirm="Are you sure you wish to leave this adventuring party?">
-    Leave (TODO - Not Yet Implemented)
+<button
+    class="btn btn-outline btn-accent"
+    hx-put="/leave_group?adventuring_group_id={{ adventuring_group.id }}"
+    hx-target="#schedule_contents"
+    hx-confirm="Are you sure you wish to leave this adventuring party?"
+>
+    Leave Party
 </button>

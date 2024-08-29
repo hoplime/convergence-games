@@ -3,7 +3,7 @@
 # Bugs - Frontend
 
 - [x] The profile cancel edit buttons etc break the page #content because of the hx-target based replacements and block logic
-- [ ] After sign up, you don't get an updated nav bar
+- [x] After sign up, you don't get an updated nav bar
 - [ ] Check in status not properly updating when time slot changes
 
 # Features - Algorithm
@@ -35,14 +35,14 @@
 - [x] Check in? Or does this just need to be on the backend
 - [ ] Let people know what games they're in
 - [x] Display smaller room games
-- [ ] Show GMs as "players" in player allocation
-- [ ] Group UI
+- [x] Show GMs as "players" in player allocation
+- [x] Group UI
 - [ ] Show people that aren't checked in at all
 - [ ] Show people that are checked in but not allocated
-- [ ] Show people the games they're in
+- [x] Show people the games they're in
 - [ ] Update the home page
 - [ ] Design changes based on Jane's feedback
-- [ ] Allow leaving groups
+- [x] Allow leaving groups
 - [ ] Improve feedback for sign up related errors
 - [ ] Improve feedback for not having an API-Key lol
 - [ ] Pool of people not checked in
