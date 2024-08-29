@@ -42,7 +42,6 @@
                     {% elif gm_game %}
                         <h2 class="text-xl font-semibold antialiased">Game Mastering on {{ time_slot.name }}</h2>
                         <p class="opacity-50">You are running a game this session!</p>
-
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {{ render_partial('shared/partials/game_card.html.jinja', game=gm_game, user=user) }}
                         </div>
@@ -66,7 +65,12 @@
                             </svg>
                         </h2>
                         <p class="opacity-50">Form a group with up to 2 other Convergence goers for this session!</p>
-                        <p>TODO HAVE A LITTLE FORM TO ADD EMAILS OF PARTY MEMBERS FOR THIS SESSION</p>
+                        <p>{{ adventuring_group }}</p>
+                        {% if adventuring_group.members|length == 1 %}
+                            {{ render_partial('shared/partials/adventuring_party_alone.html.jinja', adventuring_group=adventuring_group) }}
+                        {% else %}
+                            <p>TODO GROUP</p>
+                        {% endif %}
                     {% endif %}
                     <h2 class="text-xl font-semibold antialiased">Game Preferences for {{ time_slot.name }}</h2>
                     {% if (now() >= time_slot.open_time) or FLAG_ALWAYS_ALLOW_CHECKINS %}
@@ -79,7 +83,7 @@
                                 hx-post="/checkin?time_slot_id={{ time_slot.id }}"
                                 hx-swap="none"
                                 hx-trigger="change"
-                                {% if session_settings.checked_in %}checked{% endif %}
+                                {% if adventuring_group.checked_in %}checked{% endif %}
                             />
                             <span class="label-text peer-checked:hidden"
                                 >Not Checked In. You won't be a player this session.</span

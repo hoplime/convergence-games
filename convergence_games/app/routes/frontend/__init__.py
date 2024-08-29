@@ -1,3 +1,5 @@
+import random
+import string
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
@@ -20,13 +22,14 @@ from convergence_games.db.extra_types import (
     GameTone,
 )
 from convergence_games.db.models import (
+    AdventuringGroup,
+    AdventuringGroupWithExtra,
     AllocationResult,
     CommittedAllocationResult,
     Game,
     GameWithExtra,
     Person,
-    PersonSessionSettings,
-    PersonSessionSettingsWithExtra,
+    PersonWithExtra,
     SessionPreference,
     Table,
     TableAllocation,
@@ -310,6 +313,44 @@ async def logout_post(
     )
 
 
+def get_random_group_code(seed: int = 0) -> str:
+    random.seed(seed)
+    return "".join(random.choices(string.ascii_uppercase, k=6))
+
+
+def get_adventuring_group_from_user_and_time_slot_id(
+    session: Session, user_id: int, time_slot_id: int
+) -> AdventuringGroup:
+    person = session.get(Person, user_id)
+    person_with_extra = PersonWithExtra.model_validate(person)
+    adventuring_group = next(
+        (group for group in person_with_extra.adventuring_groups if group.time_slot_id == time_slot_id),
+        None,
+    )
+    print("GROUP", adventuring_group)
+
+    if adventuring_group is None:
+        for trial in range(100):
+            random_code = get_random_group_code(seed=hash(person_with_extra.email + str(trial)))
+            existing_group = session.exec(
+                select(AdventuringGroup).where(
+                    (AdventuringGroup.name == random_code) & (AdventuringGroup.time_slot_id == time_slot_id)
+                )
+            ).first()
+            if existing_group is None:
+                break
+        adventuring_group = AdventuringGroup(
+            name=random_code,
+            members=[person],
+            time_slot_id=time_slot_id,
+        )
+        session.add(adventuring_group)
+        session.commit()
+        session.refresh(adventuring_group)
+
+    return adventuring_group
+
+
 @router.get("/schedule")
 async def schedule(
     request: Request,
@@ -319,21 +360,9 @@ async def schedule(
     time_slot_id: Annotated[int, Query()] = 1,
 ) -> HTMLResponse:
     with session:
-        # Get the current settings for this time slot
-        statement = select(PersonSessionSettings).where(
-            (PersonSessionSettings.person_id == user.id) & (PersonSessionSettings.time_slot_id == time_slot_id)
-        )
-        person_session_settings = session.exec(statement).first()
-
-        if person_session_settings is None:
-            person_session_settings = PersonSessionSettings(person_id=user.id, time_slot_id=time_slot_id)
-            session.add(person_session_settings)
-            session.commit()
-            session.refresh(person_session_settings)
-
-        person_session_settings = PersonSessionSettingsWithExtra.model_validate(person_session_settings)
-
-        print("SETTINGS", person_session_settings)
+        # Get the current adventuring group for this time slot
+        adventuring_group = get_adventuring_group_from_user_and_time_slot_id(session, user.id, time_slot_id)
+        adventuring_group = AdventuringGroupWithExtra.model_validate(adventuring_group)
 
         # Possibly GMing a game this time slot
         statement = (
@@ -360,7 +389,7 @@ async def schedule(
             )
             .outerjoin(
                 SessionPreference,
-                (SessionPreference.person_id == user.id)
+                (SessionPreference.adventuring_group_id == adventuring_group.id)
                 & (SessionPreference.table_allocation_id == TableAllocation.id),
             )
             .group_by(Game.id)
@@ -381,11 +410,13 @@ async def schedule(
         # And finally the actual time slot
         time_slot = session.get(TimeSlot, time_slot_id)
 
-        # TODO: Logic to get group preference and committed status, for now assume no groups
         statement = (
             select(TableAllocation)
             .join(CommittedAllocationResult, TableAllocation.id == CommittedAllocationResult.table_allocation_id)
-            .where((CommittedAllocationResult.person_id == user.id) & (TableAllocation.time_slot_id == time_slot_id))
+            .where(
+                (CommittedAllocationResult.adventuring_group_id == adventuring_group.id)
+                & (TableAllocation.time_slot_id == time_slot_id)
+            )
         )
         committed_table_allocation = session.exec(statement).first()
         if committed_table_allocation:
@@ -393,6 +424,8 @@ async def schedule(
             table_summary = extract_table_summary(
                 committed_table_allocation, time_slot_id, {committed_table_allocation.game.gamemaster_id}
             )
+        else:
+            table_summary = None
 
     push_url = request.url.path + ("?" + request.url.query if request.url.query else "")
 
@@ -400,9 +433,9 @@ async def schedule(
         name="main/schedule.html.jinja",
         context={
             "preferences_data": preferences_data,
-            "session_settings": person_session_settings,
             "gm_game": gm_game,
             "time_slot": time_slot,
+            "adventuring_group": adventuring_group,
             "committed_table_allocation": committed_table_allocation,
             "table_summary": table_summary,
             "request": request,
@@ -490,12 +523,18 @@ async def preferences_post(
     form_data = await request.form()
     table_allocation_ratings = RatingForm.model_validate(form_data)
     print(table_allocation_ratings)
-    person_id = user.id
     with session:
         session_preferences: list[SessionPreference] = []
         for table_allocation_id, rating in table_allocation_ratings.items():
+            table_allocation = session.get(TableAllocation, table_allocation_id)
+            adventuring_group = get_adventuring_group_from_user_and_time_slot_id(
+                session, user.id, table_allocation.time_slot_id
+            )
+
             session_preference = SessionPreference(
-                preference=rating.numeric(), person_id=person_id, table_allocation_id=table_allocation_id
+                preference=rating.numeric(),
+                adventuring_group_id=adventuring_group.id,
+                table_allocation_id=table_allocation_id,
             )
 
             session_preferences.append(session_preference)
@@ -517,21 +556,10 @@ async def checkin_post(
     checkin: Annotated[bool, Form()] = False,
 ) -> HTMLResponse:
     with session:
-        statement = select(PersonSessionSettings).where(
-            (PersonSessionSettings.person_id == user.id) & (PersonSessionSettings.time_slot_id == time_slot_id)
-        )
-        person_session_settings = session.exec(statement).first()
-        if person_session_settings is None:
-            person_session_settings = PersonSessionSettings(
-                person_id=user.id, time_slot_id=time_slot_id, checked_in=checkin
-            )
-            session.add(person_session_settings)
-            session.commit()
-            session.refresh(person_session_settings)
-        else:
-            person_session_settings.checked_in = checkin
-            session.add(person_session_settings)
-            session.commit()
+        adventuring_group = get_adventuring_group_from_user_and_time_slot_id(session, user.id, time_slot_id)
+        adventuring_group.checked_in = checkin
+        session.add(adventuring_group)
+        session.commit()
     return HTMLResponse(status_code=204)
 
 

@@ -16,11 +16,6 @@ from convergence_games.db.models import (
     Person,
     PersonCreate,
     PersonRead,
-    PersonSessionSettings,
-    PersonSessionSettingsCreate,
-    PersonSessionSettingsRead,
-    PersonSessionSettingsUpdate,
-    PersonSessionSettingsWithExtra,
     PersonUpdate,
     PersonWithExtra,
     SessionPreference,
@@ -85,14 +80,6 @@ PERSON = ModelBoilerplate(
     update=PersonUpdate,
 )
 
-PERSON_SESSION_SETTINGS = ModelBoilerplate(
-    table=PersonSessionSettings,
-    create=PersonSessionSettingsCreate,
-    read=PersonSessionSettingsRead,
-    extra=PersonSessionSettingsWithExtra,
-    update=PersonSessionSettingsUpdate,
-)
-
 SESSION_PREFERENCE = ModelBoilerplate(
     table=SessionPreference,
     create=SessionPreferenceCreate,
@@ -137,7 +124,6 @@ boilerplates = [
     GAME,
     GENRE,
     PERSON,
-    PERSON_SESSION_SETTINGS,
     SESSION_PREFERENCE,
     SYSTEM,
     TABLE,
