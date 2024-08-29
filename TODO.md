@@ -45,4 +45,3 @@
 - [x] Allow leaving groups
 - [ ] Improve feedback for sign up related errors
 - [ ] Improve feedback for not having an API-Key lol
-- [ ] Pool of people not checked in

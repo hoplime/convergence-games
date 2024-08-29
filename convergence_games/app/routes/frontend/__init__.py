@@ -675,7 +675,7 @@ async def run_allocate(
     engine: EngineDependency,
 ) -> HTMLResponse:
     allocation_results = do_allocation(time_slot_id, engine, force_override=True)
-    return await allocate_admin(request, session, hx_target, time_slot_id)
+    return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
 def do_commit_or_rollback(
@@ -722,7 +722,7 @@ async def commit_allocate(
     time_slot_id: int,
 ) -> HTMLResponse:
     do_commit_or_rollback(session, time_slot_id, from_table=AllocationResult, to_table=CommittedAllocationResult)
-    return await allocate_admin(request, session, hx_target, time_slot_id)
+    return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
 @router.post("/rollback_allocate/{time_slot_id}", dependencies=[Auth])
@@ -733,7 +733,7 @@ async def rollback_allocate(
     time_slot_id: int,
 ) -> HTMLResponse:
     do_commit_or_rollback(session, time_slot_id, from_table=CommittedAllocationResult, to_table=AllocationResult)
-    return await allocate_admin(request, session, hx_target, time_slot_id)
+    return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
 @router.post("/uncommit_allocate/{time_slot_id}", dependencies=[Auth])
@@ -754,7 +754,7 @@ async def uncommit_allocate(
         for existing_result in existing_results:
             session.delete(existing_result)
         session.commit()
-    return await allocate_admin(request, session, hx_target, time_slot_id)
+    return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
 def extract_table_summary(
@@ -788,8 +788,8 @@ def extract_table_summary(
     return table_summary
 
 
-@router.get("/allocate_admin")
-async def allocate_admin(
+@router.get("/admin/allocate")
+async def admin_allocate(
     request: Request,
     session: Session,
     hx_target: HxTarget,
@@ -915,7 +915,7 @@ async def move(
         new_table_allocation.allocation_results.append(AllocationResult(adventuring_group_id=group_id))
         session.commit()
         time_slot_id = new_table_allocation.time_slot_id
-    return await allocate_admin(request, session, hx_target, time_slot_id)
+    return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
 # endregion
