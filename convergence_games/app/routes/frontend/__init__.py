@@ -5,13 +5,20 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Annotated, Any, Iterator, Literal
 
-from fastapi import APIRouter, Form, Query
+from fastapi import APIRouter, Form, Query, Response
 from fastapi.responses import HTMLResponse
 from pydantic import BeforeValidator, RootModel
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from sqlmodel import exists, select
 
-from convergence_games.app.dependencies import Auth, EngineDependency, HxTarget, Session, User, get_user
+from convergence_games.app.dependencies import (
+    AuthWithHandler,
+    EngineDependency,
+    HxTarget,
+    Session,
+    User,
+    get_user,
+)
 from convergence_games.app.request_type import Request
 from convergence_games.app.shared.do_allocation import do_allocation
 from convergence_games.app.templates import templates
@@ -680,14 +687,33 @@ async def checkin_post(
 
 
 # region Admin
-@router.post("/run_allocate/{time_slot_id}", dependencies=[Auth])
+def maybe_alerts_from_auth(
+    auth: tuple[bool, list[Exception]], request: Request, retarget: str = "#allocate_contents"
+) -> Response | None:
+    if auth[0]:
+        return None
+    alerts = [Alert(str(e), "error") for e in auth[1]]
+    return templates.TemplateResponse(
+        name="shared/partials/toast_alerts.html.jinja",
+        context={
+            "request": request,
+            "alerts": alerts,
+        },
+        headers={"HX-Retarget": retarget, "HX-Reswap": "beforeend"},
+    )
+
+
+@router.post("/run_allocate/{time_slot_id}")
 async def run_allocate(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
     time_slot_id: int,
     engine: EngineDependency,
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
     allocation_results = do_allocation(time_slot_id, engine, force_override=True)
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
@@ -728,35 +754,44 @@ def do_commit_or_rollback(
         session.commit()
 
 
-@router.post("/commit_allocate/{time_slot_id}", dependencies=[Auth])
+@router.post("/commit_allocate/{time_slot_id}")
 async def commit_allocate(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
     time_slot_id: int,
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
     do_commit_or_rollback(session, time_slot_id, from_table=AllocationResult, to_table=CommittedAllocationResult)
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
-@router.post("/rollback_allocate/{time_slot_id}", dependencies=[Auth])
+@router.post("/rollback_allocate/{time_slot_id}")
 async def rollback_allocate(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
     time_slot_id: int,
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
     do_commit_or_rollback(session, time_slot_id, from_table=CommittedAllocationResult, to_table=AllocationResult)
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
-@router.post("/uncommit_allocate/{time_slot_id}", dependencies=[Auth])
+@router.post("/uncommit_allocate/{time_slot_id}")
 async def uncommit_allocate(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
     time_slot_id: int,
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
     with session:
         # Delete all existing in CommittedAllocationResult for this time slot
         statement = (
@@ -964,14 +999,17 @@ async def move_button(
     )
 
 
-@router.put("/move", dependencies=[Auth])
+@router.put("/move")
 async def move(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
     group_id: Annotated[int, Query()],
     table_allocation_id: Annotated[int, Form()],
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
     with session:
         current_table_allocation_and_result = session.exec(
             select(TableAllocation, AllocationResult)
