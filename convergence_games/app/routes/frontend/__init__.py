@@ -586,7 +586,7 @@ async def schedule(
         else:
             table_summary = None
 
-    push_url = "/schedule"
+    push_url = f"/schedule?time_slot_id={time_slot_id}"
 
     return templates.TemplateResponse(
         name="main/schedule.html.jinja",

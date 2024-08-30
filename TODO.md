@@ -9,7 +9,7 @@
 - [x] Have to toggle dark theme/light theme to fix colors of ratings?
 - [ ] Allow submit with enter/regular submit on group interactions
 - [x] Can't correctly reallocate on any time slot other than the first
-- [ ] Refreshing the page on schedule doesn't keep the drop down state
+- [x] Refreshing the page on schedule doesn't keep the drop down state
 
 # Features - Algorithm
 
