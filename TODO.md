@@ -30,7 +30,7 @@
 - [x] Do the commits
 - [x] Disallow editing group members if you're committed
 - [x] Allow force checking in/out people
-- [ ] Enforce D20s in groups properly
+- [x] Enforce D20s in groups properly
 - [ ] Reimporting from spreadsheet
 - [ ] Update caching for game updates
 
@@ -47,6 +47,6 @@
 - [x] Allow leaving groups
 - [x] Improve feedback for sign up related errors
 - [x] Improve feedback for not having an API-Key lol
-- [ ] Sticky api-key and actions?
+- [x] Sticky api-key and actions?
 - [ ] Update the home page
 - [ ] Design changes based on Jane's feedback
