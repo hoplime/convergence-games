@@ -442,6 +442,9 @@ async def join_group(
         person = session.get(Person, user.id)
         current_group = session.get(AdventuringGroup, current_adventuring_group_id)
 
+        if current_group.name == join_code.upper():
+            return alerts_template_response([Alert("You are already in this party", "warning")], request)
+
         new_group = session.exec(
             select(AdventuringGroup).where(
                 (AdventuringGroup.name == join_code.upper())
