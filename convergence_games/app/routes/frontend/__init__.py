@@ -8,6 +8,7 @@ from typing import Annotated, Any, Iterator, Literal
 from fastapi import APIRouter, Form, Query, Response
 from fastapi.responses import HTMLResponse
 from pydantic import BeforeValidator, RootModel
+from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from sqlmodel import exists, select
 
@@ -1151,8 +1152,11 @@ async def admin_players(
 async def admin_person_row_view(
     request: Request,
     session: Session,
-    person_id: Annotated[int, Query()],
+    person_id: Annotated[int | None, Query()] = None,
 ) -> HTMLResponse:
+    if person_id is None:
+        return HTMLResponse(content="", status_code=200)
+
     with session:
         person = session.get(Person, person_id)
         person = PersonWithExtra.model_validate(person)
@@ -1169,11 +1173,18 @@ async def admin_person_row_view(
 async def admin_person_row_edit(
     request: Request,
     session: Session,
-    person_id: Annotated[int, Query()],
+    person_id: Annotated[int | None, Query()] = None,
+    create: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
     with session:
-        person = session.get(Person, person_id)
-        person = PersonWithExtra.model_validate(person)
+        if create:
+            random_string = "".join(random.choices(string.ascii_uppercase, k=6))
+            person = Person(
+                name=f"New Player {random_string}",
+                email=f"{random_string}@email.com",
+            )
+        else:
+            person = session.get(Person, person_id)
     return templates.TemplateResponse(
         name="shared/partials/person_row_edit.html.jinja",
         context={

@@ -1,5 +1,5 @@
 <tr hx-target="this">
-    <td>{{ person.name }} <span class="text-xs opacity-50">({{ person.email }})</span></td>
+    <td>{{ person.name }} <span class="hidden text-xs opacity-50 md:inline">({{ person.email }})</span></td>
     <td>{{ person.id }}</td>
     <td>
         {% if not person.golden_d20s %}

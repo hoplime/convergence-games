@@ -56,7 +56,7 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Name & Email</th>
+                                <th>Name</th>
                                 <th>ID</th>
                                 <th>
                                     <div
@@ -69,11 +69,25 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="player_list">
                             {% for person in people %}
                                 {{ render_partial('shared/partials/person_row_view.html.jinja', person=person) }}
                             {% endfor %}
                         </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5">
+                                    <button
+                                        class="btn btn-primary"
+                                        hx-get="/admin/person_row_edit?create=true"
+                                        hx-target="#player_list"
+                                        hx-swap="beforeend"
+                                    >
+                                        Add Player
+                                    </button>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             {% endblock %}
