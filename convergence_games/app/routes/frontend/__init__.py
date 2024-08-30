@@ -760,13 +760,13 @@ def maybe_alerts_from_auth(auth: tuple[bool, list[Exception]], request: Request)
     return alerts_template_response(alerts, request)
 
 
-@router.post("/admin/run_allocate/{time_slot_id}")
+@router.post("/admin/run_allocate")
 async def run_allocate(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
-    time_slot_id: int,
+    time_slot_id: Annotated[int, Form()],
     engine: EngineDependency,
 ) -> HTMLResponse:
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
@@ -811,13 +811,13 @@ def do_commit_or_rollback(
         session.commit()
 
 
-@router.post("/admin/commit_allocate/{time_slot_id}")
+@router.post("/admin/commit_allocate")
 async def commit_allocate(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
-    time_slot_id: int,
+    time_slot_id: Annotated[int, Form()],
 ) -> HTMLResponse:
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
@@ -825,13 +825,13 @@ async def commit_allocate(
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
-@router.post("/admin/rollback_allocate/{time_slot_id}")
+@router.post("/admin/rollback_allocate")
 async def rollback_allocate(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
-    time_slot_id: int,
+    time_slot_id: Annotated[int, Form()],
 ) -> HTMLResponse:
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
@@ -839,13 +839,13 @@ async def rollback_allocate(
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
-@router.post("/admin/uncommit_allocate/{time_slot_id}")
+@router.post("/admin/uncommit_allocate")
 async def uncommit_allocate(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
-    time_slot_id: int,
+    time_slot_id: Annotated[int, Form()],
 ) -> HTMLResponse:
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts

@@ -25,7 +25,7 @@
                             {{ render_partial('shared/partials/game_card.html.jinja', game=committed_table_allocation.game) }}
                         </div>
                         <h2 class="text-lg font-semibold antialiased">
-                            At table {{ committed_table_allocation.table.short_description }}
+                            At {{ committed_table_allocation.table.short_description }}
                         </h2>
                         <div class="flex flex-col">
                             {% for group in table_summary.groups %}

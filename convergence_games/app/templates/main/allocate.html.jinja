@@ -45,10 +45,11 @@
                     <li>
                         <button
                             class="group btn btn-outline"
-                            hx-post="/admin/run_allocate/{{ time_slot.id }}"
+                            hx-post="/admin/run_allocate"
                             hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
                             hx-target="#allocate_contents"
                             hx-confirm="Are you sure you want to rerun the allocation?"
+                            hx-include="#filter-form"
                         >
                             <span class="inline group-[.htmx-request]:hidden">Reallocate</span>
                             <span class="hidden group-[.htmx-request]:inline">
@@ -96,10 +97,11 @@
                     <li>
                         <button
                             class="btn btn-outline"
-                            hx-post="/admin/commit_allocate/{{ time_slot.id }}"
+                            hx-post="/admin/commit_allocate"
                             hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
                             hx-target="#allocate_contents"
                             hx-confirm="Are you sure you want to commit the allocation?"
+                            hx-include="#filter-form"
                         >
                             Commit
                         </button>
@@ -107,10 +109,11 @@
                     <li>
                         <button
                             class="btn btn-outline"
-                            hx-post="/admin/rollback_allocate/{{ time_slot.id }}"
+                            hx-post="/admin/rollback_allocate"
                             hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
                             hx-target="#allocate_contents"
                             hx-confirm="Are you sure you want to rollback the allocation to the last commit?"
+                            hx-include="#filter-form"
                         >
                             Rollback
                         </button>
@@ -118,10 +121,11 @@
                     <li>
                         <button
                             class="btn btn-outline"
-                            hx-post="/admin/uncommit_allocate/{{ time_slot.id }}"
+                            hx-post="/admin/uncommit_allocate"
                             hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
                             hx-target="#allocate_contents"
                             hx-confirm="Are you sure you want to delete all committed allocations?"
+                            hx-include="#filter-form"
                         >
                             Uncommit
                         </button>
