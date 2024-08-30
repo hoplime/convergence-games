@@ -5,8 +5,9 @@
 - [x] The profile cancel edit buttons etc break the page #content because of the hx-target based replacements and block logic
 - [x] After sign up, you don't get an updated nav bar
 - [x] Check in status not properly updating when time slot changes
+- [x] In schedule view, going to a game and then backing out doesn't (visually) preserve ratings
+- [x] Have to toggle dark theme/light theme to fix colors of ratings?
 - [ ] Allow submit with enter/regular submit on group interactions
-- [ ] Have to toggle dark theme/light theme to fix colors of ratings?
 
 # Features - Algorithm
 

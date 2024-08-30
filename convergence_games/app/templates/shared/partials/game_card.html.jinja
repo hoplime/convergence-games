@@ -1,11 +1,4 @@
-<div
-    class="card w-full cursor-pointer bg-base-200 shadow-xl"
-    hx-get="/games/{{ game.id }}"
-    hx-target="#content"
-    hx-push-url="true"
-    hx-swap="innerHTML show:top"
-    hx-trigger="click[event.target.matches(':not(.rating-form *)')]"
->
+<a class="card w-full cursor-pointer bg-base-200 shadow-xl" href="/games/{{ game.id }}">
     <div class="card-body">
         <h2 class="card-title">{{ game.title }}</h2>
         <h3 class="font-sans antialiased">
@@ -41,4 +34,4 @@
             </div>
         {% endif %}
     </div>
-</div>
+</a>
