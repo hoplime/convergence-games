@@ -1,0 +1,52 @@
+<tr hx-target="this">
+    <td>{{ person.name }} <span class="text-xs opacity-50">({{ person.email }})</span></td>
+    <td>{{ person.id }}</td>
+    <td>
+        {% if not person.golden_d20s %}
+            -
+        {% else %}
+            {{ person.golden_d20s }}
+        {% endif %}
+    </td>
+    <td>{{ person.compensation }}</td>
+    <td class="flex flex-row">
+        <button class="btn btn-ghost btn-sm">
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-check-square text-green-400"
+                viewBox="0 0 16 16"
+            >
+                <path
+                    d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"
+                />
+                <path
+                    d="M10.97 4.97a.75.75 0 0 1 1.071 1.05l-3.992 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"
+                />
+            </svg>
+        </button>
+        <button
+            class="btn btn-ghost btn-sm"
+            hx-get="/admin/person_row_view?person_id={{ person.id }}"
+            hx-swap="outerHTML"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-x-square text-red-400"
+                viewBox="0 0 16 16"
+            >
+                <path
+                    d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"
+                />
+                <path
+                    d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"
+                />
+            </svg>
+        </button>
+    </td>
+</tr>

@@ -1127,4 +1127,60 @@ async def checkin(
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
+@router.get("/admin/players")
+async def admin_players(
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+) -> HTMLResponse:
+    with session:
+        statement = select(Person).order_by(Person.name)
+        people = session.exec(statement).all()
+        people = [PersonWithExtra.model_validate(person) for person in people]
+    return templates.TemplateResponse(
+        name="main/players.html.jinja",
+        context={
+            "people": people,
+            "request": request,
+        },
+        block_name=hx_target,
+    )
+
+
+@router.get("/admin/person_row_view")
+async def admin_person_row_view(
+    request: Request,
+    session: Session,
+    person_id: Annotated[int, Query()],
+) -> HTMLResponse:
+    with session:
+        person = session.get(Person, person_id)
+        person = PersonWithExtra.model_validate(person)
+    return templates.TemplateResponse(
+        name="shared/partials/person_row_view.html.jinja",
+        context={
+            "person": person,
+            "request": request,
+        },
+    )
+
+
+@router.get("/admin/person_row_edit")
+async def admin_person_row_edit(
+    request: Request,
+    session: Session,
+    person_id: Annotated[int, Query()],
+) -> HTMLResponse:
+    with session:
+        person = session.get(Person, person_id)
+        person = PersonWithExtra.model_validate(person)
+    return templates.TemplateResponse(
+        name="shared/partials/person_row_edit.html.jinja",
+        context={
+            "person": person,
+            "request": request,
+        },
+    )
+
+
 # endregion

@@ -18,6 +18,9 @@
 - [x] D20s
 - [x] Multiple people in a group
 - [ ] Annealing based swapping trials?
+- [ ] LOCK IN AND APPLY
+  - [ ] Actually spending D20s
+  - [ ] Actually granting compensation
 
 # Features - Backend + DB
 

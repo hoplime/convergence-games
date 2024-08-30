@@ -236,6 +236,7 @@ class PersonUpdate(PersonBase):
     name: str | None = None
     email: str | None = None
     golden_d20s: int | None = None
+    compensation: int | None = None
 
 
 # endregion
