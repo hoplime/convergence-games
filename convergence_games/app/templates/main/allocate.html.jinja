@@ -152,7 +152,7 @@
 
         <div id="allocate_contents">
             {% block allocate_contents %}
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {# Main Allocated #}
                     {% for table_allocation in table_allocations %}
                         {% set game = table_allocation.game %}
@@ -206,11 +206,11 @@
                         </div>
                     {% endfor %}
                     {# Unallocated Groups #}
-                    <div class="card w-full bg-base-200 shadow-xl md:col-span-2">
+                    <div class="card w-full bg-base-200 shadow-xl md:col-span-2 lg:col-span-3">
                         <div class="card-body">
                             <h2 class="card-title">Unallocated Groups</h2>
                             {# Group Lists #}
-                            <div class="grid grid-cols-1 justify-items-stretch gap-2 md:grid-cols-3">
+                            <div class="grid grid-cols-1 justify-items-stretch gap-2 md:grid-cols-2 lg:grid-cols-3">
                                 {% for group in unallocated_groups %}
                                     {{ render_partial('shared/partials/group_summary.html.jinja', group=group, time_slot_id=time_slot.id) }}
                                 {% endfor %}
