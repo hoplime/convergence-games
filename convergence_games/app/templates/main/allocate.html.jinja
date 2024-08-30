@@ -157,10 +157,12 @@
                     {% for table_allocation in table_allocations %}
                         {% set game = table_allocation.game %}
                         {% set current_players = table_summaries[table_allocation.id].total_players %}
-                        <div class="card w-full bg-base-200 shadow-xl">
+                        {% set overflow_card_classes = 'md:col-span-2 lg:col-span-3' if game.title == 'Overflow' %}
+                        {% set overflow_group_classes = 'md:grid-cols-2 lg:grid-cols-3' if game.title == 'Overflow' %}
+                        <div class="{{ overflow_card_classes }} card w-full bg-base-200 shadow-xl">
                             <div class="card-body">
                                 {% set title_classes = ("text-success" if current_players == game.optimal_players else "text-error" if current_players < game.minimum_players or current_players > game.maximum_players) %}
-                                <h2 class="{{ title_classes }} card-title">{{ table_allocation.game.title }}</h2>
+                                <h2 class="{{ title_classes }} card-title">{{ game.title }}</h2>
                                 <h3 class="font-sans antialiased">
                                     {{ table_allocation.table.short_description }} | {{ game.gamemaster.name }}
                                 </h3>
@@ -197,7 +199,7 @@
                                 </div>
 
                                 {# Group Lists #}
-                                <div class="grid grid-cols-1 justify-items-stretch gap-2">
+                                <div class="{{ overflow_group_classes }} grid grid-cols-1 justify-items-stretch gap-2">
                                     {% for group in table_summaries[table_allocation.id].groups %}
                                         {{ render_partial('shared/partials/group_summary.html.jinja', group=group, time_slot_id=time_slot.id) }}
                                     {% endfor %}
