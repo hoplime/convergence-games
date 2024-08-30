@@ -4,6 +4,7 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import Enum, Field, Relationship, SQLModel
 
 from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
+from convergence_games.settings import SETTINGS
 
 
 # region Links
@@ -256,6 +257,10 @@ class TimeSlot(TimeSlotBase, table=True):
     @property
     def open_time(self) -> dt.datetime:
         return self.start_time - dt.timedelta(hours=48)
+
+    @property
+    def is_open_for_checkin(self) -> bool:
+        return self.open_time < dt.datetime.now() or SETTINGS.FLAG_ALWAYS_ALLOW_CHECKINS
 
 
 class TimeSlotCreate(TimeSlotBase):

@@ -74,32 +74,37 @@
                         {% endif %}
                     {% endif %}
                     <h2 class="text-xl font-semibold antialiased">Game Preferences for {{ time_slot.name }}</h2>
-                    {% if (now() >= time_slot.open_time) or FLAG_ALWAYS_ALLOW_CHECKINS %}
-                        <label class="label w-full cursor-pointer justify-start gap-4">
-                            <input
-                                type="checkbox"
-                                id="checkin"
-                                name="checkin"
-                                class="peer checkbox-accent checkbox"
-                                hx-post="/checkin?time_slot_id={{ time_slot.id }}"
-                                hx-swap="none"
-                                hx-trigger="change"
-                                {% if adventuring_group.checked_in %}checked{% endif %}
-                            />
-                            <span class="label-text peer-checked:hidden"
-                                >Not Checked In. You won't be a player this session.</span
-                            >
-                            <span class="label-text hidden peer-checked:inline"
-                                >Playing! Set your preferences below.</span
-                            >
-                        </label>
-                    {% else %}
-                        <label class="label w-full justify-start gap-4">
-                            <span class="label-text"
-                                >Session check-in open in about {{ (time_slot.open_time - now()) | naturaltime }}</span
-                            >
-                        </label>
-                    {% endif %}
+                    <div id="checkin_contents">
+                        {% block checkin_contents %}
+                            {% if time_slot.is_open_for_checkin %}
+                                <label class="label w-full cursor-pointer justify-start gap-4">
+                                    <input
+                                        type="checkbox"
+                                        id="checkin"
+                                        name="checkin"
+                                        class="peer checkbox-accent checkbox"
+                                        hx-post="/checkin?time_slot_id={{ time_slot.id }}"
+                                        hx-swap="none"
+                                        hx-trigger="change"
+                                        {% if adventuring_group.checked_in %}checked{% endif %}
+                                    />
+                                    <span class="label-text peer-checked:hidden"
+                                        >Not Checked In. You won't be a player this session.</span
+                                    >
+                                    <span class="label-text hidden peer-checked:inline"
+                                        >Playing! Set your preferences below.</span
+                                    >
+                                </label>
+                            {% else %}
+                                <label class="label w-full justify-start gap-4">
+                                    <span class="label-text"
+                                        >Session check-in open in about
+                                        {{ (time_slot.open_time - now()) | naturaltime }}</span
+                                    >
+                                </label>
+                            {% endif %}
+                        {% endblock %}
+                    </div>
                     <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {% block game_list %}
                             {% for game, table_allocation, session_preference in preferences_data %}

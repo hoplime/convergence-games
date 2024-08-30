@@ -507,6 +507,7 @@ async def schedule(
     session: Session,
     hx_target: HxTarget,
     time_slot_id: Annotated[int, Query()] = 1,
+    additional_response_headers: dict[str, str] | None = None,
 ) -> HTMLResponse:
     if user is None:
         return templates.TemplateResponse(
@@ -596,7 +597,7 @@ async def schedule(
             "request": request,
             "user": user,
         },
-        headers={"HX-Push-Url": push_url},
+        headers={"HX-Push-Url": push_url} | (additional_response_headers or {}),
         block_name=hx_target,
     )
 
@@ -677,17 +678,29 @@ async def preferences_post(
 ) -> HTMLResponse:
     form_data = await request.form()
     table_allocation_ratings = RatingForm.model_validate(form_data)
+    rerender_time_slot_id = None
+
     with session:
         session_preferences: list[SessionPreference] = []
+        adventuring_group: AdventuringGroup | None = None
         for table_allocation_id, rating in table_allocation_ratings.items():
             table_allocation = session.get(TableAllocation, table_allocation_id)
-            adventuring_group = get_adventuring_group_from_user_and_time_slot_id(
-                session, user.id, table_allocation.time_slot_id
-            )
+
+            if adventuring_group is None or adventuring_group.time_slot_id != table_allocation.time_slot_id:
+                adventuring_group = get_adventuring_group_from_user_and_time_slot_id(
+                    session, user.id, table_allocation.time_slot_id
+                )
+                adventuring_group_id = adventuring_group.id
+
+                if table_allocation.time_slot.is_open_for_checkin and not adventuring_group.checked_in:
+                    adventuring_group.checked_in = True
+                    rerender_time_slot_id = adventuring_group.time_slot_id
+
+                session.add(adventuring_group)
 
             session_preference = SessionPreference(
                 preference=rating.numeric(),
-                adventuring_group_id=adventuring_group.id,
+                adventuring_group_id=adventuring_group_id,
                 table_allocation_id=table_allocation_id,
             )
 
@@ -698,7 +711,21 @@ async def preferences_post(
         )
         session.exec(statement)
         session.commit()
-    return HTMLResponse(status_code=204)
+
+    if rerender_time_slot_id is not None:
+        return await schedule(
+            request,
+            user,
+            session,
+            hx_target="checkin_contents",
+            time_slot_id=rerender_time_slot_id,
+            additional_response_headers={
+                "HX-Retarget": "#checkin_contents",
+                "HX-Reswap": "innerHTML",
+            },
+        )
+    else:
+        return HTMLResponse(status_code=204)
 
 
 @router.post("/checkin")
