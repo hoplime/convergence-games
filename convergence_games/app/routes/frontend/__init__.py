@@ -988,12 +988,23 @@ async def move_menu(
             {description["name"]: value for description, value in zip(statement.column_descriptions, row)}
             for row in query_results
         ]
+        candidates.append(
+            {
+                "table_allocation_id": -1,
+                "title": "Unassigned",
+                "preference": 0,
+                "table_number": None,
+            }
+        )
 
-        current_table_allocation_id = session.exec(
-            select(TableAllocation.id)
-            .join(AllocationResult, AllocationResult.table_allocation_id == TableAllocation.id)
-            .where(AllocationResult.adventuring_group_id == group_id)
-        ).first()
+        current_table_allocation_id = (
+            session.exec(
+                select(TableAllocation.id)
+                .join(AllocationResult, AllocationResult.table_allocation_id == TableAllocation.id)
+                .where(AllocationResult.adventuring_group_id == group_id)
+            ).first()
+            or -1
+        )
 
     return templates.TemplateResponse(
         name="shared/partials/move_menu.html.jinja",
@@ -1030,27 +1041,38 @@ async def move(
     session: Session,
     hx_target: HxTarget,
     group_id: Annotated[int, Query()],
-    table_allocation_id: Annotated[int, Form()],
+    table_allocation_id: Annotated[int, Form()] = -1,
 ) -> HTMLResponse:
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
+
     with session:
+        adventuring_group = session.get(AdventuringGroup, group_id)
+        time_slot_id = adventuring_group.time_slot_id
+
         current_table_allocation_and_result = session.exec(
             select(TableAllocation, AllocationResult)
             .join(AllocationResult, TableAllocation.id == AllocationResult.table_allocation_id)
             .where(AllocationResult.adventuring_group_id == group_id)
         ).first()
 
-        new_table_allocation = session.get(TableAllocation, table_allocation_id)
-        if new_table_allocation is None:
-            return alerts_template_response([Alert("Table not found, woops", "error")], request)
+        if table_allocation_id != -1:
+            # Check the table exists
+            new_table_allocation = session.get(TableAllocation, table_allocation_id)
+            if new_table_allocation is None:
+                return alerts_template_response([Alert("Table not found, woops", "error")], request)
+            # Add the new allocation result
+            new_table_allocation.allocation_results.append(AllocationResult(adventuring_group_id=group_id))
+
+        if current_table_allocation_and_result is None and table_allocation_id == -1:
+            return alerts_template_response([Alert("Already unassigned", "warning")], request)
 
         if current_table_allocation_and_result is not None:
             current_table_allocation, current_allocation_result = current_table_allocation_and_result
+            if current_table_allocation.id == table_allocation_id:
+                return alerts_template_response([Alert("Already at this table", "warning")], request)
+            # Remove the old allocation result
             session.delete(current_allocation_result)
-
-        new_table_allocation.allocation_results.append(AllocationResult(adventuring_group_id=group_id))
-        time_slot_id = new_table_allocation.time_slot_id
         session.commit()
     return await admin_allocate(request, session, hx_target, time_slot_id)
 

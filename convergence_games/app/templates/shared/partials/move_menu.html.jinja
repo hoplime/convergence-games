@@ -1,7 +1,7 @@
 <div hx-target="this" class="max-w-full">
     <select class="select max-w-full" name="table_allocation_id">
         {% for candidate in candidates %}
-            {% set preference = (candidate.preference if candidate.preference else 3) %}
+            {% set preference = (candidate.preference if candidate.preference is not none else 3) %}
             {% if preference == 0 %}
                 {% set specific_rating_styles = "text-gray-400" %}
             {% elif preference == 1 %}
