@@ -38,6 +38,7 @@ from convergence_games.db.models import (
     GameWithExtra,
     Person,
     PersonAdventuringGroupLink,
+    PersonUpdate,
     PersonWithExtra,
     SessionPreference,
     Table,
@@ -1178,11 +1179,7 @@ async def admin_person_row_edit(
 ) -> HTMLResponse:
     with session:
         if create:
-            random_string = "".join(random.choices(string.ascii_uppercase, k=6))
-            person = Person(
-                name=f"New Player {random_string}",
-                email=f"{random_string}@email.com",
-            )
+            person = Person(name="", email="")
         else:
             person = session.get(Person, person_id)
     return templates.TemplateResponse(
@@ -1192,6 +1189,46 @@ async def admin_person_row_edit(
             "request": request,
         },
     )
+
+
+@router.put("/admin/person_row_edit")
+async def admin_person_row_edit_put(
+    auth: AuthWithHandler,
+    request: Request,
+    session: Session,
+    name: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+    golden_d20s: Annotated[int, Form()],
+    compensation: Annotated[int, Form()],
+    person_id: Annotated[int | None, Query()] = None,
+) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+
+    new_person = PersonUpdate(
+        name=name,
+        email=email,
+        golden_d20s=golden_d20s,
+        compensation=compensation,
+    )
+    with session:
+        try:
+            if person_id is None:
+                new_person = Person.model_validate(new_person)
+                session.add(new_person)
+                session.commit()
+                session.refresh(new_person)
+                person_id = new_person.id
+            else:
+                person = session.get(Person, person_id)
+                person.sqlmodel_update(new_person)
+                session.add(person)
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print(e)
+            return alerts_template_response([Alert(str(e), "error")], request)
+    return await admin_person_row_view(request, session, person_id)
 
 
 # endregion

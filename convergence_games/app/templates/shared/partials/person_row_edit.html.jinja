@@ -1,4 +1,4 @@
-<tr hx-target="this">
+<tr hx-target="this" class="person_row_edit">
     <td class="flex flex-row gap-2">
         <label class="input input-sm input-bordered flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 opacity-70">
@@ -6,15 +6,7 @@
                     d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z"
                 />
             </svg>
-            <input
-                type="text"
-                name="name"
-                id="name"
-                class="grow"
-                placeholder="Full Name"
-                value="{{ person.name }}"
-                required
-            />
+            <input type="text" name="name" class="grow" placeholder="Full Name" value="{{ person.name }}" required />
         </label>
         <label class="input input-sm input-bordered flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 opacity-70">
@@ -25,44 +17,28 @@
                     d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z"
                 />
             </svg>
-            <input
-                type="email"
-                name="email"
-                id="email"
-                class="grow"
-                placeholder="Email"
-                value="{{ person.email }}"
-                required
-            />
+            <input type="email" name="email" class="grow" placeholder="Email" value="{{ person.email }}" required />
         </label>
     </td>
     <td>{{ person.id if person.id is not none else '-' }}</td>
     <td>
         <label class="input input-sm input-bordered flex w-16 py-1">
-            <input
-                type="number"
-                class="w-full grow"
-                name="golden_d20s"
-                id="golden_d20s"
-                value="{{ person.golden_d20s }}"
-                required
-            />
+            <input type="number" class="w-full grow" name="golden_d20s" value="{{ person.golden_d20s }}" required />
         </label>
     </td>
     <td>
         <label class="input input-sm input-bordered flex w-16 py-1">
-            <input
-                type="number"
-                class="w-full grow"
-                name="compensation"
-                id="compensation"
-                value="{{ person.compensation }}"
-                required
-            />
+            <input type="number" class="w-full grow" name="compensation" value="{{ person.compensation }}" required />
         </label>
     </td>
     <td class="flex flex-row">
-        <button class="btn btn-ghost btn-sm">
+        <button
+            class="btn btn-ghost btn-sm"
+            hx-put="/admin/person_row_edit{{ ('?person_id=' ~ person.id) if person.id is not none else '' }}"
+            hx-include="closest .person_row_edit"
+            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+            hx-swap="outerHTML"
+        >
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"

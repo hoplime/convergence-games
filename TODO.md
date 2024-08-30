@@ -53,5 +53,6 @@
 - [x] Improve feedback for sign up related errors
 - [x] Improve feedback for not having an API-Key lol
 - [x] Sticky api-key and actions?
+- [x] Easy way to deal with people/D20s etc
 - [ ] Update the home page
 - [ ] Design changes based on Jane's feedback
