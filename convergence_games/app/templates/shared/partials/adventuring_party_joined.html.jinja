@@ -30,7 +30,14 @@
 <p>Party Members:</p>
 <ul class="flex flex-col gap-2">
     {% for member in adventuring_group.members %}
-        <li>{{ member.name }}</li>
+        <li class="flex flex-row gap-1">
+            <span>{{ member.name }}</span>
+            {% for i in range(member.golden_d20s) %}
+                <div class="mask-d20 mask grid h-6 w-6 place-items-center bg-yellow-400 leading-none text-base-100">
+                    <span class="font-bold">20</span>
+                </div>
+            {% endfor %}
+        </li>
     {% endfor %}
 </ul>
 <button

@@ -22,7 +22,7 @@
                     {% if committed_table_allocation %}
                         <h2 class="text-xl font-semibold antialiased">You are playing in:</h2>
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {{ render_partial('shared/partials/game_card.html.jinja', game=committed_table_allocation.game, user=user) }}
+                            {{ render_partial('shared/partials/game_card.html.jinja', game=committed_table_allocation.game) }}
                         </div>
                         <h2 class="text-lg font-semibold antialiased">
                             At table {{ committed_table_allocation.table.short_description }}
@@ -43,7 +43,7 @@
                         <h2 class="text-xl font-semibold antialiased">Game Mastering on {{ time_slot.name }}</h2>
                         <p class="opacity-50">You are running a game this session!</p>
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {{ render_partial('shared/partials/game_card.html.jinja', game=gm_game, user=user) }}
+                            {{ render_partial('shared/partials/game_card.html.jinja', game=gm_game) }}
                         </div>
                         <p class="opacity-50">
                             However, in case there aren't enough players for your game to run, you may set preferences:
@@ -108,7 +108,7 @@
                     <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {% block game_list %}
                             {% for game, table_allocation, session_preference in preferences_data %}
-                                {{ render_partial('shared/partials/game_card.html.jinja', game=game, user=user, table_allocation_id=table_allocation.id, current_preference=session_preference) }}
+                                {{ render_partial('shared/partials/game_card.html.jinja', game=game, adventuring_group=adventuring_group, table_allocation_id=table_allocation.id, current_preference=session_preference) }}
                             {% endfor %}
                         {% endblock %}
                     </div>

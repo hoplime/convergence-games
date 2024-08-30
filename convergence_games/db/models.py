@@ -428,6 +428,10 @@ class AdventuringGroup(AdventuringGroupBase, table=True):
 
     __table_args__ = (UniqueConstraint("name", "time_slot_id", name="unique_adventuring_group"),)
 
+    @property
+    def has_d20s(self) -> bool:
+        return all(member.golden_d20s > 0 for member in self.members)
+
 
 class AdventuringGroupCreate(AdventuringGroupBase):
     pass
@@ -443,6 +447,10 @@ class AdventuringGroupWithExtra(AdventuringGroupRead):
     session_preferences: list["SessionPreference"]
     allocation_results: list["AllocationResult"]
     committed_allocation_results: list["CommittedAllocationResult"]
+
+    @property
+    def has_d20s(self) -> bool:
+        return all(member.golden_d20s > 0 for member in self.members)
 
 
 # endregion
