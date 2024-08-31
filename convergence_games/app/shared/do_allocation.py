@@ -8,7 +8,7 @@ from convergence_games.db.models import AllocationResult, TableAllocation
 
 def do_allocation(time_slot_id: int, engine: EngineDependency, force_override: bool) -> list[AllocationResult]:
     game_allocator = GameAllocator(engine, time_slot_id)
-    result = game_allocator.allocate(n_trials=50)  # TODO: Boost for final event
+    result = game_allocator.allocate(n_trials=1000)  # TODO: Boost for final event
     allocation_results = [x for r in result.values() for x in r.to_serializable()]
     with Session(engine) as session:
         # Check if there already exists any allocation results for the given time slot

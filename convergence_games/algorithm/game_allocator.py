@@ -299,6 +299,7 @@ class Group:
     group_id: group_id_t
     member_ids: list[person_id_t]
     tiered_preferences: TieredPreferences = None
+    checked_in: bool = True
 
     @classmethod
     def from_adventuring_group(
@@ -328,6 +329,7 @@ class Group:
                 average_compensation=average_compensation,
                 table_allocations=table_allocations,
             ),
+            checked_in=adventuring_group.checked_in,
         )
 
     def __len__(self) -> int:
@@ -485,7 +487,6 @@ class GameAllocator:
                             name=f"gm-group-{gm_id}-{self.time_slot_id}",
                             time_slot_id=self.time_slot_id,
                             members=[gm],
-                            checked_in=True,
                         )
                     )
                     session.commit()
@@ -623,9 +624,7 @@ class GameAllocator:
         # STAGE 4 - Move players from unfillable tables to other tables
         # Start with the tables furthest from running
         unfillable_ids = set()
-        for current_allocation in sorted(
-            unfillable_tables, key=lambda ca: ca.minimum_players - ca.current_players, reverse=True
-        ):
+        for current_allocation in random.sample(unfillable_tables, len(unfillable_tables)):
             if current_allocation.current_players >= current_allocation.minimum_players:
                 # We've filled this table from this process
                 continue
@@ -635,15 +634,16 @@ class GameAllocator:
             maybe_print("Trying to move players from", current_allocation)
 
             # Allocate the GM
-            allocated_table_id = self._allocate_single_group(
-                current_allocation.game_master,
-                allow_bumps=False,
-                blocked_table_allocation_ids=unfillable_ids,
-                priority_mode=AllocationPriorityMode.BY_PLAYERS_TO_OPTIMAL,
-            )
-            if allocated_table_id is None:
-                raise ValueError("Unfillable GM could not be allocated")
-            maybe_print("Moved GM", self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id])
+            if current_allocation.game_master.checked_in:
+                allocated_table_id = self._allocate_single_group(
+                    current_allocation.game_master,
+                    allow_bumps=False,
+                    blocked_table_allocation_ids=unfillable_ids,
+                    priority_mode=AllocationPriorityMode.BY_PLAYERS_TO_OPTIMAL,
+                )
+                if allocated_table_id is None:
+                    raise ValueError("Unfillable GM could not be allocated")
+                maybe_print("Moved GM", self.gamemasters_by_table_allocation_id[current_allocation.table_allocation.id])
             current_allocation.game_master = None
 
             # And allocate all the remaining players

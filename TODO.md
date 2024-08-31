@@ -17,11 +17,11 @@
 - [x] Deal with the case where there are too many games
 - [x] D20s
 - [x] Multiple people in a group
+- [x] Don't allocate non checked in GMs
 - [ ] Annealing based swapping trials?
 - [ ] LOCK IN AND APPLY
   - [ ] Actually spending D20s
   - [ ] Actually granting compensation
-- [ ] Don't allocate non checked in GMs
 
 # Features - Backend + DB
 
