@@ -39,13 +39,13 @@ BASE_TIME_SLOTS = [
 ]
 
 ROOM_S = "Sigil"
-ROOM_1 = "Room 1"
-ROOM_2 = "Room 2"
-ROOM_3 = "Room 3"
-ROOM_4 = "Room 4"
-SIDE_1 = "Side 1"
-SIDE_2 = "Side 2"
-SIDE_3 = "Side 3"
+ROOM_1 = "Room 1 - Vessel Golarian"
+ROOM_2 = "Room 2 - Eberron Excavation"
+ROOM_3 = "Room 3 - Arkham Station"
+ROOM_4 = "Room 4 - USCSS Doskvol"
+SIDE_1 = "Side 1 - Rivendell"
+SIDE_2 = "Side 2 - The Shire"
+SIDE_3 = "Side 3 - Mordor"
 EXTRA_ = "Extra Backup"
 MULTI_ = "Multitable Meeting Point"
 
