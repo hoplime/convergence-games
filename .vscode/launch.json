@@ -20,7 +20,7 @@
                 "FLAG_SCHEDULE": "True",
                 "FLAG_USERS": "True",
                 // "DEBUG": "True"
-                "RECREATE_DATABASE": "False",
+                "RECREATE_DATABASE": "True",
                 // "FLAG_ALWAYS_ALLOW_CHECKINS": "False",
             }
         },

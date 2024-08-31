@@ -197,6 +197,12 @@ class GameWithExtra(GameRead):
         ]
         return result
 
+    @property
+    def has_private_available(self) -> bool:
+        if self.id == 1:
+            pass
+        return any(table_allocation.table.private for table_allocation in self.table_allocations)
+
 
 # endregion
 

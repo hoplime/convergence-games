@@ -55,5 +55,6 @@
 - [x] Improve feedback for not having an API-Key lol
 - [x] Sticky api-key and actions?
 - [x] Easy way to deal with people/D20s etc
+- [x] Display private rooms
 - [ ] Update the home page
 - [ ] Design changes based on Jane's feedback
