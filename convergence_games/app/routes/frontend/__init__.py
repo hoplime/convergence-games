@@ -676,16 +676,14 @@ async def user_edit_post(
     user: User,
     session: Session,
     name: Annotated[str, Form()],
+    hx_target: HxTarget,
 ) -> HTMLResponse:
     with session:
         user.name = name
         session.add(user)
         session.commit()
         session.refresh(user)
-    return templates.TemplateResponse(
-        name="shared/partials/profile_info.html.jinja",
-        context={"request": request, "user": user},
-    )
+    return await me(request, user, hx_target)
 
 
 # endregion
