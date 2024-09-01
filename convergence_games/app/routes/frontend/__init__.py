@@ -379,7 +379,7 @@ def get_adventuring_group_from_user_and_time_slot_id(
     )
 
     if adventuring_group is None:
-        adventuring_group = create_initial_adventuring_group(session, person, time_slot_id, checked_in=True)
+        adventuring_group = create_initial_adventuring_group(session, person, time_slot_id, checked_in=False)
 
     return adventuring_group
 
@@ -519,7 +519,7 @@ def maybe_alerts_if_group_locked(
     if session.exec(statement).first() is None:
         return None
     return alerts_template_response(
-        [Alert("Party is already committed, you can't take this action - please refresh", "error")], request
+        [Alert("Your game is already assigned, you can't take this action - please refresh", "error")], request
     )
 
 
@@ -718,6 +718,9 @@ async def preferences_post(
                     rerender_time_slot_id = adventuring_group.time_slot_id
 
                 session.add(adventuring_group)
+
+                if (alerts := maybe_alerts_if_group_locked(request, session, adventuring_group_id)) is not None:
+                    return alerts
 
             session_preference = SessionPreference(
                 preference=rating.numeric(),
