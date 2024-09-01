@@ -7,7 +7,7 @@
 - [x] Check in status not properly updating when time slot changes
 - [x] In schedule view, going to a game and then backing out doesn't (visually) preserve ratings
 - [x] Have to toggle dark theme/light theme to fix colors of ratings?
-- [ ] Allow submit with enter/regular submit on group interactions
+- [x] Allow submit with enter/regular submit on group interactions
 - [x] Can't correctly reallocate on any time slot other than the first
 - [x] Refreshing the page on schedule doesn't keep the drop down state
 
@@ -18,6 +18,7 @@
 - [x] D20s
 - [x] Multiple people in a group
 - [x] Don't allocate non checked in GMs
+- [x] Don't allocate people to games where the GM isn't checked in either
 - [ ] Annealing based swapping trials?
 - [ ] LOCK IN AND APPLY
   - [ ] Actually spending D20s
