@@ -130,6 +130,30 @@
                             Uncommit
                         </button>
                     </li>
+                    <li>
+                        <button
+                            class="btn btn-outline"
+                            hx-post="/admin/compensate_draft"
+                            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+                            hx-target="#allocate_contents"
+                            hx-confirm="Are you sure you want to preview the compensations? If you've already applied compensation, this will revert that."
+                            hx-include="#filter-form"
+                        >
+                            Draft Compensation
+                        </button>
+                    </li>
+                    <li>
+                        <button
+                            class="btn btn-outline"
+                            hx-post="/admin/compensate_apply"
+                            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
+                            hx-target="#allocate_contents"
+                            hx-confirm="Are you sure you want to apply the compensation and spend D20s? This should only be done once the session is committed and has started. Draft compensation first to view what the effects will be."
+                            hx-include="#filter-form"
+                        >
+                            Apply Compensation
+                        </button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -205,7 +229,7 @@
                                 {# Group Lists #}
                                 <div class="{{ overflow_group_classes }} grid grid-cols-1 justify-items-stretch gap-2">
                                     {% for group in table_summaries[table_allocation.id].groups %}
-                                        {{ render_partial('shared/partials/group_summary.html.jinja', group=group, time_slot_id=time_slot.id) }}
+                                        {{ render_partial('shared/partials/group_summary.html.jinja', group=group, time_slot_id=time_slot.id, compensation_summaries=compensation_summaries) }}
                                     {% endfor %}
                                 </div>
                             </div>
@@ -218,7 +242,7 @@
                             {# Group Lists #}
                             <div class="grid grid-cols-1 justify-items-stretch gap-2 md:grid-cols-2 lg:grid-cols-3">
                                 {% for group in unallocated_groups %}
-                                    {{ render_partial('shared/partials/group_summary.html.jinja', group=group, time_slot_id=time_slot.id) }}
+                                    {{ render_partial('shared/partials/group_summary.html.jinja', group=group, time_slot_id=time_slot.id, compensation_summaries=compensation_summaries) }}
                                 {% endfor %}
                             </div>
                         </div>

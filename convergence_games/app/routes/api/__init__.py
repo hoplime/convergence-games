@@ -7,7 +7,7 @@ from sqlmodel import SQLModel, inspect, select
 
 from convergence_games.app.dependencies import Auth, EngineDependency, Session
 from convergence_games.app.routes.api.models import boilerplates
-from convergence_games.app.shared import do_allocation
+from convergence_games.app.shared import do_allocation, get_compensation
 from convergence_games.db.models import AllocationResult
 from convergence_games.settings import SETTINGS
 
@@ -103,3 +103,11 @@ async def allocate_draft(
     force_override: Annotated[bool, Query()] = False,
 ) -> list[AllocationResult]:
     return do_allocation(time_slot_id, engine, force_override)
+
+
+@router.get("/compensation/{time_slot_id}", tags=["admin"])
+async def compensation(
+    time_slot_id: int,
+    engine: EngineDependency,
+) -> Any:
+    return get_compensation(time_slot_id, engine)

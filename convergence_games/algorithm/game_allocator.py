@@ -429,10 +429,16 @@ class TrialScore:
 
 
 @dataclass
-class GameAllocationResults:
-    current_allocations: dict[table_allocation_id_t, CurrentGameAllocation]
+class CompensationResults:
     compensation_values: dict[person_id_t, int]
     d20s_spent: dict[person_id_t, int]
+
+    @property
+    def as_combined(self) -> dict[person_id_t, tuple[int, int]]:
+        return {
+            person_id: (self.compensation_values[person_id], self.d20s_spent.get(person_id, 0))
+            for person_id in self.compensation_values
+        }
 
 
 class GameAllocator:
@@ -583,12 +589,12 @@ class GameAllocator:
                 self._summary(best_result, label=f"trial_{trial_seed}.score_{trial_score}")
         return best_result
 
-    def get_final_results(
+    def get_compensation_and_d20s(
         self, best_result: dict[table_allocation_id_t, CurrentGameAllocation]
-    ) -> GameAllocationResults:
+    ) -> CompensationResults:
         compensation_values = self._get_compensation_values(best_result)
         d20s_spent = self._get_d20s_spent(best_result)
-        return GameAllocationResults(best_result, compensation_values, d20s_spent)
+        return CompensationResults(compensation_values, d20s_spent)
 
     def _allocate_trial(self) -> dict[table_allocation_id_t, CurrentGameAllocation]:
         # Set up empty allocations

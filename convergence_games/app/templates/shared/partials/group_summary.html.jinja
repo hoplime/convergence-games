@@ -13,13 +13,24 @@
                 {% if group.is_gm %}
                     <span class="badge badge-outline gap-2 text-yellow-400">GM</span>
                 {% elif group.is_gm_any_game %}
-                    <span class="badge badge-outline gap-2 text-red-400">GM Another</span>
+                    <span class="badge badge-outline gap-2 text-orange-400">GM Another</span>
                 {% endif %}
                 {% if not group.is_committed %}
                     <span class="badge badge-outline gap-2 text-red-400">Uncommitted</span>
                 {% endif %}
                 {% if not group.is_checked_in %}
                     <span class="badge badge-outline gap-2 text-red-400">Not Checked In</span>
+                {% endif %}
+                {% if player.id in compensation_summaries %}
+                    {% set compensation_summary = compensation_summaries[player.id] %}
+                    {% if "applied" in compensation_summary %}
+                        {% set compensation = compensation_summary["applied"] %}
+                    {% elif "draft" in compensation_summary %}
+                        {% set compensation = compensation_summary["draft"] %}
+                    {% endif %}
+                    <span class="{{ 'text-red-400' if compensation.compensation_delta != 0 }} badge badge-outline gap-2"
+                        >{{ compensation.compensation_delta }}{{ ('<span class="text-yellow-400">D20</span>' if compensation.golden_d20_delta != 0) | safe }}{{ ' draft' if not compensation.applied }}</span
+                    >
                 {% endif %}
             </li>
         {% endfor %}

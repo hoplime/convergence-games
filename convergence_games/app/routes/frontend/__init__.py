@@ -21,7 +21,7 @@ from convergence_games.app.dependencies import (
     get_user,
 )
 from convergence_games.app.request_type import Request
-from convergence_games.app.shared.do_allocation import do_allocation
+from convergence_games.app.shared.do_allocation import do_allocation, get_compensation
 from convergence_games.app.templates import templates
 from convergence_games.db.extra_types import (
     DEFINED_AGE_SUITABILITIES,
@@ -34,6 +34,8 @@ from convergence_games.db.models import (
     AdventuringGroupWithExtra,
     AllocationResult,
     CommittedAllocationResult,
+    Compensation,
+    CompensationWithExtra,
     Game,
     GameWithExtra,
     Person,
@@ -884,6 +886,82 @@ async def uncommit_allocate(
     return await admin_allocate(request, session, hx_target, time_slot_id)
 
 
+def revert_applied_compensations_for_time_slot(session: Session, time_slot_id: int):
+    # Delete all existing unapplied compensations for this time slot
+    existing_compensations_this_time_slot = session.exec(
+        select(Compensation).where(Compensation.time_slot_id == time_slot_id).where(~Compensation.applied)
+    ).all()
+    for compensation in existing_compensations_this_time_slot:
+        session.delete(compensation)
+
+    # Get and revert existing applied compensations
+    existing_compensations_this_time_slot = session.exec(
+        select(Compensation).where(Compensation.time_slot_id == time_slot_id).where(Compensation.applied)
+    ).all()
+
+    for compensation in existing_compensations_this_time_slot:
+        compensation.person.compensation -= compensation.compensation_delta
+        compensation.golden_d20_delta -= compensation.golden_d20_delta
+        compensation.applied = False
+        session.add(compensation)
+
+
+@router.post("/admin/compensate_draft")
+async def compensate_draft(
+    auth: AuthWithHandler,
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+    time_slot_id: Annotated[int, Form()],
+    engine: EngineDependency,
+) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+
+    compensations = get_compensation(time_slot_id, engine, result_table="allocation_results")
+
+    with session:
+        revert_applied_compensations_for_time_slot(session, time_slot_id)
+
+        for compensation in compensations:
+            session.add(compensation)
+
+        session.commit()
+
+    return await admin_allocate(request, session, hx_target, time_slot_id)
+
+
+@router.post("/admin/compensate_apply")
+async def compensate_apply(
+    auth: AuthWithHandler,
+    request: Request,
+    session: Session,
+    hx_target: HxTarget,
+    time_slot_id: Annotated[int, Form()],
+    engine: EngineDependency,
+) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+
+    compensations = get_compensation(time_slot_id, engine)
+
+    with session:
+        revert_applied_compensations_for_time_slot(session, time_slot_id)
+
+        # Apply new compensations
+        for compensation in compensations:
+            person = session.get(Person, compensation.person_id)
+            print("Applying", compensation)
+            person.compensation += compensation.compensation_delta
+            person.golden_d20s += compensation.golden_d20_delta
+            compensation.applied = True
+            session.add(compensation)
+
+        session.commit()
+
+    return await admin_allocate(request, session, hx_target, time_slot_id)
+
+
 @dataclass
 class GroupSummary:
     id: int
@@ -996,6 +1074,20 @@ async def admin_allocate(
             for group in unallocated_groups
         ]
 
+    compensation_summaries: dict[int, dict[Literal["applied", "draft"], Compensation]] = {}
+
+    with session:
+        # Get the compensations for this time slot
+        statement = select(Compensation).where(Compensation.time_slot_id == time_slot_id)
+        compensations = session.exec(statement).all()
+        for compensation in compensations:
+            if compensation.person_id not in compensation_summaries:
+                compensation_summaries[compensation.person_id] = {}
+            if compensation.applied:
+                compensation_summaries[compensation.person_id]["applied"] = compensation
+            else:
+                compensation_summaries[compensation.person_id]["draft"] = compensation
+
     return templates.TemplateResponse(
         name="main/allocate.html.jinja",
         context={
@@ -1003,6 +1095,7 @@ async def admin_allocate(
             "table_allocations": table_allocations,
             "table_summaries": table_summaries,
             "unallocated_groups": unallocated_groups,
+            "compensation_summaries": compensation_summaries,
             "request": request,
         },
         block_name=hx_target,

@@ -223,6 +223,7 @@ class Person(PersonBase, table=True):
     adventuring_groups: list["AdventuringGroup"] = Relationship(
         back_populates="members", link_model=PersonAdventuringGroupLink
     )
+    compensations: list["Compensation"] = Relationship(back_populates="person")
 
 
 class PersonCreate(PersonBase):
@@ -236,6 +237,7 @@ class PersonRead(PersonBase):
 class PersonWithExtra(PersonRead):
     gmd_games: list[Game]
     adventuring_groups: list["AdventuringGroup"]
+    compensations: list["Compensation"]
 
 
 class PersonUpdate(PersonBase):
@@ -260,6 +262,7 @@ class TimeSlot(TimeSlotBase, table=True):
 
     table_allocations: list["TableAllocation"] = Relationship(back_populates="time_slot")
     adventuring_groups: list["AdventuringGroup"] = Relationship(back_populates="time_slot")
+    compensations: list["Compensation"] = Relationship(back_populates="time_slot")
 
     @property
     def open_time(self) -> dt.datetime:
@@ -280,6 +283,8 @@ class TimeSlotRead(TimeSlotBase):
 
 class TimeSlotWithExtra(TimeSlotRead):
     table_allocations: list["TableAllocationWithExtra"]
+    adventuring_groups: list["AdventuringGroupWithExtra"]
+    compensations: list["Compensation"]
 
 
 class TimeSlotUpdate(TimeSlotBase):
@@ -516,6 +521,30 @@ class TableAllocationResultView(TableAllocationRead):
     game: GameWithExtra
     allocation_results: list["AllocationResultWithExtra"]
     committed_allocation_results: list["CommittedAllocationResultWithExtra"]
+
+
+# endregion
+
+
+# region Compensation
+class CompensationBase(SQLModel):
+    person_id: int = Field(foreign_key="person.id")
+    time_slot_id: int = Field(foreign_key="timeslot.id")
+    compensation_delta: int = Field(default=0)
+    golden_d20_delta: int = Field(default=0)
+    applied: bool = Field(default=False)
+
+
+class Compensation(CompensationBase, table=True):
+    id: int | None = Field(primary_key=True)
+
+    person: Person = Relationship(back_populates="compensations")
+    time_slot: TimeSlot = Relationship(back_populates="compensations")
+
+
+class CompensationWithExtra(CompensationBase):
+    person: Person
+    time_slot: TimeSlot
 
 
 # endregion
