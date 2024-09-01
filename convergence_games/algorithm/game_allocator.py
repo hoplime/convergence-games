@@ -314,7 +314,7 @@ class Group:
         preferences = {
             session_preference.table_allocation_id: session_preference.preference
             for session_preference in adventuring_group.session_preferences
-            # Technically should be redudannt since table_allocation_ids should only exist where the time_slot matches the group, but just in case, we filter
+            # Technically should be redundant since table_allocation_ids should only exist where the time_slot matches the group, but just in case, we filter
             if session_preference.table_allocation_id in {ta.id for ta in table_allocations}
         }
         if preference_overrides is not None:
@@ -441,9 +441,6 @@ class GameAllocator:
         self.time_slot_id = time_slot_id
         # Get all the data we need from the database to do the allocation
         self.table_allocations = self._init_table_allocations()
-        self.table_allocations_map = {
-            table_allocation.id: table_allocation for table_allocation in self.table_allocations
-        }
         self.gamemasters_by_table_allocation_id, self.groups = self._init_groups()
         self.current_allocations: dict[table_allocation_id_t, CurrentGameAllocation] = {}
 
@@ -455,11 +452,11 @@ class GameAllocator:
     # INITIALIZATION
     def _init_table_allocations(self) -> list[TableAllocationWithExtra]:
         with Session(self.engine) as session:
-            # All table allocations
+            # All table allocations for this time slot
             return [
                 TableAllocationWithExtra.model_validate(table_allocation)
                 for table_allocation in session.exec(
-                    select(TableAllocation).filter(TableAllocation.time_slot_id == self.time_slot_id)
+                    select(TableAllocation).where(TableAllocation.time_slot_id == self.time_slot_id)
                 ).all()
             ]
 
@@ -470,8 +467,9 @@ class GameAllocator:
             gms_by_id = {ta.game.gamemaster_id: ta.game.gamemaster for ta in self.table_allocations}
 
             # Create default GM groups if they don't exist
+            gm_ids_to_remove: list[int] = []
             for gm_id, gm in gms_by_id.items():
-                if not session.exec(
+                existing_group = session.exec(
                     select(AdventuringGroup)
                     .join(
                         PersonAdventuringGroupLink,
@@ -481,15 +479,55 @@ class GameAllocator:
                         (AdventuringGroup.time_slot_id == self.time_slot_id)
                         & (PersonAdventuringGroupLink.member_id == gm_id)
                     )
-                ).first():
+                ).first()
+                if not existing_group:
                     session.add(
                         AdventuringGroup(
                             name=f"gm-group-{gm_id}-{self.time_slot_id}",
                             time_slot_id=self.time_slot_id,
                             members=[gm],
+                            checked_in=False if gm_id != 0 else True,
                         )
                     )
                     session.commit()
+
+                # If GM ID is 0, check them in
+                if gm_id == 0:
+                    existing_group = session.exec(
+                        select(AdventuringGroup)
+                        .join(
+                            PersonAdventuringGroupLink,
+                            PersonAdventuringGroupLink.adventuring_group_id == AdventuringGroup.id,
+                        )
+                        .filter(
+                            (AdventuringGroup.time_slot_id == self.time_slot_id)
+                            & (PersonAdventuringGroupLink.member_id == gm_id)
+                        )
+                    ).first()
+                    existing_group.checked_in = True
+                    session.add(existing_group)
+
+                gm_is_checked_in = session.exec(
+                    select(AdventuringGroup.checked_in)
+                    .join(
+                        PersonAdventuringGroupLink,
+                        PersonAdventuringGroupLink.adventuring_group_id == AdventuringGroup.id,
+                    )
+                    .filter(
+                        (AdventuringGroup.time_slot_id == self.time_slot_id)
+                        & (PersonAdventuringGroupLink.member_id == gm_id)
+                    )
+                ).first()
+                # Remove
+                if not gm_is_checked_in and gm_id != 0:
+                    gm_ids_to_remove.append(gm_id)
+
+            for gm_id in gm_ids_to_remove:
+                del gm_ids[gm_id]
+                del gms_by_id[gm_id]
+            self.table_allocations = [
+                ta for ta in self.table_allocations if ta.game.gamemaster_id not in gm_ids_to_remove
+            ]
 
             # Get overflow table
             overflow_table_allocation_id = session.exec(
@@ -499,22 +537,9 @@ class GameAllocator:
             ).first()
             preference_overrides = {overflow_table_allocation_id: 0.5}
 
-            # Get all groups this session
-            # Include only checked in _or_ GM groups
+            # Get all checked in groups this session
             statement = select(AdventuringGroup).where(
-                (AdventuringGroup.time_slot_id == self.time_slot_id)
-                & (
-                    AdventuringGroup.checked_in
-                    | exists(
-                        select(Person)
-                        .join(
-                            PersonAdventuringGroupLink,
-                            PersonAdventuringGroupLink.member_id == Person.id,
-                        )
-                        .where(PersonAdventuringGroupLink.adventuring_group_id == AdventuringGroup.id)
-                        .where(Person.id.in_(gm_ids.keys()))
-                    )
-                )
+                (AdventuringGroup.time_slot_id == self.time_slot_id) & (AdventuringGroup.checked_in)
             )
             adventuring_groups = session.exec(statement).all()
             adventuring_groups_with_extra = [AdventuringGroupWithExtra.model_validate(ag) for ag in adventuring_groups]
