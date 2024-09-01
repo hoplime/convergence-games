@@ -533,6 +533,7 @@ class CompensationBase(SQLModel):
     compensation_delta: int = Field(default=0)
     golden_d20_delta: int = Field(default=0)
     applied: bool = Field(default=False)
+    reset: bool = Field(default=False)
 
 
 class Compensation(CompensationBase, table=True):

@@ -14,6 +14,7 @@ from convergence_games.db.models import (
     AllocationResult,
     CommittedAllocationResult,
     Compensation,
+    Person,
     TableAllocation,
     TableAllocationResultView,
     TableAllocationWithExtra,
@@ -78,16 +79,25 @@ def get_compensation(
             )
     compensation_result = game_allocator.get_compensation_and_d20s(result)
     compensations: list[Compensation] = []
-    for person_id, (compensation_value, d20s_spent) in compensation_result.as_combined.items():
-        compensations.append(
-            Compensation(
-                person_id=person_id,
-                time_slot_id=time_slot_id,
-                compensation_delta=compensation_value,
-                golden_d20_delta=-d20s_spent,
-                applied=False,
+    with Session(engine) as session:
+        for person_id, (compensation_value, d20s_spent) in compensation_result.as_combined.items():
+            if compensation_value == 0:
+                person = session.get(Person, person_id)
+                current_compensation = person.compensation
+                compensation_value = -current_compensation
+                reset = True
+            else:
+                reset = False
+            compensations.append(
+                Compensation(
+                    person_id=person_id,
+                    time_slot_id=time_slot_id,
+                    compensation_delta=compensation_value,
+                    golden_d20_delta=-d20s_spent,
+                    applied=False,
+                    reset=reset,
+                )
             )
-        )
     return compensations
 
 

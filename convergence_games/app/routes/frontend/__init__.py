@@ -905,6 +905,8 @@ def revert_applied_compensations_for_time_slot(session: Session, time_slot_id: i
         compensation.applied = False
         session.add(compensation)
 
+    session.commit()
+
 
 @router.post("/admin/compensate_draft")
 async def compensate_draft(
@@ -918,10 +920,10 @@ async def compensate_draft(
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
 
-    compensations = get_compensation(time_slot_id, engine, result_table="allocation_results")
-
     with session:
         revert_applied_compensations_for_time_slot(session, time_slot_id)
+
+        compensations = get_compensation(time_slot_id, engine, result_table="allocation_results")
 
         for compensation in compensations:
             session.add(compensation)
@@ -943,10 +945,10 @@ async def compensate_apply(
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
 
-    compensations = get_compensation(time_slot_id, engine)
-
     with session:
         revert_applied_compensations_for_time_slot(session, time_slot_id)
+
+        compensations = get_compensation(time_slot_id, engine)
 
         # Apply new compensations
         for compensation in compensations:
