@@ -41,12 +41,13 @@
                         </div>
                     {% elif gm_game %}
                         <h2 class="text-xl font-semibold antialiased">Game Mastering on {{ time_slot.name }}</h2>
-                        <p class="opacity-50">You are running a game this session!</p>
+                        <p class="text-sm opacity-50">You're running a game this session!</p>
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {{ render_partial('shared/partials/game_card.html.jinja', game=gm_game) }}
                         </div>
-                        <p class="opacity-50">
-                            However, in case there aren't enough players for your game to run, you may set preferences:
+                        <p class="text-sm opacity-50">
+                            However, in case there aren't enough players for your game to run, please set your
+                            preferences:
                         </p>
                     {% else %}
                         <h2 class="text-xl font-semibold antialiased">
@@ -65,9 +66,9 @@
                             </svg>
                         </h2>
                         {% if adventuring_group.members|length == 1 %}
-                            {{ render_partial('shared/partials/adventuring_party_alone.html.jinja', adventuring_group=adventuring_group) }}
+                            {{ render_partial('shared/partials/adventuring_party_alone.html.jinja', adventuring_group=adventuring_group, time_slot=time_slot) }}
                         {% else %}
-                            {{ render_partial('shared/partials/adventuring_party_joined.html.jinja', adventuring_group=adventuring_group) }}
+                            {{ render_partial('shared/partials/adventuring_party_joined.html.jinja', adventuring_group=adventuring_group, time_slot=time_slot) }}
                         {% endif %}
                     {% endif %}
                     <h2 class="text-xl font-semibold antialiased">Game Preferences for {{ time_slot.name }}</h2>

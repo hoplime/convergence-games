@@ -379,9 +379,27 @@ def get_adventuring_group_from_user_and_time_slot_id(
     )
 
     if adventuring_group is None:
-        adventuring_group = create_initial_adventuring_group(session, person, time_slot_id)
+        adventuring_group = create_initial_adventuring_group(session, person, time_slot_id, checked_in=True)
 
     return adventuring_group
+
+
+@router.get("/adventuring_party_edit_code")
+async def adventuring_party_edit_code(
+    request: Request,
+    adventuring_group_id: Annotated[int, Query()],
+    adventuring_group_name: Annotated[str, Query()],
+    time_slot_id: Annotated[int, Query()],
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        name="shared/partials/adventuring_party_edit_code.html.jinja",
+        context={
+            "request": request,
+            "adventuring_group_id": adventuring_group_id,
+            "adventuring_group_name": adventuring_group_name,
+            "time_slot_id": time_slot_id,
+        },
+    )
 
 
 @router.put("/change_group_name")
@@ -454,11 +472,11 @@ async def join_group(
             )
         ).first()
 
-        if (alerts := maybe_alerts_if_group_locked(request, session, new_group.id)) is not None:
-            return alerts
-
         if new_group is None:
             return alerts_template_response([Alert("Party not found", "error")], request)
+
+        if (alerts := maybe_alerts_if_group_locked(request, session, new_group.id)) is not None:
+            return alerts
 
         # Group limits!
         if len(new_group.members) >= 3:
