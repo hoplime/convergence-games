@@ -5,42 +5,203 @@
 
     <div class="container mx-auto flex max-w-screen-lg flex-col gap-2">
         <h1 class="font-header text-2xl font-light">Welcome to Convergence!</h1>
-        <div class="flex flex-col justify-items-center">
-            <a hx-get="/games" hx-target="#content" hx-push-url="true">
+
+        <h2 class="font-header text-xl font-light">Timetable</h2>
+        {% set time_style = 'border-r border-accent pr-2 text-right align-top' %}
+        {% set info_style = 'pl-2 text-left align-top max-w-80' %}
+        <div class="flex flex-row flex-wrap gap-8">
+            <div class="flex flex-col gap-2">
+                <h3 class="font-semibold">Saturday</h3>
+                <table>
+                    <tr>
+                        <td class="{{ time_style }}">08:30</td>
+                        <td class="{{ info_style }}">
+                            <h4 class="font-semibold">Doors Open</h4>
+                            <p class="opacity-50">
+                                Get your badge, log in to the website, plan your schedule, start to mingle!
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">09:00 - 09:30</td>
+                        <td class="{{ info_style }}">
+                            <h4 class="font-semibold">Welcome</h4>
+                            <p class="opacity-50">Important announcements and info.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">09:30 - 12:30</td>
+                        <td class="{{ info_style }}">
+                            <h4 class="font-semibold">Session 1</h4>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">12:30 - 13:30</td>
+                        <td class="{{ info_style }}"><h4 class="font-semibold">Lunch</h4></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">13:30 - 16:30</td>
+                        <td class="{{ info_style }}"><h4 class="font-semibold">Session 2</h4></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">16:30 - 18:00</td>
+                        <td class="{{ info_style }}"><h4 class="font-semibold">Dinner</h4></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">18:00 - 22:00</td>
+                        <td class="{{ info_style }}"><h4 class="font-semibold">Session 3</h4></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">22:00</td>
+                        <td class="{{ info_style }}"><h4 class="font-semibold">End</h4></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="flex flex-col gap-2">
+                <h3 class="font-semibold">Sunday</h3>
+                <table>
+                    <tr>
+                        <td class="{{ time_style }}">08:30</td>
+                        <td class="{{ info_style }}">
+                            <h4 class="font-semibold">Doors Open</h4>
+                            <p class="opacity-50">
+                                Get your badge, log in to the website, plan your schedule, start to mingle!
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">09:00 - 09:30</td>
+                        <td class="{{ info_style }}">
+                            <h4 class="font-semibold">Welcome</h4>
+                            <p class="opacity-50">Important announcements and info.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">09:15 - 12:15</td>
+                        <td class="{{ info_style }}"><h4 class="font-semibold">Session 4</h4></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">12:15 - 13:15</td>
+                        <td class="{{ info_style }}"><h4 class="font-semibold">Lunch</h4></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">13:15 - 14:00</td>
+                        <td class="{{ info_style }}">
+                            <h4 class="font-semibold">Seminars</h4>
+                            <p class="opacity-50">Three amazing presentations and panels to listen to.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">14:00 - 18:00</td>
+                        <td class="{{ info_style }}"><h4 class="font-semibold">Session 5</h4></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }} h-4"></td>
+                    </tr>
+                    <tr>
+                        <td class="{{ time_style }}">18:00</td>
+                        <td class="{{ info_style }}">
+                            <h4 class="font-semibold">Social</h4>
+                            <p class="opacity-50">
+                                Join us at the hotel bar for a social, more prizes, and maybe a quiz :)
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <h2 class="font-header text-xl font-light">FAQ</h2>
+        <h2 class="font-header text-xl font-light">Quick Links</h2>
+        <div class="grid max-w-full grid-cols-2 justify-around gap-4 sm:grid-cols-4">
+            <a class="btn btn-ghost btn-lg flex-col justify-center gap-0 align-middle" href="/games">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
+                    width="32"
+                    height="32"
                     fill="currentColor"
-                    class="bi bi-dice-6-fill inline"
+                    class="bi bi-dice-6-fill"
                     viewBox="0 0 16 16"
                 >
                     <path
                         d="M3 0a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V3a3 3 0 0 0-3-3zm1 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m8 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m1.5 6.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0M12 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3M5.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0M4 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"
                     />
                 </svg>
-                <span class="link">View the Games</span>
+                <span>Games</span>
             </a>
-            <a href="https://convergence-2024.lilregie.com">
+            <a class="btn btn-ghost btn-lg flex-col justify-center gap-0 align-middle" href="/me">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
+                    width="32"
+                    height="32"
                     fill="currentColor"
-                    class="bi bi-ticket-perforated-fill inline"
+                    class="bi bi-person-fill inline"
                     viewBox="0 0 16 16"
                 >
-                    <path
-                        d="M0 4.5A1.5 1.5 0 0 1 1.5 3h13A1.5 1.5 0 0 1 16 4.5V6a.5.5 0 0 1-.5.5 1.5 1.5 0 0 0 0 3 .5.5 0 0 1 .5.5v1.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 11.5V10a.5.5 0 0 1 .5-.5 1.5 1.5 0 1 0 0-3A.5.5 0 0 1 0 6zm4-1v1h1v-1zm1 3v-1H4v1zm7 0v-1h-1v1zm-1-2h1v-1h-1zm-6 3H4v1h1zm7 1v-1h-1v1zm-7 1H4v1h1zm7 1v-1h-1v1zm-8 1v1h1v-1zm7 1h1v-1h-1z"
-                    />
+                    <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
                 </svg>
-                <span class="link">Get Tickets</span>
+                <span>Login</span>
             </a>
-            <a href="https://linktr.ee/waikatoroleplayingguild">
+            <a
+                class="btn btn-ghost btn-lg flex-col justify-center gap-0 align-middle"
+                href="https://goo.gl/maps/8SYwS6s4Aiau2jm29"
+            >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
+                    width="32"
+                    height="32"
+                    fill="currentColor"
+                    class="bi bi-geo-alt-fill inline"
+                    viewBox="0 0 16 16"
+                >
+                    <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10m0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6" />
+                </svg>
+                <span>Directions</span>
+            </a>
+            <a
+                class="btn btn-ghost btn-lg flex-col justify-center gap-0 align-middle"
+                href="https://linktr.ee/waikatoroleplayingguild"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="32"
+                    height="32"
                     fill="currentColor"
                     class="bi bi-link-45deg inline"
                     viewBox="0 0 16 16"
@@ -52,26 +213,8 @@
                         d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243z"
                     />
                 </svg>
-                <span class="link">See our LinkTree</span>
+                <span>Linktree</span>
             </a>
         </div>
-
-        <h2 class="font-header text-xl font-light">What is Convergence?</h2>
-        <p>
-            Convergence is a 2 day games convention, organised by The Waikato Role-Playing Guild. The aim is to give new
-            and experienced players a chance to meet like minded people, make new friends, try new games and have a
-            blast doing so. At Convergence there will be games running, seminars, socialising, and vendors providing a
-            range of gaming related equipment.
-        </p>
-        <p>
-            The games will run in 3 and 4 hour slots, depending on the game itself. All the games will be run as
-            “one-shots” meaning it will be a self-contained adventure within the time slot. There will be games for
-            newbies and experienced players alike. Pre-generated characters will be provided where needed. We'll make
-            sure you have everything you need to hit the ground running and have a fantastic weekend.
-        </p>
-
-        <p class="text-sm text-warning">
-            This website is a work in progress! For now, check out the games and our socials below!
-        </p>
     </div>
 {% endblock %}
