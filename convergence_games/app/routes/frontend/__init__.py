@@ -901,7 +901,7 @@ def revert_applied_compensations_for_time_slot(session: Session, time_slot_id: i
 
     for compensation in existing_compensations_this_time_slot:
         compensation.person.compensation -= compensation.compensation_delta
-        compensation.golden_d20_delta -= compensation.golden_d20_delta
+        compensation.person.golden_d20s -= compensation.golden_d20_delta
         compensation.applied = False
         session.add(compensation)
 
@@ -951,7 +951,6 @@ async def compensate_apply(
         # Apply new compensations
         for compensation in compensations:
             person = session.get(Person, compensation.person_id)
-            print("Applying", compensation)
             person.compensation += compensation.compensation_delta
             person.golden_d20s += compensation.golden_d20_delta
             compensation.applied = True
