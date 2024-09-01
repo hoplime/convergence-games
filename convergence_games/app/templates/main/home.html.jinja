@@ -147,7 +147,7 @@
             </div>
         </div>
 
-        <h2 class="font-header text-xl font-light">FAQ</h2>
+        {# <h2 class="font-header text-xl font-light">FAQ</h2> #}
         <h2 class="font-header text-xl font-light">Quick Links</h2>
         <div class="grid max-w-full grid-cols-2 justify-around gap-4 sm:grid-cols-4">
             <a class="btn btn-ghost btn-lg flex-col justify-center gap-0 align-middle" href="/games">
@@ -165,19 +165,21 @@
                 </svg>
                 <span>Games</span>
             </a>
-            <a class="btn btn-ghost btn-lg flex-col justify-center gap-0 align-middle" href="/me">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="32"
-                    height="32"
-                    fill="currentColor"
-                    class="bi bi-person-fill inline"
-                    viewBox="0 0 16 16"
-                >
-                    <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
-                </svg>
-                <span>Login</span>
-            </a>
+            {% if FLAG_USERS %}
+                <a class="btn btn-ghost btn-lg flex-col justify-center gap-0 align-middle" href="/me">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        fill="currentColor"
+                        class="bi bi-person-fill inline"
+                        viewBox="0 0 16 16"
+                    >
+                        <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+                    </svg>
+                    <span>Login</span>
+                </a>
+            {% endif %}
             <a
                 class="btn btn-ghost btn-lg flex-col justify-center gap-0 align-middle"
                 href="https://goo.gl/maps/8SYwS6s4Aiau2jm29"
