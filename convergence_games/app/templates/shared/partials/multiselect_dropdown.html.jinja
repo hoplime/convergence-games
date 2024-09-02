@@ -39,7 +39,7 @@
         {% set check_class = '' %}
     {% endif %}
     <div
-        class="collapse-content dropdown-content z-[1] md:menu md:box-border md:w-[{{ rem }}rem] md:rounded-box md:bg-base-200 md:p-2 md:shadow"
+        class="collapse-content dropdown-content z-[1] gap-2 md:menu md:box-border md:w-[{{ rem }}rem] md:rounded-box md:bg-base-200 md:p-2 md:shadow"
     >
         <ul tabindex="0" class="grid-cols-{{ cols }} select-options-class grid-flow-row gap-1 md:grid">
             {% for option in options %}
@@ -62,14 +62,14 @@
         <div>
             <button
                 type="button"
-                class="btn btn-outline btn-accent"
+                class="btn btn-outline btn-accent btn-sm"
                 _="on click set {{ input_filter }}'s checked to false then trigger change"
             >
                 Clear
             </button>
             <button
                 type="button"
-                class="btn btn-outline btn-accent"
+                class="btn btn-outline btn-accent btn-sm"
                 _="on click set {{ input_filter }}'s checked to true then trigger change"
             >
                 Select All

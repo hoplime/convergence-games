@@ -20,9 +20,9 @@
 - [x] Don't allocate non checked in GMs
 - [x] Don't allocate people to games where the GM isn't checked in either
 - [ ] Annealing based swapping trials?
-- [ ] LOCK IN AND APPLY
-  - [ ] Actually spending D20s
-  - [ ] Actually granting compensation
+- [x] LOCK IN AND APPLY
+  - [x] Actually spending D20s
+  - [x] Actually granting compensation
 
 # Features - Backend + DB
 
