@@ -52,11 +52,7 @@ DEFAULT_GAME_SHEET_URL = "https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D
 DEFAULT_SCHEDULE_SHEET_URL = (
     "https://docs.google.com/spreadsheets/d/1_AZHowZkvRU_wBGnoaqV-uQFpXvTFXlr8zZBcAsS6Tc/export?gid=0&format=csv"
 )
-
-# DEFAULT_GAME_SHEET_URL = (
-#     "https://docs.google.com/spreadsheets/d/1cq0cis4cXgEMTh_EH1EnJb8NokdPp0Kzc4OwkSJCPnM/export?gid=0&format=csv"
-# )
-# DEFAULT_SCHEDULE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1cq0cis4cXgEMTh_EH1EnJb8NokdPp0Kzc4OwkSJCPnM/export?gid=1950232425&format=csv"
+DEFAULT_D20_SHEET_URL = "https://docs.google.com/spreadsheets/d/1jQCA-ZqUjw6C5D8koAS6RiiZUvu5m7L0xqqjL06DvFA/export?gid=962316828&format=csv"
 
 
 class GameResponse(TypedDict):
@@ -86,27 +82,56 @@ class ScheduleResponse(TypedDict):
     game_id: int
 
 
+class D20Response(TypedDict):
+    first_name: str
+    last_name: str
+    email: str
+    number: int
+
+
 class GoogleSheetsImporter:
-    def __init__(self, *, game_csv_path: Path, schedule_csv_path: Path):
+    def __init__(self, *, game_csv_path: Path, schedule_csv_path: Path, d20_csv_path: Path) -> None:
         self.game_df = pl.read_csv(game_csv_path)
         self.schedule_df = pl.read_csv(schedule_csv_path)
+        self.d20_df = pl.read_csv(d20_csv_path)
 
     @classmethod
-    def from_urls(cls, *, game_sheet_url: str | None = None, schedule_sheet_url: str | None = None) -> Self:
+    def from_urls(
+        cls,
+        *,
+        game_sheet_url: str | None = None,
+        schedule_sheet_url: str | None = None,
+        d20_sheet_url: str | None = None,
+    ) -> Self:
         if game_sheet_url is None:
             game_sheet_url = DEFAULT_GAME_SHEET_URL
         if schedule_sheet_url is None:
             schedule_sheet_url = DEFAULT_SCHEDULE_SHEET_URL
+        if d20_sheet_url is None:
+            d20_sheet_url = DEFAULT_D20_SHEET_URL
 
-        with tempfile.NamedTemporaryFile() as game_csv_file, tempfile.NamedTemporaryFile() as schedule_csv_file:
-            game_csv_file.write(requests.get(game_sheet_url).content)
+        with (
+            tempfile.NamedTemporaryFile() as game_csv_file,
+            tempfile.NamedTemporaryFile() as schedule_csv_file,
+            tempfile.NamedTemporaryFile() as d20_csv_file,
+        ):
+            game_content = requests.get(game_sheet_url).content
+            game_csv_file.write(game_content)
             game_csv_path = Path(game_csv_file.name)
-            schedule_csv_file.write(requests.get(schedule_sheet_url).content)
+
+            schedule_content = requests.get(schedule_sheet_url).content
+            schedule_csv_file.write(schedule_content)
             schedule_csv_path = Path(schedule_csv_file.name)
+
+            d20_content = requests.get(d20_sheet_url).content
+            with open(d20_csv_file.name, "wb") as f:  # No idea why this is necessary, but it works
+                f.write(d20_content)
+            d20_csv_path = Path(d20_csv_file.name)
 
             return cls(
                 game_csv_path=game_csv_path,
                 schedule_csv_path=schedule_csv_path,
+                d20_csv_path=d20_csv_path,
             )
 
     def _transform_game_sheet(self, df: pl.DataFrame) -> pl.DataFrame:
@@ -260,6 +285,26 @@ class GoogleSheetsImporter:
         ]
         return table_allocation_dbos
 
+    def _transform_d20_sheet(self, df: pl.DataFrame) -> pl.DataFrame:
+        return df.select(
+            pl.concat_str(
+                pl.col("First Name"),
+                pl.lit(" "),
+                pl.col("Last Name"),
+            ).alias("name"),
+            pl.col("Email").alias("email"),
+            pl.col("Number?").cast(pl.Int8).alias("number"),
+        )
+
+    def _import_d20_sheet(self) -> list[SQLModel]:
+        df = self._transform_d20_sheet(self.d20_df)
+        all_rows: list[D20Response] = list(df.iter_rows(named=True))
+        person_dbos = [Person(name=row["name"], email=row["email"], golden_d20s=row["number"]) for row in all_rows]
+        return person_dbos
+
+    def import_d20(self) -> list[Person]:
+        return self._import_d20_sheet()
+
     def import_all(self) -> list[SQLModel]:
         return [
             *self._import_game_sheet(),
@@ -283,11 +328,21 @@ if __name__ == "__main__":
         help="URL of the Google Sheet to import",
         default=DEFAULT_SCHEDULE_SHEET_URL,
     )
+    parser.add_argument(
+        "--d20-sheet-url",
+        type=str,
+        help="URL of the Google Sheet to import",
+        default=DEFAULT_D20_SHEET_URL,
+    )
     args = parser.parse_args()
 
     importer = GoogleSheetsImporter.from_urls(
         game_sheet_url=args.game_sheet_url,
         schedule_sheet_url=args.schedule_sheet_url,
+        d20_sheet_url=args.d20_sheet_url,
     )
-    for model in importer.import_all():
-        print(model)
+
+    print(importer._import_d20_sheet())
+
+    # for model in importer.import_all():
+    #     print(model)

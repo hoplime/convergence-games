@@ -6,7 +6,9 @@
     <form hx-post="/login" hx-target="#content" class="m-auto flex w-96 max-w-[90%] flex-col gap-2">
         <h1 class="mb-4 text-2xl font-semibold antialiased">Login</h1>
         {{ render_partial('shared/partials/text_alerts.html.jinja', alerts=alerts) }}
-        <p class="italic">If you're a GM, please use the email you signed up with.</p>
+        <p class="italic">
+            If you're a GM, society member, or golden d20 winner, please use the email you signed up with.
+        </p>
         <label class="input input-bordered flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 opacity-70">
                 <path

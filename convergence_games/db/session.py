@@ -6,7 +6,7 @@ from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from convergence_games.db.base_data import ALL_BASE_DATA
-from convergence_games.db.models import Game, GameWithExtra, Genre, System, TimeSlot
+from convergence_games.db.models import Game, GameWithExtra, Genre, Person, System, TimeSlot
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
 from convergence_games.settings import SETTINGS
 
@@ -40,9 +40,19 @@ def create_db_and_tables(allow_recreate: bool = True) -> bool:
 
     if fresh:
         imported_dbos = GoogleSheetsImporter.from_urls().import_all()
+        imported_d20_dbos = GoogleSheetsImporter.from_urls().import_d20()
         with Session(engine) as session:
             session.add_all(ALL_BASE_DATA)
             session.add_all(imported_dbos)
+            session.commit()
+
+            for person in imported_d20_dbos:
+                existing_person = session.exec(select(Person).where(Person.email == person.email)).first()
+                if existing_person:
+                    existing_person.golden_d20s = person.golden_d20s
+                    session.add(existing_person)
+                else:
+                    session.add(person)
             session.commit()
 
     return fresh
