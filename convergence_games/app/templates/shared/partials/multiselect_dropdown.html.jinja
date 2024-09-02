@@ -44,8 +44,7 @@
         <ul tabindex="0" class="grid-cols-{{ cols }} select-options-class grid-flow-row gap-1 md:grid">
             {% for option in options %}
                 <li class="box-border">
-                    <label class="label h-full cursor-pointer hover:bg-base-100">
-                        <span class="label-text">{{ option.name }}</span>
+                    <label class="label h-full cursor-pointer items-start justify-start gap-2 hover:bg-base-100">
                         <input
                             type="checkbox"
                             class="{{ check_class }} magic-class checkbox-accent checkbox"
@@ -54,6 +53,7 @@
                             data-marker="filter-option"
                             {% if option.checked %}checked{% endif %}
                         />
+                        <span class="label-text">{{ option.name }}</span>
                     </label>
                 </li>
             {% endfor %}
