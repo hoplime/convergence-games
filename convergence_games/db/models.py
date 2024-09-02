@@ -203,6 +203,15 @@ class GameWithExtra(GameRead):
             pass
         return any(table_allocation.table.private for table_allocation in self.table_allocations)
 
+    @property
+    def short_description(self) -> str:
+        # First 100 characters of the description, or the whole thing if it's shorter
+        # Add ... if the description is longer than 100 characters
+        # Cut off at a word boundary
+        if len(self.description) > 100:
+            return self.description[:100].rsplit(" ", 1)[0] + "..."
+        return self.description
+
 
 # endregion
 

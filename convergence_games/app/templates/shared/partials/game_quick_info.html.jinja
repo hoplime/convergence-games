@@ -1,4 +1,4 @@
-<ul class="flex flex-row flex-wrap gap-4 gap-y-0 text-xs">
+<ul class="flex flex-row flex-wrap gap-4 gap-y-2 text-xs">
     <li>
         {% if game.tone == "Goofy" %}
             <svg
@@ -189,6 +189,6 @@
 </ul>
 <ul>
     {% for genre in game.genres %}
-        <li class="badge badge-outline gap-2">{{ genre.name }}</li>
+        <li class="{{ GENRE_GRADIENTS[genre.name] }} badge badge-outline gap-2">{{ genre.name }}</li>
     {% endfor %}
 </ul>

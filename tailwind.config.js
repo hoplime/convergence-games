@@ -7,7 +7,11 @@ const theme_overrides = {
 };
 
 module.exports = {
-    content: ["./convergence_games/app/templates/**/*.html", "./convergence_games/app/templates/**/*.html.jinja"],
+    content: [
+        "./convergence_games/app/templates/**/*.html",
+        "./convergence_games/app/templates/**/*.html.jinja",
+        "./convergence_games/app/genre_gradients.txt",
+    ],
     theme: {
         fontFamily: {
             header: ['"Josefin Sans"', ...defaultTheme.fontFamily.sans],

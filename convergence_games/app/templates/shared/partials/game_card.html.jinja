@@ -1,9 +1,11 @@
 <a class="card w-full cursor-pointer bg-base-200 shadow-xl" href="/games/{{ game.id }}">
-    <div class="card-body">
+    <div class="card-body items-start justify-start gap-3">
         <h2 class="card-title">{{ game.title }}</h2>
         <h3 class="font-sans antialiased">
-            {{ game.system.name }} <span class="font-thin">|</span> Run by {{ game.gamemaster.name }}
+            <span class="font-semibold">{{ game.system.name }}</span>
+            <span class="font-thin">| {{ game.gamemaster.name }}</span>
         </h3>
+        <p class="h-fit text-xs">{{ game.short_description }}</p>
         {{ render_partial('shared/partials/game_quick_info.html.jinja', game=game, cols=4) }}
         {% if table_allocation_id %}
             <form

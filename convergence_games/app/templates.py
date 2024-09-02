@@ -8,6 +8,7 @@ from fastapi import Request
 from jinja2 import pass_context
 from jinja2_fragments.fastapi import Jinja2Blocks
 
+from convergence_games.app.genre_gradients import GENRE_GRADIENTS
 from convergence_games.settings import SETTINGS
 
 templates = Jinja2Blocks(directory=Path(__file__).parent / "templates")
@@ -28,3 +29,4 @@ templates.env.globals["FLAG_USERS"] = SETTINGS.FLAG_USERS
 templates.env.globals["FLAG_ALWAYS_ALLOW_CHECKINS"] = SETTINGS.FLAG_ALWAYS_ALLOW_CHECKINS
 templates.env.globals["now"] = dt.datetime.now
 templates.env.filters["naturaltime"] = humanize.naturaldelta
+templates.env.globals["GENRE_GRADIENTS"] = GENRE_GRADIENTS

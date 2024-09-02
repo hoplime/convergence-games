@@ -46,7 +46,7 @@
                     {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=blocked_content_warning_options, title='Exclude Content', form_name='blocked_content_warnings', cols=1, check_style='cross') }}
                     {{ render_partial('shared/partials/multiselect_dropdown.html.jinja', options=age_suitability_options, title='Ages', form_name='age_suitability', cols=1) }}
                     <button
-                        class="btn btn-outline btn-accent btn-sm z-10 bg-base-100"
+                        class="btn btn-outline btn-accent btn-sm z-10 bg-base-100 md:btn-md"
                         type="button"
                         hx-get="/games"
                         hx-target="#content"
