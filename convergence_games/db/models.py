@@ -129,7 +129,7 @@ class GameBase(SQLModel):
     designer_run: bool = Field(default=False)
     hidden: bool = Field(default=False)
 
-    gamemaster_id: int = Field(foreign_key="person.id")
+    gamemaster_id: int = Field(foreign_key="person.id", index=True)
     system_id: int = Field(foreign_key="system.id")
 
 
@@ -353,9 +353,9 @@ class TableUpdate(TableBase):
 
 # region TableAllocation
 class TableAllocationBase(SQLModel):
-    table_id: int = Field(foreign_key="table.id")
-    time_slot_id: int = Field(foreign_key="timeslot.id")
-    game_id: int = Field(foreign_key="game.id")
+    table_id: int = Field(foreign_key="table.id", index=True)
+    time_slot_id: int = Field(foreign_key="timeslot.id", index=True)
+    game_id: int = Field(foreign_key="game.id", index=True)
 
 
 class TableAllocation(TableAllocationBase, table=True):
@@ -404,8 +404,8 @@ class TableAllocationWithSlot(TableAllocationRead):
 # region SessionPreference
 class SessionPreferenceBase(SQLModel):
     preference: int = Field(default=3)
-    adventuring_group_id: int = Field(primary_key=True, foreign_key="adventuringgroup.id")
-    table_allocation_id: int = Field(primary_key=True, foreign_key="tableallocation.id")
+    adventuring_group_id: int = Field(primary_key=True, foreign_key="adventuringgroup.id", index=True)
+    table_allocation_id: int = Field(primary_key=True, foreign_key="tableallocation.id", index=True)
 
 
 class SessionPreference(SessionPreferenceBase, table=True):
@@ -437,8 +437,8 @@ class SessionPreferenceUpdate(SessionPreferenceBase):
 
 # region AdventuringGroup
 class AdventuringGroupBase(SQLModel):
-    name: str
-    time_slot_id: int = Field(foreign_key="timeslot.id")
+    name: str = Field(index=True)
+    time_slot_id: int = Field(foreign_key="timeslot.id", index=True)
     checked_in: bool = Field(default=False)
 
 
@@ -483,8 +483,8 @@ class AdventuringGroupWithExtra(AdventuringGroupRead):
 
 # region GameAllocationRelatedStuff
 class AllocationResultBase(SQLModel):
-    table_allocation_id: int = Field(foreign_key="tableallocation.id")
-    adventuring_group_id: int = Field(foreign_key="adventuringgroup.id")
+    table_allocation_id: int = Field(foreign_key="tableallocation.id", index=True)
+    adventuring_group_id: int = Field(foreign_key="adventuringgroup.id", index=True)
 
 
 class AllocationResult(AllocationResultBase, table=True):
@@ -541,11 +541,11 @@ class TableAllocationResultView(TableAllocationRead):
 
 # region Compensation
 class CompensationBase(SQLModel):
-    person_id: int = Field(foreign_key="person.id")
-    time_slot_id: int = Field(foreign_key="timeslot.id")
+    person_id: int = Field(foreign_key="person.id", index=True)
+    time_slot_id: int = Field(foreign_key="timeslot.id", index=True)
     compensation_delta: int = Field(default=0)
     golden_d20_delta: int = Field(default=0)
-    applied: bool = Field(default=False)
+    applied: bool = Field(default=False, index=True)
     reset: bool = Field(default=False)
 
 
