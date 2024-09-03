@@ -33,6 +33,7 @@ if SETTINGS.ENABLE_SENTRY:
         # of sampled transactions.
         # We recommend adjusting this value in production.
         profiles_sample_rate=1.0,
+        environment=SETTINGS.ENVIRONMENT_NAME,
     )
 
 STATIC_PATH = Path(__file__).parent / "static"

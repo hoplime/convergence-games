@@ -1,13 +1,11 @@
 import random
 import string
-from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import Annotated, Any, Iterator, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Form, Query, Response
 from fastapi.responses import HTMLResponse
-from pydantic import BeforeValidator, RootModel
 from sqlmodel import exists, select
 
 from convergence_games.app.dependencies import (
@@ -38,13 +36,11 @@ from convergence_games.db.models import (
     Person,
     PersonAdventuringGroupLink,
     PersonUpdate,
-    PersonWithAdventuringGroups,
     PersonWithExtra,
     SessionPreference,
     Table,
     TableAllocation,
     TableAllocationResultView,
-    TimeSlot,
 )
 from convergence_games.db.session import Option
 
@@ -341,33 +337,29 @@ def logout_post(
 
 
 def create_initial_adventuring_group(
-    session: Session, person: Person, time_slot_id: int, checked_in: bool = False
-) -> None:
+    session: Session,
+    person_id: int,
+    time_slot_id: int,
+    checked_in: bool = False,
+) -> AdventuringGroup:
+    person = session.get(Person, person_id)
     for trial in range(100):
-        random_code = get_random_group_code(seed=hash(person.email + str(trial)))
-        existing_group = session.exec(
-            select(AdventuringGroup).where(
-                (AdventuringGroup.name == random_code) & (AdventuringGroup.time_slot_id == time_slot_id)
-            )
-        ).first()
-        if existing_group is None:
-            break
-
-    adventuring_group = AdventuringGroup(
-        name=random_code,
-        members=[person],
-        time_slot_id=time_slot_id,
-        checked_in=checked_in,
-    )
-    session.add(adventuring_group)
-    try:
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        print("Error creating initial group", e)
-        raise
-    session.refresh(adventuring_group)
-    return adventuring_group
+        random_code = get_random_group_code(seed=hash(str(person_id) + str(trial)))
+        adventuring_group = AdventuringGroup(
+            name=random_code,
+            time_slot_id=time_slot_id,
+            members=[person],
+            checked_in=checked_in,
+        )
+        session.add(adventuring_group)
+        try:
+            session.commit()
+            session.refresh(adventuring_group)
+            return adventuring_group
+        except Exception as e:
+            session.rollback()
+            print("Error creating initial group, conflict", e)
+    raise Exception("Failed to create group")
 
 
 def get_random_group_code(seed: int = 0) -> str:
@@ -378,15 +370,15 @@ def get_random_group_code(seed: int = 0) -> str:
 def get_adventuring_group_from_user_and_time_slot_id(
     session: Session, user_id: int, time_slot_id: int
 ) -> AdventuringGroup:
-    person = session.get(Person, user_id)
-    person_with_extra = PersonWithAdventuringGroups.model_validate(person)
-    adventuring_group = next(
-        (group for group in person_with_extra.adventuring_groups if group.time_slot_id == time_slot_id),
-        None,
-    )
+    adventuring_group = session.exec(
+        select(AdventuringGroup)
+        .join(PersonAdventuringGroupLink, AdventuringGroup.id == PersonAdventuringGroupLink.adventuring_group_id)
+        .where(PersonAdventuringGroupLink.member_id == user_id)
+        .where(AdventuringGroup.time_slot_id == time_slot_id)
+    ).first()
 
     if adventuring_group is None:
-        adventuring_group = create_initial_adventuring_group(session, person, time_slot_id, checked_in=False)
+        adventuring_group = create_initial_adventuring_group(session, user_id, time_slot_id, checked_in=False)
 
     return adventuring_group
 
@@ -1057,7 +1049,7 @@ def admin_allocate(
         # Create a default group for them
         if ungrouped_people:
             for person in ungrouped_people:
-                create_initial_adventuring_group(session, person, time_slot_id, checked_in=False)
+                create_initial_adventuring_group(session, person.id, time_slot_id, checked_in=False)
             session.commit()
 
         # Get every group not assigned anywhere

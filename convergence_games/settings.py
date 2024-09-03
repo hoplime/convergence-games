@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     ENABLE_APP_INSIGHTS: bool = False
     ENABLE_SENTRY: bool = True
     SENTRY_DSN: str = ""
+    ENVIRONMENT_NAME: str = "development"
 
 
 SETTINGS = Settings()
