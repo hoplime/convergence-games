@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Callable, Generator, TypeVar
 
 from sqlalchemy import Engine
+from sqlalchemy.engine import URL
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from convergence_games.db.base_data import ALL_BASE_DATA
@@ -31,23 +32,8 @@ def get_engine() -> Engine:
     return engine
 
 
-def create_db_and_tables(allow_recreate: bool = True) -> bool:
-    global engine
-
-    actually_allow_recreate = allow_recreate and SETTINGS.RECREATE_DATABASE
-
-    engine_path = Path(SETTINGS.DATABASE_PATH)
-    print("Database path:", engine_path)
-    database_already_existed = engine_path.exists()
-    fresh = not database_already_existed or actually_allow_recreate
-
-    if actually_allow_recreate and database_already_existed:
-        engine_path.unlink()
-
-    engine = create_engine(f"sqlite:///{str(engine_path)}", connect_args={"check_same_thread": False})
-    SQLModel.metadata.create_all(engine)
-
-    if fresh:
+def add_initial_data():
+    with Session(engine) as session:
         imported_dbos = GoogleSheetsImporter.from_urls().import_all()
         imported_d20_dbos = GoogleSheetsImporter.from_urls().import_d20()
         with Session(engine) as session:
@@ -64,7 +50,21 @@ def create_db_and_tables(allow_recreate: bool = True) -> bool:
                     session.add(person)
             session.commit()
 
-    return fresh
+
+def create_db_and_tables() -> bool:
+    global engine
+
+    connection_string = URL.create(
+        drivername="postgresql+psycopg2",
+        username=SETTINGS.DATABASE_USERNAME,
+        password=SETTINGS.DATABASE_PASSWORD,
+        host=SETTINGS.DATABASE_HOST,
+        port=5432,
+        database=SETTINGS.DATABASE_NAME,
+    )
+    engine = create_engine(connection_string)  # , connect_args={"check_same_thread": False})
+
+    SQLModel.metadata.create_all(engine)
 
 
 @dataclass

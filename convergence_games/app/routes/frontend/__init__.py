@@ -8,7 +8,6 @@ from typing import Annotated, Any, Iterator, Literal
 from fastapi import APIRouter, Form, Query, Response
 from fastapi.responses import HTMLResponse
 from pydantic import BeforeValidator, RootModel
-from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from sqlmodel import exists, select
 
 from convergence_games.app.dependencies import (
@@ -730,11 +729,19 @@ async def preferences_post(
             )
 
             session_preferences.append(session_preference)
-        statement = sqlite_upsert(SessionPreference).values([pref.model_dump() for pref in session_preferences])
-        statement = statement.on_conflict_do_update(
-            set_={"preference": statement.excluded.preference},
-        )
-        session.exec(statement)
+
+        # TODO REDO THIS FOR POSTGRES
+        for session_preference in session_preferences:
+            existing_preference = session.exec(
+                select(SessionPreference)
+                .where(SessionPreference.adventuring_group_id == session_preference.adventuring_group_id)
+                .where(SessionPreference.table_allocation_id == session_preference.table_allocation_id)
+            ).first()
+            if existing_preference:
+                existing_preference.preference = session_preference.preference
+                session.add(existing_preference)
+            else:
+                session.add(session_preference)
         session.commit()
 
     if rerender_time_slot_id is not None:
@@ -1038,7 +1045,7 @@ async def admin_allocate(
         ]
 
         # Get the actual time slot
-        time_slot = session.get(TimeSlot, time_slot_id)
+        time_slot = request.state.db.time_slots_by_id[time_slot_id]
 
     table_summaries: dict[int, dict[str, Any]] = {}
 

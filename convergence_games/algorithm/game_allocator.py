@@ -751,12 +751,12 @@ class GameAllocator:
                 current_allocation = self.current_allocations[table_allocation_id]
                 other_groups_at_table = current_allocation.groups
                 for other_group in other_groups_at_table:
-                    # In order for the other group to be a possible candidate to move, it must be of an equal or lower tier
-                    other_group_tier_lower = current_allocation.value_of_group(
-                        other_group
-                    ) <= current_allocation.value_of_group(group)
-                    if not other_group_tier_lower:
-                        continue
+                    # # In order for the other group to be a possible candidate to move, it must be of an equal or lower tier
+                    # other_group_tier_lower = current_allocation.value_of_group(
+                    #     other_group
+                    # ) <= current_allocation.value_of_group(group)
+                    # if not other_group_tier_lower:
+                    #     continue
                     # And us joining the table must not put too many people at the table
                     could_fit_if_swapped = (
                         current_allocation.current_players - other_group.size + group.size

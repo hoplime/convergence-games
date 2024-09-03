@@ -19,7 +19,7 @@ STATIC_PATH = Path(__file__).parent / "static"
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
-    fresh = create_db_and_tables()
+    create_db_and_tables()
 
     db = get_startup_db_info()
 
