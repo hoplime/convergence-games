@@ -8,7 +8,6 @@ from typing import Annotated, Any, Iterator, Literal
 from fastapi import APIRouter, Form, Query, Response
 from fastapi.responses import HTMLResponse
 from pydantic import BeforeValidator, RootModel
-from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from sqlmodel import exists, select
 
@@ -35,7 +34,6 @@ from convergence_games.db.models import (
     AllocationResult,
     CommittedAllocationResult,
     Compensation,
-    CompensationWithExtra,
     Game,
     GameWithExtra,
     Person,
@@ -550,48 +548,47 @@ async def schedule(
         adventuring_group = AdventuringGroupWithExtra.model_validate(adventuring_group)
 
         # Possibly GMing a game this time slot
-        statement = (
-            select(Game)
-            .join(
-                TableAllocation,
-                (TableAllocation.game_id == Game.id) & (TableAllocation.time_slot_id == time_slot_id),
-            )
-            .where(Game.gamemaster_id == user.id)
+        gm_games_this_session: list[GameWithExtra] = request.state.db.games_by_gm_and_timeslot.get(user.id, {}).get(
+            time_slot_id, []
         )
-        gm_game = session.exec(statement).first()
-
-        if gm_game:
-            gm_game = GameWithExtra.model_validate(gm_game)
+        gm_game = gm_games_this_session[0] if gm_games_this_session else None
 
         # Get all of the games and existing preferences for this time slot
-        statement = (
-            select(Game, TableAllocation, SessionPreference)
-            .join(
-                TableAllocation,
-                (TableAllocation.game_id == Game.id) & (TableAllocation.time_slot_id == time_slot_id),
+        group_session_preferences = session.exec(
+            (
+                select(SessionPreference)
+                .where(SessionPreference.adventuring_group_id == adventuring_group.id)
+                .where(
+                    SessionPreference.table_allocation_id.in_(
+                        request.state.db.table_allocation_ids_by_timeslot[time_slot_id]
+                    )
+                )
             )
-            .outerjoin(
-                SessionPreference,
-                (SessionPreference.adventuring_group_id == adventuring_group.id)
-                & (SessionPreference.table_allocation_id == TableAllocation.id),
-            )
-            .group_by(Game.id)
-            .filter(~Game.hidden)
-            .order_by(Game.title)
-        )
-        preferences_data = session.exec(statement).all()
+        ).all()
+        session_preferences_by_table_allocation_id = {
+            session_preference.table_allocation_id: session_preference
+            for session_preference in group_session_preferences
+        }
+
         preferences_data = [
             (
-                GameWithExtra.model_validate(game),
+                # GameWithExtra
+                request.state.db.games_by_table_allocation_id[table_allocation.id],
+                # TableAllocationWithExtra
                 table_allocation,
-                str(session_preference.preference if session_preference is not None else 3),
+                # str (preference value 0 - 5, or 20 for D20, or 3 for default)
+                str(
+                    session_preferences_by_table_allocation_id[table_allocation.id].preference
+                    if table_allocation.id in session_preferences_by_table_allocation_id
+                    else 3
+                ),
             )
-            for game, table_allocation, session_preference in preferences_data
-            if not gm_game or game.id != gm_game.id
+            for table_allocation in request.state.db.table_allocations_by_timeslot[time_slot_id]
+            if (not gm_game or gm_game.id != table_allocation.game_id) and (table_allocation.game_id != 0)
         ]
 
         # And finally the actual time slot
-        time_slot = session.get(TimeSlot, time_slot_id)
+        time_slot = request.state.db.time_slots_by_id[time_slot_id]
 
         statement = (
             select(TableAllocation)

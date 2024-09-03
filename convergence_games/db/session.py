@@ -1,12 +1,21 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any, Callable, Generator, TypeVar
 
 from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from convergence_games.db.base_data import ALL_BASE_DATA
-from convergence_games.db.models import Game, GameWithExtra, Genre, Person, System, TimeSlot
+from convergence_games.db.models import (
+    Game,
+    GameWithExtra,
+    Genre,
+    Person,
+    System,
+    TableAllocation,
+    TableAllocationWithExtra,
+    TimeSlot,
+)
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
 from convergence_games.settings import SETTINGS
 
@@ -65,11 +74,68 @@ class Option:
     checked: bool = False
 
 
+T: TypeVar = TypeVar("T")
+
+
+def group_by_value[T](data: list[T], key: str, sort_key: Callable[[T], Any] | None = None) -> dict[Any, list[T]]:
+    grouped: dict[Any, list[T]] = {}
+    for item in data:
+        key_value = getattr(item, key)
+        if key_value not in grouped:
+            grouped[key_value] = []
+        grouped[key_value].append(item)
+    if sort_key:
+        for key_value in grouped:
+            grouped[key_value].sort(key=sort_key)
+    return grouped
+
+
 class StartupDBInfo:
     def __init__(self) -> None:
         with Session(engine) as session:
             self.all_games = self._get_all_games(session)
             self.game_map = self._get_game_map()
+
+            self.table_allocations = self._get_all_table_allocations(session)
+
+            self.table_allocations_by_timeslot: dict[int, list[TableAllocationWithExtra]] = group_by_value(
+                self.table_allocations,
+                "time_slot_id",
+                sort_key=lambda table_allocation: table_allocation.game.title.lower(),
+            )
+            self.table_allocation_ids_by_timeslot: dict[int, list[int]] = {
+                time_slot_id: [table_allocation.id for table_allocation in table_allocations]
+                for time_slot_id, table_allocations in self.table_allocations_by_timeslot.items()
+            }
+            self.games_by_timeslot: dict[int, list[GameWithExtra]] = {
+                time_slot_id: sorted(
+                    [self.game_map[table_allocation.game_id] for table_allocation in table_allocations],
+                    key=lambda game: game.title.lower(),
+                )
+                for time_slot_id, table_allocations in self.table_allocations_by_timeslot.items()
+            }
+            self.games_by_gm: dict[int, list[GameWithExtra]] = group_by_value(
+                self.all_games, "gamemaster_id", sort_key=lambda game: game.title.lower()
+            )
+            self.games_by_gm_and_timeslot: dict[int, dict[int, list[GameWithExtra]]] = {
+                gm_id: {
+                    time_slot_id: [
+                        game
+                        for game in self.games_by_gm[gm_id]
+                        if game.id
+                        in [
+                            table_allocation.game_id
+                            for table_allocation in self.table_allocations_by_timeslot[time_slot_id]
+                        ]
+                    ]
+                    for time_slot_id in self.table_allocations_by_timeslot
+                }
+                for gm_id in self.games_by_gm
+            }
+            self.games_by_table_allocation_id: dict[int, GameWithExtra] = {
+                table_allocation.id: self.game_map[table_allocation.game_id]
+                for table_allocation in self.table_allocations
+            }
 
             self.all_genres = self._get_all_genres(session)
             self.genre_options = self._get_genre_options()
@@ -77,6 +143,13 @@ class StartupDBInfo:
             self.system_options = self._get_system_options()
             self.all_time_slots = self._get_all_time_slots(session)
             self.time_slot_options = self._get_time_slot_options()
+
+            self.time_slots_by_id: dict[int, TimeSlot] = {time_slot.id: time_slot for time_slot in self.all_time_slots}
+
+    def _get_all_table_allocations(self, session: Session) -> list[TableAllocationWithExtra]:
+        statement = select(TableAllocation)
+        table_allocations = session.exec(statement).all()
+        return [TableAllocationWithExtra.model_validate(table_allocation) for table_allocation in table_allocations]
 
     def _get_all_games(self, session: Session) -> list[GameWithExtra]:
         statement = select(Game).order_by(Game.title)
