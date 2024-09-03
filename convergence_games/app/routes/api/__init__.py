@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api", dependencies=[Auth])
 
 
 @router.get("/settings", tags=["admin"])
-async def get_settings() -> dict[str, Any]:
+def get_settings() -> dict[str, Any]:
     return SETTINGS.model_dump()
 
 
@@ -41,14 +41,14 @@ for boilerplate in boilerplates:
         )
 
         @router.get(f"/{table_name}", name=f"Get all {table_name}s", tags=[table_name])
-        async def get_all(session: Session) -> list[extra_type]:
+        def get_all(session: Session) -> list[extra_type]:
             with session:
                 statement = select(table_type)
                 result = session.exec(statement).all()
                 return [extra_type.model_validate(row) for row in result]
 
         @router.get(f"/{table_name}/{primary_key_path}", name=f"Get {table_name} by id", tags=[table_name])
-        async def get_by_id(session: Session, id_args=Depends(id_args_model)) -> extra_type:
+        def get_by_id(session: Session, id_args=Depends(id_args_model)) -> extra_type:
             with session:
                 result = session.get(table_type, id_args.model_dump())
                 if result is None:
@@ -59,7 +59,7 @@ for boilerplate in boilerplates:
         if create_type is not None:
 
             @router.post(f"/{table_name}", name=f"Create {table_name}", tags=[table_name])
-            async def create(session: Session, item: create_type) -> extra_type:
+            def create(session: Session, item: create_type) -> extra_type:
                 with session:
                     db_item = table_type.model_validate(item)
                     session.add(db_item)
@@ -70,9 +70,7 @@ for boilerplate in boilerplates:
         if update_type is not None:
 
             @router.patch(f"/{table_name}/{primary_key_path}", name=f"Update {table_name}", tags=[table_name])
-            async def update(
-                session: Session, item: update_type, id_args: BaseModel = Depends(id_args_model)
-            ) -> extra_type:
+            def update(session: Session, item: update_type, id_args: BaseModel = Depends(id_args_model)) -> extra_type:
                 with session:
                     result = session.get(table_type, id_args.model_dump())
                     if result is None:
@@ -89,7 +87,7 @@ for boilerplate in boilerplates:
 
 
 @router.post("/log/{time_slot_id}", tags=["admin"])
-async def log(
+def log(
     time_slot_id: int,
     force_override: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
@@ -98,7 +96,7 @@ async def log(
 
 
 @router.post("/allocate_draft/{time_slot_id}", tags=["admin"])
-async def allocate_draft(
+def allocate_draft(
     time_slot_id: int,
     engine: EngineDependency,
     force_override: Annotated[bool, Query()] = False,
@@ -107,7 +105,7 @@ async def allocate_draft(
 
 
 @router.get("/compensation/{time_slot_id}", tags=["admin"])
-async def compensation(
+def compensation(
     time_slot_id: int,
     engine: EngineDependency,
 ) -> Any:
@@ -115,6 +113,6 @@ async def compensation(
 
 
 @router.post("/add_initial_data", tags=["admin"])
-async def add_initial_data_route() -> Any:
+def add_initial_data_route() -> Any:
     add_initial_data()
     return None

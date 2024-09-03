@@ -38,6 +38,7 @@ from convergence_games.db.models import (
     Person,
     PersonAdventuringGroupLink,
     PersonUpdate,
+    PersonWithAdventuringGroups,
     PersonWithExtra,
     SessionPreference,
     Table,
@@ -63,7 +64,7 @@ def alerts_template_response(alerts: list["Alert"], request: Request) -> HTMLRes
 
 # region Main Pages
 @router.get("/")
-async def home(
+def home(
     request: Request,
     user: User,
     hx_target: HxTarget,
@@ -76,7 +77,7 @@ async def home(
 
 
 @router.get("/games")
-async def games(
+def games(
     request: Request,
     user: User,
     hx_target: HxTarget,
@@ -185,7 +186,7 @@ async def games(
 
 
 @router.get("/games/{game_id}")
-async def game(
+def game(
     request: Request,
     user: User,
     hx_target: HxTarget,
@@ -206,7 +207,7 @@ async def game(
 
 
 @router.get("/me")
-async def me(
+def me(
     request: Request,
     user: User,
     hx_target: HxTarget,
@@ -226,7 +227,7 @@ async def me(
 
 
 @router.get("/login")
-async def login(
+def login(
     request: Request,
     hx_target: HxTarget,
 ) -> HTMLResponse:
@@ -238,7 +239,7 @@ async def login(
 
 
 @router.post("/login")
-async def login_post(
+def login_post(
     request: Request,
     hx_target: HxTarget,
     email: Annotated[str, Form()],
@@ -266,7 +267,7 @@ async def login_post(
 
 
 @router.get("/signup")
-async def signup(
+def signup(
     request: Request,
     hx_target: HxTarget,
 ) -> HTMLResponse:
@@ -292,7 +293,7 @@ class Alert:
 
 
 @router.post("/signup")
-async def signup_post(
+def signup_post(
     request: Request,
     hx_target: HxTarget,
     email: Annotated[str, Form()],
@@ -327,7 +328,7 @@ async def signup_post(
 
 
 @router.post("/logout")
-async def logout_post(
+def logout_post(
     request: Request,
     hx_target: HxTarget,
 ) -> HTMLResponse:
@@ -378,7 +379,7 @@ def get_adventuring_group_from_user_and_time_slot_id(
     session: Session, user_id: int, time_slot_id: int
 ) -> AdventuringGroup:
     person = session.get(Person, user_id)
-    person_with_extra = PersonWithExtra.model_validate(person)
+    person_with_extra = PersonWithAdventuringGroups.model_validate(person)
     adventuring_group = next(
         (group for group in person_with_extra.adventuring_groups if group.time_slot_id == time_slot_id),
         None,
@@ -391,7 +392,7 @@ def get_adventuring_group_from_user_and_time_slot_id(
 
 
 @router.get("/adventuring_party_edit_code")
-async def adventuring_party_edit_code(
+def adventuring_party_edit_code(
     request: Request,
     adventuring_group_id: Annotated[int, Query()],
     adventuring_group_name: Annotated[str, Query()],
@@ -409,7 +410,7 @@ async def adventuring_party_edit_code(
 
 
 @router.put("/change_group_name")
-async def change_group_name(
+def change_group_name(
     request: Request,
     user: User,
     session: Session,
@@ -430,7 +431,7 @@ async def change_group_name(
             session.rollback()
             return alerts_template_response([Alert("Code already in use, did you mean to join?", "error")], request)
         session.refresh(group)
-    return await schedule(request, user, session, hx_target, group.time_slot_id)
+    return schedule(request, user, session, hx_target, group.time_slot_id)
 
 
 def remove_person_from_group(session: Session, current_group: AdventuringGroup, person_id: int) -> None:
@@ -453,7 +454,7 @@ def remove_person_from_group(session: Session, current_group: AdventuringGroup, 
 
 
 @router.put("/join_group")
-async def join_group(
+def join_group(
     request: Request,
     user: User,
     session: Session,
@@ -496,11 +497,11 @@ async def join_group(
         session.add(new_group)
         session.commit()
 
-        return await schedule(request, user, session, hx_target, time_slot_id)
+        return schedule(request, user, session, hx_target, time_slot_id)
 
 
 @router.put("/leave_group")
-async def leave_group(
+def leave_group(
     request: Request,
     user: User,
     session: Session,
@@ -515,7 +516,7 @@ async def leave_group(
         time_slot_id = current_group.time_slot_id
         remove_person_from_group(session, current_group, user.id)
         session.commit()
-    return await schedule(request, user, session, hx_target, time_slot_id)
+    return schedule(request, user, session, hx_target, time_slot_id)
 
 
 def maybe_alerts_if_group_locked(
@@ -530,7 +531,7 @@ def maybe_alerts_if_group_locked(
 
 
 @router.get("/schedule")
-async def schedule(
+def schedule(
     request: Request,
     user: User,
     session: Session,
@@ -648,24 +649,8 @@ class RatingValue(Enum):
         return int(self.value)
 
 
-RatingTableAllocationKey = Annotated[int, BeforeValidator(lambda rating_x: int(rating_x.removeprefix("rating-")))]
-
-
-class RatingForm(RootModel, Mapping[int, RatingValue]):
-    root: dict[RatingTableAllocationKey, RatingValue]
-
-    def __len__(self) -> int:
-        return len(self.root)
-
-    def __getitem__(self, key: int) -> RatingValue:
-        return self.root[key]
-
-    def __iter__(self) -> Iterator[int]:
-        return iter(self.root)
-
-
 @router.get("/edit_profile")
-async def user_edit(
+def user_edit(
     request: Request,
     user: User,
 ) -> HTMLResponse:
@@ -676,7 +661,7 @@ async def user_edit(
 
 
 @router.put("/edit_profile")
-async def user_edit_post(
+def user_edit_post(
     request: Request,
     user: User,
     session: Session,
@@ -688,7 +673,7 @@ async def user_edit_post(
         session.add(user)
         session.commit()
         session.refresh(user)
-    return await me(request, user, hx_target)
+    return me(request, user, hx_target)
 
 
 # endregion
@@ -697,59 +682,56 @@ async def user_edit_post(
 
 
 @router.post("/preferences")
-async def preferences_post(
+def preferences_post(
     request: Request,
     user: User,
+    table_allocation_id: Annotated[int, Query()],
+    rating: Annotated[RatingValue, Form()],
+    time_slot_id: Annotated[int, Query()],
     session: Session,
 ) -> HTMLResponse:
-    form_data = await request.form()
-    table_allocation_ratings = RatingForm.model_validate(form_data)
     rerender_time_slot_id = None
+    time_slot = request.state.db.time_slots_by_id[time_slot_id]
 
     with session:
-        session_preferences: list[SessionPreference] = []
-        adventuring_group: AdventuringGroup | None = None
-        for table_allocation_id, rating in table_allocation_ratings.items():
-            table_allocation = session.get(TableAllocation, table_allocation_id)
+        adventuring_group: AdventuringGroup = get_adventuring_group_from_user_and_time_slot_id(
+            session, user.id, time_slot_id
+        )
 
-            if adventuring_group is None or adventuring_group.time_slot_id != table_allocation.time_slot_id:
-                adventuring_group = get_adventuring_group_from_user_and_time_slot_id(
-                    session, user.id, table_allocation.time_slot_id
-                )
-                adventuring_group_id = adventuring_group.id
+        adventuring_group_id = adventuring_group.id
 
-                if table_allocation.time_slot.is_open_for_checkin and not adventuring_group.checked_in:
-                    adventuring_group.checked_in = True
-                    rerender_time_slot_id = adventuring_group.time_slot_id
+        session_preference: SessionPreference = SessionPreference(
+            preference=rating.numeric(),
+            adventuring_group_id=adventuring_group_id,
+            table_allocation_id=table_allocation_id,
+        )
 
-                session.add(adventuring_group)
+        if (alerts := maybe_alerts_if_group_locked(request, session, adventuring_group_id)) is not None:
+            return alerts
 
-                if (alerts := maybe_alerts_if_group_locked(request, session, adventuring_group_id)) is not None:
-                    return alerts
+        # Auto-checkin
+        if time_slot.is_open_for_checkin and not adventuring_group.checked_in:
+            adventuring_group.checked_in = True
+            rerender_time_slot_id = adventuring_group.time_slot_id
+            session.add(adventuring_group)
 
-            session_preference = SessionPreference(
-                preference=rating.numeric(),
-                adventuring_group_id=adventuring_group_id,
-                table_allocation_id=table_allocation_id,
-            )
+        # Update or create the preference
+        existing_preference = session.exec(
+            select(SessionPreference)
+            .where(SessionPreference.adventuring_group_id == session_preference.adventuring_group_id)
+            .where(SessionPreference.table_allocation_id == session_preference.table_allocation_id)
+        ).first()
 
-            session_preferences.append(session_preference)
+        if existing_preference:
+            existing_preference.preference = session_preference.preference
+            session.add(existing_preference)
+        else:
+            session.add(session_preference)
 
-        for session_preference in session_preferences:
-            existing_preference = session.exec(
-                select(SessionPreference)
-                .where(SessionPreference.adventuring_group_id == session_preference.adventuring_group_id)
-                .where(SessionPreference.table_allocation_id == session_preference.table_allocation_id)
-            ).first()
-            if existing_preference:
-                existing_preference.preference = session_preference.preference
-                session.add(existing_preference)
-            else:
-                session.add(session_preference)
         session.commit()
 
     if rerender_time_slot_id is not None:
-        return await schedule(
+        return schedule(
             request,
             user,
             session,
@@ -765,7 +747,7 @@ async def preferences_post(
 
 
 @router.post("/checkin")
-async def checkin_post(
+def checkin_post(
     request: Request,
     user: User,
     session: Session,
@@ -794,7 +776,7 @@ def maybe_alerts_from_auth(auth: tuple[bool, list[Exception]], request: Request)
 
 
 @router.post("/admin/run_allocate")
-async def run_allocate(
+def run_allocate(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -805,7 +787,7 @@ async def run_allocate(
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
     allocation_results = do_allocation(time_slot_id, engine, force_override=True)
-    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
+    return admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 def do_commit_or_rollback(
@@ -845,7 +827,7 @@ def do_commit_or_rollback(
 
 
 @router.post("/admin/commit_allocate")
-async def commit_allocate(
+def commit_allocate(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -855,11 +837,11 @@ async def commit_allocate(
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
     do_commit_or_rollback(session, time_slot_id, from_table=AllocationResult, to_table=CommittedAllocationResult)
-    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
+    return admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.post("/admin/rollback_allocate")
-async def rollback_allocate(
+def rollback_allocate(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -869,11 +851,11 @@ async def rollback_allocate(
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
     do_commit_or_rollback(session, time_slot_id, from_table=CommittedAllocationResult, to_table=AllocationResult)
-    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
+    return admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.post("/admin/uncommit_allocate")
-async def uncommit_allocate(
+def uncommit_allocate(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -893,7 +875,7 @@ async def uncommit_allocate(
         for existing_result in existing_results:
             session.delete(existing_result)
         session.commit()
-    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
+    return admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 def revert_applied_compensations_for_time_slot(session: Session, time_slot_id: int):
@@ -919,7 +901,7 @@ def revert_applied_compensations_for_time_slot(session: Session, time_slot_id: i
 
 
 @router.post("/admin/compensate_draft")
-async def compensate_draft(
+def compensate_draft(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -940,11 +922,11 @@ async def compensate_draft(
 
         session.commit()
 
-    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
+    return admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.post("/admin/compensate_apply")
-async def compensate_apply(
+def compensate_apply(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -970,7 +952,7 @@ async def compensate_apply(
 
         session.commit()
 
-    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
+    return admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @dataclass
@@ -1014,7 +996,7 @@ def extract_table_summary(table_allocation: TableAllocationResultView, gm_ids: s
 
 
 @router.get("/admin")
-async def admin_landing(
+def admin_landing(
     request: Request,
     hx_target: HxTarget,
 ) -> HTMLResponse:
@@ -1026,7 +1008,7 @@ async def admin_landing(
 
 
 @router.get("/admin/allocate")
-async def admin_allocate(
+def admin_allocate(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -1132,7 +1114,7 @@ async def admin_allocate(
 
 
 @router.get("/admin/move_menu")
-async def move_menu(
+def move_menu(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -1196,7 +1178,7 @@ async def move_menu(
 
 
 @router.get("/admin/move_button")
-async def move_button(
+def move_button(
     auth: AuthWithHandler,
     request: Request,
     group_id: Annotated[int, Query()],
@@ -1216,7 +1198,7 @@ async def move_button(
 
 
 @router.put("/admin/move")
-async def move(
+def move(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -1255,11 +1237,11 @@ async def move(
             # Remove the old allocation result
             session.delete(current_allocation_result)
         session.commit()
-    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
+    return admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.put("/admin/checkin")
-async def checkin(
+def checkin(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -1275,11 +1257,11 @@ async def checkin(
         time_slot_id = adventuring_group.time_slot_id
         session.add(adventuring_group)
         session.commit()
-    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
+    return admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.get("/admin/players")
-async def admin_players(
+def admin_players(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -1304,7 +1286,7 @@ async def admin_players(
 
 
 @router.get("/admin/person_row_view")
-async def admin_person_row_view(
+def admin_person_row_view(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -1329,7 +1311,7 @@ async def admin_person_row_view(
 
 
 @router.get("/admin/person_row_edit")
-async def admin_person_row_edit(
+def admin_person_row_edit(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -1354,7 +1336,7 @@ async def admin_person_row_edit(
 
 
 @router.put("/admin/person_row_edit")
-async def admin_person_row_edit_put(
+def admin_person_row_edit_put(
     auth: AuthWithHandler,
     request: Request,
     session: Session,
@@ -1390,7 +1372,7 @@ async def admin_person_row_edit_put(
             session.rollback()
             print(e)
             return alerts_template_response([Alert(str(e), "error")], request)
-    return await admin_person_row_view(auth, request, session, person_id)
+    return admin_person_row_view(auth, request, session, person_id)
 
 
 # endregion

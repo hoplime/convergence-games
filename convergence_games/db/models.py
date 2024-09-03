@@ -249,6 +249,10 @@ class PersonWithExtra(PersonRead):
     compensations: list["Compensation"]
 
 
+class PersonWithAdventuringGroups(PersonRead):
+    adventuring_groups: list["AdventuringGroup"]
+
+
 class PersonUpdate(PersonBase):
     name: str | None = None
     email: str | None = None

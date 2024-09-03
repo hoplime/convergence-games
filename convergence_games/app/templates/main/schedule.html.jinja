@@ -106,7 +106,7 @@
                     <div id="game_list" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {% block game_list %}
                             {% for game, table_allocation, session_preference in preferences_data %}
-                                {{ render_partial('shared/partials/game_card.html.jinja', game=game, adventuring_group=adventuring_group, table_allocation_id=table_allocation.id, current_preference=session_preference) }}
+                                {{ render_partial('shared/partials/game_card.html.jinja', game=game, adventuring_group=adventuring_group, table_allocation_id=table_allocation.id, current_preference=session_preference, time_slot_id=time_slot.id) }}
                             {% endfor %}
                         {% endblock %}
                     </div>
