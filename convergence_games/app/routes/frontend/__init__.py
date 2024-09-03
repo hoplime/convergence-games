@@ -359,7 +359,12 @@ def create_initial_adventuring_group(
         checked_in=checked_in,
     )
     session.add(adventuring_group)
-    session.commit()
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        print("Error creating initial group", e)
+        raise
     session.refresh(adventuring_group)
     return adventuring_group
 
@@ -730,7 +735,6 @@ async def preferences_post(
 
             session_preferences.append(session_preference)
 
-        # TODO REDO THIS FOR POSTGRES
         for session_preference in session_preferences:
             existing_preference = session.exec(
                 select(SessionPreference)
@@ -1040,6 +1044,7 @@ async def admin_allocate(
             .order_by(TableAllocation.table_id)
         )
         table_allocations = session.exec(statement).all()
+        # TODO - this takes forever
         table_allocations = [
             TableAllocationResultView.model_validate(table_allocation) for table_allocation in table_allocations
         ]

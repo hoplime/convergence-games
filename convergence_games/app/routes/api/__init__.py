@@ -9,6 +9,7 @@ from convergence_games.app.dependencies import Auth, EngineDependency, Session
 from convergence_games.app.routes.api.models import boilerplates
 from convergence_games.app.shared import do_allocation, get_compensation
 from convergence_games.db.models import AllocationResult, Person
+from convergence_games.db.session import add_initial_data
 from convergence_games.settings import SETTINGS
 
 router = APIRouter(prefix="/api", dependencies=[Auth])
@@ -113,21 +114,7 @@ async def compensation(
     return get_compensation(time_slot_id, engine)
 
 
-@router.post("/lowercase_emails", tags=["admin"])
-async def lowercase_emails(
-    session: Session,
-) -> None:
-    with session:
-        # session.execute("UPDATE user SET email = LOWER(email)")
-        users: list[Person] = session.exec(select(Person).order_by(Person.id)).all()
-        seen_emails = set()
-        for user in users:
-            new_email = user.email.lower()
-            if new_email in seen_emails:
-                user.email = f"{new_email}-duplicate-{user.id}"
-            else:
-                user.email = new_email
-            seen_emails.add(new_email)
-            session.add(user)
-        session.commit()
+@router.post("/add_initial_data", tags=["admin"])
+async def add_initial_data_route() -> Any:
+    add_initial_data()
     return None

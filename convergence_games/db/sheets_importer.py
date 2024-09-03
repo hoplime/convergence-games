@@ -141,7 +141,7 @@ class GoogleSheetsImporter:
         result = df.select(
             pl.col("Running").cast(bool).alias("running"),
             pl.col("ID").cast(pl.Int32).alias("id"),
-            pl.col("Email address").alias("gamemaster_email"),
+            pl.col("Email address").str.to_lowercase().alias("gamemaster_email"),
             pl.col("Full Name").alias("gamemaster_name"),
             pl.col("Game Title").str.strip_chars().alias("title"),
             pl.col("System").str.strip_chars().replace(SYSTEM_NAME_MAP).alias("system_name"),

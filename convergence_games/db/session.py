@@ -62,9 +62,10 @@ def create_db_and_tables() -> bool:
         port=5432,
         database=SETTINGS.DATABASE_NAME,
     )
-    engine = create_engine(connection_string)  # , connect_args={"check_same_thread": False})
+    engine = create_engine(connection_string)
 
     SQLModel.metadata.create_all(engine)
+    return True
 
 
 @dataclass
