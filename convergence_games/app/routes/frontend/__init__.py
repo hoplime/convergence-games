@@ -797,7 +797,7 @@ async def run_allocate(
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
     allocation_results = do_allocation(time_slot_id, engine, force_override=True)
-    return await admin_allocate(request, session, hx_target, time_slot_id)
+    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 def do_commit_or_rollback(
@@ -847,7 +847,7 @@ async def commit_allocate(
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
     do_commit_or_rollback(session, time_slot_id, from_table=AllocationResult, to_table=CommittedAllocationResult)
-    return await admin_allocate(request, session, hx_target, time_slot_id)
+    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.post("/admin/rollback_allocate")
@@ -861,7 +861,7 @@ async def rollback_allocate(
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
     do_commit_or_rollback(session, time_slot_id, from_table=CommittedAllocationResult, to_table=AllocationResult)
-    return await admin_allocate(request, session, hx_target, time_slot_id)
+    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.post("/admin/uncommit_allocate")
@@ -885,7 +885,7 @@ async def uncommit_allocate(
         for existing_result in existing_results:
             session.delete(existing_result)
         session.commit()
-    return await admin_allocate(request, session, hx_target, time_slot_id)
+    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 def revert_applied_compensations_for_time_slot(session: Session, time_slot_id: int):
@@ -932,7 +932,7 @@ async def compensate_draft(
 
         session.commit()
 
-    return await admin_allocate(request, session, hx_target, time_slot_id)
+    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.post("/admin/compensate_apply")
@@ -962,7 +962,7 @@ async def compensate_apply(
 
         session.commit()
 
-    return await admin_allocate(request, session, hx_target, time_slot_id)
+    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @dataclass
@@ -1005,13 +1005,29 @@ def extract_table_summary(table_allocation: TableAllocationResultView, gm_ids: s
     return table_summary
 
 
+@router.get("/admin")
+async def admin_landing(
+    request: Request,
+    hx_target: HxTarget,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        name="main/admin_landing.html.jinja",
+        context={"request": request},
+        block_name=hx_target,
+    )
+
+
 @router.get("/admin/allocate")
 async def admin_allocate(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
     time_slot_id: Annotated[int, Query()] = 1,
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+
     with session:
         # Get all of the allocation results for this time slot
         statement = (
@@ -1099,6 +1115,7 @@ async def admin_allocate(
             "table_summaries": table_summaries,
             "unallocated_groups": unallocated_groups,
             "compensation_summaries": compensation_summaries,
+            "api_key": request.headers.get("X-Api-Key"),
             "request": request,
         },
         block_name=hx_target,
@@ -1107,11 +1124,15 @@ async def admin_allocate(
 
 @router.get("/admin/move_menu")
 async def move_menu(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     group_id: Annotated[int, Query()],
     time_slot_id: Annotated[int, Query()],
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+
     with session:
         statement = (
             select(
@@ -1167,10 +1188,14 @@ async def move_menu(
 
 @router.get("/admin/move_button")
 async def move_button(
+    auth: AuthWithHandler,
     request: Request,
     group_id: Annotated[int, Query()],
     time_slot_id: Annotated[int, Query()],
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+
     return templates.TemplateResponse(
         name="shared/partials/move_button.html.jinja",
         context={
@@ -1221,7 +1246,7 @@ async def move(
             # Remove the old allocation result
             session.delete(current_allocation_result)
         session.commit()
-    return await admin_allocate(request, session, hx_target, time_slot_id)
+    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.put("/admin/checkin")
@@ -1241,15 +1266,19 @@ async def checkin(
         time_slot_id = adventuring_group.time_slot_id
         session.add(adventuring_group)
         session.commit()
-    return await admin_allocate(request, session, hx_target, time_slot_id)
+    return await admin_allocate(auth, request, session, hx_target, time_slot_id)
 
 
 @router.get("/admin/players")
 async def admin_players(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     hx_target: HxTarget,
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+
     with session:
         statement = select(Person).order_by(Person.name)
         people = session.exec(statement).all()
@@ -1258,6 +1287,7 @@ async def admin_players(
         name="main/players.html.jinja",
         context={
             "people": people,
+            "api_key": request.headers.get("X-Api-Key"),
             "request": request,
         },
         block_name=hx_target,
@@ -1266,10 +1296,14 @@ async def admin_players(
 
 @router.get("/admin/person_row_view")
 async def admin_person_row_view(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     person_id: Annotated[int | None, Query()] = None,
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+
     if person_id is None:
         return HTMLResponse(content="", status_code=200)
 
@@ -1287,11 +1321,15 @@ async def admin_person_row_view(
 
 @router.get("/admin/person_row_edit")
 async def admin_person_row_edit(
+    auth: AuthWithHandler,
     request: Request,
     session: Session,
     person_id: Annotated[int | None, Query()] = None,
     create: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
+    if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
+        return alerts
+
     with session:
         if create:
             person = Person(name="", email="")
@@ -1343,7 +1381,7 @@ async def admin_person_row_edit_put(
             session.rollback()
             print(e)
             return alerts_template_response([Alert(str(e), "error")], request)
-    return await admin_person_row_view(request, session, person_id)
+    return await admin_person_row_view(auth, request, session, person_id)
 
 
 # endregion

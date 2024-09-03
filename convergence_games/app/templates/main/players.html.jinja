@@ -39,7 +39,13 @@
                                     clip-rule="evenodd"
                                 />
                             </svg>
-                            <input type="password" name="X-API-Key" class="grow" value="" placeholder="API Key" />
+                            <input
+                                type="password"
+                                name="X-API-Key"
+                                class="grow"
+                                value="{{ api_key }}"
+                                placeholder="API Key"
+                            />
                         </label>
                     </li>
                 </ul>
@@ -80,6 +86,7 @@
                                     <button
                                         class="btn btn-primary"
                                         hx-get="/admin/person_row_edit?create=true"
+                                        hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
                                         hx-target="#player_list"
                                         hx-swap="beforeend"
                                     >

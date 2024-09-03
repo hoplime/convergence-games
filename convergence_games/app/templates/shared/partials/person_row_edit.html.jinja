@@ -35,6 +35,7 @@
         <button
             class="btn btn-ghost btn-sm"
             hx-put="/admin/person_row_edit{{ ('?person_id=' ~ person.id) if person.id is not none else '' }}"
+            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
             hx-include="closest .person_row_edit"
             hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
             hx-swap="outerHTML"
@@ -58,6 +59,7 @@
         <button
             class="btn btn-ghost btn-sm"
             hx-get="/admin/person_row_view{{ ('?person_id=' ~ person.id) if person.id is not none else '' }}"
+            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
             hx-swap="outerHTML"
         >
             <svg
