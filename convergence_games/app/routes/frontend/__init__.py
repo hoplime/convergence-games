@@ -247,7 +247,8 @@ async def login_post(
     email: Annotated[str, Form()],
     session: Session,
 ) -> HTMLResponse:
-    user = get_user(session, email.lower())
+    email = email.lower()
+    user = get_user(session, email)
     if user is None:
         return templates.TemplateResponse(
             name="main/signup.html.jinja",
@@ -301,6 +302,7 @@ async def signup_post(
     name: Annotated[str, Form()],
     session: Session,
 ) -> HTMLResponse:
+    email = email.lower()
     with session:
         user = Person(email=email, name=name)
         session.add(user)
