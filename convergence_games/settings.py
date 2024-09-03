@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     DATABASE_HOST: str = ""
     DATABASE_PORT: int = 5432
     DATABASE_NAME: str = ""
+    ENABLE_APP_INSIGHTS: bool = False
+    ENABLE_SENTRY: bool = True
+    SENTRY_DSN: str = ""
 
 
 SETTINGS = Settings()

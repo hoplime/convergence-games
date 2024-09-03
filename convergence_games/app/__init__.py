@@ -1,10 +1,19 @@
+import os
 from contextlib import asynccontextmanager
+from logging import getLogger
 from pathlib import Path
 
 import arel
+import sentry_sdk
+from azure.monitor.opentelemetry import configure_azure_monitor
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from opentelemetry import trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.trace import (
+    get_tracer_provider,
+)
 from sqlalchemy.exc import IntegrityError
 from starlette import status
 
@@ -14,7 +23,26 @@ from convergence_games.app.templates import templates
 from convergence_games.db.session import create_db_and_tables, get_startup_db_info
 from convergence_games.settings import SETTINGS
 
+if SETTINGS.ENABLE_SENTRY:
+    sentry_sdk.init(
+        dsn=SETTINGS.SENTRY_DSN,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for tracing.
+        traces_sample_rate=1.0,
+        # Set profiles_sample_rate to 1.0 to profile 100%
+        # of sampled transactions.
+        # We recommend adjusting this value in production.
+        profiles_sample_rate=1.0,
+    )
+
 STATIC_PATH = Path(__file__).parent / "static"
+
+if os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING") and SETTINGS.ENABLE_APP_INSIGHTS:
+    print("Will configure Azure Monitor")
+    configure_azure_monitor()
+
+    tracer = trace.get_tracer(__name__, tracer_provider=get_tracer_provider())
+    logger = getLogger(__name__)
 
 
 @asynccontextmanager
@@ -44,6 +72,10 @@ def integrity_error_handler(request: Request, exc: IntegrityError):
 
 
 app = FastAPI(lifespan=lifespan)
+
+if SETTINGS.ENABLE_APP_INSIGHTS:
+    FastAPIInstrumentor.instrument_app(app)
+
 # app.add_middleware(HTTPSRedirectMiddleware)
 app.add_exception_handler(IntegrityError, integrity_error_handler)
 app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
@@ -70,3 +102,8 @@ for favicon_file in (STATIC_PATH / "favicon").iterdir():
 
 app.include_router(frontend_router)
 app.include_router(api_router)
+
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0
