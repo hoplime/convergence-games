@@ -957,24 +957,26 @@ class GroupSummary:
     is_checked_in: bool
 
 
-def extract_table_summary(table_allocation: TableAllocationResultView, gm_ids: set) -> dict[str, Any]:
+def extract_table_summary(
+    table_allocation: TableAllocationResultView, gm_ids: set, committed_only: bool = False
+) -> dict[str, Any]:
     table_groups: list[GroupSummary] = []
     for allocation_result in table_allocation.allocation_results:
         adventuring_group = allocation_result.adventuring_group
-        comitted_group_ids = {
+        committed_group_ids = {
             committed_allocation_result.adventuring_group_id
             for committed_allocation_result in table_allocation.committed_allocation_results
         }
-        table_groups.append(
-            GroupSummary(
-                id=adventuring_group.id,
-                members=adventuring_group.members,
-                is_gm=adventuring_group.members[0].id == table_allocation.game.gamemaster_id,
-                is_gm_any_game=adventuring_group.members[0].id in gm_ids,
-                is_committed=adventuring_group.id in comitted_group_ids,
-                is_checked_in=adventuring_group.checked_in,
-            )
+        group_summary = GroupSummary(
+            id=adventuring_group.id,
+            members=adventuring_group.members,
+            is_gm=adventuring_group.members[0].id == table_allocation.game.gamemaster_id,
+            is_gm_any_game=adventuring_group.members[0].id in gm_ids,
+            is_committed=adventuring_group.id in committed_group_ids,
+            is_checked_in=adventuring_group.checked_in,
         )
+        if not committed_only or group_summary.is_committed:
+            table_groups.append(group_summary)
         # Put the GM at the front of the list always
         gm_index = next((i for i, group in enumerate(table_groups) if group.is_gm), None)
         if gm_index is not None:
@@ -985,6 +987,47 @@ def extract_table_summary(table_allocation: TableAllocationResultView, gm_ids: s
         "groups": table_groups,
     }
     return table_summary
+
+
+@router.get("/final/{time_slot_id}")
+def final(
+    request: Request,
+    session: Session,
+    time_slot_id: int,
+) -> HTMLResponse:
+    # This could be done much better as it doesn't need all of this data - but it's a one-off so it's fine
+    with session:
+        # Get all of the allocation results for this time slot
+        statement = (
+            select(TableAllocation)
+            .where(TableAllocation.time_slot_id == time_slot_id)
+            .order_by(TableAllocation.table_id)
+        )
+        table_allocations = session.exec(statement).all()
+        # TODO - this takes forever
+        table_allocations = [
+            TableAllocationResultView.model_validate(table_allocation) for table_allocation in table_allocations
+        ]
+
+        # Get the actual time slot
+        time_slot = request.state.db.time_slots_by_id[time_slot_id]
+
+    table_summaries: dict[int, dict[str, Any]] = {}
+
+    gm_ids = {table_allocation.game.gamemaster_id for table_allocation in table_allocations}
+
+    for table_allocation in table_allocations:
+        table_summaries[table_allocation.id] = extract_table_summary(table_allocation, gm_ids, committed_only=True)
+
+    return templates.TemplateResponse(
+        name="main/final.html.jinja",
+        context={
+            "request": request,
+            "time_slot": time_slot,
+            "table_summaries": table_summaries,
+            "table_allocations": table_allocations,
+        },
+    )
 
 
 @router.get("/admin")

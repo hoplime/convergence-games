@@ -1,0 +1,66 @@
+{% extends "shared/_layout.html.jinja" %}
+{% block title %}Final Allocations - Session {{ time_slot.name }} - Convergence 2024{% endblock %}
+{% block content %}
+    <title>Final Allocations - {{ time_slot.name }} - Convergence 2024</title>
+    <div class="mx-auto grid grid-cols-1 gap-4">
+        {# <h1 class="text-2xl font-semibold antialiased">Player Allocation</h1> #}
+
+        <div id="allocate_contents">
+            {% block allocate_contents %}
+                <div class="grid grid-cols-4 gap-4">
+                    {# Main Allocated #}
+                    {% for table_allocation in table_allocations %}
+                        {% set game = table_allocation.game %}
+                        {% set current_players = table_summaries[table_allocation.id].total_players %}
+                        {% set overflow_card_classes = 'col-span-4' if game.title == 'Overflow' %}
+                        {% set overflow_group_classes = 'grid-cols-4' if game.title == 'Overflow' %}
+                        <div class="{{ overflow_card_classes }} card w-full bg-base-200 shadow-xl">
+                            <div class="card-body">
+                                <h2 class="card-title">{{ game.title }}</h2>
+                                <h3 class="font-sans antialiased">{{ table_allocation.table.short_description }}</h3>
+                                {# Player Count Squares #}
+                                <div
+                                    class="absolute bottom-4 right-4 flex flex-row items-center justify-items-center gap-1"
+                                >
+                                    {# GM Square #}
+                                    {% set gm_highlight_class = "bg-yellow-400" if table_summaries[table_allocation.id].has_gm else "border-[1px] border-neutral" %}
+                                    <div class="flex flex-col items-center justify-items-center">
+                                        <span class="font-mono text-[8px]">GM</span>
+                                        <div class="flex flex-row">
+                                            <div class="{{ gm_highlight_class }} h-2 w-3"></div>
+                                        </div>
+                                    </div>
+
+                                    {# Player Squares #}
+                                    {% if game.maximum_players <= 30 %}
+                                        {% for player_count in range(1, game.maximum_players + 1) %}
+                                            <div class="flex flex-col items-center justify-items-center">
+                                                <span class="font-mono text-[8px]"
+                                                    >{{ 'min' if player_count == game.minimum_players else 'opt' if player_count == game.optimal_players else 'max' if player_count == game.maximum_players else '.' }}</span
+                                                >
+                                                <div class="flex flex-row">
+                                                    {% set highlight_class = "bg-success" if current_players == game.optimal_players else "bg-error" if current_players < game.minimum_players or current_players > game.maximum_players else "bg-current" %}
+                                                    {% set classes = (highlight_class if player_count <= current_players else "border-[1px] border-neutral") %}
+                                                    <div class="{{ classes }} h-2 w-3"></div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div>{{ current_players }}</div>
+                                    {% endif %}
+                                </div>
+
+                                {# Group Lists #}
+                                <div class="{{ overflow_group_classes }} grid grid-cols-1 justify-items-stretch gap-2">
+                                    {% for group in table_summaries[table_allocation.id].groups %}
+                                        {{ render_partial('shared/partials/group_summary_view_only.html.jinja', group=group) }}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endblock %}
+        </div>
+    </div>
+{% endblock %}
