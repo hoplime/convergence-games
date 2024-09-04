@@ -12,7 +12,7 @@ from typing import Any, Generator, Literal, Self, TypeAlias
 
 import polars as pl
 from sqlalchemy import Engine
-from sqlmodel import Session, SQLModel, create_engine, exists, func, select
+from sqlmodel import Session, SQLModel, create_engine, func, select
 
 from convergence_games.db.base_data import ALL_BASE_DATA
 from convergence_games.db.models import (
@@ -28,17 +28,16 @@ from convergence_games.db.models import (
     TimeSlot,
 )
 from convergence_games.db.sheets_importer import GoogleSheetsImporter
-
-PRINT = False
+from convergence_games.settings import SETTINGS
 
 
 def maybe_print(*args: Any, **kwargs: Any) -> None:
-    if PRINT:
+    if SETTINGS.DEBUG:
         print(*args, **kwargs)
 
 
 def maybe_pprint(*args: Any, **kwargs: Any) -> None:
-    if PRINT:
+    if SETTINGS.DEBUG:
         pprint(*args, **kwargs)
 
 
@@ -81,6 +80,7 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
             Person(
                 name=f"Simulated {i:03d}",
                 email=f"simulated{i:03d}@email.com",
+                compensation=random.choice([0] * 20 + [3, 4, 5]),
             )
             for i in range(current_n_players + 1, args.n_players + 1)
         ]
@@ -99,15 +99,33 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
             person.golden_d20s = 1
         session.add_all(people_with_golden_d20)
 
-        def simulate_session_preferences(time_slot_id: time_slot_id_t) -> list[SessionPreference]:
+        table_popularities = [
+            random.choice(
+                [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 1, 2],  # Very unpopular
+                    [0, 1, 2, 3, 4, 5],  # Randomly popular
+                    [4, 5, 5],  # Very popular
+                    [0, 1, 4, 5],  # Very polarizing
+                ]
+            )
+            for _ in table_allocations
+        ]
+
+        def simulate_session_preferences(
+            time_slot_id: time_slot_id_t, bias: list[int], has_d20s: bool
+        ) -> list[SessionPreference]:
             result = []
-            for table_allocation in table_allocations:
+            for table_allocation, table_popularity in zip(table_allocations, table_popularities):
                 if table_allocation.time_slot_id != time_slot_id:
                     continue
 
-                possible_options = [0, 1, 2, 3, 4, 5, 20] if person.golden_d20s > 0 else [0, 1, 2, 3, 4, 5]
+                possible_options = bias + table_popularity
+                preference_choice = random.choice(possible_options)
+                if preference_choice >= 4 and has_d20s:
+                    preference_choice = 20
+
                 session_preference = SessionPreference(
-                    preference=random.choice(possible_options),  # TODO: Weighted preferences
+                    preference=preference_choice,
                     table_allocation_id=table_allocation.id,
                 )
                 # We also simulate _not_ having a preference for a table allocation sometimes if it's a 3 - i.e. the default
@@ -117,6 +135,14 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
             return result
 
         # SIMULATE GROUPS
+        possible_bias_types = {
+            "balanced": [0, 1, 2, 3, 4, 5],
+            "picky": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+            "none": [],
+            "slightly_picky": [0],
+            "generous": [3, 4, 5],
+        }
+
         for time_slot in time_slots:
             maybe_print("Time Slot:", time_slot)
             players_gming_this_session = session.exec(
@@ -141,7 +167,11 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
                         time_slot_id=time_slot.id,
                         members=group_members,
                         checked_in=True,
-                        session_preferences=simulate_session_preferences(time_slot_id=time_slot.id),
+                        session_preferences=simulate_session_preferences(
+                            time_slot_id=time_slot.id,
+                            bias=random.choice(list(possible_bias_types.values())),
+                            has_d20s=all(person.golden_d20s > 0 for person in group_members),
+                        ),
                     )
                     session.add(group)
 
@@ -151,7 +181,11 @@ def create_simulated_player_data(args: argparse.Namespace) -> None:
                     time_slot_id=time_slot.id,
                     members=[remaining_player],
                     checked_in=True,
-                    session_preferences=simulate_session_preferences(time_slot_id=time_slot.id),
+                    session_preferences=simulate_session_preferences(
+                        time_slot_id=time_slot.id,
+                        bias=random.choice(list(possible_bias_types.values())),
+                        has_d20s=remaining_player.golden_d20s > 0,
+                    ),
                 )
                 session.add(group)
 
@@ -196,17 +230,16 @@ class Tier:
         if self.is_zero or self.raw_preference < 1:
             # Zero, or in the case of overflow - which is always 0.5, no value
             return 0
-        # The fudge factor means that two 4s is better than a 5 and a 3, for example
-        # TODO: This doesn't actually work if we don't have a swapping stage that considers new sums
-        fudge = 0
-        # fudge = {
-        #     5: 0.07,
-        #     4: 0.13,
-        #     3: 0.18,
-        #     2: 0.22,
-        #     1: 0.25,
-        # }.get(self.rank, 0)
-        return self.rank + self.compensation + fudge
+        # Compensation is a multiplier, so it favours higher positions
+        # e.g. compare:
+        # Player 1 has compensation of 0, Player 2 has compensation of 5
+        # There are two possible choices:
+        # 1. Player 1 has a rank of 5 (value 5), Player 2 has a rank of 4 (value 4 * (1+0.5) = 6)
+        #    The total value of these is 11
+        # 2. Player 1 has a rank of 4 (value 4), Player 2 has a rank of 5 (value 5 * (1+0.5) = 7.5)
+        #   The total value of these is 11.5
+        # So the second option is better, and the compensation is the tiebreaker
+        return self.rank * (1 + self.compensation / 10)
 
     def __eq__(self, other: Self) -> bool:
         if self.is_golden_d20 != other.is_golden_d20:
@@ -492,7 +525,7 @@ class GameAllocator:
                             name=f"gm-group-{gm_id}-{self.time_slot_id}",
                             time_slot_id=self.time_slot_id,
                             members=[gm],
-                            checked_in=False if gm_id != 0 else True,
+                            checked_in=False if gm_id == 0 else True,
                         )
                     )
                     session.commit()
@@ -935,6 +968,8 @@ class GameAllocator:
     def _summary(
         self, trial_results: dict[table_allocation_id_t, CurrentGameAllocation], label: str = "latest"
     ) -> None:
+        if not SETTINGS.DEBUG:
+            return
         current_allocations = list(trial_results.values())
 
         game_centric_rows: list[dict[str, Any]] = []
@@ -952,6 +987,7 @@ class GameAllocator:
 
         game_centric_df = pl.DataFrame(game_centric_rows)
         game_centric_df.write_csv(self.summary_dir / f"games.{label}.csv")
+        game_centric_df.write_csv(self.summary_dir / "games.best.csv")
 
         group_centric_rows: list[dict[str, Any]] = []
         for current_allocation in current_allocations:
@@ -959,23 +995,63 @@ class GameAllocator:
                 group_centric_rows.append(
                     {
                         "number_of_players": group.size,
+                        "compensation": group.tiered_preferences.average_compensation,
+                        "has_d20": group.tiered_preferences.has_d20,
                         "tier_rank": current_allocation.value_of_group(group).rank,
                     }
                 )
         group_centric_df = pl.DataFrame(group_centric_rows)
         group_centric_df.write_csv(self.summary_dir / f"groups.{label}.csv")
-        group_centric_df.group_by("tier_rank").agg(pl.len()).sort(pl.col("tier_rank")).write_csv(
-            self.summary_dir / f"groups_tier_counts.{label}.csv"
-        )
+        x = group_centric_df.group_by("tier_rank").agg(pl.len()).sort(pl.col("tier_rank"))
+        x.write_csv(self.summary_dir / f"groups_tier_counts.{label}.csv")
+        x.write_csv(self.summary_dir / "groups_tier_counts.best.csv")
 
         player_centric_df = group_centric_df.select(
             pl.exclude("number_of_players").repeat_by("number_of_players").explode()
         )
         player_centric_df.write_csv(self.summary_dir / f"players.{label}.csv")
+        player_centric_df.write_csv(self.summary_dir / "players.best.csv")
+
         # Bar chart of number of players per tier
-        player_centric_df.group_by("tier_rank").agg(pl.len()).sort(pl.col("tier_rank")).write_csv(
-            self.summary_dir / f"players_tier_counts.{label}.csv"
+        x = player_centric_df.group_by("tier_rank").agg(pl.len()).sort(pl.col("tier_rank"))
+        x.write_csv(self.summary_dir / f"players_tier_counts.{label}.csv")
+        x.write_csv(self.summary_dir / "players_tier_counts.best.csv")
+
+        # A grid of the number of groups per final tier_rank grouped by:
+        # - Compensation
+        # - Has D20
+        # e.g.
+        # | Compensation | Has D20 | Tier 0 | Tier 1 | Tier 2 | Tier 3 | Tier 4 | Tier 5 | Tier 20 |
+        # |--------------|---------|--------|--------|--------|--------|--------|--------|---------|
+        # | 0            | True    | 0      | 0      | 0      | 0      | 0      | 0      | 0       |
+        # | 0            | False   | 0      | 0      | 0      | 0      | 0      | 0      | 0       |
+        # position_centric_df = group_centric_df.select(pl.exclude("tier_rank").repeat_by("tier_rank").explode())
+        # position_centric_df.group_by("compensation", "has_d20", "tier_rank").agg(pl.len()).sort(
+        #     pl.col("compensation"), pl.col("has_d20"), pl.col("tier_rank")
+        # ).write_csv(self.summary_dir / f"positions.{label}.csv")
+        position_centric_df = group_centric_df.group_by("compensation", "has_d20", "tier_rank").agg(
+            pl.sum("number_of_players")
         )
+        pivoted_view = position_centric_df.with_columns(
+            pl.concat_str(pl.lit("tier_"), pl.col("tier_rank").cast(pl.String).str.zfill(2)).alias("tier_rank")
+        ).pivot("tier_rank", index=("compensation", "has_d20"), values="number_of_players", sort_columns=True)
+        tier_columns = {i: f"tier_{i:02d}" for i in range(6)} | {20: "tier_20"}
+        pivoted_view = (
+            pivoted_view.with_columns(
+                pl.sum_horizontal(pl.col(r"^tier_\d\d$")).alias("total_players"),
+                pl.sum_horizontal(
+                    *[
+                        pl.col(tier_column) * pl.lit(tier_value)
+                        for tier_value, tier_column in tier_columns.items()
+                        if tier_column in pivoted_view.columns
+                    ]
+                ).alias("total_points"),
+            )
+            .with_columns((pl.col("total_points") / pl.col("total_players")).alias("average_points_per_player"))
+            .sort(pl.col("has_d20"), pl.col("compensation"), descending=True)
+        )
+        pivoted_view.write_csv(self.summary_dir / f"positions.{label}.csv")
+        pivoted_view.write_csv(self.summary_dir / "positions.best.csv")
 
 
 def end_to_end_main(args: argparse.Namespace) -> None:
