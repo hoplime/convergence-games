@@ -1,8 +1,9 @@
 <div hx-target="this" class="flex max-w-full flex-row gap-2">
     <button
         class="btn btn-outline btn-sm self-end"
-        hx-get="/admin/move_menu?group_id={{ group_id }}&time_slot_id={{ time_slot_id }}"
+        hx-get="/admin/move_menu?group_id={{ group_id }}&time_slot_id={{ time_slot_id }}&checkin={{ checkin }}"
         hx-swap="outerHTML"
+        hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
     >
         Move
     </button>
@@ -11,7 +12,6 @@
         hx-put="/admin/checkin?group_id={{ group_id }}&checkin={{ checkin }}"
         hx-confirm="Are you sure you want to check {{ 'in' if checkin else 'out' }} this group?"
         hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
-        hx-target="#allocate_contents"
     >
         {% if checkin %}
             Check In

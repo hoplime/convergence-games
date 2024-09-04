@@ -1112,6 +1112,7 @@ def move_menu(
     session: Session,
     group_id: Annotated[int, Query()],
     time_slot_id: Annotated[int, Query()],
+    checkin: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
@@ -1165,6 +1166,7 @@ def move_menu(
             "time_slot_id": time_slot_id,
             "current_table_allocation_id": current_table_allocation_id,
             "candidates": candidates,
+            "checkin": checkin,
         },
     )
 
@@ -1175,6 +1177,7 @@ def move_button(
     request: Request,
     group_id: Annotated[int, Query()],
     time_slot_id: Annotated[int, Query()],
+    checkin: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
     if (alerts := maybe_alerts_from_auth(auth, request)) is not None:
         return alerts
@@ -1185,6 +1188,7 @@ def move_button(
             "request": request,
             "group_id": group_id,
             "time_slot_id": time_slot_id,
+            "checkin": checkin,
         },
     )
 
@@ -1249,7 +1253,7 @@ def checkin(
         time_slot_id = adventuring_group.time_slot_id
         session.add(adventuring_group)
         session.commit()
-    return admin_allocate(auth, request, session, hx_target, time_slot_id)
+    return move_button(auth, request, group_id, time_slot_id, not checkin)
 
 
 @router.get("/admin/players")

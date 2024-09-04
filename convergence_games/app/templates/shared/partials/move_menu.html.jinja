@@ -38,7 +38,8 @@
         </button>
         <button
             class="btn btn-outline btn-accent btn-sm self-end"
-            hx-get="/admin/move_button?group_id={{ group_id }}&time_slot_id={{ time_slot_id }}"
+            hx-get="/admin/move_button?group_id={{ group_id }}&time_slot_id={{ time_slot_id }}&checkin={{ checkin }}"
+            hx-headers='javascript:{"X-API-Key":document.querySelector("input[name=X-API-Key]").value}'
             hx-swap="outerHTML"
         >
             Cancel
