@@ -266,10 +266,12 @@ class TieredPreferences:
         preferences: dict[table_allocation_id_t, preference_score_t],
         average_compensation: float,
         table_allocations: list[TableAllocationWithExtra],
+        allow_d20s: bool,
     ) -> None:
         self.preferences = preferences
         self.average_compensation = average_compensation
         self.table_allocations = table_allocations
+        self.allow_d20s = allow_d20s
         maybe_print("Setting up tiered preferences")
         self.tier_list = self._init_tier_list()
         maybe_pprint(self.tier_list)
@@ -288,6 +290,8 @@ class TieredPreferences:
 
     def _init_tier_list(self) -> list[tuple[Tier, list[table_allocation_id_t]]]:
         preferences = self.preferences.copy()
+        if not self.allow_d20s:
+            preferences = {ta_id: min(score, 5) for ta_id, score in preferences.items()}
 
         # Add missing preferences
         for table_allocation in self.table_allocations:
@@ -361,6 +365,7 @@ class Group:
                 preferences=preferences,
                 average_compensation=average_compensation,
                 table_allocations=table_allocations,
+                allow_d20s=adventuring_group.has_d20s,
             ),
             checked_in=adventuring_group.checked_in,
         )
