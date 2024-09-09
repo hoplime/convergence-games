@@ -1,0 +1,30 @@
+{
+    // Hide files
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/node_modules": true,
+        ".pytest_cache": true,
+        ".ruff_cache": true,
+        ".venv": true,
+        "junit": true,
+    },
+    "[html]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "prettier.tabWidth": 4,
+        "editor.indentSize": "tabSize",
+        "editor.tabSize": 4
+    },
+    "workbench.colorCustomizations": {
+        "statusBar.background": "#ffffff",
+        "statusBar.foreground": "#15202b",
+        "statusBarItem.hoverBackground": "#e6e6e6",
+        "statusBarItem.remoteBackground": "#ffffff",
+        "statusBarItem.remoteForeground": "#15202b",
+        "tab.activeBorder": "#ffffff"
+    },
+}
