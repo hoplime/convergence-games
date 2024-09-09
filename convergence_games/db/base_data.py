@@ -80,8 +80,8 @@ BASE_TABLES = [
     Table(number=24, room=ROOM_4, private=False, id=24),
     # Side Rooms
     Table(number=25, room=SIDE_1, private=True, id=25),
-    Table(number=26, room=SIDE_1, private=True, id=26),
-    Table(number=27, room=SIDE_1, private=True, id=27),
+    Table(number=26, room=SIDE_2, private=True, id=26),
+    Table(number=27, room=SIDE_3, private=True, id=27),
     # Backup Rooms
     Table(number=28, room=EXTRA_, private=False, id=28),
     Table(number=29, room=EXTRA_, private=False, id=29),
