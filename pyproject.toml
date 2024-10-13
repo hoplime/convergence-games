@@ -28,6 +28,11 @@ opentelemetry-api = "^1.27.0"
 opentelemetry-sdk = "^1.27.0"
 azure-monitor-opentelemetry = "^1.6.1"
 sentry-sdk = {extras = ["fastapi"], version = "^2.13.0"}
+ipykernel = "^6.29.5"
+plotly = "^5.24.0"
+pandas = "^2.2.2"
+nbformat = "^5.10.4"
+scipy = "^1.14.1"
 
 
 [tool.poetry.group.dev.dependencies]
