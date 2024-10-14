@@ -1,4 +1,0 @@
-# CSS files are generated using Tailwind CSS, so we don't need to track them.
-# We only need to track the source files.
-*
-!.gitignore

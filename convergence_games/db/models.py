@@ -1,564 +1,294 @@
+from __future__ import annotations
+
 import datetime as dt
+from typing import TypeAlias
 
-from sqlalchemy import UniqueConstraint
-from sqlmodel import Enum, Field, Relationship, SQLModel
+from sqlmodel import Enum, Field, ForeignKeyConstraint, Relationship, SQLModel, UniqueConstraint
 
-from convergence_games.db.extra_types import GameCrunch, GameNarrativism, GameTone
-from convergence_games.settings import SETTINGS
+from convergence_games.db.enums import GameCrunch, GameNarrativism, GameTone
+
+# Types
+MEDIA_LINK: TypeAlias = str
 
 
-# region Links
+# Game Information Link Models
 class GameGenreLink(SQLModel, table=True):
+    __tablename__ = "game_genre_link"
     game_id: int | None = Field(default=None, foreign_key="game.id", primary_key=True)
     genre_id: int | None = Field(default=None, foreign_key="genre.id", primary_key=True)
 
 
 class GameContentWarningLink(SQLModel, table=True):
+    __tablename__ = "game_content_warning_link"
     game_id: int | None = Field(default=None, foreign_key="game.id", primary_key=True)
-    content_warning_id: int | None = Field(default=None, foreign_key="contentwarning.id", primary_key=True)
+    content_warning_id: int | None = Field(default=None, foreign_key="content_warning.id", primary_key=True)
 
 
-class PersonAdventuringGroupLink(SQLModel, table=True):
-    adventuring_group_id: int | None = Field(default=None, foreign_key="adventuringgroup.id", primary_key=True)
-    member_id: int | None = Field(default=None, foreign_key="person.id", primary_key=True)
+# Game Information Base Models
+class VenueBase(SQLModel):
+    name: str = Field(index=True, unique=True)
+    description: str
+    address: str
+    profile_picture: MEDIA_LINK | None = Field(default=None)
 
 
-# endregion
+class Venue(VenueBase, table=True):
+    __tablename__ = "venue"
+    id: int | None = Field(default=None, primary_key=True)
+    rooms: list[Room] = Relationship(back_populates="venue")
+    events: list[Event] = Relationship(back_populates="venue")
 
 
-# region System
+class EventBase(SQLModel):
+    name: str = Field(index=True, unique=True)
+    description: str
+    start_date: dt.datetime
+    end_date: dt.datetime
+    profile_picture: MEDIA_LINK | None = Field(default=None)
+    venue_id: int = Field(foreign_key="venue.id")
+
+
+class Event(EventBase, table=True):
+    __tablename__ = "event"
+    id: int | None = Field(default=None, primary_key=True)
+    venue: Venue = Relationship(back_populates="events")
+    sessions: list[Session] = Relationship(back_populates="event")
+    user_event_infos: list[UserEventInfo] = Relationship(back_populates="event")
+    time_slots: list[TimeSlot] = Relationship(back_populates="event")
+
+
 class SystemBase(SQLModel):
     name: str = Field(index=True, unique=True)
+    description: str
+    profile_picture: MEDIA_LINK | None = Field(default=None)
 
 
 class System(SystemBase, table=True):
+    __tablename__ = "system"
     id: int | None = Field(default=None, primary_key=True)
-    games: list["Game"] = Relationship(back_populates="system")
+    games: list[Game] = Relationship(back_populates="system")
 
 
-class SystemCreate(SystemBase):
-    pass
-
-
-class SystemRead(SystemBase):
-    id: int
-    test: str = "test"
-
-
-class SystemWithExtra(SystemRead):
-    games: list["Game"]
-
-
-class SystemUpdate(SystemBase):
-    name: str | None = None
-
-
-# endregion
-
-
-# region Genre
 class GenreBase(SQLModel):
     name: str = Field(index=True, unique=True)
+    description: str
 
 
 class Genre(GenreBase, table=True):
+    __tablename__ = "genre"
     id: int | None = Field(default=None, primary_key=True)
-    games: list["Game"] = Relationship(back_populates="genres", link_model=GameGenreLink)
+    games: list[Game] = Relationship(back_populates="genres")
 
 
-class GenreCreate(GenreBase):
-    pass
-
-
-class GenreRead(GenreBase):
-    id: int
-
-
-class GenreWithExtra(GenreRead):
-    games: list["Game"]
-
-
-class GenreUpdate(GenreBase):
-    name: str | None = None
-
-
-# endregion
-
-
-# region ContentWarning
 class ContentWarningBase(SQLModel):
     name: str = Field(index=True, unique=True)
+    description: str
 
 
 class ContentWarning(ContentWarningBase, table=True):
+    __tablename__ = "content_warning"
     id: int | None = Field(default=None, primary_key=True)
-    games: list["Game"] = Relationship(back_populates="content_warnings", link_model=GameContentWarningLink)
+    games: list[Game] = Relationship(back_populates="content_warnings")
 
 
-class ContentWarningCreate(ContentWarningBase):
-    pass
+class ExtraGMBase(SQLModel):
+    gamemaster_id: int = Field(foreign_key="user.id")
+    game_id: int = Field(foreign_key="game.id")
 
 
-class ContentWarningRead(ContentWarningBase):
-    id: int
+class ExtraGM(ExtraGMBase, table=True):
+    __tablename__ = "extra_gm"
+    __table_args__ = (UniqueConstraint("gamemaster_id", "game_id"),)
+    id: int | None = Field(default=None, primary_key=True)
 
 
-class ContentWarningWithExtra(ContentWarningRead):
-    games: list["Game"]
-
-
-class ContentWarningUpdate(ContentWarningBase):
-    name: str | None = None
-
-
-# endregion
-
-
-# region Game
 class GameBase(SQLModel):
-    title: str = Field(index=True)
+    name: str = Field(index=True, unique=True)
+    tagline: str
     description: str
+    min_age: int
     crunch: GameCrunch = Field(default=GameCrunch.MEDIUM, sa_type=Enum(GameCrunch), index=True)
     narrativism: GameNarrativism = Field(default=GameNarrativism.BALANCED, sa_type=Enum(GameNarrativism), index=True)
     tone: GameTone = Field(default=GameTone.LIGHT_HEARTED, sa_type=Enum(GameTone), index=True)
-    age_suitability: str = Field(default="Anyone", index=True)
-    minimum_players: int = Field(default=2)
-    optimal_players: int = Field(default=4)
-    maximum_players: int = Field(default=6)
+    player_count_minimum: int
+    player_count_optimal: int
+    player_count_maximum: int
     nz_made: bool = Field(default=False)
     designer_run: bool = Field(default=False)
-    hidden: bool = Field(default=False)
-
-    gamemaster_id: int = Field(foreign_key="person.id", index=True)
+    profile_picture: MEDIA_LINK | None = Field(default=None)
     system_id: int = Field(foreign_key="system.id")
+    gamemaster_id: int = Field(foreign_key="user.id")
+    event_id: int = Field(foreign_key="event.id")
 
 
 class Game(GameBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-
-    genres: list[Genre] = Relationship(back_populates="games", link_model=GameGenreLink)
-    content_warnings: list[ContentWarning] = Relationship(back_populates="games", link_model=GameContentWarningLink)
-    gamemaster: "Person" = Relationship(back_populates="gmd_games")
-    system: System = Relationship(back_populates="games")
-    table_allocations: list["TableAllocation"] = Relationship(back_populates="game")
-
-    def __str__(self):
-        result = f"""
-        ** {self.title} **
-        {self.system.name} | {", ".join(genre.name for genre in self.genres)}
-        {self.crunch} | {self.narrativism} | {self.tone} | {self.age_suitability} | {self.minimum_players} - {self.maximum_players} players
-        {self.description}
-        Run by: {self.gamemaster.name}
-        """.strip()
-        return "\n".join(line.lstrip() for line in result.split("\n"))
-
-
-class GameCreate(GameBase):
-    pass
-
-
-class GameRead(GameBase):
-    id: int
-
-
-class GameUpdate(GameBase):
-    title: str | None = None
-    description: str | None = None
-    crunch: GameCrunch | None = None
-    narrativism: GameNarrativism | None = None
-    tone: GameTone | None = None
-    age_suitability: str | None = None
-    minimum_players: int | None = None
-    optimal_players: int | None = None
-    maximum_players: int | None = None
-    gamemaster_id: int | None = None
-    system_id: int | None = None
-    nz_made: bool | None = None
-    designer_run: bool | None = None
-    hidden: bool | None = None
-
-
-class GameWithExtra(GameRead):
-    genres: list[Genre] = []
-    content_warnings: list[ContentWarning] = []
-    gamemaster: "Person"
-    system: System
-    table_allocations: list["TableAllocationWithSlot"] = []
-
-    @property
-    def schedule(self) -> list[tuple[str, list[bool]]]:
-        # TODO: Assert that there are exactly 5 time slots, or be smart about time slots
-        flags = [False] * 5
-        for table_allocation in self.table_allocations:
-            flags[table_allocation.time_slot_id - 1] = True
-        result = [
-            ("SAT", flags[:3]),
-            ("SUN", flags[3:]),
-        ]
-        return result
-
-    @property
-    def has_private_available(self) -> bool:
-        if self.id == 1:
-            pass
-        return any(table_allocation.table.private for table_allocation in self.table_allocations)
-
-    @property
-    def short_description(self) -> str:
-        # First 100 characters of the description, or the whole thing if it's shorter
-        # Add ... if the description is longer than 100 characters
-        # Cut off at a word boundary
-        if len(self.description) > 100:
-            return self.description[:100].rsplit(" ", 1)[0] + "..."
-        return self.description
-
-
-# endregion
-
-
-# region Person
-class PersonBase(SQLModel):
-    name: str = Field(index=True)
-    email: str = Field(index=True, unique=True)
-    golden_d20s: int = Field(default=0)
-    compensation: int = Field(default=0)
-
-
-class Person(PersonBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-
-    gmd_games: list[Game] = Relationship(back_populates="gamemaster")
-    # TOOD: Some constraint on being in multiple groups in the same session?
-    adventuring_groups: list["AdventuringGroup"] = Relationship(
-        back_populates="members", link_model=PersonAdventuringGroupLink
+    __tablename__ = "game"
+    __table_args__ = (
+        # This redundant constraint is necessary for the foreign key constraint in Session
+        UniqueConstraint("id", "event_id"),
     )
-    compensations: list["Compensation"] = Relationship(back_populates="person")
+    id: int | None = Field(default=None, primary_key=True)
+    system: System = Relationship(back_populates="games")
+    gamemaster: User = Relationship(back_populates="games")
+    event: Event = Relationship(back_populates="games")
+    genres: list[Genre] = Relationship(back_populates="games")
+    content_warnings: list[ContentWarning] = Relationship(back_populates="games")
+    extra_gms: list[ExtraGM] = Relationship(back_populates="game")
+    sessions: list[Session] = Relationship(back_populates="game")
 
 
-class PersonCreate(PersonBase):
-    pass
-
-
-class PersonRead(PersonBase):
-    id: int
-
-
-class PersonWithExtra(PersonRead):
-    gmd_games: list[Game]
-    adventuring_groups: list["AdventuringGroup"]
-    compensations: list["Compensation"]
-
-
-class PersonWithAdventuringGroups(PersonRead):
-    adventuring_groups: list["AdventuringGroup"]
-
-
-class PersonUpdate(PersonBase):
-    name: str | None = None
-    email: str | None = None
-    golden_d20s: int | None = None
-    compensation: int | None = None
-
-
-# endregion
-
-
-# region TimeSlot
+# Timetable Information Base Models
 class TimeSlotBase(SQLModel):
     name: str
     start_time: dt.datetime
     end_time: dt.datetime
+    event_id: int = Field(foreign_key="event.id")
 
 
 class TimeSlot(TimeSlotBase, table=True):
+    __tablename__ = "time_slot"
+    __table_args__ = (
+        # This redundant constraint is necessary for the foreign key constraint in Session
+        UniqueConstraint("id", "event_id"),
+    )
     id: int | None = Field(default=None, primary_key=True)
-
-    table_allocations: list["TableAllocation"] = Relationship(back_populates="time_slot")
-    adventuring_groups: list["AdventuringGroup"] = Relationship(back_populates="time_slot")
-    compensations: list["Compensation"] = Relationship(back_populates="time_slot")
-
-    @property
-    def open_time(self) -> dt.datetime:
-        return self.start_time - dt.timedelta(hours=48)
-
-    @property
-    def is_open_for_checkin(self) -> bool:
-        return self.open_time < dt.datetime.now() or SETTINGS.FLAG_ALWAYS_ALLOW_CHECKINS
+    event: Event = Relationship(back_populates="time_slots")
+    sessions: list[Session] = Relationship(back_populates="time_slot")
 
 
-class TimeSlotCreate(TimeSlotBase):
-    pass
+class RoomBase(SQLModel):
+    name: str
+    description: str
+    venue_id: int = Field(foreign_key="venue.id")
 
 
-class TimeSlotRead(TimeSlotBase):
-    id: int
+class Room(RoomBase, table=True):
+    __tablename__ = "room"
+    id: int | None = Field(default=None, primary_key=True)
+    venue: Venue = Relationship(back_populates="rooms")
+    tables: list[Table] = Relationship(back_populates="room")
 
 
-class TimeSlotWithExtra(TimeSlotRead):
-    table_allocations: list["TableAllocationWithExtra"]
-    adventuring_groups: list["AdventuringGroupWithExtra"]
-    compensations: list["Compensation"]
-
-
-class TimeSlotUpdate(TimeSlotBase):
-    name: str | None = None
-    start_time: dt.datetime | None = None
-    end_time: dt.datetime | None = None
-
-
-# endregion
-
-
-# region Table
 class TableBase(SQLModel):
-    number: int = Field(index=True)
-    room: str = Field(index=True, default="")
-    private: bool = Field(default=False)
-
-    @property
-    def short_description(self) -> str:
-        if self.room and self.number:
-            return f"Table {self.number} ({self.room})"
-        elif self.room:
-            return self.room
-        return str(self.number)
+    name: str
+    room_id: int = Field(foreign_key="room.id")
 
 
 class Table(TableBase, table=True):
+    __tablename__ = "table"
     id: int | None = Field(default=None, primary_key=True)
-
-    table_allocations: list["TableAllocation"] = Relationship(back_populates="table")
-
-
-class TableCreate(TableBase):
-    pass
+    room: Room = Relationship(back_populates="tables")
+    sessions: list[Session] = Relationship(back_populates="table")
 
 
-class TableRead(TableBase):
-    id: int
+class SessionBase(SQLModel):
+    game_id: int = Field(foreign_key="game.id")
+    table_id: int = Field(foreign_key="table.id")
+    time_slot_id: int = Field(foreign_key="time_slot.id")
+    event_id: int = Field(foreign_key="event.id")  # Logically redundant, but necessary for constraints
 
 
-class TableWithExtra(TableRead):
-    table_allocations: list["TableAllocationWithExtra"]
+class Session(SessionBase, table=True):
+    __tablename__ = "session"
+    __table_args__ = (
+        # https://dba.stackexchange.com/a/58972
+        # These two constraints ensure that the Game and Session are part of the same Event
+        ForeignKeyConstraint(["game_id", "event_id"], ["game.id", "game.event_id"]),
+        ForeignKeyConstraint(["time_slot_id", "event_id"], ["time_slot.id", "time_slot.event_id"]),
+    )
+    id: int | None = Field(default=None, primary_key=True)
+    game: Game = Relationship(back_populates="sessions")
+    table: Table = Relationship(back_populates="sessions")
+    time_slot: TimeSlot = Relationship(back_populates="sessions")
+    event: Event = Relationship(back_populates="sessions")
 
 
-class TableUpdate(TableBase):
-    number: int | None = None
-    room: str | None = None
-    private: bool | None = None
+# User Information Base Models
+class UserEventInfoBase(SQLModel):
+    golden_d20s: int = 0
+    compensation: int = 0
+    event_id: int = Field(foreign_key="event.id")
+    user_id: int = Field(foreign_key="user.id")
 
 
-# endregion
+class UserEventInfo(UserEventInfoBase, table=True):
+    __tablename__ = "user_event_info"
+    id: int | None = Field(default=None, primary_key=True)
+    event: Event = Relationship(back_populates="user_event_infos")
+    user: User = Relationship(back_populates="user_event_infos")
+    compensations: list[Compensation] = Relationship(back_populates="user_event_info")
 
 
-# region TableAllocation
-class TableAllocationBase(SQLModel):
-    table_id: int = Field(foreign_key="table.id", index=True)
-    time_slot_id: int = Field(foreign_key="timeslot.id", index=True)
-    game_id: int = Field(foreign_key="game.id", index=True)
-
-
-class TableAllocation(TableAllocationBase, table=True):
-    id: int | None = Field(primary_key=True)
-
-    table: Table = Relationship(back_populates="table_allocations")
-    time_slot: TimeSlot = Relationship(back_populates="table_allocations")
-    game: Game = Relationship(back_populates="table_allocations")
-    session_preferences: list["SessionPreference"] = Relationship(back_populates="table_allocation")
-    allocation_results: list["AllocationResult"] = Relationship(back_populates="table_allocation")
-    committed_allocation_results: list["CommittedAllocationResult"] = Relationship(back_populates="table_allocation")
-    __table_args__ = (UniqueConstraint("table_id", "time_slot_id", name="unique_table_allocation"),)
-
-
-class TableAllocationCreate(TableAllocationBase):
-    pass
-
-
-class TableAllocationRead(TableAllocationBase):
-    id: int
-
-
-class TableAllocationWithExtra(TableAllocationRead):
-    table: Table
-    time_slot: TimeSlot
-    game: GameWithExtra
-    session_preferences: list["SessionPreference"]
-    allocation_results: list["AllocationResult"]
-    committed_allocation_results: list["CommittedAllocationResult"]
-
-
-class TableAllocationUpdate(TableAllocationBase):
-    table_id: int | None = None
-    slot_id: int | None = None
-    game_id: int | None = None
-
-
-class TableAllocationWithSlot(TableAllocationRead):
-    table: Table
-    time_slot: TimeSlot
-
-
-# endregion
-
-
-# region SessionPreference
-class SessionPreferenceBase(SQLModel):
-    preference: int = Field(default=3)
-    adventuring_group_id: int = Field(primary_key=True, foreign_key="adventuringgroup.id", index=True)
-    table_allocation_id: int = Field(primary_key=True, foreign_key="tableallocation.id", index=True)
-
-
-class SessionPreference(SessionPreferenceBase, table=True):
-    adventuring_group: "AdventuringGroup" = Relationship(back_populates="session_preferences")
-    table_allocation: TableAllocation = Relationship(back_populates="session_preferences")
-
-
-class SessionPreferenceCreate(SessionPreferenceBase):
-    pass
-
-
-class SessionPreferenceRead(SessionPreferenceBase):
-    pass
-
-
-class SessionPreferenceWithExtra(SessionPreferenceRead):
-    adventuring_group: "AdventuringGroup"
-    table_allocation: TableAllocation
-
-
-class SessionPreferenceUpdate(SessionPreferenceBase):
-    preference: int | None = None
-    adventuring_group_id: int | None = None
-    table_allocation_id: int | None = None
-
-
-# endregion
-
-
-# region AdventuringGroup
-class AdventuringGroupBase(SQLModel):
+class UserBase(SQLModel):
     name: str = Field(index=True)
-    time_slot_id: int = Field(foreign_key="timeslot.id", index=True)
-    checked_in: bool = Field(default=False)
+    email: str = Field(index=True, unique=True)
+    date_of_birth: dt.date
+    description: str
+    profile_picture: MEDIA_LINK | None = Field(default=None)
 
 
-class AdventuringGroup(AdventuringGroupBase, table=True):
-    id: int | None = Field(primary_key=True)
-
-    time_slot: TimeSlot = Relationship(back_populates="adventuring_groups")
-    members: list[Person] = Relationship(back_populates="adventuring_groups", link_model=PersonAdventuringGroupLink)
-    session_preferences: list["SessionPreference"] = Relationship(back_populates="adventuring_group")
-    allocation_results: list["AllocationResult"] = Relationship(back_populates="adventuring_group")
-    committed_allocation_results: list["CommittedAllocationResult"] = Relationship(back_populates="adventuring_group")
-
-    __table_args__ = (UniqueConstraint("name", "time_slot_id", name="unique_adventuring_group"),)
-
-    @property
-    def has_d20s(self) -> bool:
-        return all(member.golden_d20s > 0 for member in self.members)
+class User(UserBase, table=True):
+    __tablename__ = "user"
+    id: int | None = Field(default=None, primary_key=True)
+    games: list[Game] = Relationship(back_populates="gamemaster")
+    user_event_infos: list[UserEventInfo] = Relationship(back_populates="user")
 
 
-class AdventuringGroupCreate(AdventuringGroupBase):
-    pass
+# Player Game Selection Base Models
+class GroupBase(SQLModel):
+    join_code: str = Field(index=True)
+    time_slot_id: int = Field(foreign_key="time_slot.id")
+    checked_in: bool = False
 
 
-class AdventuringGroupRead(AdventuringGroupBase):
-    id: int
+class Group(GroupBase, table=True):
+    __tablename__ = "group"
+    id: int | None = Field(default=None, primary_key=True)
+    time_slot: TimeSlot = Relationship(back_populates="groups")
+    group_session_preferences: list[GroupSessionPreference] = Relationship(back_populates="group")
 
 
-class AdventuringGroupWithExtra(AdventuringGroupRead):
-    time_slot: TimeSlot
-    members: list[Person]
-    session_preferences: list["SessionPreference"]
-    allocation_results: list["AllocationResult"]
-    committed_allocation_results: list["CommittedAllocationResult"]
-
-    @property
-    def has_d20s(self) -> bool:
-        return all(member.golden_d20s > 0 for member in self.members)
+class GroupSessionPreferenceBase(SQLModel):
+    group_id: int = Field(foreign_key="group.id")
+    session_id: int = Field(foreign_key="session.id")
+    preference: int
 
 
-# endregion
+class GroupSessionPreference(GroupSessionPreferenceBase, table=True):
+    __tablename__ = "group_session_preference"
+    __table_args__ = (UniqueConstraint("group_id", "session_id"),)
+    id: int | None = Field(default=None, primary_key=True)
+    group: Group = Relationship(back_populates="group_session_preferences")
+    session: Session = Relationship(back_populates="group_session_preferences")
 
 
-# region GameAllocationRelatedStuff
+# Allocation Base Models
 class AllocationResultBase(SQLModel):
-    table_allocation_id: int = Field(foreign_key="tableallocation.id", index=True)
-    adventuring_group_id: int = Field(foreign_key="adventuringgroup.id", index=True)
+    session_id: int = Field(foreign_key="session.id")
+    group_id: int = Field(foreign_key="group.id")
+    committed: bool = False
 
 
 class AllocationResult(AllocationResultBase, table=True):
-    id: int | None = Field(primary_key=True)
-
-    table_allocation: TableAllocation = Relationship(back_populates="allocation_results")
-    adventuring_group: AdventuringGroup = Relationship(back_populates="allocation_results")
-
-
-class AllocationResultCreate(AllocationResultBase):
-    pass
+    __tablename__ = "allocation_result"
+    __table_args__ = (UniqueConstraint("session_id", "group_id"),)
+    id: int | None = Field(default=None, primary_key=True)
+    session: Session = Relationship(back_populates="allocation_results")
+    group: Group = Relationship(back_populates="allocation_results")
 
 
-class AllocationResultRead(AllocationResultBase):
-    id: int
-
-
-class AllocationResultWithExtra(AllocationResultRead):
-    table_allocation: TableAllocation
-    adventuring_group: AdventuringGroupWithExtra
-
-
-class AllocationResultUpdate(AllocationResultBase):
-    table_allocation_id: int | None = None
-    adventuring_group_id: int | None = None
-
-
-class CommittedAllocationResult(AllocationResultBase, table=True):
-    id: int | None = Field(primary_key=True)
-
-    table_allocation: TableAllocation = Relationship(back_populates="committed_allocation_results")
-    adventuring_group: AdventuringGroup = Relationship(back_populates="committed_allocation_results")
-
-
-class CommittedAllocationResultWithExtra(AllocationResultRead):
-    table_allocation: TableAllocation
-    adventuring_group: AdventuringGroupWithExtra
-
-
-# endregion
-
-
-# region TableAllocationResultView
-class TableAllocationResultView(TableAllocationRead):
-    table: Table
-    time_slot: TimeSlot
-    game: GameWithExtra
-    allocation_results: list["AllocationResultWithExtra"]
-    committed_allocation_results: list["CommittedAllocationResultWithExtra"]
-
-
-# endregion
-
-
-# region Compensation
 class CompensationBase(SQLModel):
-    person_id: int = Field(foreign_key="person.id", index=True)
-    time_slot_id: int = Field(foreign_key="timeslot.id", index=True)
+    user_event_info_id: int = Field(foreign_key="user_event_info.id")
+    time_slot_id: int = Field(foreign_key="time_slot.id")
     compensation_delta: int = Field(default=0)
-    golden_d20_delta: int = Field(default=0)
-    applied: bool = Field(default=False, index=True)
-    reset: bool = Field(default=False)
+    golden_d20s_delta: int = Field(default=0)
+    applied: bool = False
+    reset: bool = False
 
 
 class Compensation(CompensationBase, table=True):
-    id: int | None = Field(primary_key=True)
-
-    person: Person = Relationship(back_populates="compensations")
+    __tablename__ = "compensation"
+    __table_args__ = (UniqueConstraint("user_event_info_id", "time_slot_id"),)
+    id: int | None = Field(default=None, primary_key=True)
+    user_event_info: UserEventInfo = Relationship(back_populates="compensations")
     time_slot: TimeSlot = Relationship(back_populates="compensations")
-
-
-class CompensationWithExtra(CompensationBase):
-    person: Person
-    time_slot: TimeSlot
-
-
-# endregion

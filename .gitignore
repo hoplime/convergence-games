@@ -1,9 +1,15 @@
+# Packages and caches
 node_modules
-poetry.lock
-.venv/
 __pycache__/
+.venv/
+
+# Data
 *.db
-docker-home/
 *.csv
-ignore/
+
+# Sensitive data
 .env
+
+# Working files
+docker-home/
+ignore/
