@@ -1,0 +1,56 @@
+{
+    "version": 1.1,
+    "tags": [
+        {
+            "name": "TestPage",
+            "description": {
+                "kind": "markdown",
+                "value": "**Component:** TestPage\n\nRequires:\n\n\nOptional:\n"
+            },
+            "references": [
+                {
+                    "name": "Source",
+                    "url": "file:///home/jacob/convergence-games-2025/convergence_games/app/templates/components/TestPage.html.jinja"
+                }
+            ],
+            "attributes": []
+        },
+        {
+            "name": "Card",
+            "description": {
+                "kind": "markdown",
+                "value": "**Component:** Card\n\nRequires:\n  - test\n\nOptional:\n  - xyz"
+            },
+            "references": [
+                {
+                    "name": "Source",
+                    "url": "file:///home/jacob/convergence-games-2025/convergence_games/app/templates/components/Card.html.jinja"
+                }
+            ],
+            "attributes": [
+                {
+                    "name": "test",
+                    "description": "Required attribute test"
+                },
+                {
+                    "name": "xyz",
+                    "description": "Optional attribute xyz"
+                }
+            ]
+        },
+        {
+            "name": "Layout",
+            "description": {
+                "kind": "markdown",
+                "value": "**Component:** Layout\n\nRequires:\n\n\nOptional:\n"
+            },
+            "references": [
+                {
+                    "name": "Source",
+                    "url": "file:///home/jacob/convergence-games-2025/convergence_games/app/templates/components/Layout.html.jinja"
+                }
+            ],
+            "attributes": []
+        }
+    ]
+}

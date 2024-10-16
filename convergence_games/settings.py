@@ -25,5 +25,8 @@ class Settings(BaseSettings):
             database=self.DATABASE_NAME,
         )
 
+    # Web
+    USE_HTTPS: bool = False
+
 
 SETTINGS = Settings()

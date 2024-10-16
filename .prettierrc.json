@@ -1,0 +1,14 @@
+{
+    "tabWidth": 4,
+    "printWidth": 120,
+    "overrides": [
+        {
+            "files": "**/*.jinja",
+            "options": {
+                "parser": "jinja-template"
+            }
+        }
+    ],
+    "plugins": ["prettier-plugin-jinja-template", "prettier-plugin-tailwindcss"],
+    "tailwindEntryPoint": "./style.css"
+}

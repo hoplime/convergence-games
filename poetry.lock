@@ -318,6 +318,40 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
+name = "jinja2-fragments"
+version = "1.6.0"
+description = "Render Jinja2 template block as HTML page fragments on Python web frameworks."
+optional = false
+python-versions = "*"
+files = [
+    {file = "jinja2_fragments-1.6.0-py3-none-any.whl", hash = "sha256:49a5815cd7210edf234bf137b6005abf1ad336ff93c65519deddc41d91713986"},
+    {file = "jinja2_fragments-1.6.0.tar.gz", hash = "sha256:5bd7dd49b7dbfa174d45d6a991cfe3cba4a08a4b66f87cf248aa739eebc435f8"},
+]
+
+[package.dependencies]
+jinja2 = ">=3.1.0"
+
+[package.extras]
+dev = ["pre-commit"]
+tests = ["fastapi", "flask (>=2.1.0)", "litestar[standard]", "pytest", "pytest-asyncio", "quart (>=0.18.0)", "sanic", "sanic-ext", "sanic-testing", "starlette[full]"]
+
+[[package]]
+name = "jinjax"
+version = "0.46"
+description = "Replace your HTML templates with Python server-Side components"
+optional = false
+python-versions = "<4.0,>=3.10"
+files = [
+    {file = "jinjax-0.46-py3-none-any.whl", hash = "sha256:02aeb1e711172e34ed2daa6eda5b26b9ce9b8071c4828eb06011332d5ae38185"},
+    {file = "jinjax-0.46.tar.gz", hash = "sha256:3baeebd0195abc585d9c33d651bbc0fe51241718ce18cdaf3a3531572945d850"},
+]
+
+[package.dependencies]
+jinja2 = ">=3.0"
+markupsafe = ">=2.0"
+whitenoise = ">=5.3"
+
+[[package]]
 name = "markupsafe"
 version = "3.0.1"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -1161,7 +1195,21 @@ files = [
     {file = "websockets-13.1.tar.gz", hash = "sha256:a3b3366087c1bc0a2795111edcadddb8b3b59509d5db5d7ea3fdd69f954a8878"},
 ]
 
+[[package]]
+name = "whitenoise"
+version = "6.7.0"
+description = "Radically simplified static file serving for WSGI applications"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "whitenoise-6.7.0-py3-none-any.whl", hash = "sha256:a1ae85e01fdc9815d12fa33f17765bc132ed2c54fa76daf9e39e879dd93566f6"},
+    {file = "whitenoise-6.7.0.tar.gz", hash = "sha256:58c7a6cd811e275a6c91af22e96e87da0b1109e9a53bb7464116ef4c963bf636"},
+]
+
+[package.extras]
+brotli = ["brotli"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b2eb6b8953c79e0f743b2822bd358596ce9ec0c307c778f4eb684a1b4a34fd04"
+content-hash = "a35f5d682b99ae9a58ff2e418aaa3fa1947c224cfcaac738e9a7b6edec4ca4b4"

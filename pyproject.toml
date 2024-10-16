@@ -16,6 +16,8 @@ pydantic = "^2.9.2"
 psycopg2-binary = "^2.9.9"
 pydantic-settings = "^2.5.2"
 asyncpg = "^0.29.0"
+jinjax = "^0.46"
+jinja2-fragments = "^1.6.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.6.9"
