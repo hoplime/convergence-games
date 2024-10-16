@@ -13,3 +13,6 @@ __pycache__/
 # Working files
 docker-home/
 ignore/
+
+# Generated files
+jinjax-components.html-data.json
