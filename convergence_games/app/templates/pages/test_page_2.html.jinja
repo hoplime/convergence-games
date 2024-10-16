@@ -1,7 +1,8 @@
-<Layout title="Test Page">
+<Layout>
     {% block content %}
+        <title>Test Page 2</title>
         <utilities.Card>
-            {% for i in range(0, 10) %}
+            {% for i in range(19, 9, -1) %}
                 <div class="bg-green-900">Test {{ i }}</div>
             {% endfor %}
         </utilities.Card>

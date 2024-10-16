@@ -23,5 +23,22 @@ if SETTINGS.USE_HTTPS:
 
     templates.env.globals["url_for"] = url_for_https
 
+
+def debug(text: Any) -> str:
+    return ""
+
+
+def extract_title(text: jinjax.catalog.CallerWrapper) -> str:
+    title_start = text.find("<title>")
+    if not title_start:
+        return ""
+    title_end = text.find("</title>", title_start)
+    return text._content[title_start + 7 : title_end]
+
+
+templates.env.filters["debug"] = debug
+templates.env.filters["extract_title"] = extract_title
+
+
 catalog = jinjax.Catalog(jinja_env=templates.env)
 catalog.add_folder(Path(__file__).parent / "templates/components")
