@@ -53,14 +53,20 @@ def main(args: argparse.Namespace):
         component = jinjax.Component(name=name, path=path)
         print(f"Loaded component: {component.name}")
 
-        required_list = "\n".join([f"  - {arg}" for arg in component.required])
-        optional_list = "\n".join([f"  - {arg}" for arg in component.optional])
+        component_description_lines = [f"**Component:** {component.name}"]
+        if component.required:
+            required_list = "\n".join([f"  - {arg}" for arg in component.required])
+            component_description_lines.append(f"**Requires:**\n{required_list}")
+        if component.optional:
+            optional_list = "\n".join([f"  - {arg}" for arg in component.optional])
+            component_description_lines.append(f"**Optional:**\n{optional_list}")
+
         custom_data_tags.append(
             {
                 "name": component.name,
                 "description": {
                     "kind": "markdown",
-                    "value": f"**Component:** {component.name}\n\nRequires:\n{required_list}\n\nOptional:\n{optional_list}",
+                    "value": "\n\n".join(component_description_lines),
                 },
                 "references": [{"name": "Source", "url": f"file://{str(path.resolve())}"}],
                 "attributes": [

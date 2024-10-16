@@ -1,5 +1,17 @@
 {
     "recommendations": [
-        "samuelcolvin.jinjahtml"
+        // Python
+        "ms-python.debugpy",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        // HTML + CSS
+        "samuelcolvin.jinjahtml",
+        "dz4k.vscode-hyperscript-org",
+        "otovo-oss.htmx-tags",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        // Automation
+        "emeraldwalk.RunOnSave"
     ]
 }
