@@ -64,9 +64,9 @@
             },
             {
                 "scope": [
-                    "meta.tag.other.Card.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.Layout.html invalid.illegal.unrecognized-tag.html",
-                    "meta.tag.other.TestPage.html invalid.illegal.unrecognized-tag.html"
+                    "meta.tag.other.layout.NavBar.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.utilities.Card.html invalid.illegal.unrecognized-tag.html"
                 ],
                 "name": "Custom JinjaX Components",
                 "settings": {

@@ -4,13 +4,12 @@ from typing import Any
 import jinja2
 import jinjax
 from fastapi import Request
+from jinja2_fragments.fastapi import Jinja2Blocks
 
-# from jinja2_fragments.fastapi import Jinja2Blocks
-from fastapi.templating import Jinja2Templates
-
+# from fastapi.templating import Jinja2Templates
 from convergence_games.settings import SETTINGS
 
-templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+templates = Jinja2Blocks(directory=Path(__file__).parent / "templates")
 
 templates.env.add_extension(jinjax.JinjaX)
 

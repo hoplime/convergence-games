@@ -1,0 +1,9 @@
+<Layout title="Test Page">
+    {% block content %}
+        <utilities.Card>
+            {% for i in range(0, 10) %}
+                <div class="bg-red-900">Test {{ i }}</div>
+            {% endfor %}
+        </utilities.Card>
+    {% endblock %}
+</Layout>
