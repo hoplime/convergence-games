@@ -12,7 +12,7 @@
                 "--reload"
             ],
             "justMyCode": false,
-            "preLaunchTask": "tailwind",
+            "preLaunchTask": "tailwind:watch:forever",
             "env": {
                 "WATCHFILES_FORCE_POLLING": "1"
             }

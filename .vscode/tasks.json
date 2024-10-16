@@ -3,14 +3,13 @@
     "tasks": [
         {
             "type": "npm",
-            "script": "tailwind:watch",
+            "script": "tailwind:watch:forever",
             "path": "",
             "group": "build",
-            "label": "tailwind",
-            "detail": "Preprocess with Tailwind CSS",
-            "isBackground": true,
+            "label": "tailwind:watch:forever",
+            "detail": "Preprocess with Tailwind CSS and Watch",
+            "isBackground": false,
             "promptOnClose": false,
-            "problemMatcher": [],
             "presentation": {
                 "echo": true,
                 "reveal": "silent",
