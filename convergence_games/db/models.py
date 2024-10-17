@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import TypeAlias
 
-from sqlmodel import Enum, Field, ForeignKeyConstraint, Relationship, SQLModel, UniqueConstraint
+from sqlmodel import Field, ForeignKeyConstraint, Relationship, SQLModel, UniqueConstraint
 
 from convergence_games.db.enums import GameCrunch, GameNarrativism, GameTone
 
@@ -107,9 +107,9 @@ class GameBase(SQLModel):
     tagline: str
     description: str
     min_age: int
-    crunch: GameCrunch = Field(default=GameCrunch.MEDIUM, sa_type=Enum(GameCrunch), index=True)
-    narrativism: GameNarrativism = Field(default=GameNarrativism.BALANCED, sa_type=Enum(GameNarrativism), index=True)
-    tone: GameTone = Field(default=GameTone.LIGHT_HEARTED, sa_type=Enum(GameTone), index=True)
+    crunch: GameCrunch = Field(default=GameCrunch.MEDIUM, index=True)
+    narrativism: GameNarrativism = Field(default=GameNarrativism.BALANCED, index=True)
+    tone: GameTone = Field(default=GameTone.LIGHT_HEARTED, index=True)
     player_count_minimum: int
     player_count_optimal: int
     player_count_maximum: int

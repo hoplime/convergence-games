@@ -1,8 +1,7 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 
 from convergence_games.db.models import *  # noqa: F403 - We need to import something from the models to create the tables
@@ -13,7 +12,7 @@ engine: AsyncEngine | None = None
 
 @asynccontextmanager
 async def async_session() -> AsyncGenerator[AsyncSession]:
-    async_session: sessionmaker[AsyncSession] = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as session:
         yield session
 
