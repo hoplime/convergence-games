@@ -1,0 +1,9 @@
+{#def
+    id: str = "editor"
+#}
+<div id="{{ id }}" class="editor"></div>
+<script type="module">
+    import { createEditor } from "/static/js/lib.mjs";
+    console.log("Creating editor");
+    createEditor(document.querySelector("#{{ id }}"));
+</script>
