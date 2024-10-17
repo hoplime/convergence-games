@@ -21,7 +21,11 @@ def find_textmate_rule_string_position(vscode_settings: str, textmate_rule_name:
         elif char == "}" and not in_string:
             start = current_object_starts.pop()
             # print(f"Found object: {vscode_settings[start : i + 1]}")
-            parsed_object: dict[str, Any] = json.loads(vscode_settings[start : i + 1])
+            try:
+                parsed_object: dict[str, Any] = json.loads(vscode_settings[start : i + 1])
+            except json.JSONDecodeError:
+                # print(f"Failed to parse object: {vscode_settings[start : i + 1]}")
+                continue
             if parsed_object.get("name") == textmate_rule_name:
                 # print(f"Found textmate rule: {parsed_object}")
                 required_indentation = 0
