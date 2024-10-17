@@ -13,13 +13,13 @@ MEDIA_LINK: TypeAlias = str
 
 # Game Information Link Models
 class GameGenreLink(SQLModel, table=True):
-    __tablename__ = "game_genre_link"
+    __tablename__ = "game_genre_link"  # type: ignore
     game_id: int | None = Field(default=None, foreign_key="game.id", primary_key=True)
     genre_id: int | None = Field(default=None, foreign_key="genre.id", primary_key=True)
 
 
 class GameContentWarningLink(SQLModel, table=True):
-    __tablename__ = "game_content_warning_link"
+    __tablename__ = "game_content_warning_link"  # type: ignore
     game_id: int | None = Field(default=None, foreign_key="game.id", primary_key=True)
     content_warning_id: int | None = Field(default=None, foreign_key="content_warning.id", primary_key=True)
 
@@ -33,7 +33,7 @@ class VenueBase(SQLModel):
 
 
 class Venue(VenueBase, table=True):
-    __tablename__ = "venue"
+    __tablename__ = "venue"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     rooms: list[Room] = Relationship(back_populates="venue")
     events: list[Event] = Relationship(back_populates="venue")
@@ -49,7 +49,7 @@ class EventBase(SQLModel):
 
 
 class Event(EventBase, table=True):
-    __tablename__ = "event"
+    __tablename__ = "event"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     venue: Venue = Relationship(back_populates="events")
     sessions: list[Session] = Relationship(back_populates="event")
@@ -64,7 +64,7 @@ class SystemBase(SQLModel):
 
 
 class System(SystemBase, table=True):
-    __tablename__ = "system"
+    __tablename__ = "system"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     games: list[Game] = Relationship(back_populates="system")
 
@@ -75,7 +75,7 @@ class GenreBase(SQLModel):
 
 
 class Genre(GenreBase, table=True):
-    __tablename__ = "genre"
+    __tablename__ = "genre"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     games: list[Game] = Relationship(back_populates="genres")
 
@@ -86,7 +86,7 @@ class ContentWarningBase(SQLModel):
 
 
 class ContentWarning(ContentWarningBase, table=True):
-    __tablename__ = "content_warning"
+    __tablename__ = "content_warning"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     games: list[Game] = Relationship(back_populates="content_warnings")
 
@@ -97,7 +97,7 @@ class ExtraGMBase(SQLModel):
 
 
 class ExtraGM(ExtraGMBase, table=True):
-    __tablename__ = "extra_gm"
+    __tablename__ = "extra_gm"  # type: ignore
     __table_args__ = (UniqueConstraint("gamemaster_id", "game_id"),)
     id: int | None = Field(default=None, primary_key=True)
 
@@ -122,7 +122,7 @@ class GameBase(SQLModel):
 
 
 class Game(GameBase, table=True):
-    __tablename__ = "game"
+    __tablename__ = "game"  # type: ignore
     __table_args__ = (
         # This redundant constraint is necessary for the foreign key constraint in Session
         UniqueConstraint("id", "event_id"),
@@ -146,7 +146,7 @@ class TimeSlotBase(SQLModel):
 
 
 class TimeSlot(TimeSlotBase, table=True):
-    __tablename__ = "time_slot"
+    __tablename__ = "time_slot"  # type: ignore
     __table_args__ = (
         # This redundant constraint is necessary for the foreign key constraint in Session
         UniqueConstraint("id", "event_id"),
@@ -163,7 +163,7 @@ class RoomBase(SQLModel):
 
 
 class Room(RoomBase, table=True):
-    __tablename__ = "room"
+    __tablename__ = "room"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     venue: Venue = Relationship(back_populates="rooms")
     tables: list[Table] = Relationship(back_populates="room")
@@ -175,7 +175,7 @@ class TableBase(SQLModel):
 
 
 class Table(TableBase, table=True):
-    __tablename__ = "table"
+    __tablename__ = "table"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     room: Room = Relationship(back_populates="tables")
     sessions: list[Session] = Relationship(back_populates="table")
@@ -189,7 +189,7 @@ class SessionBase(SQLModel):
 
 
 class Session(SessionBase, table=True):
-    __tablename__ = "session"
+    __tablename__ = "session"  # type: ignore
     __table_args__ = (
         # https://dba.stackexchange.com/a/58972
         # These two constraints ensure that the Game and Session are part of the same Event
@@ -212,7 +212,7 @@ class UserEventInfoBase(SQLModel):
 
 
 class UserEventInfo(UserEventInfoBase, table=True):
-    __tablename__ = "user_event_info"
+    __tablename__ = "user_event_info"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     event: Event = Relationship(back_populates="user_event_infos")
     user: User = Relationship(back_populates="user_event_infos")
@@ -228,7 +228,7 @@ class UserBase(SQLModel):
 
 
 class User(UserBase, table=True):
-    __tablename__ = "user"
+    __tablename__ = "user"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     games: list[Game] = Relationship(back_populates="gamemaster")
     user_event_infos: list[UserEventInfo] = Relationship(back_populates="user")
@@ -242,7 +242,7 @@ class GroupBase(SQLModel):
 
 
 class Group(GroupBase, table=True):
-    __tablename__ = "group"
+    __tablename__ = "group"  # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     time_slot: TimeSlot = Relationship(back_populates="groups")
     group_session_preferences: list[GroupSessionPreference] = Relationship(back_populates="group")
@@ -255,7 +255,7 @@ class GroupSessionPreferenceBase(SQLModel):
 
 
 class GroupSessionPreference(GroupSessionPreferenceBase, table=True):
-    __tablename__ = "group_session_preference"
+    __tablename__ = "group_session_preference"  # type: ignore
     __table_args__ = (UniqueConstraint("group_id", "session_id"),)
     id: int | None = Field(default=None, primary_key=True)
     group: Group = Relationship(back_populates="group_session_preferences")
@@ -270,7 +270,7 @@ class AllocationResultBase(SQLModel):
 
 
 class AllocationResult(AllocationResultBase, table=True):
-    __tablename__ = "allocation_result"
+    __tablename__ = "allocation_result"  # type: ignore
     __table_args__ = (UniqueConstraint("session_id", "group_id"),)
     id: int | None = Field(default=None, primary_key=True)
     session: Session = Relationship(back_populates="allocation_results")
@@ -287,7 +287,7 @@ class CompensationBase(SQLModel):
 
 
 class Compensation(CompensationBase, table=True):
-    __tablename__ = "compensation"
+    __tablename__ = "compensation"  # type: ignore
     __table_args__ = (UniqueConstraint("user_event_info_id", "time_slot_id"),)
     id: int | None = Field(default=None, primary_key=True)
     user_event_info: UserEventInfo = Relationship(back_populates="compensations")

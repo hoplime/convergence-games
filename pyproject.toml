@@ -26,7 +26,7 @@ homepage = "https://convergence.waikatorpg.co.nz"
 
 [tool.uv]
 dev-dependencies = [
-    "mypy>=1.12.0",
+    "pyright>=1.1.385",
     "pytest>=8.3.3",
     "ruff>=0.6.9",
 ]
@@ -71,3 +71,6 @@ ignore = [
     "B008",  # Do not perform function calls in argument defaults - too many false positives especially with FastAPI
     "E501",  # Line too long - handled by ruff formatter
 ]
+
+[tool.pyright]
+reportPrivateImportUsage = "none"
