@@ -28,7 +28,8 @@
         ".pytest_cache": true,
         ".ruff_cache": true,
         ".venv": true,
-        "junit": true
+        "junit": true,
+        ".mypy_cache": true,
     },
 
     // Tailwind
