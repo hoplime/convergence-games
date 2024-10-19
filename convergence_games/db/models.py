@@ -1,16 +1,40 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
-from advanced_alchemy.base import BigIntAuditBase as Base
+from advanced_alchemy.base import BigIntAuditBase
 from sqlalchemy import ForeignKey, ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Session as DBSession
 
+from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import GameCrunch, GameNarrativism, GameTone
 
 # Types
 MEDIA_LINK: TypeAlias = str
+
+
+def get_object_session(obj) -> DBSession | None:
+    return DBSession.object_session(obj)
+
+
+def get_object_session_info(obj) -> dict[str, Any]:
+    session = get_object_session(obj)
+    if session is None:
+        return {}
+    return session.info
+
+
+class UserAuditColumns:
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True, default=user_id_ctx.get)
+    updated_by: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id"), nullable=True, default=user_id_ctx.get, onupdate=user_id_ctx.get
+    )
+
+
+class Base(BigIntAuditBase, UserAuditColumns):
+    __abstract__ = True
 
 
 # Game Information Link Models
@@ -35,7 +59,7 @@ class GameExtraGamemasterLink(Base):
     gamemaster_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
 
     game: Mapped[Game] = relationship(back_populates="extra_gamemaster_links")
-    gamemaster: Mapped[User] = relationship(back_populates="extra_game_links")
+    gamemaster: Mapped[User] = relationship(back_populates="extra_game_links", foreign_keys=gamemaster_id)
 
 
 # Game Information Models
@@ -123,7 +147,7 @@ class Game(Base):
 
     # Relationships
     system: Mapped[System] = relationship(back_populates="games")
-    gamemaster: Mapped[User] = relationship(back_populates="games")
+    gamemaster: Mapped[User] = relationship(back_populates="games", foreign_keys=gamemaster_id)
     event: Mapped[Event] = relationship(back_populates="games")
     sessions: Mapped[list[Session]] = relationship(back_populates="game", foreign_keys="Session.game_id")
     genres: Mapped[list[Genre]] = relationship(back_populates="games", secondary=GameGenreLink.__table__, viewonly=True)
@@ -131,7 +155,11 @@ class Game(Base):
         back_populates="games", secondary=GameContentWarningLink.__table__, viewonly=True
     )
     extra_gamemasters: Mapped[list[User]] = relationship(
-        back_populates="extra_games", secondary=GameExtraGamemasterLink.__table__, viewonly=True
+        back_populates="extra_games",
+        secondary=GameExtraGamemasterLink.__table__,
+        viewonly=True,
+        primaryjoin="Game.id == GameExtraGamemasterLink.game_id",
+        secondaryjoin="GameExtraGamemasterLink.gamemaster_id == User.id",
     )
 
     # Assocation Proxy Relationships
@@ -233,7 +261,7 @@ class UserEventInfo(Base):
 
     # Relationships
     event: Mapped[Event] = relationship(back_populates="user_event_infos")
-    user: Mapped[User] = relationship(back_populates="user_event_infos")
+    user: Mapped[User] = relationship(back_populates="user_event_infos", foreign_keys=user_id)
     compensations: Mapped[list[Compensation]] = relationship(back_populates="user_event_info")
 
 
@@ -245,14 +273,22 @@ class User(Base):
     profile_picture: Mapped[MEDIA_LINK | None]
 
     # Relationships
-    games: Mapped[list[Game]] = relationship(back_populates="gamemaster")
-    user_event_infos: Mapped[list[UserEventInfo]] = relationship(back_populates="user")
+    games: Mapped[list[Game]] = relationship(back_populates="gamemaster", primaryjoin="User.id == Game.gamemaster_id")
+    user_event_infos: Mapped[list[UserEventInfo]] = relationship(
+        back_populates="user", primaryjoin="User.id == UserEventInfo.user_id"
+    )
     extra_games: Mapped[list[Game]] = relationship(
-        back_populates="extra_gamemasters", secondary=GameExtraGamemasterLink.__table__, viewonly=True
+        back_populates="extra_gamemasters",
+        secondary=GameExtraGamemasterLink.__table__,
+        viewonly=True,
+        primaryjoin="User.id == GameExtraGamemasterLink.gamemaster_id",
+        secondaryjoin="GameExtraGamemasterLink.game_id == Game.id",
     )
 
     # Assocation Proxy Relationships
-    extra_game_links: Mapped[list[GameExtraGamemasterLink]] = relationship(back_populates="gamemaster")
+    extra_game_links: Mapped[list[GameExtraGamemasterLink]] = relationship(
+        back_populates="gamemaster", primaryjoin="User.id == GameExtraGamemasterLink.gamemaster_id"
+    )
 
 
 # Player Game Selection Models
