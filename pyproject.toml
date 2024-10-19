@@ -19,6 +19,7 @@ dependencies = [
     "pydantic-settings>=2.5.2",
     "sqlmodel>=0.0.22",
     "uvicorn[standard]>=0.32.0",
+    "sqids>=0.5.0",
 ]
 
 [project.urls]

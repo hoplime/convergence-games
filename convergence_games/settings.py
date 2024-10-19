@@ -28,5 +28,9 @@ class Settings(BaseSettings):
     # Web
     USE_HTTPS: bool = False
 
+    # Sqids
+    SQIDS_ALPHABET: str | None = None
+    SQIDS_SEED: int = 0
+
 
 SETTINGS = Settings()
