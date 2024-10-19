@@ -1,27 +1,32 @@
 from __future__ import annotations
 
-from litestar import Litestar
-from litestar.openapi.config import OpenAPIConfig
-from litestar.openapi.plugins import SwaggerRenderPlugin
-from litestar.plugins.sqlalchemy import SQLAlchemyAsyncConfig, SQLAlchemyPlugin
+from litestar import Litestar, get
+from litestar.contrib.htmx.request import HTMXRequest
+from litestar.response import Template
 
-from convergence_games.db.models import Base
-from convergence_games.settings import SETTINGS
+from convergence_games.app.htmx_block_template import HTMXBlockTemplate
 
-config = SQLAlchemyAsyncConfig(
-    connection_string=SETTINGS.DATABASE_URL.render_as_string(hide_password=False),
-    create_all=True,
-    metadata=Base.metadata,
-)
-plugin = SQLAlchemyPlugin(config)
+from .app_config.openapi_config import openapi_config
+from .app_config.sqlalchemy_plugin import sqlalchemy_plugin
+from .app_config.static_files_router import static_files_router
+from .app_config.template_config import template_config
+
+
+@get("/test_page_1")
+async def test_page_1(request: HTMXRequest) -> Template:
+    return HTMXBlockTemplate(template_name="pages/test_page_1.html.jinja", block_name=request.htmx.target)
+
+
+@get("/test_page_2")
+async def test_page_2(request: HTMXRequest) -> Template:
+    return HTMXBlockTemplate(template_name="pages/test_page_2.html.jinja", block_name=request.htmx.target)
+
+
 app = Litestar(
-    route_handlers=[],
-    plugins=[plugin],
-    openapi_config=OpenAPIConfig(
-        title="Convergence Games",
-        version="0.1.0",
-        path="/docs",
-        render_plugins=[SwaggerRenderPlugin()],
-    ),
+    route_handlers=[static_files_router, test_page_1, test_page_2],
+    request_class=HTMXRequest,
+    plugins=[sqlalchemy_plugin],
+    openapi_config=openapi_config,
+    template_config=template_config,
     debug=True,
 )

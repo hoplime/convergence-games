@@ -107,7 +107,7 @@ dependencies = [
     { name = "jinja2" },
     { name = "jinja2-fragments" },
     { name = "jinjax" },
-    { name = "litestar", extra = ["sqlalchemy"] },
+    { name = "litestar", extra = ["jinja", "sqlalchemy"] },
     { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -129,7 +129,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.4" },
     { name = "jinja2-fragments", specifier = ">=1.6.0" },
     { name = "jinjax", specifier = ">=0.46" },
-    { name = "litestar", extras = ["sqlalchemy"], specifier = ">=2.12.1" },
+    { name = "litestar", extras = ["jinja", "sqlalchemy"], specifier = ">=2.12.1" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pydantic-settings", specifier = ">=2.5.2" },
@@ -306,6 +306,9 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+jinja = [
+    { name = "jinja2" },
+]
 sqlalchemy = [
     { name = "advanced-alchemy" },
 ]
