@@ -36,5 +36,6 @@ services:
 
 volumes:
   postgres-data:
+    driver: local
   dbgate-data:
     driver: local

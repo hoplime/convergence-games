@@ -29,7 +29,7 @@
         ".ruff_cache": true,
         ".venv": true,
         "junit": true,
-        ".mypy_cache": true,
+        ".mypy_cache": true
     },
 
     // Tailwind
