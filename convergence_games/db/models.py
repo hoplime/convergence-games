@@ -28,9 +28,16 @@ def get_object_session_info(obj) -> dict[str, Any]:
 
 
 class UserAuditColumns:
-    created_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True, default=user_id_ctx.get)
+    created_by: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id"),
+        nullable=True,
+        default=user_id_ctx.get,
+    )
     updated_by: Mapped[int | None] = mapped_column(
-        ForeignKey("user.id"), nullable=True, default=user_id_ctx.get, onupdate=user_id_ctx.get
+        ForeignKey("user.id"),
+        nullable=True,
+        default=user_id_ctx.get,
+        onupdate=user_id_ctx.get,
     )
 
 
