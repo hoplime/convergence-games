@@ -23,7 +23,7 @@ else:
 
     HasID: TypeAlias = Any
 
-sqids = Sqids(alphabet=SETTINGS.SQIDS_ALPHABET or DEFAULT_ALPHABET)
+sqids = Sqids(alphabet=SETTINGS.SQIDS_ALPHABET or DEFAULT_ALPHABET, min_length=SETTINGS.SQIDS_MIN_LENGTH)
 
 INKS: dict[str, int] = {
     "AllocationResult": 1,
@@ -87,3 +87,9 @@ if __name__ == "__main__":
     for system in systems:
         sqid = swim(system)
         print(system.id, sqid, sink(sqid))
+
+    # Length test
+    for i in range(10):
+        x = 10**i
+        sqid = sqids.encode([0, x])
+        print(f"{i}\t{x}\t{sqid}")

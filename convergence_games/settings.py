@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # Sqids
     SQIDS_ALPHABET: str | None = None
-    SQIDS_SEED: int = 0
+    SQIDS_MIN_LENGTH: int = 5
 
 
 SETTINGS = Settings()
