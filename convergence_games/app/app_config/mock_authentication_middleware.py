@@ -18,9 +18,11 @@ from convergence_games.db.models import User
 
 class MockAuthenticationMiddleware(AbstractAuthenticationMiddleware):
     async def authenticate_request(self, connection: ASGIConnection) -> AuthenticationResult:
-        # TODO: Replace with reading header and actual JWT token decoding
+        auth_header = connection.headers.get("Authorization")
+        if not auth_header:
+            return AuthenticationResult(user=None, auth={})
 
-        user_id = 1
+        user_id = int(auth_header.split(" ")[1])  # TODO: Replace with actual JWT decoding
 
         engine = cast(AsyncEngine, connection.app.state.db_engine)
         async with AsyncSession(engine) as async_session:

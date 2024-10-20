@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from litestar.response import Template as Template
+
 if TYPE_CHECKING:
     from typing import Any, Dict, Optional
 

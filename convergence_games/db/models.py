@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm import Session as DBSession
 
 from convergence_games.app.context import user_id_ctx
-from convergence_games.db.enums import GameCrunch, GameNarrativism, GameTone
+from convergence_games.db.enums import GameCrunch, GameNarrativism, GameTone, UserRole
 
 # Types
 MEDIA_LINK: TypeAlias = str
@@ -283,6 +283,7 @@ class User(Base):
     date_of_birth: Mapped[dt.date] = mapped_column(default=dt.date(1900, 1, 1))
     description: Mapped[str]
     profile_picture: Mapped[MEDIA_LINK | None]
+    role: Mapped[UserRole] = mapped_column(default=UserRole.GUEST, index=True)
 
     # Relationships
     games: Mapped[list[Game]] = relationship(

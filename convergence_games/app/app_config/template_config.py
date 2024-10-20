@@ -6,6 +6,8 @@ from jinja2 import Environment, FileSystemLoader
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.template.config import TemplateConfig
 
+from convergence_games.app.paths import COMPONENTS_DIR_PATH, TEMPLATES_DIR_PATH
+
 
 def extract_title(text: jinjax.catalog.CallerWrapper) -> str:
     title_start = text.find("<title>")
@@ -20,11 +22,8 @@ def debug(text: Any) -> str:
     return ""
 
 
-TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
-COMPONENTS_DIR = TEMPLATES_DIR / "components"
-
 jinja_env = Environment(
-    loader=FileSystemLoader(searchpath=TEMPLATES_DIR),
+    loader=FileSystemLoader(searchpath=TEMPLATES_DIR_PATH),
     extensions=[
         jinjax.JinjaX,
     ],
@@ -34,7 +33,7 @@ jinja_env.filters["debug"] = debug
 jinja_env.filters["extract_title"] = extract_title
 
 catalog = jinjax.Catalog(jinja_env=jinja_env)
-catalog.add_folder(COMPONENTS_DIR)
+catalog.add_folder(COMPONENTS_DIR_PATH)
 
 template_engine = JinjaTemplateEngine.from_environment(jinja_env)
 

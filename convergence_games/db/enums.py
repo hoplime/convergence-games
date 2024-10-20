@@ -18,3 +18,10 @@ class GameTone(enum.StrEnum):
     LIGHT_HEARTED = "Light-hearted"
     SERIOUS = "Serious"
     DARK = "Dark"
+
+
+class UserRole(enum.StrEnum):
+    ADMIN = "Admin"
+    API_KEY = "API Key"
+    USER = "User"
+    GUEST = "Guest"
