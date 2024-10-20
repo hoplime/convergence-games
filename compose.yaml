@@ -6,6 +6,7 @@ services:
       POSTGRES_USER: ${DATABASE_USERNAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: ${DATABASE_NAME}
+    command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
     ports:
       - "${DATABASE_PORT}:5432"
     volumes:

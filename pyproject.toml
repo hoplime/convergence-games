@@ -19,7 +19,7 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
     "sqids>=0.5.0",
     "sqlalchemy>=2.0.36",
-    "litestar[jinja,sqlalchemy]>=2.12.1",
+    "litestar[jinja,jwt,sqlalchemy]>=2.12.1",
 ]
 
 [project.urls]
