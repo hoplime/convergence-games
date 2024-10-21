@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Any
 
 import jinjax
@@ -27,6 +26,8 @@ jinja_env = Environment(
     extensions=[
         jinjax.JinjaX,
     ],
+    trim_blocks=True,
+    lstrip_blocks=True,
 )
 
 jinja_env.filters["debug"] = debug

@@ -7,9 +7,9 @@ export default defineConfig({
         outDir: resolve(__dirname, "convergence_games/app/static/js"),
         lib: {
             entry: resolve(__dirname, "convergence_games/app/lib"),
-            name: "ConvergenceGames",
+            name: "convergence",
             fileName: "lib",
-            formats: ["es"],
+            formats: ["umd"],
         },
     },
 });
