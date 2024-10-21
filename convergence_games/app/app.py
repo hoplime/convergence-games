@@ -3,7 +3,9 @@ from __future__ import annotations
 from litestar import Litestar
 
 from convergence_games.app.request_type import Request
+from convergence_games.settings import SETTINGS
 
+from .app_config.compression_config import compression_config
 from .app_config.mock_authentication_middleware import mock_authentication_middleware
 from .app_config.openapi_config import openapi_config
 from .app_config.sqlalchemy_plugin import sqlalchemy_plugin
@@ -18,5 +20,6 @@ app = Litestar(
     plugins=[sqlalchemy_plugin],
     openapi_config=openapi_config,
     template_config=template_config,
-    debug=True,
+    compression_config=compression_config,
+    debug=SETTINGS.DEBUG,
 )

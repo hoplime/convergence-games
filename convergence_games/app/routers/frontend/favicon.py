@@ -12,7 +12,7 @@ route_handlers: list[HTTPRouteHandler] = []
 for favicon_path in (STATIC_DIR_PATH / "favicon").iterdir():
     # We've got to bind favicon_file to the closure to avoid a late binding issue.
     def create_favicon_route(favicon_path: Path = favicon_path) -> HTTPRouteHandler:
-        @get(path=f"/{favicon_path.name}", cache=CACHE_FOREVER)
+        @get(path=f"/{favicon_path.name}", cache=CACHE_FOREVER, opt={"no_compression": True})
         async def favicon_route() -> File:
             return File(favicon_path)
 

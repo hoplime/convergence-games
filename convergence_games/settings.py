@@ -5,6 +5,9 @@ from sqlalchemy.engine import URL
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
+    # General
+    DEBUG: bool = False
+
     # Database
     DATABASE_DRIVER: str = "postgresql+asyncpg"
     DATABASE_USERNAME: str = ""
@@ -24,9 +27,6 @@ class Settings(BaseSettings):
             port=self.DATABASE_PORT,
             database=self.DATABASE_NAME,
         )
-
-    # Web
-    USE_HTTPS: bool = False
 
     # Sqids
     SQIDS_ALPHABET: str | None = None
