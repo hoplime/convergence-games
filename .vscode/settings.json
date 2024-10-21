@@ -65,7 +65,7 @@
             },
             {
                 "scope": [
-                    "meta.tag.other.Layout.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.Page.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.layout.NavBar.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.utilities.Card.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.utilities.TipTap.html invalid.illegal.unrecognized-tag.html"
