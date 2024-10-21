@@ -1,5 +1,6 @@
 import { resolve } from "path";
 import { defineConfig } from "vite";
+import inject from "@rollup/plugin-inject";
 
 export default defineConfig({
     build: {
@@ -12,4 +13,9 @@ export default defineConfig({
             formats: ["umd"],
         },
     },
+    plugins: [
+        inject({
+            htmx: "htmx.org",
+        }),
+    ],
 });

@@ -6,10 +6,12 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
+    "@rollup/plugin-inject": "^5.0.5",
     "@tailwindcss/cli": "^4.0.0-alpha.26",
     "@tiptap/core": "^2.8.0",
     "@tiptap/pm": "^2.8.0",
     "@tiptap/starter-kit": "^2.8.0",
+    "htmx-ext-preload": "^2.0.1",
     "htmx.org": "^2.0.3",
     "hyperscript.org": "^0.9.13",
     "rollup": "^4.24.0",
