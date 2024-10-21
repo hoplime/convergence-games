@@ -1,6 +1,5 @@
-<nav>
-    <ul>
-        <li><a hx-get="/test_page_1" hx-target="#content" hx-push-url="true">Test Page 1</a></li>
-        <li><a hx-get="/test_page_2" hx-target="#content" hx-push-url="true">Test Page 2</a></li>
-    </ul>
+<nav class="flex flex-row gap-4">
+    <layout.NavButton path="/" text="Home"></layout.NavButton>
+    <layout.NavButton path="/games" text="Games"></layout.NavButton>
+    <layout.NavButton path="/profile" text="Profile"></layout.NavButton>
 </nav>

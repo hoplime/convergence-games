@@ -5,10 +5,14 @@ from convergence_games.app.response_type import HTMXBlockTemplate, Template
 
 
 class HomeController(Controller):
-    @get(path=["/", "/test_page_1"])
+    @get(path=["/"])
     async def home(self, request: Request) -> Template:
-        return HTMXBlockTemplate(template_name="pages/test_page_1.html.jinja", block_name=request.htmx.target)
+        return HTMXBlockTemplate(template_name="pages/home.html.jinja", block_name=request.htmx.target)
 
-    @get(path="/test_page_2")
-    async def test_page_2(self, request: Request) -> Template:
-        return HTMXBlockTemplate(template_name="pages/test_page_2.html.jinja", block_name=request.htmx.target)
+    @get(path="/games")
+    async def games(self, request: Request) -> Template:
+        return HTMXBlockTemplate(template_name="pages/games.html.jinja", block_name=request.htmx.target)
+
+    @get(path="/profile")
+    async def profile(self, request: Request) -> Template:
+        return HTMXBlockTemplate(template_name="pages/profile.html.jinja", block_name=request.htmx.target)

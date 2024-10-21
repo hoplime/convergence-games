@@ -1,0 +1,13 @@
+{#def
+    path: string = "/",
+    text: string = "Home",
+#}
+<button
+    hx-get="{{ path }}"
+    hx-target="#content"
+    hx-push-url="true"
+    _="on load or htmx:load from #wrapper if window.location.pathname == '{{ path }}' add .text-amber-500 to me else remove .text-amber-500 from me"
+>
+    {{ content }}
+    {{ text }}
+</button>
