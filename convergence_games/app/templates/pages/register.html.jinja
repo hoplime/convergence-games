@@ -1,0 +1,27 @@
+<Page>
+    {% block content %}
+        <title>Register an Account - Convergence 2025</title>
+        <div></div>
+        <div>Sign in with Social</div>
+        <div>
+            {# <button hx-post="/sigin/google" hx-target="#content">Google</button> #}
+            {# <button hx-post="/sigin/facebook" hx-target="#content">Facebook</button>
+            <button hx-post="/sigin/discord" hx-target="#content">Discord</button> #}
+            <a href="/oauth2/google/login">
+                <button>Log In With Google</button>
+            </a>
+            <a href="/oauth2/discord/login">
+                <button>Log In With Discord</button>
+            </a>
+        </div>
+        {# <div>Or register with your email (guest)</div>
+        <form>
+            <div class="flex flex-row gap-4">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required />
+            </div>
+            <button type="submit">Register</button>
+        </form>
+        <div>Already have an account? <a>Sign in instead</a></div> #}
+    {% endblock %}
+</Page>

@@ -20,6 +20,8 @@ dependencies = [
     "sqids>=0.5.0",
     "sqlalchemy>=2.0.36",
     "litestar[brotli,jinja,jwt,sqlalchemy]>=2.12.1",
+    "httpx-oauth>=0.15.1",
+    "python-jose>=3.3.0",
 ]
 
 [project.urls]

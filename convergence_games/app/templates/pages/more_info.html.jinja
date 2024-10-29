@@ -1,0 +1,32 @@
+{#def
+    email: str | None
+#}
+<Page>
+    {% block content %}
+        <title>Register an Account - Convergence 2025</title>
+        <div>We need some more info to complete your account</div>
+        <form hx-post="">
+            {% if email %}
+                <input type="hidden" name="email" value="{{ email }}" />
+                <div class="flex flex-row gap-4">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" readonly value="{{ email }}" />
+                </div>
+            {% else %}
+                <div class="flex flex-row gap-4">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required value="{{ email }}" />
+                </div>
+            {% endif %}
+            <div class="flex flex-row gap-4">
+                <label for="first_name">First</label>
+                <input type="text" id="first_name" name="first_name" required />
+            </div>
+            <div class="flex flex-row gap-4">
+                <label for="last_name">Last</label>
+                <input type="text" id="last_name" name="last_name" required />
+            </div>
+            <button type="submit">Register</button>
+        </form>
+    {% endblock %}
+</Page>

@@ -1,6 +1,7 @@
 <Page>
     {% block content %}
-        <title>Test Page Profile</title>
-        <div>Blank content</div>
+        <title>Profile - Convergence 2025</title>
+        <div>You are logged in as {{ request.user.name }}</div>
+        <button hx-post="/logout" hx-target="#content">Logout</button>
     {% endblock %}
 </Page>

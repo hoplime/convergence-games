@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from litestar import Request as _Request
     from litestar.contrib.htmx.request import HTMXDetails
 
-    class HTMXRequest(_Request[User, dict[str, Any], State]):
+    class HTMXRequest(_Request[User | None, dict[str, Any], State]):
         htmx: HTMXDetails
 
     Request: TypeAlias = HTMXRequest
