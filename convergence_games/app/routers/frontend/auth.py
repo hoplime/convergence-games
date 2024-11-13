@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, Generic, Protocol, TypeVar, cast
+from typing import Any, cast
 
 import httpx
 from httpx_oauth.clients.discord import DiscordOAuth2
