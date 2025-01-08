@@ -1,0 +1,144 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+	<title>Discord-svg</title>
+	<defs>
+		<linearGradient id="g1" x2="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0,359.585,-359.585,0,197.653,17.815)">
+			<stop offset="0" stop-color="#1d6ff2"/>
+			<stop offset=".008" stop-color="#1d6ff2"/>
+			<stop offset=".016" stop-color="#1d70f2"/>
+			<stop offset=".023" stop-color="#1d71f2"/>
+			<stop offset=".031" stop-color="#1d71f2"/>
+			<stop offset=".039" stop-color="#1d72f2"/>
+			<stop offset=".047" stop-color="#1d73f2"/>
+			<stop offset=".055" stop-color="#1d73f2"/>
+			<stop offset=".063" stop-color="#1d74f3"/>
+			<stop offset=".07" stop-color="#1d75f3"/>
+			<stop offset=".078" stop-color="#1d76f3"/>
+			<stop offset=".086" stop-color="#1d76f3"/>
+			<stop offset=".094" stop-color="#1d77f3"/>
+			<stop offset=".102" stop-color="#1d78f3"/>
+			<stop offset=".109" stop-color="#1d78f3"/>
+			<stop offset=".117" stop-color="#1d79f3"/>
+			<stop offset=".125" stop-color="#1d7af3"/>
+			<stop offset=".133" stop-color="#1d7af3"/>
+			<stop offset=".141" stop-color="#1d7bf3"/>
+			<stop offset=".148" stop-color="#1d7cf3"/>
+			<stop offset=".156" stop-color="#1d7cf4"/>
+			<stop offset=".164" stop-color="#1d7df4"/>
+			<stop offset=".172" stop-color="#1d7ef4"/>
+			<stop offset=".18" stop-color="#1d7ff4"/>
+			<stop offset=".188" stop-color="#1d7ff4"/>
+			<stop offset=".195" stop-color="#1c80f4"/>
+			<stop offset=".203" stop-color="#1c81f4"/>
+			<stop offset=".211" stop-color="#1c81f4"/>
+			<stop offset=".219" stop-color="#1c82f4"/>
+			<stop offset=".227" stop-color="#1c83f4"/>
+			<stop offset=".234" stop-color="#1c83f4"/>
+			<stop offset=".242" stop-color="#1c84f4"/>
+			<stop offset=".25" stop-color="#1c85f4"/>
+			<stop offset=".258" stop-color="#1c86f5"/>
+			<stop offset=".266" stop-color="#1c86f5"/>
+			<stop offset=".273" stop-color="#1c87f5"/>
+			<stop offset=".281" stop-color="#1c88f5"/>
+			<stop offset=".289" stop-color="#1c88f5"/>
+			<stop offset=".297" stop-color="#1c89f5"/>
+			<stop offset=".305" stop-color="#1c8af5"/>
+			<stop offset=".313" stop-color="#1c8af5"/>
+			<stop offset=".32" stop-color="#1c8bf5"/>
+			<stop offset=".328" stop-color="#1c8cf5"/>
+			<stop offset=".336" stop-color="#1c8cf5"/>
+			<stop offset=".344" stop-color="#1c8df5"/>
+			<stop offset=".352" stop-color="#1c8ef5"/>
+			<stop offset=".359" stop-color="#1c8ff6"/>
+			<stop offset=".367" stop-color="#1c8ff6"/>
+			<stop offset=".375" stop-color="#1c90f6"/>
+			<stop offset=".383" stop-color="#1c91f6"/>
+			<stop offset=".391" stop-color="#1c91f6"/>
+			<stop offset=".398" stop-color="#1c92f6"/>
+			<stop offset=".406" stop-color="#1c93f6"/>
+			<stop offset=".414" stop-color="#1c93f6"/>
+			<stop offset=".422" stop-color="#1c94f6"/>
+			<stop offset=".43" stop-color="#1c95f6"/>
+			<stop offset=".438" stop-color="#1c96f6"/>
+			<stop offset=".445" stop-color="#1c96f6"/>
+			<stop offset=".453" stop-color="#1c97f6"/>
+			<stop offset=".461" stop-color="#1c98f7"/>
+			<stop offset=".469" stop-color="#1c98f7"/>
+			<stop offset=".477" stop-color="#1c99f7"/>
+			<stop offset=".484" stop-color="#1c9af7"/>
+			<stop offset=".492" stop-color="#1c9af7"/>
+			<stop offset=".5" stop-color="#1c9bf7"/>
+			<stop offset=".508" stop-color="#1c9cf7"/>
+			<stop offset=".516" stop-color="#1c9cf7"/>
+			<stop offset=".523" stop-color="#1b9df7"/>
+			<stop offset=".531" stop-color="#1b9ef7"/>
+			<stop offset=".539" stop-color="#1b9ff7"/>
+			<stop offset=".547" stop-color="#1b9ff7"/>
+			<stop offset=".555" stop-color="#1ba0f7"/>
+			<stop offset=".563" stop-color="#1ba1f8"/>
+			<stop offset=".57" stop-color="#1ba1f8"/>
+			<stop offset=".578" stop-color="#1ba2f8"/>
+			<stop offset=".586" stop-color="#1ba3f8"/>
+			<stop offset=".594" stop-color="#1ba3f8"/>
+			<stop offset=".602" stop-color="#1ba4f8"/>
+			<stop offset=".609" stop-color="#1ba5f8"/>
+			<stop offset=".617" stop-color="#1ba5f8"/>
+			<stop offset=".625" stop-color="#1ba6f8"/>
+			<stop offset=".633" stop-color="#1ba7f8"/>
+			<stop offset=".641" stop-color="#1ba8f8"/>
+			<stop offset=".648" stop-color="#1ba8f8"/>
+			<stop offset=".656" stop-color="#1ba9f8"/>
+			<stop offset=".664" stop-color="#1baaf9"/>
+			<stop offset=".672" stop-color="#1baaf9"/>
+			<stop offset=".68" stop-color="#1babf9"/>
+			<stop offset=".688" stop-color="#1bacf9"/>
+			<stop offset=".695" stop-color="#1bacf9"/>
+			<stop offset=".703" stop-color="#1badf9"/>
+			<stop offset=".711" stop-color="#1baef9"/>
+			<stop offset=".719" stop-color="#1baff9"/>
+			<stop offset=".727" stop-color="#1baff9"/>
+			<stop offset=".734" stop-color="#1bb0f9"/>
+			<stop offset=".742" stop-color="#1bb1f9"/>
+			<stop offset=".75" stop-color="#1bb1f9"/>
+			<stop offset=".758" stop-color="#1bb2f9"/>
+			<stop offset=".766" stop-color="#1bb3fa"/>
+			<stop offset=".773" stop-color="#1bb3fa"/>
+			<stop offset=".781" stop-color="#1bb4fa"/>
+			<stop offset=".789" stop-color="#1bb5fa"/>
+			<stop offset=".797" stop-color="#1bb5fa"/>
+			<stop offset=".805" stop-color="#1bb6fa"/>
+			<stop offset=".813" stop-color="#1bb7fa"/>
+			<stop offset=".82" stop-color="#1bb8fa"/>
+			<stop offset=".828" stop-color="#1bb8fa"/>
+			<stop offset=".836" stop-color="#1bb9fa"/>
+			<stop offset=".844" stop-color="#1abafa"/>
+			<stop offset=".852" stop-color="#1abafa"/>
+			<stop offset=".859" stop-color="#1abbfb"/>
+			<stop offset=".867" stop-color="#1abcfb"/>
+			<stop offset=".875" stop-color="#1abcfb"/>
+			<stop offset=".883" stop-color="#1abdfb"/>
+			<stop offset=".891" stop-color="#1abefb"/>
+			<stop offset=".898" stop-color="#1abffb"/>
+			<stop offset=".906" stop-color="#1abffb"/>
+			<stop offset=".914" stop-color="#1ac0fb"/>
+			<stop offset=".922" stop-color="#1ac1fb"/>
+			<stop offset=".93" stop-color="#1ac1fb"/>
+			<stop offset=".938" stop-color="#1ac2fb"/>
+			<stop offset=".945" stop-color="#1ac3fb"/>
+			<stop offset=".953" stop-color="#1ac3fb"/>
+			<stop offset=".961" stop-color="#1ac4fc"/>
+			<stop offset=".969" stop-color="#1ac5fc"/>
+			<stop offset=".977" stop-color="#1ac5fc"/>
+			<stop offset=".984" stop-color="#1ac6fc"/>
+			<stop offset=".992" stop-color="#1ac7fc"/>
+			<stop offset="1" stop-color="#1ac8fc"/>
+		</linearGradient>
+	</defs>
+	<style>
+		.s0 { fill: url(#g1) } 
+		.s1 { fill: #ffffff } 
+	</style>
+	<path id="&lt;Clipping Path&gt;" fill-rule="evenodd" class="s0" d="m18 299.5v-203.8q0-3.8 0.4-7.6 0.3-3.9 1.1-7.6 0.7-3.8 1.8-7.4 1.1-3.7 2.6-7.2 1.5-3.6 3.2-7 1.9-3.3 4-6.5 2.1-3.2 4.5-6.2 2.5-2.9 5.2-5.6 2.7-2.7 5.6-5.2 3-2.4 6.2-4.5 3.2-2.2 6.5-3.9 3.4-1.9 7-3.3 3.5-1.5 7.2-2.6 3.7-1.1 7.4-1.8 3.8-0.8 7.6-1.2 3.8-0.3 7.6-0.3h203.8q3.8 0 7.6 0.3 3.8 0.4 7.6 1.2 3.8 0.7 7.4 1.8 3.7 1.1 7.2 2.6 3.5 1.4 6.9 3.3 3.4 1.7 6.6 3.9 3.2 2.1 6.1 4.5 3 2.5 5.7 5.2 2.7 2.7 5.1 5.6 2.5 3 4.6 6.2 2.1 3.2 3.9 6.5 1.8 3.4 3.3 7 1.5 3.5 2.6 7.2 1.1 3.6 1.8 7.4 0.8 3.7 1.1 7.6 0.4 3.8 0.4 7.6v203.8q0 3.8-0.4 7.6-0.3 3.8-1.1 7.6-0.7 3.7-1.8 7.4-1.1 3.7-2.6 7.2-1.5 3.5-3.3 6.9-1.8 3.4-3.9 6.6-2.1 3.2-4.6 6.1-2.4 3-5.1 5.7-2.7 2.7-5.7 5.1-2.9 2.5-6.1 4.6-3.2 2.1-6.6 3.9-3.4 1.8-6.9 3.3-3.5 1.4-7.2 2.5-3.6 1.2-7.4 1.9-3.8 0.7-7.6 1.1-3.8 0.4-7.6 0.4h-203.8q-3.8 0-7.6-0.4-3.8-0.4-7.6-1.1-3.7-0.8-7.4-1.9-3.6-1.1-7.2-2.6-3.5-1.4-6.9-3.2-3.4-1.8-6.6-4-3.1-2.1-6.1-4.5-3-2.5-5.7-5.2-2.7-2.7-5.1-5.6-2.4-3-4.6-6.2-2.1-3.1-3.9-6.5-1.8-3.4-3.3-6.9-1.4-3.6-2.6-7.2-1-3.7-1.8-7.5-0.7-3.7-1.1-7.5-0.4-3.8-0.4-7.6z"/>
+	<path fill-rule="evenodd" class="s1" d="m314.7 276.2q-4.2 2.2-8.9 2.2h-216q-4.8 0.3-8.9-2.2l71.9-72 17.8 17.6q5.3 5.3 12.6 8.1 6.9 2.5 14.7 2.2 7.6 0.3 14.5-2.5 7.3-2.5 12.6-7.8l17.8-17.6zm6.1-6.7l-71.9-71.9 71.9-71.9q2.6 4.2 2.6 8.9v126q0.5 5-2.6 8.9zm-246.4 0q-2.5-4.1-2.5-8.9v-126q0-4.7 2.5-8.9l71.9 71.9zm240.3-150.5l-96.1 96.5q-4.2 3.9-9.5 5.8-5.6 2-11.2 1.7-5.8 0.3-11.1-1.7-5.6-1.9-9.8-5.8l-96.1-96.5q4.1-2.2 9.2-2.2h215.7q4.7 0 8.9 2.2z"/>
+	<g id="Folder 1">
+	</g>
+</svg>

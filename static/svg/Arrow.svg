@@ -1,0 +1,36 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="348 307 98 181" width="98" height="181">
+	<title>Arrow-svg</title>
+	<defs>
+		<clipPath clipPathUnits="userSpaceOnUse" id="cp1">
+			<path d="m349 308h78v173h-78z"/>
+		</clipPath>
+		<clipPath clipPathUnits="userSpaceOnUse" id="cp2">
+			<path d="m390.43 307.45l54.53 13.78-41.89 165.79-54.53-13.78z"/>
+		</clipPath>
+		<clipPath clipPathUnits="userSpaceOnUse" id="cp3">
+			<path d="m403.25 487.14l-54.54-13.78 41.9-165.79 54.53 13.78z"/>
+		</clipPath>
+	</defs>
+	<style>
+		.s0 { fill: #94341d } 
+	</style>
+	<g id="Clip-Path: Clip-Path" clip-path="url(#cp1)">
+		<g id="Clip-Path">
+			<g>
+				<g id="Clip-Path: Clip-Path" clip-path="url(#cp2)">
+					<g id="Clip-Path">
+						<g>
+							<g id="Clip-Path: Clip-Path" clip-path="url(#cp3)">
+								<g id="Clip-Path">
+									<g>
+										<path class="s0" d="m370.9 452.1l-13.7 14c29.6-8.7 54.2-33.6 62.1-63.2q0.7-3.1 1.3-6.2 0.6-3.1 0.9-6.2 0.3-3.1 0.5-6.2 0.1-3.2 0-6.3-0.1-3.2-0.4-6.3-0.3-3.1-0.8-6.2-0.5-3.1-1.2-6.2-0.8-3-1.7-6-0.9-3-2.1-5.9-1.1-3-2.5-5.8-1.3-2.9-2.8-5.6-1.6-2.7-3.3-5.4-1.7-2.6-3.6-5.1-1.9-2.5-3.9-4.9-2.1-2.4-4.3-4.6-2.2-2.2-4.6-4.3l2.9-3.4c27 23 39 61.5 29.9 95.7-8.3 31.3-34.4 57.6-65.7 66.5l18.8 6.7q0.3 0.1 0.5 0.3 0.3 0.2 0.4 0.5 0.1 0.2 0.1 0.6 0.1 0.3 0 0.5-0.1 0.4-0.4 0.7-0.3 0.3-0.7 0.3-0.5 0.2-0.9 0.1l-24.9-8.9q-0.8-0.3-1-1.1-0.1-0.4 0-0.8 0.1-0.3 0.3-0.6l18.6-18.8q0.3-0.3 0.5-0.4 0.3-0.1 0.6-0.1 0.4 0 0.6 0.1 0.3 0.1 0.6 0.3 0.2 0.3 0.3 0.5 0.1 0.3 0.1 0.6 0 0.4-0.1 0.6-0.1 0.3-0.4 0.5z"/>
+									</g>
+								</g>
+							</g>
+						</g>
+					</g>
+				</g>
+			</g>
+		</g>
+	</g>
+</svg>
