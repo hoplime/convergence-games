@@ -41,7 +41,7 @@ class UserAuditColumns:
     )
 
 
-class Base(AsyncAttrs, BigIntAuditBase, UserAuditColumns):
+class Base(BigIntAuditBase, UserAuditColumns):
     __abstract__ = True
 
 
