@@ -7,8 +7,6 @@ from convergence_games.app.response_type import HTMXBlockTemplate, Template
 
 
 class ProfileController(Controller):
-    response_headers = {"Vary": "hx-target"}
-
     @get(path="/profile")
     async def get_profile(self, request: Request) -> Template:
         if request.user is None:

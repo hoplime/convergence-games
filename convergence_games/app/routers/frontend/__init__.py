@@ -9,6 +9,7 @@ from .static import static_files_router
 
 router = Router(
     path="/",
+    response_headers={"Vary": "hx-target"},
     route_handlers=[
         AuthController,
         favicon_router,
