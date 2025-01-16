@@ -7,8 +7,8 @@ if TYPE_CHECKING:
 
     from jinja2_fragments.litestar import HTMXBlockTemplate as _HTMXBlockTemplate
     from litestar.background_tasks import BackgroundTask, BackgroundTasks
-    from litestar.contrib.htmx.types import EventAfterType, PushUrlType, ReSwapMethod
     from litestar.enums import MediaType
+    from litestar.plugins.htmx import EventAfterType, PushUrlType, ReSwapMethod
     from litestar.status_codes import HTTP_200_OK
     from litestar.types import ResponseCookies
 
