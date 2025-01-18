@@ -4,13 +4,12 @@ import datetime as dt
 from typing import Any, TypeAlias
 
 from advanced_alchemy.base import BigIntAuditBase
-from sqlalchemy import ForeignKey, ForeignKeyConstraint, UniqueConstraint
-from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy import Enum, ForeignKey, ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm import Session as DBSession
 
 from convergence_games.app.context import user_id_ctx
-from convergence_games.db.enums import GameCrunch, GameNarrativism, GameTone, UserRole
+from convergence_games.db.enums import GameCrunch, GameNarrativism, GameTone, LoginProvider, UserRole
 
 # Types
 MEDIA_LINK: TypeAlias = str
@@ -77,7 +76,7 @@ class Venue(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
     description: Mapped[str]
     address: Mapped[str]
-    profile_picture: Mapped[MEDIA_LINK]
+    # profile_picture: Mapped[MEDIA_LINK | None] = mapped_column(default=None, nullable=True)
 
     # Relationships
     rooms: Mapped[list[Room]] = relationship(back_populates="venue", lazy="noload")
@@ -86,10 +85,10 @@ class Venue(Base):
 
 class Event(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
-    description: Mapped[str]
+    description: Mapped[str] = mapped_column(default="")
     start_date: Mapped[dt.datetime] = mapped_column(index=True)
     end_date: Mapped[dt.datetime] = mapped_column(index=True)
-    profile_picture: Mapped[MEDIA_LINK]
+    # profile_picture: Mapped[MEDIA_LINK | None] = mapped_column(default=None, nullable=True)
 
     # Foreign Keys
     venue_id: Mapped[int] = mapped_column(ForeignKey("venue.id"), index=True)
@@ -104,8 +103,8 @@ class Event(Base):
 
 class System(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
-    description: Mapped[str]
-    profile_picture: Mapped[MEDIA_LINK]
+    description: Mapped[str] = mapped_column(default="")
+    # profile_picture: Mapped[MEDIA_LINK | None] = mapped_column(default=None, nullable=True)
 
     # Relationships
     games: Mapped[list[Game]] = relationship(back_populates="system", lazy="noload")
@@ -142,15 +141,17 @@ class Game(Base):
     tagline: Mapped[str]
     description: Mapped[str]
     min_age: Mapped[int]
-    crunch: Mapped[GameCrunch] = mapped_column(default=GameCrunch.MEDIUM, index=True)
-    narrativism: Mapped[GameNarrativism] = mapped_column(default=GameNarrativism.BALANCED, index=True)
-    tone: Mapped[GameTone] = mapped_column(default=GameTone.LIGHT_HEARTED, index=True)
+    crunch: Mapped[GameCrunch] = mapped_column(Enum(GameCrunch), default=GameCrunch.MEDIUM, index=True)
+    narrativism: Mapped[GameNarrativism] = mapped_column(
+        Enum(GameNarrativism), default=GameNarrativism.BALANCED, index=True
+    )
+    tone: Mapped[GameTone] = mapped_column(Enum(GameTone), default=GameTone.LIGHT_HEARTED, index=True)
     player_count_minimum: Mapped[int]
     player_count_optimal: Mapped[int]
     player_count_maximum: Mapped[int]
     nz_made: Mapped[bool] = mapped_column(default=False)
     designer_run: Mapped[bool] = mapped_column(default=False)
-    profile_picture: Mapped[MEDIA_LINK]
+    # profile_picture: Mapped[MEDIA_LINK | None] = mapped_column(default=None, nullable=True)
 
     # Foreign Keys
     system_id: Mapped[int] = mapped_column(ForeignKey("system.id"), index=True)
@@ -287,9 +288,9 @@ class UserEventInfo(Base):
 class User(Base):
     name: Mapped[str] = mapped_column(index=True)
     email: Mapped[str] = mapped_column(index=True, unique=True)
-    date_of_birth: Mapped[dt.date] = mapped_column(default=dt.date(1900, 1, 1))
-    description: Mapped[str]
-    profile_picture: Mapped[MEDIA_LINK | None]
+    # date_of_birth: Mapped[dt.date | None] = mapped_column(default=None, nullable=True)
+    description: Mapped[str] = mapped_column(default="")
+    # profile_picture: Mapped[MEDIA_LINK | None] = mapped_column(default=None)
     role: Mapped[UserRole] = mapped_column(default=UserRole.GUEST, index=True)
 
     # Relationships
@@ -307,11 +308,27 @@ class User(Base):
         secondaryjoin="GameExtraGamemasterLink.game_id == Game.id",
         lazy="noload",
     )
+    logins: Mapped[list[UserLogin]] = relationship(
+        back_populates="user", primaryjoin="User.id == UserLogin.user_id", lazy="noload"
+    )
 
     # Assocation Proxy Relationships
     extra_game_links: Mapped[list[GameExtraGamemasterLink]] = relationship(
         back_populates="gamemaster", primaryjoin="User.id == GameExtraGamemasterLink.gamemaster_id", lazy="noload"
     )
+
+
+class UserLogin(Base):
+    provider: Mapped[LoginProvider] = mapped_column(Enum(LoginProvider, validate_strings=True), index=True)
+    provider_user_id: Mapped[str] = mapped_column(index=True)
+
+    # Foreign Keys
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+
+    # Relationships
+    user: Mapped[User] = relationship(back_populates="logins", foreign_keys=user_id, lazy="noload")
+
+    __table_args__ = (UniqueConstraint("provider", "provider_user_id"), UniqueConstraint("user_id", "provider"))
 
 
 # Player Game Selection Models

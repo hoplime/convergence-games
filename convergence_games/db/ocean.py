@@ -44,7 +44,8 @@ INKS: dict[str, int] = {
     "TimeSlot": 16,
     "User": 17,
     "UserEventInfo": 18,
-    "Venue": 19,
+    "UserLogin": 19,
+    "Venue": 20,
 }
 
 

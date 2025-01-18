@@ -25,3 +25,9 @@ class UserRole(enum.StrEnum):
     API_KEY = "API Key"
     USER = "User"
     GUEST = "Guest"
+
+
+class LoginProvider(enum.StrEnum):
+    GOOGLE = "google"
+    DISCORD = "discord"
+    FACEBOOK = "facebook"

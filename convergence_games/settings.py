@@ -33,11 +33,12 @@ class Settings(BaseSettings):
     SQIDS_MIN_LENGTH: int = 5
 
     # OAuth
+    TOKEN_SECRET: str = ""
     BASE_REDIRECT_URI: str | None = "https://tolocalhost.com"
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-    # FACEBOOK_CLIENT_ID: str = ""
-    # FACEBOOK_CLIENT_SECRET: str = ""
+    FACEBOOK_CLIENT_ID: str = ""
+    FACEBOOK_CLIENT_SECRET: str = ""
     DISCORD_CLIENT_ID: str = ""
     DISCORD_CLIENT_SECRET: str = ""
 

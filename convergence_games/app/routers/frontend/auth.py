@@ -10,11 +10,17 @@ from httpx_oauth.clients.discord import DiscordOAuth2
 from httpx_oauth.clients.google import GoogleOAuth2
 from httpx_oauth.oauth2 import BaseOAuth2, OAuth2Token
 from jose import jwt
-from litestar import Controller, get
+from litestar import Controller, Response, get
 from litestar.exceptions import HTTPException
 from litestar.response import Redirect
+from sqlalchemy import String, select
+from sqlalchemy import cast as sql_cast
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
 from convergence_games.app.request_type import Request
+from convergence_games.db.models import LoginProvider, User, UserLogin
 from convergence_games.settings import SETTINGS
 
 
@@ -122,17 +128,17 @@ DISCORD_PROVIDER = DiscordOAuthProvider(
     },
 )
 
-OAUTH_PROVIDERS = {"google": GOOGLE_PROVIDER, "discord": DISCORD_PROVIDER}
+OAUTH_PROVIDERS = {LoginProvider.GOOGLE: GOOGLE_PROVIDER, LoginProvider.DISCORD: DISCORD_PROVIDER}
 
 
-def get_oauth_provider(provider_name: str) -> OAuthProvider:
+def get_oauth_provider(provider_name: LoginProvider) -> OAuthProvider:
     provider_client = OAUTH_PROVIDERS.get(provider_name)
     if provider_client is None:
         raise HTTPException(detail="Provider not found", status_code=404)
     return provider_client
 
 
-def build_redirect_url(provider_name: str) -> str:
+def build_redirect_url(provider_name: LoginProvider) -> str:
     # TODO: If BASE_REDIRECT_URI is None, use the current request host
     return f"{SETTINGS.BASE_REDIRECT_URI}/oauth2/{provider_name}/authorize"
 
@@ -141,7 +147,7 @@ class AuthController(Controller):
     path = "/oauth2"
 
     @get(path="/{provider_name:str}/login")
-    async def get_provider_auth_login(self, provider_name: str) -> Redirect:
+    async def get_provider_auth_login(self, provider_name: LoginProvider) -> Redirect:
         provider = get_oauth_provider(provider_name)
         redirect_uri = build_redirect_url(provider_name)
 
@@ -149,10 +155,42 @@ class AuthController(Controller):
         return Redirect(path=auth_url, status_code=302)
 
     @get(path="/{provider_name:str}/authorize")
-    async def get_provider_auth_authorize(self, code: str, provider_name: str, request: Request) -> ProfileInfo:
+    async def get_provider_auth_authorize(
+        self, code: str, provider_name: LoginProvider, request: Request, db_session: AsyncSession
+    ) -> Response[ProfileInfo]:
         print(request.query_params)
+        print(type(provider_name))
         provider = get_oauth_provider(provider_name)
         redirect_uri = build_redirect_url(provider_name)
 
         oauth2_token = await provider.client.get_access_token(code=code, redirect_uri=redirect_uri)
-        return await provider.get_profile_info(oauth2_token)
+        profile_info = await provider.get_profile_info(oauth2_token)
+
+        async with db_session.begin():
+            existing_login = (
+                select(UserLogin)
+                .where(sql_cast(UserLogin.provider, String) == provider_name.name)
+                .where(UserLogin.provider_user_id == profile_info.user_id)
+                .options(selectinload(UserLogin.user))
+            )
+            user_login = (await db_session.execute(existing_login)).scalar_one_or_none()
+
+            if user_login is None:
+                user = User(
+                    name=f"{profile_info.user_first_name} {profile_info.user_last_name}",
+                    email=profile_info.user_email,
+                    logins=[
+                        UserLogin(
+                            provider=provider_name,
+                            provider_user_id=profile_info.user_id,
+                        ),
+                    ],
+                )
+                db_session.add(user)
+            else:
+                user = user_login.user
+
+            await db_session.flush()
+            user_id = user.id
+
+        return jwt_cookie_auth.login(str(user_id), response_body=profile_info)
