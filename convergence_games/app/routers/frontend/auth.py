@@ -167,13 +167,13 @@ class AuthController(Controller):
         profile_info = await provider.get_profile_info(oauth2_token)
 
         async with db_session.begin():
-            existing_login = (
+            stmt = (
                 select(UserLogin)
                 .where(sql_cast(UserLogin.provider, String) == provider_name.name)
                 .where(UserLogin.provider_user_id == profile_info.user_id)
                 .options(selectinload(UserLogin.user))
             )
-            user_login = (await db_session.execute(existing_login)).scalar_one_or_none()
+            user_login = (await db_session.execute(stmt)).scalar_one_or_none()
 
             if user_login is None:
                 user = User(

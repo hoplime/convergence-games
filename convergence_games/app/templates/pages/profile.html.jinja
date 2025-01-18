@@ -2,6 +2,7 @@
     {% block content %}
         <title>Profile - Convergence 2025</title>
         <div>You are logged in as {{ request.user.name }}</div>
+        <div>Email: {{ request.user.email }}</div>
         <button hx-post="/logout" hx-target="#content">Logout</button>
     {% endblock %}
 </Page>

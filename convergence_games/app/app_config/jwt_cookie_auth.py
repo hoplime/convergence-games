@@ -33,5 +33,5 @@ jwt_cookie_auth = JWTCookieAuth(
     retrieve_user_handler=retrieve_user_handler,
     token_secret=SETTINGS.TOKEN_SECRET,
     token_cls=CustomToken,
-    exclude=["/oauth2"],
+    exclude=["/oauth2", "/site.webmanifest"],
 )

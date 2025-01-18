@@ -7,7 +7,7 @@ from convergence_games.settings import SETTINGS
 from .app_config import (
     compression_config,
     htmx_plugin,
-    mock_authentication_middleware,
+    jwt_cookie_auth,
     openapi_config,
     sqlalchemy_plugin,
     template_config,
@@ -17,7 +17,7 @@ from .routers import routers
 app = Litestar(
     route_handlers=routers,
     dependencies={},
-    middleware=[mock_authentication_middleware],
+    on_app_init=[jwt_cookie_auth.on_app_init],
     plugins=[sqlalchemy_plugin, htmx_plugin],
     openapi_config=openapi_config,
     template_config=template_config,
