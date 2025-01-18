@@ -20,6 +20,7 @@ from sqlalchemy.orm import selectinload
 
 from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
 from convergence_games.app.request_type import Request
+from convergence_games.app.response_type import HTMXBlockTemplate
 from convergence_games.db.models import LoginProvider, User, UserLogin
 from convergence_games.settings import SETTINGS
 
@@ -156,10 +157,8 @@ class AuthController(Controller):
 
     @get(path="/{provider_name:str}/authorize")
     async def get_provider_auth_authorize(
-        self, code: str, provider_name: LoginProvider, request: Request, db_session: AsyncSession
-    ) -> Response[ProfileInfo]:
-        print(request.query_params)
-        print(type(provider_name))
+        self, code: str, provider_name: LoginProvider, db_session: AsyncSession
+    ) -> Redirect:
         provider = get_oauth_provider(provider_name)
         redirect_uri = build_redirect_url(provider_name)
 
@@ -174,6 +173,8 @@ class AuthController(Controller):
                 .options(selectinload(UserLogin.user))
             )
             user_login = (await db_session.execute(stmt)).scalar_one_or_none()
+
+            # TODO: Handle duplicate emails from different providers
 
             if user_login is None:
                 user = User(
@@ -193,4 +194,6 @@ class AuthController(Controller):
             await db_session.flush()
             user_id = user.id
 
-        return jwt_cookie_auth.login(str(user_id), response_body=profile_info)
+        login = jwt_cookie_auth.login(str(user_id))
+
+        return Redirect(path="/profile", cookies=login.cookies)
