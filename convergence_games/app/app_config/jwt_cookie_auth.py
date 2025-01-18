@@ -1,7 +1,9 @@
-from typing import cast
+from typing import Any, cast
 
 from litestar.connection import ASGIConnection
-from litestar.security.jwt import JWTCookieAuth
+from litestar.exceptions import NotAuthorizedException
+from litestar.middleware.authentication import AuthenticationResult
+from litestar.security.jwt import JWTCookieAuth, JWTCookieAuthenticationMiddleware
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
@@ -29,9 +31,18 @@ async def retrieve_user_handler(token: CustomToken, connection: ASGIConnection) 
     return user
 
 
+class LaxJWTCookieAuthenticationMiddleware(JWTCookieAuthenticationMiddleware):
+    async def authenticate_request(self, connection: ASGIConnection[Any, Any, Any, Any]) -> AuthenticationResult:
+        try:
+            return await super().authenticate_request(connection)
+        except NotAuthorizedException:
+            return AuthenticationResult(user=None, auth=None)
+
+
 jwt_cookie_auth = JWTCookieAuth(
     retrieve_user_handler=retrieve_user_handler,
     token_secret=SETTINGS.TOKEN_SECRET,
     token_cls=CustomToken,
+    authentication_middleware_class=LaxJWTCookieAuthenticationMiddleware,
     exclude=["/oauth2", "/site.webmanifest"],
 )
