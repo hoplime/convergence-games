@@ -1,20 +1,47 @@
+import FileHandler from "@tiptap-pro/extension-file-handler";
 import { Editor, mergeAttributes } from "@tiptap/core";
+import BlockQuote from "@tiptap/extension-blockquote";
 import BulletList from "@tiptap/extension-bullet-list";
 import Color from "@tiptap/extension-color";
 import Heading from "@tiptap/extension-heading";
+import ImageResize from "tiptap-extension-resize-image";
+
 import ListItem from "@tiptap/extension-list-item";
 import OrderedList from "@tiptap/extension-ordered-list";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextStyle from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
-import BlockQuote from "@tiptap/extension-blockquote";
 
 // I know it's ridiculous, but it's fun to bundle htmx and hyperscript with a build step instead of using a CDN
 import "htmx-ext-preload";
 import _hyperscript from "hyperscript.org";
 
 _hyperscript.browserInit();
+
+// TODO: Fix implementation of ImageResize extension to allow styling and aligning controls
+// Fork and PR likely required
+// const ImageResizeWithoutAlign = ImageResize.extend({
+//     addNodeView() {
+//         const originalAddNodeView = ImageResize.config.addNodeView;
+
+//         return (props) => {
+//             if (!originalAddNodeView) {
+//                 return {
+//                     dom: document.createElement("div"),
+//                 };
+//             }
+
+//             let $original_node_view_renderer = originalAddNodeView.call(this);
+//             let $original_node_view = $original_node_view_renderer(props);
+//             let $original_wrapper = $original_node_view.dom as HTMLElement;
+//             $original_wrapper.children[0].classList.add("[&:nth-child(2)]:hidden");
+
+//             $original_node_view.dom = $original_wrapper;
+//             return $original_node_view;
+//         };
+//     },
+// });
 
 const PRESET_COLORS = ["#000000", "#ff0000", "#00ff00", "#0000ff"];
 
@@ -63,7 +90,7 @@ const createEditorButton = (parent_element: Element, label: string, fn: () => vo
     return button;
 };
 
-const createEditor = (container_element: Element, initial_content: string = "") => {
+const createEditor = (container_element: Element, initial_content: string = "", debug: boolean = true) => {
     // Create the editor and add it to the container
     container_element.className = "border-1 p-1 rounded-md";
     let controls_element = document.createElement("div");
@@ -72,6 +99,11 @@ const createEditor = (container_element: Element, initial_content: string = "") 
     editor_element.className = "border-t-1 py-1 px-4";
     container_element.appendChild(controls_element);
     container_element.appendChild(editor_element);
+    let debug_element = document.createElement("pre");
+    if (debug) {
+        debug_element.className = "text-xs text-gray-500";
+        container_element.appendChild(debug_element);
+    }
 
     let editor = new Editor({
         element: editor_element,
@@ -123,11 +155,63 @@ const createEditor = (container_element: Element, initial_content: string = "") 
                     class: "border-l-4 border-gray-300 pl-2",
                 },
             }),
+            ImageResize,
+            FileHandler.configure({
+                allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
+                onDrop: (currentEditor, files, pos) => {
+                    // console.log(files);
+                    files.forEach((file) => {
+                        const fileReader = new FileReader();
+
+                        fileReader.readAsDataURL(file);
+                        fileReader.onload = () => {
+                            currentEditor
+                                .chain()
+                                .insertContentAt(pos, {
+                                    type: "image",
+                                    attrs: {
+                                        src: fileReader.result,
+                                    },
+                                })
+                                .focus()
+                                .run();
+                        };
+                    });
+                },
+                onPaste: (currentEditor, files, htmlContent) => {
+                    // console.log(files);
+                    files.forEach((file) => {
+                        if (htmlContent) {
+                            // if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
+                            // you could extract the pasted file from this url string and upload it to a server for example
+                            // console.log(htmlContent); // eslint-disable-line no-console
+                            return false;
+                        }
+
+                        const fileReader = new FileReader();
+
+                        fileReader.readAsDataURL(file);
+                        fileReader.onload = () => {
+                            currentEditor
+                                .chain()
+                                .insertContentAt(currentEditor.state.selection.anchor, {
+                                    type: "image",
+                                    attrs: {
+                                        src: fileReader.result,
+                                    },
+                                })
+                                .focus()
+                                .run();
+                        };
+                    });
+                },
+            }),
         ],
         content: initial_content,
         onUpdate: ({ editor }) => {
             let json_content = editor.getJSON();
             console.log(json_content);
+            debug_element.innerHTML = JSON.stringify(json_content, null, 2);
         },
     });
 
