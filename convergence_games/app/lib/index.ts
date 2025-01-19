@@ -1,15 +1,14 @@
 import { Editor, mergeAttributes } from "@tiptap/core";
 import BulletList from "@tiptap/extension-bullet-list";
 import Color from "@tiptap/extension-color";
-// import Document from "@tiptap/extension-document";
 import Heading from "@tiptap/extension-heading";
 import ListItem from "@tiptap/extension-list-item";
-// import ListItem from "@tiptap/extension-list-item";
 import OrderedList from "@tiptap/extension-ordered-list";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextStyle from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
+import BlockQuote from "@tiptap/extension-blockquote";
 
 // I know it's ridiculous, but it's fun to bundle htmx and hyperscript with a build step instead of using a CDN
 import "htmx-ext-preload";
@@ -31,8 +30,8 @@ const createColorPicker = (parent_element: Element, editor: Editor) => {
 
 const createEditorButton = (parent_element: Element, label: string, fn: () => void) => {
     let button = document.createElement("button");
-    button.className = "rounded-md bg-gray-200 hover:bg-gray-300 px-2 py-1";
-    button.innerText = label;
+    button.className = "rounded-md bg-gray-200 hover:bg-gray-300 px-2 py-1 [&>img]:w-6 [&>img]:h-6";
+    button.innerHTML = label;
     button.onclick = fn;
     parent_element.appendChild(button);
     return button;
@@ -57,7 +56,7 @@ const createEditor = (container_element: Element, initial_content: string = "") 
             Color,
             Paragraph.configure({
                 HTMLAttributes: {
-                    class: "mb-4",
+                    class: "mb-2",
                 },
             }),
             ListItem.configure({
@@ -83,7 +82,7 @@ const createEditor = (container_element: Element, initial_content: string = "") 
                         ? node.attrs.level
                         : this.options.levels[0];
                     const classes: { [index: number]: string } = {
-                        1: "text-3xl font-bold mb-6",
+                        1: "text-3xl font-bold mb-4",
                         2: "text-xl font-bold mb-4",
                     };
                     return [
@@ -91,6 +90,11 @@ const createEditor = (container_element: Element, initial_content: string = "") 
                         mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: `${classes[level]}` }),
                         0,
                     ];
+                },
+            }),
+            BlockQuote.configure({
+                HTMLAttributes: {
+                    class: "border-l-4 border-gray-300 pl-2",
                 },
             }),
         ],
@@ -103,9 +107,36 @@ const createEditor = (container_element: Element, initial_content: string = "") 
 
     // Create the control buttons
     createColorPicker(controls_element, editor);
-    createEditorButton(controls_element, "Bold", () => editor.chain().focus().toggleBold().run());
-    createEditorButton(controls_element, "Italic", () => editor.chain().focus().toggleItalic().run());
-    createEditorButton(controls_element, "Underline", () => editor.chain().focus().toggleUnderline().run());
+    createEditorButton(controls_element, '<img src="static/editor/format-header-1.svg">', () =>
+        editor.chain().focus().setHeading({ level: 1 }).run(),
+    );
+    createEditorButton(controls_element, '<img src="static/editor/format-header-2.svg">', () =>
+        editor.chain().focus().setHeading({ level: 2 }).run(),
+    );
+    createEditorButton(controls_element, '<img src="static/editor/format-paragraph.svg">', () =>
+        editor.chain().focus().setParagraph().run(),
+    );
+    createEditorButton(controls_element, '<img src="static/editor/format-bold.svg">', () =>
+        editor.chain().focus().toggleBold().run(),
+    );
+    createEditorButton(controls_element, '<img src="static/editor/format-italic.svg">', () =>
+        editor.chain().focus().toggleItalic().run(),
+    );
+    createEditorButton(controls_element, '<img src="static/editor/format-underline.svg">', () =>
+        editor.chain().focus().toggleUnderline().run(),
+    );
+    createEditorButton(controls_element, '<img src="static/editor/format-strikethrough-variant.svg">', () =>
+        editor.chain().focus().toggleStrike().run(),
+    );
+    createEditorButton(controls_element, '<img src="static/editor/format-list-bulleted.svg">', () =>
+        editor.chain().focus().toggleBulletList().run(),
+    );
+    createEditorButton(controls_element, '<img src="static/editor/format-list-numbered.svg">', () =>
+        editor.chain().focus().toggleOrderedList().run(),
+    );
+    createEditorButton(controls_element, '<img src="static/editor/format-quote-open.svg">', () =>
+        editor.chain().focus().toggleBlockquote().run(),
+    );
 
     return editor;
 };
