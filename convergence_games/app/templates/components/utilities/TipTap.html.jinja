@@ -1,7 +1,8 @@
 {#def
-    id: str = "editor"
+    id: str = "tiptap",
+    initial_content: str = ""
 #}
-<div id="{{ id }}" class="editor"></div>
-<script>
-    convergence.createEditor(document.querySelector("#{{ id }}"));
+<div id="{{ id }}" class="tiptap-container"></div>
+<script type="text/javascript">
+    convergence.createEditor(document.querySelector("#{{ id }}"), "{{ initial_content }}");
 </script>

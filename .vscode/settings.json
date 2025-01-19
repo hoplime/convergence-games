@@ -52,6 +52,9 @@
     },
     "svg.preview.background": "editor",
     "todo-tree.tree.showBadges": true,
+    "tailwindCSS.experimental.classRegex": [
+        "class:\\s*?[\"'`]([^\"'`]*).*?,"  // For work within TipTap
+    ],
 
     // HTML Custom Data for JinjaX Components
     "html.customData": ["jinjax-components.html-data.json"],
@@ -79,6 +82,7 @@
         ]
     },
     "emeraldwalk.runonsave": {
+        "shell": "zsh",
         "commands": [
             {
                 "match": "\\.jinja$",
@@ -86,7 +90,7 @@
             },
             {
                 "match": "\\.ts$",
-                "cmd": "npm run build"
+                "cmd": "source ~/.zshrc && npm run build"
             }
         ]
     }

@@ -1,6 +1,7 @@
 from litestar.router import Router
 
 from .auth import AuthController
+from .editor_test import EditorTestController
 from .favicon import favicon_router
 from .games import GamesController
 from .home import HomeController
@@ -16,6 +17,7 @@ router = Router(
         GamesController,
         HomeController,
         ProfileController,
+        EditorTestController,
         static_files_router,
     ],
 )

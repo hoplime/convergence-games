@@ -15,11 +15,10 @@
         <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0" />
     </head>
     <body hx-ext="preload">
-        <div id="wrapper">
+        <div id="wrapper" class="flex flex-col gap-4 px-8">
             <layout.NavBar />
             <div id="content">{{ content }}</div>
             <div class="fixed right-0 bottom-0 bg-amber-300 p-4 font-bold">⚠️DISCLAIMER - NO DESIGN APPLIED⚠️</div>
-            {{ request.user.name }}
         </div>
     </body>
 </html>

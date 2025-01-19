@@ -1,8 +1,10 @@
-<nav class="flex flex-row gap-4">
+<nav class="flex flex-row gap-4 bg-gray-100">
     <layout.NavButton path="/" text="Home"></layout.NavButton>
     <layout.NavButton path="/games" text="Games"></layout.NavButton>
     <layout.NavButton
         path="/profile"
         :text="{{ 'Profile (Logged In)' if request.user else 'Profile (Not Logged In)' }}"
-    ></layout.NavButton>
+    >
+    </layout.NavButton>
+    <layout.NavButton path="/editor_test" text="Editor Test"></layout.NavButton>
 </nav>
