@@ -16,16 +16,42 @@ import _hyperscript from "hyperscript.org";
 
 _hyperscript.browserInit();
 
+const PRESET_COLORS = ["#000000", "#ff0000", "#00ff00", "#0000ff"];
+
 // TipTap Editor setup
 const createColorPicker = (parent_element: Element, editor: Editor) => {
+    let color_picker_container = document.createElement("div");
+    color_picker_container.className = "rounded-md bg-gray-200 hover:bg-gray-300 px-2 py-1";
+
+    // Label
+    let color_picker_label = document.createElement("label");
+    color_picker_label.className = "flex items-center";
+    color_picker_container.appendChild(color_picker_label);
+
+    let color_picker_label_image = document.createElement("img");
+    color_picker_label_image.src = "static/editor/format-color-text.svg";
+    color_picker_label_image.className = "w-6 h-6";
+    color_picker_label.appendChild(color_picker_label_image);
+
+    // Input
     let color_picker = document.createElement("input");
     color_picker.type = "color";
+    color_picker.setAttribute("list", "color-list");
     color_picker.oninput = (event) => {
         let color = (event.target as HTMLInputElement).value;
         editor.chain().focus().setColor(color).run();
     };
-    parent_element.appendChild(color_picker);
-    return color_picker;
+    color_picker_label.appendChild(color_picker);
+
+    // Color list
+    let color_list = document.createElement("datalist");
+    color_list.id = "color-list";
+    color_list.innerHTML = PRESET_COLORS.map((color) => `<option value="${color}">`).join("");
+    color_picker_label.appendChild(color_list);
+
+    parent_element.appendChild(color_picker_container);
+
+    return color_picker_container;
 };
 
 const createEditorButton = (parent_element: Element, label: string, fn: () => void) => {
