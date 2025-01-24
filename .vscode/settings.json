@@ -91,7 +91,7 @@
             {
                 "match": "\\.ts$",
                 "cmd": "source ~/.zshrc && npm run build"
-            }
+            },
         ]
     }
 }

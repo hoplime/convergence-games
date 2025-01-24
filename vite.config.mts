@@ -1,6 +1,5 @@
 import { resolve } from "path";
 import { defineConfig } from "vite";
-import inject from "@rollup/plugin-inject";
 
 export default defineConfig({
     build: {
@@ -12,10 +11,10 @@ export default defineConfig({
             fileName: "lib",
             formats: ["umd"],
         },
+        rollupOptions: {
+            output: {
+                entryFileNames: "lib.js",
+            },
+        },
     },
-    plugins: [
-        inject({
-            htmx: "htmx.org",
-        }),
-    ],
 });
