@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: FastAPI",
+            "name": "Python: Uvicorn",
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
