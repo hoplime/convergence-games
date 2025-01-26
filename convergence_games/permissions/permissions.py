@@ -16,37 +16,15 @@ from typing import (
 
 from pydantic import BaseModel
 
-
-class Role(Enum):
-    ADMIN = "admin"
-    USER = "user"
-
-
-@dataclass
-class User:
-    id: int
-    roles: list[Role]
-
-
-@dataclass
-class Game:
-    id: int
-
-
-@dataclass
-class Group:
-    id: int
-
-
-@dataclass
-class Event:
-    id: int
-
+from convergence_games.db.enums import Role
+from convergence_games.db.models import Event, Game, User
 
 OBJECT_T = TypeVar("OBJECT_T")
 ACTION_T = TypeVar("ACTION_T", bound=str)
+ALL: TypeAlias = Literal["all"]
 
-type ActionPermission[OBJECT_T] = Callable[[User, OBJECT_T | None], bool] | bool
+type Scope[OBJECT_T] = tuple[Event | ALL, OBJECT_T | ALL]
+type ActionPermission[OBJECT_T] = Callable[[User, OBJECT_T | ALL], bool] | bool
 
 
 class BaseActionChecker(BaseModel, Generic[OBJECT_T, ACTION_T]):
@@ -69,11 +47,11 @@ class BaseActionChecker(BaseModel, Generic[OBJECT_T, ACTION_T]):
         if valid_actions != field_actions:
             raise ValueError(f"Invalid actions set: {field_actions}. Must be {valid_actions}")
 
-    def check(self, user: User, obj: OBJECT_T | None, action: ACTION_T) -> bool:
+    def check_action_permission(self, user: User, obj_value: OBJECT_T | ALL, action: ACTION_T) -> bool:
         p: ActionPermission[OBJECT_T] = getattr(self, action)
         if isinstance(p, bool):
             return p
-        return p(user, obj)
+        return p(user, obj_value)
 
 
 USER_ACTIONS: TypeAlias = Literal["create", "read", "update", "delete"]
@@ -100,18 +78,6 @@ class GameActionChecker(BaseActionChecker[Game, GAME_ACTIONS]):
     delete: ActionPermission[Game] = False
 
 
-GROUP_ACTIONS: TypeAlias = Literal["create", "read", "update", "delete"]
-
-
-class GroupActionChecker(BaseActionChecker[Group, GROUP_ACTIONS]):
-    __valid_actions__ = GROUP_ACTIONS
-
-    create: ActionPermission[Group] = False
-    read: ActionPermission[Group] = False
-    update: ActionPermission[Group] = False
-    delete: ActionPermission[Group] = False
-
-
 EVENT_ACTIONS: TypeAlias = Literal["create", "read", "update", "delete"]
 
 
@@ -127,12 +93,11 @@ class EventActionChecker(BaseActionChecker[Event, EVENT_ACTIONS]):
 class RolePermissionSet(BaseModel):
     user: UserActionChecker = UserActionChecker()
     game: GameActionChecker = GameActionChecker()
-    group: GroupActionChecker = GroupActionChecker()
     event: EventActionChecker = EventActionChecker()
 
 
-ROLE_PERMISSIONS: dict[Role, RolePermissionSet] = {
-    Role.ADMIN: RolePermissionSet(
+ROLE_PERMISSIONS: dict[Role | None, RolePermissionSet] = {
+    Role.OWNER: RolePermissionSet(
         user=UserActionChecker(
             create=True,
             read=True,
@@ -140,53 +105,39 @@ ROLE_PERMISSIONS: dict[Role, RolePermissionSet] = {
             delete=True,
         ),
     ),
-    Role.USER: RolePermissionSet(
-        user=UserActionChecker(
-            create=False,
-            read=True,
-            update=lambda user, obj: obj is not None and user.id == obj.id,
-            delete=False,
-        ),
-    ),
+    None: RolePermissionSet(),  # Default permissions is no permissions
 }
 
 
 @overload
-def user_has_permission(user: User, obj_type: Literal["user"], obj_value: User, action: USER_ACTIONS) -> bool: ...
+def user_has_permission(user: User, obj_type: Literal["user"], scope: Scope[User], action: USER_ACTIONS) -> bool: ...
 
 
 @overload
-def user_has_permission(user: User, obj_type: Literal["game"], obj_value: Game, action: GAME_ACTIONS) -> bool: ...
+def user_has_permission(user: User, obj_type: Literal["game"], scope: Scope[Game], action: GAME_ACTIONS) -> bool: ...
 
 
 @overload
-def user_has_permission(user: User, obj_type: Literal["group"], obj_value: Group, action: GROUP_ACTIONS) -> bool: ...
+def user_has_permission(user: User, obj_type: Literal["event"], scope: Scope[Event], action: EVENT_ACTIONS) -> bool: ...
 
 
-@overload
-def user_has_permission(user: User, obj_type: Literal["event"], obj_value: Event, action: EVENT_ACTIONS) -> bool: ...
+def user_has_permission(user: User, obj_type: LiteralString, scope: Scope, action: LiteralString) -> bool:
+    event, obj_value = scope
+    user_event_roles = [
+        role
+        for role in user.event_roles
+        if (event == "all" and role.event_id is None) or (event != "all" and role.event_id == event.id)
+    ]
 
-
-def user_has_permission(
-    user: User, obj_type: LiteralString, obj_value: User | Game | Group | Event, action: LiteralString
-) -> bool:
-    user_roles = user.roles
-    for role in user_roles:
-        role_permissions = ROLE_PERMISSIONS.get(role)
+    for user_event_role in user_event_roles:
+        role_permissions = ROLE_PERMISSIONS.get(user_event_role.role)
         if role_permissions is None:
             continue
-        obj_permissions: BaseActionChecker | None = getattr(role_permissions, obj_type)
-        if obj_permissions is None:
+        action_checker: BaseActionChecker | None = getattr(role_permissions, obj_type)
+
+        if action_checker is None:
             raise ValueError(f"Invalid object type: {obj_type}")
-        return obj_permissions.check(user, obj_value, action)
+        if action_checker.check_action_permission(user, obj_value, action):
+            return True
+
     return False
-
-
-if __name__ == "__main__":
-    admin_user = User(1, [Role.ADMIN])
-    user_user = User(2, [Role.USER])
-
-    print(f"{user_has_permission(admin_user, "user", admin_user, "update")=}")
-    print(f"{user_has_permission(admin_user, "user", user_user, "update")=}")
-    print(f"{user_has_permission(user_user, "user", user_user, "update")=}")
-    print(f"{user_has_permission(user_user, "user", admin_user, "update")=}")
