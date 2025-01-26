@@ -90,7 +90,7 @@ class Event(Base):
     event_statuses: Mapped[list[UserEventStatus]] = relationship(back_populates="event", lazy="noload")
     time_slots: Mapped[list[TimeSlot]] = relationship(back_populates="event", lazy="noload")
     games: Mapped[list[Game]] = relationship(back_populates="event", lazy="noload")
-    roles: Mapped[list[UserEventRole]] = relationship(back_populates="event", lazy="noload")
+    user_roles: Mapped[list[UserEventRole]] = relationship(back_populates="event", lazy="noload")
 
 
 class System(Base):
@@ -261,7 +261,7 @@ class User(Base):
     logins: Mapped[list[UserLogin]] = relationship(
         back_populates="user", primaryjoin="User.id == UserLogin.user_id", lazy="noload"
     )
-    roles: Mapped[list[UserEventRole]] = relationship(
+    event_roles: Mapped[list[UserEventRole]] = relationship(
         back_populates="user", primaryjoin="User.id == UserEventRole.user_id", lazy="noload"
     )
 
@@ -283,12 +283,12 @@ class UserEventRole(Base):
     role: Mapped[Role] = mapped_column(Enum(Role), index=True)
 
     # Foreign Keys
-    event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
+    event_id: Mapped[int | None] = mapped_column(ForeignKey("event.id"), index=True, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
 
     # Relationships
-    event: Mapped[Event] = relationship(back_populates="roles", lazy="noload")
-    user: Mapped[User] = relationship(back_populates="roles", lazy="noload")
+    event: Mapped[Event] = relationship(back_populates="user_roles", lazy="noload")
+    user: Mapped[User] = relationship(back_populates="event_roles", lazy="noload")
 
     __table_args__ = (UniqueConstraint("event_id", "user_id", "role"),)
 
