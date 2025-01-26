@@ -4,8 +4,9 @@ import datetime as dt
 from typing import Any
 
 from advanced_alchemy.base import BigIntAuditBase
-from sqlalchemy import Enum, ForeignKey, ForeignKeyConstraint, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Connection, Enum, ForeignKey, ForeignKeyConstraint, UniqueConstraint
+from sqlalchemy import event as sqla_event
+from sqlalchemy.orm import Mapped, Mapper, mapped_column, relationship
 from sqlalchemy.orm import Session as DBSession
 
 from convergence_games.app.context import user_id_ctx
@@ -65,27 +66,15 @@ class GameContentWarningLink(Base):
 
 
 # Game Information Models
-class Venue(Base):
-    name: Mapped[str] = mapped_column(index=True, unique=True)
-    description: Mapped[str]
-    address: Mapped[str]
-
-    # Relationships
-    rooms: Mapped[list[Room]] = relationship(back_populates="venue", lazy="noload")
-    events: Mapped[list[Event]] = relationship(back_populates="venue", lazy="noload")
-
-
 class Event(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
     description: Mapped[str] = mapped_column(default="")
     start_date: Mapped[dt.datetime] = mapped_column(index=True)
     end_date: Mapped[dt.datetime] = mapped_column(index=True)
 
-    # Foreign Keys
-    venue_id: Mapped[int] = mapped_column(ForeignKey("venue.id"), index=True)
-
     # Relationships
-    venue: Mapped[Venue] = relationship(back_populates="events", lazy="noload")
+    rooms: Mapped[list[Room]] = relationship(back_populates="event", lazy="noload")
+    tables: Mapped[list[Table]] = relationship(back_populates="event", lazy="noload")
     sessions: Mapped[list[Session]] = relationship(back_populates="event", lazy="noload")
     event_statuses: Mapped[list[UserEventStatus]] = relationship(back_populates="event", lazy="noload")
     time_slots: Mapped[list[TimeSlot]] = relationship(back_populates="event", lazy="noload")
@@ -196,11 +185,16 @@ class Room(Base):
     description: Mapped[str]
 
     # Foreign Keys
-    venue_id: Mapped[int] = mapped_column(ForeignKey("venue.id"), index=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
 
     # Relationships
-    venue: Mapped[Venue] = relationship(back_populates="rooms", lazy="noload")
+    event: Mapped[Event] = relationship(back_populates="rooms", lazy="noload")
     tables: Mapped[list[Table]] = relationship(back_populates="room", lazy="noload")
+
+    __table_args__ = (
+        # This redundant constraint is necessary for the foreign key constraint in Session
+        UniqueConstraint("id", "event_id"),
+    )
 
 
 class Table(Base):
@@ -208,10 +202,25 @@ class Table(Base):
 
     # Foreign Keys
     room_id: Mapped[int] = mapped_column(ForeignKey("room.id"), index=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
 
     # Relationships
     room: Mapped[Room] = relationship(back_populates="tables", lazy="noload")
-    sessions: Mapped[list[Session]] = relationship(back_populates="table", lazy="noload")
+    event: Mapped[Event] = relationship(back_populates="tables", lazy="noload")
+    sessions: Mapped[list[Session]] = relationship(
+        back_populates="table", foreign_keys="Session.table_id", lazy="noload"
+    )
+
+    __table_args__ = (
+        # This redundant constraint is necessary for the foreign key constraint in Session
+        UniqueConstraint("id", "event_id"),
+    )
+
+
+@sqla_event.listens_for(Table, "before_insert")
+def table_before_insert(mapper: Mapper, connection: Connection, target: Table):
+    if target.event_id is None:
+        target.event_id = target.room.event_id
 
 
 class Session(Base):
@@ -225,17 +234,23 @@ class Session(Base):
 
     # Relationships
     game: Mapped[Game] = relationship(back_populates="sessions", foreign_keys=game_id, lazy="noload")
-    table: Mapped[Table] = relationship(back_populates="sessions", lazy="noload")
+    table: Mapped[Table] = relationship(back_populates="sessions", foreign_keys=table_id, lazy="noload")
     time_slot: Mapped[TimeSlot] = relationship(back_populates="sessions", foreign_keys=time_slot_id, lazy="noload")
     event: Mapped[Event] = relationship(back_populates="sessions", lazy="noload")
 
     __table_args__ = (
         # https://dba.stackexchange.com/a/58972
-        # These two constraints ensure that the Game and TimeSlot are part of the same Event
+        # https://stackoverflow.com/a/63922398
+        # These constraints ensure that the Game, Table and TimeSlot are part of the same Event
         ForeignKeyConstraint(
             ["game_id", "event_id"],
             ["game.id", "game.event_id"],
             name="fk_session_game_id_event_id_game",
+        ),
+        ForeignKeyConstraint(
+            ["table_id", "event_id"],
+            ["table.id", "table.event_id"],
+            name="fk_session_table_id_event_id_table",
         ),
         ForeignKeyConstraint(
             ["time_slot_id", "event_id"],
@@ -288,7 +303,9 @@ class UserEventRole(Base):
 
     # Relationships
     event: Mapped[Event] = relationship(back_populates="user_roles", lazy="noload")
-    user: Mapped[User] = relationship(back_populates="event_roles", lazy="noload")
+    user: Mapped[User] = relationship(
+        back_populates="event_roles", primaryjoin="User.id == UserEventRole.user_id", lazy="noload"
+    )
 
     __table_args__ = (UniqueConstraint("event_id", "user_id", "role"),)
 
