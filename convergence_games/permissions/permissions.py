@@ -1,4 +1,4 @@
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from types import UnionType
@@ -8,17 +8,13 @@ from typing import (
     Generic,
     Literal,
     LiteralString,
-    Protocol,
-    Self,
     TypeAlias,
-    TypedDict,
     TypeVar,
     get_args,
-    get_origin,
     overload,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel
 
 
 class Role(Enum):
