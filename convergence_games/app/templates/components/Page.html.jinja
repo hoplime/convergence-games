@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html data-theme="light">
     <head>
         {# User Facing #}
         <title>{{ content | extract_title }}</title>
@@ -25,7 +25,9 @@
         <div id="wrapper" class="flex flex-col gap-4 px-8">
             <layout.NavBar />
             <div id="content">{{ content }}</div>
-            <div class="fixed right-0 bottom-0 bg-amber-300 p-4 font-bold">⚠️DISCLAIMER - NO DESIGN APPLIED⚠️</div>
+            <div class="alert alert-warning alert-soft fixed bottom-0 right-0 font-bold">
+                ⚠️DISCLAIMER - NO DESIGN APPLIED⚠️
+            </div>
         </div>
     </body>
 </html>

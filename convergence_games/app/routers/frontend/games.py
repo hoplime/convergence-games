@@ -8,3 +8,7 @@ class GamesController(Controller):
     @get(path="/games")
     async def get_games(self, request: Request) -> Template:
         return HTMXBlockTemplate(template_name="pages/games.html.jinja", block_name=request.htmx.target)
+
+    @get(path="/submit_game")
+    async def submit_game(self, request: Request) -> Template:
+        return HTMXBlockTemplate(template_name="pages/submit_game.html.jinja", block_name=request.htmx.target)

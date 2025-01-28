@@ -134,8 +134,8 @@ const createEditor = (container_element: Element, initial_content: string = "", 
                         ? node.attrs.level
                         : this.options.levels[0];
                     const classes: { [index: number]: string } = {
-                        1: "text-3xl font-bold mb-4",
-                        2: "text-xl font-bold mb-4",
+                        1: "text-3xl font-bold mt-4",
+                        2: "text-xl font-bold mt-4",
                     };
                     return [
                         `h${level}`,

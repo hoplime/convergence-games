@@ -44,5 +44,5 @@ jwt_cookie_auth = JWTCookieAuth(
     token_secret=SETTINGS.TOKEN_SECRET,
     token_cls=CustomToken,
     authentication_middleware_class=LaxJWTCookieAuthenticationMiddleware,
-    exclude=["/oauth2", "/site.webmanifest"],
+    exclude=["/oauth2", "/site.webmanifest", "/static"],
 )
