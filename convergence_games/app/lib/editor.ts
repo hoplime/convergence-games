@@ -50,7 +50,7 @@ const createColorPicker = (parent_element: Element, editor: Editor) => {
     color_picker_container.appendChild(color_picker_label);
 
     let color_picker_label_image = document.createElement("img");
-    color_picker_label_image.src = "static/editor/format-color-text.svg";
+    color_picker_label_image.src = "/static/editor/format-color-text.svg";
     color_picker_label_image.className = "w-6 h-6";
     color_picker_label.appendChild(color_picker_label_image);
 
@@ -211,34 +211,34 @@ const createEditor = (container_element: Element, initial_content: string = "", 
 
     // Create the control buttons
     createColorPicker(controls_element, editor);
-    createEditorButton(controls_element, '<img src="static/editor/format-header-1.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-header-1.svg">', () =>
         editor.chain().focus().setHeading({ level: 1 }).run(),
     );
-    createEditorButton(controls_element, '<img src="static/editor/format-header-2.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-header-2.svg">', () =>
         editor.chain().focus().setHeading({ level: 2 }).run(),
     );
-    createEditorButton(controls_element, '<img src="static/editor/format-paragraph.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-paragraph.svg">', () =>
         editor.chain().focus().setParagraph().run(),
     );
-    createEditorButton(controls_element, '<img src="static/editor/format-bold.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-bold.svg">', () =>
         editor.chain().focus().toggleBold().run(),
     );
-    createEditorButton(controls_element, '<img src="static/editor/format-italic.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-italic.svg">', () =>
         editor.chain().focus().toggleItalic().run(),
     );
-    createEditorButton(controls_element, '<img src="static/editor/format-underline.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-underline.svg">', () =>
         editor.chain().focus().toggleUnderline().run(),
     );
-    createEditorButton(controls_element, '<img src="static/editor/format-strikethrough-variant.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-strikethrough-variant.svg">', () =>
         editor.chain().focus().toggleStrike().run(),
     );
-    createEditorButton(controls_element, '<img src="static/editor/format-list-bulleted.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-list-bulleted.svg">', () =>
         editor.chain().focus().toggleBulletList().run(),
     );
-    createEditorButton(controls_element, '<img src="static/editor/format-list-numbered.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-list-numbered.svg">', () =>
         editor.chain().focus().toggleOrderedList().run(),
     );
-    createEditorButton(controls_element, '<img src="static/editor/format-quote-open.svg">', () =>
+    createEditorButton(controls_element, '<img src="/static/editor/format-quote-open.svg">', () =>
         editor.chain().focus().toggleBlockquote().run(),
     );
 

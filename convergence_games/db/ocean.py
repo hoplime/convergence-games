@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, cast
+from functools import lru_cache
+from typing import TYPE_CHECKING, cast, overload
 
 from sqids import Sqids
 from sqids.constants import DEFAULT_ALPHABET
@@ -25,28 +26,13 @@ else:
 
 sqids = Sqids(alphabet=SETTINGS.SQIDS_ALPHABET or DEFAULT_ALPHABET, min_length=SETTINGS.SQIDS_MIN_LENGTH)
 
-INKS: dict[str, int] = {
-    "AllocationResult": 1,
-    "Compensation": 2,
-    "ContentWarning": 3,
-    "Event": 4,
-    "Game": 5,
-    "GameContentWarningLink": 6,
-    "GameExtraGamemasterLink": 7,
-    "GameGenreLink": 8,
-    "Genre": 9,
-    "Group": 10,
-    "GroupSessionPreference": 11,
-    "Room": 12,
-    "Session": 13,
-    "System": 14,
-    "Table": 15,
-    "TimeSlot": 16,
-    "User": 17,
-    "UserEventInfo": 18,
-    "UserLogin": 19,
-    "Venue": 20,
-}
+
+@lru_cache
+def _ink(class_name: str) -> int:
+    """
+    Get the ink for a class.
+    """
+    return hash(class_name) % 100
 
 
 def sink(sqid: str) -> int:
@@ -57,12 +43,27 @@ def sink(sqid: str) -> int:
     return sqids.decode(sqid)[-1]
 
 
-def swim(obj: HasID) -> str:
+@overload
+def swim(obj: HasID) -> str: ...
+
+
+@overload
+def swim(obj: str, obj_id: int) -> str: ...
+
+
+def swim(obj: HasID | str, obj_id: int | None = None) -> str:
     """
     Create a sqid from an object.
     Suitable to surface to the client!
     """
-    return sqids.encode([INKS.get(obj.__class__.__name__, 0), cast(int, obj.id)])
+    if isinstance(obj, str):
+        class_name = obj
+        assert obj_id is not None
+    else:
+        class_name = obj.__class__.__name__
+        obj_id = cast(int, obj.id)
+
+    return sqids.encode([_ink(class_name), obj_id])
 
 
 if __name__ == "__main__":

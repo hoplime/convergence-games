@@ -2,9 +2,7 @@
     {% block content %}
         <title>Submit Game - Convergence 2025</title>
         <div>
-            <h1>Submit Game</h1>
-            {% set initial_content="<b>Some default test text</b>" %}
-            <utilities.TipTap :initial_content="initial_content" />
+            <h1 class="text-xl font-bold">Submit Game</h1>
             {# 
             Here's all the things the original form had:
             * Info about the event
@@ -41,6 +39,172 @@
             Things the form missed:
             * Quiet room needed?
              #}
+            <span class="text-warning">
+                TODO: Inputs with warning background color need to be smart/fuzzy find multi selects
+            </span>
+            <form>
+                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                    <legend class="fieldset-legend">Game Information</legend>
+                    <span>
+                        This information will be publicly visible for players to decide their preferences. You'll be
+                        able to edit this until shortly before the event.
+                    </span>
+                    {# Title #}
+                    <label class="fieldset-label">Title</label>
+                    <input type="text" class="input" placeholder="Title" required />
+                    {# System #}
+                    <label class="fieldset-label">System</label>
+                    <input type="text" class="input bg-warning" placeholder="System" requried />
+                    {# Description #}
+                    {% set initial_content="<b>Some default test text</b>" %}
+                    <label class="fieldset-label">Description</label>
+                    <utilities.TipTap :initial_content="initial_content" />
+                    {# Genre #}
+                    <label class="fieldset-label">Genres</label>
+                    <input type="text" class="input bg-warning" placeholder="Genres" />
+                    {# Tone #}
+                    <label class="fieldset-label">Tone</label>
+                    <div class="flex flex-col">
+                        <label>
+                            <input type="radio" name="tone" class="radio" required />
+                            <span>Goofy</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="tone" class="radio" required />
+                            <span>Light-hearted</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="tone" class="radio" required />
+                            <span>Serious</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="tone" class="radio" required />
+                            <span>Dark</span>
+                        </label>
+                    </div>
+                    {# Content warnings #}
+                    <label class="fieldset-label">Content Warnings</label>
+                    <input type="text" class="input bg-warning" placeholder="Content Warnings" />
+                    {# Crunch/weight #}
+                    <label class="fieldset-label">Crunch</label>
+                    <div class="rating">
+                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="1 star" />
+                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="2 star" />
+                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="3 star" />
+                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="4 star" />
+                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="5 star" />
+                    </div>
+                    {# Narrative vs mechanics #}
+                    <label class="fieldset-label">Narrative/Mechanics</label>
+                    <div class="rating">
+                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="1 star" />
+                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="2 star" />
+                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="3 star" />
+                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="4 star" />
+                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="5 star" />
+                    </div>
+                    {# Player Count #}
+                    <label class="fieldset-label">Player Count</label>
+                    <div>
+                        <div class="grid grid-cols-[min-content_min-content] gap-2">
+                            <span>Minimum</span>
+                            <input type="range" min="1" max="7" value="2" class="range w-md" step="1" />
+                            <span>Optimal</span>
+                            <input type="range" min="1" max="7" value="4" class="range w-md" step="1" />
+                            <span>Maximum</span>
+                            <input type="range" min="1" max="7" value="6" class="range w-md" step="1" />
+                            <div class="col-start-2">
+                                <div class="mt-2 flex justify-between px-2.5 text-xs">
+                                    <span>|</span>
+                                    <span>|</span>
+                                    <span>|</span>
+                                    <span>|</span>
+                                    <span>|</span>
+                                    <span>|</span>
+                                    <span>|</span>
+                                </div>
+                                <div class="mt-2 flex justify-between px-2.5 text-xs">
+                                    <span>1</span>
+                                    <span>2</span>
+                                    <span>3</span>
+                                    <span>4</span>
+                                    <span>5</span>
+                                    <span>6</span>
+                                    <span class="after:absolute after:content-['+']">7</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {# Age suitability #}
+                    <label class="fieldset-label">Age Suitabilty</label>
+                    <div class="bg-warning">TODO: Age suitability?</div>
+                    {# Points of Difference #}
+                    <label class="fieldset-label">Bonuses</label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>I made this system</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This system is NZ made</span>
+                    </label>
+                    {# Anything else? #}
+                </fieldset>
+
+                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                    <legend class="fieldset-legend">Scheduling Information</legend>
+                    <span>
+                        This information will be visible to the organisers so they can schedule the sessions where your
+                        game is offered. You'll be able to edit this until the schedule is fixed prior to the event.
+                    </span>
+
+                    <label class="fieldset-label">How many times do you want to run this game?</label>
+                    <div class="bg-warning">TODO the numbers</div>
+
+                    <label class="fieldset-label">In which time slots could you run this game?</label>
+                    <span>Please be flexible and mark all time slots you could do</span>
+                    {{ event }}
+                    {% for time_slot in event.time_slots %}
+                        <label class="fieldset-label">
+                            <input type="checkbox" class="checkbox" name="time_slot" value="{{ swim(time_slot) }}" />
+                            <span class="bg-warning">
+                                {{ time_slot.name }} {{ time_slot.start_time }} - {{ time_slot.end_time }}
+                            </span>
+                        </label>
+                    {% endfor %}
+
+                    <label class="fieldset-label">Any extra notes/preferences to help with scheduling?</label>
+                    <textarea class="textarea"></textarea>
+
+                    <label class="fieldset-label">Room and Table Placement</label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game requires a private room (e.g. for noise or specific set up reasons)</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game requires a larger table</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game might make a lot of noise</span>
+                    </label>
+                    <label class="fieldset-label">
+                        If you ticked yes to any of the above, please provide more details below
+                    </label>
+                    <textarea class="textarea"></textarea>
+                </fieldset>
+
+                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                    <legend class="fieldset-legend">Housekeeping</legend>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox validator" required title="Required" />
+                        <span>I agree to the <a class="link" href="TODO">Waikato RPG Code of Conduct</a></span>
+                        <p class="validator-hint">You must agree to the Waikato RPG Code of Conduct</p>
+                    </label>
+                </fieldset>
+                <button class="btn btn-primary" type="submit">Submit</button>
+            </form>
         </div>
     {% endblock %}
 </Page>

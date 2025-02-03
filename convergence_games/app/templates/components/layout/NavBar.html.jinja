@@ -7,5 +7,6 @@
     >
     </layout.NavButton>
     <layout.NavButton path="/editor_test" text="Editor Test"></layout.NavButton>
-    <layout.NavButton path="/submit_game" text="Submit Game"></layout.NavButton>
+    {% set submit_game_url = "/submit_game/" ~ swim("Event", 1) %}
+    <layout.NavButton :path="submit_game_url" text="Submit Game"></layout.NavButton>
 </nav>
