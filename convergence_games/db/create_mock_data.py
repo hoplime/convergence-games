@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.db.models import Event, Room, Table, TimeSlot
+from convergence_games.db.models import ContentWarning, Event, Genre, Room, System, SystemAlias, Table, TimeSlot
 
 
 async def create_mock_data(db_session: AsyncSession) -> None:
@@ -47,6 +47,124 @@ async def create_mock_data(db_session: AsyncSession) -> None:
         ],
     )
 
+    genres = [
+        Genre(name="Fantasy"),
+        Genre(name="Sci-Fi"),
+        Genre(name="Horror"),
+        Genre(name="Mystery"),
+        Genre(name="Superhero"),
+        Genre(name="Historical"),
+        Genre(name="Post-Apocalyptic"),
+        Genre(name="Cyberpunk"),
+        Genre(name="Steampunk"),
+        Genre(name="Western"),
+        Genre(name="Modern"),
+        Genre(name="Urban Fantasy"),
+        Genre(name="Space Opera"),
+        Genre(name="Pulp"),
+        Genre(name="Sword & Sorcery"),
+        Genre(name="Grimdark"),
+    ]
+
+    systems = [
+        System(
+            name="Dungeons & Dragons 3.5e",
+            aliases=[
+                SystemAlias(name="D&D 3.5e"),
+                SystemAlias(name="3.5e"),
+                SystemAlias(name="DND 3.5e"),
+                SystemAlias(name="DND 3.5"),
+                SystemAlias(name="D&D 3.5"),
+            ],
+        ),
+        System(
+            name="Dungeons & Dragons 5e",
+            aliases=[
+                SystemAlias(name="D&D 5e"),
+                SystemAlias(name="5e"),
+                SystemAlias(name="DND 5e"),
+                SystemAlias(name="DND 5"),
+                SystemAlias(name="D&D 5"),
+                SystemAlias(name="D&D 5th Edition"),
+                SystemAlias(name="D&D 5th"),
+                SystemAlias(name="D&D 5th Ed"),
+                SystemAlias(name="D&D 5th Ed."),
+                SystemAlias(name="fivee"),
+            ],
+        ),
+        System(
+            name="Pathfinder 1e",
+            aliases=[
+                SystemAlias(name="PF1e"),
+                SystemAlias(name="Pathfinder 1st Edition"),
+            ],
+        ),
+        System(
+            name="Pathfinder 2e",
+            aliases=[
+                SystemAlias(name="PF2e"),
+                SystemAlias(name="Pathfinder 2nd Edition"),
+                SystemAlias(name="Pathfinder"),
+            ],
+        ),
+        System(name="Starfinder 1e"),
+        System(name="Starfinder 2e"),
+        System(name="Shadowrun 5e"),
+        System(name="Shadowrun 6e"),
+        System(name="Cyberpunk 2020"),
+        System(name="Cyberpunk Red"),
+        System(name="Call of Cthulhu 7e"),
+        System(name="Call of Cthulhu 6e"),
+        System(name="Tales from the Loop"),
+        System(name="Kids on Bikes"),
+        System(name="Blades in the Dark"),
+        System(name="Savage Worlds"),
+        System(name="GURPS"),
+        System(name="World of Darkness"),
+        System(name="Chronicles of Darkness"),
+        System(name="Legend of the Five Rings"),
+        System(name="Lancer"),
+        System(name="Mutants & Masterminds"),
+        System(name="Fiasco"),
+        System(name="Dread"),
+        System(name="Honey Heist"),
+        System(name="Monster of the Week"),
+        System(name="Powered by the Apocalypse"),
+        System(name="The Sprawl"),
+        System(name="Apocalypse World"),
+        System(name="Monsterhearts"),
+        System(name="Dungeon World"),
+        System(name="Masks"),
+        System(name="Urban Shadows"),
+        System(name="The Veil"),
+        System(name="The Quiet Year"),
+        System(name="Microscope"),
+        System(name="Kingdom"),
+        System(name="For the Queen"),
+        System(name="Mork Borg"),
+        System(name="Alien RPG"),
+        System(name="Vampire the Masquerade 5e"),
+        System(name="Paranoia"),
+        System(name="Fate Core"),
+        System(name="Warhammer Fantasy Roleplay 4e"),
+    ]
+
+    content_warnings = [
+        ContentWarning(name="Violence"),
+        ContentWarning(name="Sexual Themes"),
+        ContentWarning(name="Drug Use"),
+        ContentWarning(name="Alcohol Use"),
+        ContentWarning(name="Mental Health"),
+        ContentWarning(name="Body Horror"),
+        ContentWarning(name="Bigotry"),
+        ContentWarning(name="Death"),
+        ContentWarning(name="Abuse"),
+    ]
+
     async with db_session as session:
         session.add(event)
+        session.add_all(genres)
+        session.add_all(systems)
+        session.add_all(content_warnings)
+
         await session.commit()

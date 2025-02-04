@@ -54,14 +54,27 @@
                     <input type="text" class="input" placeholder="Title" required />
                     {# System #}
                     <label class="fieldset-label">System</label>
-                    <input type="text" class="input bg-warning" placeholder="System" requried />
+                    {% for system in systems %}
+                        <label>
+                            <input type="radio" name="system" class="radio" required />
+                            <span>{{ system.name }}</span>
+                        </label>
+                    {% endfor %}
+                    {# Tagline #}
+                    <label class="fieldset-label">Tagline</label>
+                    <input type="text" class="input" placeholder="Tagline" required />
                     {# Description #}
                     {% set initial_content="<b>Some default test text</b>" %}
                     <label class="fieldset-label">Description</label>
                     <utilities.TipTap :initial_content="initial_content" />
                     {# Genre #}
                     <label class="fieldset-label">Genres</label>
-                    <input type="text" class="input bg-warning" placeholder="Genres" />
+                    {% for genre in genres %}
+                        <label>
+                            <input type="checkbox" class="checkbox" required />
+                            <span>{{ genre.name }}</span>
+                        </label>
+                    {% endfor %}
                     {# Tone #}
                     <label class="fieldset-label">Tone</label>
                     <div class="flex flex-col">
@@ -84,7 +97,12 @@
                     </div>
                     {# Content warnings #}
                     <label class="fieldset-label">Content Warnings</label>
-                    <input type="text" class="input bg-warning" placeholder="Content Warnings" />
+                    {% for content_warning in content_warnings %}
+                        <label>
+                            <input type="checkbox" class="checkbox" required />
+                            <span>{{ content_warning.name }}</span>
+                        </label>
+                    {% endfor %}
                     {# Crunch/weight #}
                     <label class="fieldset-label">Crunch</label>
                     <div class="rating">
@@ -136,8 +154,46 @@
                         </div>
                     </div>
                     {# Age suitability #}
-                    <label class="fieldset-label">Age Suitabilty</label>
-                    <div class="bg-warning">TODO: Age suitability?</div>
+                    <label class="fieldset-label">Age Suitabilty & Classification</label>
+                    <div class="flex flex-row gap-4">
+                        <label
+                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-green-500 opacity-50"
+                        >
+                            <input type="radio" name="classification" class="hidden" checked required />
+                            <span class="block text-lg font-bold">G</span>
+                        </label>
+                        <label
+                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
+                        >
+                            <input type="radio" name="classification" class="hidden" required />
+                            <span class="block text-lg font-bold">PG</span>
+                        </label>
+                        <label
+                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
+                        >
+                            <input type="radio" name="classification" class="hidden" required />
+                            <span class="block text-lg font-bold">M</span>
+                        </label>
+                        <label
+                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
+                        >
+                            <input type="radio" name="classification" class="hidden" required />
+                            <span class="block text-lg font-bold">R13</span>
+                        </label>
+                        <label
+                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
+                        >
+                            <input type="radio" name="classification" class="hidden" required />
+                            <span class="block text-lg font-bold">R16</span>
+                        </label>
+                        <label
+                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
+                        >
+                            <input type="radio" name="classification" class="hidden" required />
+                            <span class="block text-lg font-bold">R18</span>
+                        </label>
+                    </div>
+
                     {# Points of Difference #}
                     <label class="fieldset-label">Bonuses</label>
                     <label class="fieldset-label">
@@ -146,7 +202,15 @@
                     </label>
                     <label class="fieldset-label">
                         <input type="checkbox" class="checkbox" />
+                        <span>The system is in playtest</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
                         <span>This system is NZ made</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>I'm selling this system or scenario at the event</span>
                     </label>
                     {# Anything else? #}
                 </fieldset>
@@ -177,6 +241,10 @@
                     <textarea class="textarea"></textarea>
 
                     <label class="fieldset-label">Room and Table Placement</label>
+                    <span
+                        >What other facilities does your game require? This helps us place you and gives us a heads up
+                        on anything else you'll need.</span
+                    >
                     <label class="fieldset-label">
                         <input type="checkbox" class="checkbox" />
                         <span>This game requires a private room (e.g. for noise or specific set up reasons)</span>
@@ -188,6 +256,34 @@
                     <label class="fieldset-label">
                         <input type="checkbox" class="checkbox" />
                         <span>This game might make a lot of noise</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game requires a table with a power outlet</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game requires a whiteboard</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game requires other bulky equipment</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game may require players to move between tables</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game may require players to move to locations away from the venue</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game may requires players to have WiFi or good cellphone reception</span>
+                    </label>
+                    <label class="fieldset-label">
+                        <input type="checkbox" class="checkbox" />
+                        <span>This game requires something else (please provide details)</span>
                     </label>
                     <label class="fieldset-label">
                         If you ticked yes to any of the above, please provide more details below

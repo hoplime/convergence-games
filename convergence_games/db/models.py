@@ -88,11 +88,22 @@ class System(Base):
 
     # Relationships
     games: Mapped[list[Game]] = relationship(back_populates="system", lazy="noload")
+    aliases: Mapped[list[SystemAlias]] = relationship(back_populates="system", lazy="noload")
+
+
+class SystemAlias(Base):
+    name: Mapped[str] = mapped_column(index=True, unique=True)
+    system_id: Mapped[int] = mapped_column(ForeignKey("system.id"), index=True)
+
+    # Relationships
+    system: Mapped[System] = relationship(back_populates="aliases", lazy="noload")
+
+    __table_args__ = (UniqueConstraint("name", "system_id"),)
 
 
 class Genre(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
-    description: Mapped[str]
+    description: Mapped[str] = mapped_column(default="")
 
     # Relationships
     games: Mapped[list[Game]] = relationship(
@@ -105,7 +116,7 @@ class Genre(Base):
 
 class ContentWarning(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
-    description: Mapped[str]
+    description: Mapped[str] = mapped_column(default="")
 
     # Relationships
     games: Mapped[list[Game]] = relationship(

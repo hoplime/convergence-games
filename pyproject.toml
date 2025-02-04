@@ -21,6 +21,7 @@ dependencies = [
     "sqids>=0.5.1",
     "sqlalchemy>=2.0.37",
     "uvicorn[standard]>=0.34.0",
+    "rapidfuzz>=3.12.1",
 ]
 
 [project.urls]
