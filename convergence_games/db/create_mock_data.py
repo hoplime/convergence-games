@@ -90,6 +90,7 @@ async def create_mock_data(db_session: AsyncSession) -> None:
                 SystemAlias(name="D&D 5th Ed"),
                 SystemAlias(name="D&D 5th Ed."),
                 SystemAlias(name="fivee"),
+                SystemAlias(name="5th Edition"),
             ],
         ),
         System(

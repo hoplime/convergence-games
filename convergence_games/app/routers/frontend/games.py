@@ -1,6 +1,4 @@
-from itertools import chain
-
-from litestar import Controller, get
+from litestar import Controller, get, post
 from litestar.exceptions import NotFoundException
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
@@ -9,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.db.models import ContentWarning, Event, Genre, System, SystemAlias
+from convergence_games.db.models import ContentWarning, Event, Genre, System
 from convergence_games.db.ocean import sink
 
 
@@ -41,6 +39,14 @@ class GamesController(Controller):
                 "genres": all_genres,
                 "content_warnings": all_content_warnings,
             },
+        )
+
+    @post(path="/submit_game/{event_sqid:str}")
+    async def post_submit_game(self, request: Request, db_session: AsyncSession, event_sqid: str) -> Template:
+        return HTMXBlockTemplate(
+            template_str="""
+            <p>Submitted game for event {{ event_sqid }}</p>
+            """
         )
 
     @get(path="/submit_game/system_search")

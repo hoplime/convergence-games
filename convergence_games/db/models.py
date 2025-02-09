@@ -1,33 +1,24 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Any
 
 from advanced_alchemy.base import BigIntAuditBase
 from sqlalchemy import Connection, Enum, ForeignKey, ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy import event as sqla_event
 from sqlalchemy.orm import Mapped, Mapper, mapped_column, relationship
-from sqlalchemy.orm import Session as DBSession
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
+    GameActivityRequirement,
     GameCrunch,
+    GameEquipmentRequirement,
     GameNarrativism,
+    GameRoomRequirement,
+    GameTableSizeRequirement,
     GameTone,
     LoginProvider,
     Role,
 )
-
-
-def get_object_session(obj) -> DBSession | None:
-    return DBSession.object_session(obj)
-
-
-def get_object_session_info(obj) -> dict[str, Any]:
-    session = get_object_session(obj)
-    if session is None:
-        return {}
-    return session.info
 
 
 class UserAuditColumns:
@@ -80,6 +71,10 @@ class Event(Base):
     time_slots: Mapped[list[TimeSlot]] = relationship(back_populates="event", lazy="noload")
     games: Mapped[list[Game]] = relationship(back_populates="event", lazy="noload")
     user_roles: Mapped[list[UserEventRole]] = relationship(back_populates="event", lazy="noload")
+    game_requirements: Mapped[list[GameRequirement]] = relationship(back_populates="event", lazy="noload")
+    game_requirement_time_slot_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
+        back_populates="event", lazy="noload"
+    )
 
 
 class System(Base):
@@ -152,6 +147,7 @@ class Game(Base):
     system: Mapped[System] = relationship(back_populates="games", lazy="noload")
     gamemaster: Mapped[User] = relationship(back_populates="games", foreign_keys=gamemaster_id, lazy="noload")
     event: Mapped[Event] = relationship(back_populates="games", lazy="noload")
+    game_requirement: Mapped[GameRequirement] = relationship(back_populates="game", lazy="noload")
     sessions: Mapped[list[Session]] = relationship(back_populates="game", foreign_keys="Session.game_id", lazy="noload")
     genres: Mapped[list[Genre]] = relationship(
         back_populates="games", secondary=GameGenreLink.__table__, viewonly=True, lazy="noload"
@@ -170,6 +166,82 @@ class Game(Base):
     )
 
 
+def foreign_key_constraint_with_event(
+    this_table_name: str, foreign_table_name: str, foreign_table_id_name: str | None = None
+) -> ForeignKeyConstraint:
+    if foreign_table_id_name is None:
+        foreign_table_id_name = foreign_table_name + "_id"
+    desired_name = f"fk_{this_table_name}_{foreign_table_name}_with_event"
+    return ForeignKeyConstraint(
+        [foreign_table_id_name, "event_id"],
+        [foreign_table_name + ".id", foreign_table_name + ".event_id"],
+        name=desired_name[:63],
+    )
+
+
+class GameRequirement(Base):
+    times_to_run: Mapped[int] = mapped_column(default=1)
+    extra_time_slot_info: Mapped[str] = mapped_column(default="")
+    table_size_requirement: Mapped[GameTableSizeRequirement] = mapped_column(default=GameTableSizeRequirement.NONE)
+    table_size_notes: Mapped[str] = mapped_column(default="")
+    equipment_requirement: Mapped[GameEquipmentRequirement] = mapped_column(default=GameEquipmentRequirement.NONE)
+    equipment_notes: Mapped[str] = mapped_column(default="")
+    activity_requirement: Mapped[GameActivityRequirement] = mapped_column(default=GameActivityRequirement.NONE)
+    activity_notes: Mapped[str] = mapped_column(default="")
+    room_requirement: Mapped[GameRoomRequirement] = mapped_column(default=GameRoomRequirement.NONE)
+    room_notes: Mapped[str] = mapped_column(default="")
+
+    # Foreign Keys
+    game_id: Mapped[int] = mapped_column(ForeignKey("game.id"), index=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("event.id"), index=True
+    )  # Logically redundant, but necessary for constraints
+
+    # Relationships
+    game: Mapped[Game] = relationship(
+        back_populates="game_requirement", foreign_keys=game_id, single_parent=True, lazy="noload"
+    )
+    event: Mapped[Event] = relationship(back_populates="game_requirements", foreign_keys=event_id, lazy="noload")
+    available_time_slots: Mapped[list[TimeSlot]] = relationship(
+        back_populates="game_requirements",
+        secondary="game_requirement_time_slot_link",
+        viewonly=True,
+        lazy="noload",
+    )
+
+    # Assocation Proxy Relationships
+    time_slot_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
+        back_populates="game_requirement", lazy="noload"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("game_id"),
+        # This redundant constraint is necessary for the foreign key constraint in Session
+        UniqueConstraint("id", "event_id"),
+        foreign_key_constraint_with_event("game_requirement", "game"),
+    )
+
+
+class GameRequirementTimeSlotLink(Base):
+    time_slot_id: Mapped[int] = mapped_column(ForeignKey("time_slot.id"), primary_key=True)
+    game_requirement_id: Mapped[int] = mapped_column(ForeignKey("game_requirement.id"), primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("event.id"), index=True
+    )  # Logically redundant, but necessary for constraints
+
+    time_slot: Mapped[TimeSlot] = relationship(back_populates="game_requirement_links", lazy="noload")
+    game_requirement: Mapped[GameRequirement] = relationship(back_populates="time_slot_links", lazy="noload")
+    event: Mapped[Event] = relationship(back_populates="game_requirement_time_slot_links", lazy="noload")
+
+    __table_args__ = (
+        # This redundant constraint is necessary for the foreign key constraint in Session
+        UniqueConstraint("id", "event_id"),
+        UniqueConstraint("time_slot_id", "game_requirement_id"),
+        foreign_key_constraint_with_event("game_requirement_time_slot_link", "time_slot"),
+        foreign_key_constraint_with_event("game_requirement_time_slot_link", "game_requirement"),
+    )
+
+
 # Timetable Information Models
 class TimeSlot(Base):
     name: Mapped[str]
@@ -183,6 +255,17 @@ class TimeSlot(Base):
     event: Mapped[Event] = relationship(back_populates="time_slots", lazy="noload")
     sessions: Mapped[list[Session]] = relationship(
         back_populates="time_slot", foreign_keys="Session.time_slot_id", lazy="noload"
+    )
+    game_requirements: Mapped[list[GameRequirement]] = relationship(
+        back_populates="available_time_slots",
+        secondary=GameRequirementTimeSlotLink.__table__,
+        viewonly=True,
+        lazy="noload",
+    )
+
+    # Assocation Proxy Relationships
+    game_requirement_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
+        back_populates="time_slot", lazy="noload"
     )
 
     __table_args__ = (
@@ -225,6 +308,7 @@ class Table(Base):
     __table_args__ = (
         # This redundant constraint is necessary for the foreign key constraint in Session
         UniqueConstraint("id", "event_id"),
+        foreign_key_constraint_with_event("table", "room"),
     )
 
 
@@ -253,21 +337,9 @@ class Session(Base):
         # https://dba.stackexchange.com/a/58972
         # https://stackoverflow.com/a/63922398
         # These constraints ensure that the Game, Table and TimeSlot are part of the same Event
-        ForeignKeyConstraint(
-            ["game_id", "event_id"],
-            ["game.id", "game.event_id"],
-            name="fk_session_game_id_event_id_game",
-        ),
-        ForeignKeyConstraint(
-            ["table_id", "event_id"],
-            ["table.id", "table.event_id"],
-            name="fk_session_table_id_event_id_table",
-        ),
-        ForeignKeyConstraint(
-            ["time_slot_id", "event_id"],
-            ["time_slot.id", "time_slot.event_id"],
-            name="fk_session_time_slot_id_event_id_time_slot",
-        ),
+        foreign_key_constraint_with_event("session", "game"),
+        foreign_key_constraint_with_event("session", "table"),
+        foreign_key_constraint_with_event("session", "time_slot"),
     )
 
 
