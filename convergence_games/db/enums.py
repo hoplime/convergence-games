@@ -30,6 +30,23 @@ class GameStatus(enum.StrEnum):
     CANCELLED = "Cancelled"
 
 
+class GameAgeRating(enum.StrEnum):
+    G = "G"
+    PG = "PG"
+    M = "M"
+    R16 = "R16"
+    R18 = "R18"
+
+    @property
+    def age_restriction(self) -> int:
+        if self == GameAgeRating.R16:
+            return 16
+        elif self == GameAgeRating.R18:
+            return 18
+
+        return 0
+
+
 class FlagWithNotes(enum.IntFlag):
     _ignore_ = ["__notes__"]
     __notes__: ClassVar[dict[int, str]] = {}
@@ -45,6 +62,22 @@ class FlagWithNotes(enum.IntFlag):
     @property
     def notes(self) -> list[str]:
         return [self.note_for(value) for value in self]
+
+
+class GameKSP(FlagWithNotes):
+    # Key Selling Points
+    NONE = 0
+    DESIGNER_RUN = 1
+    NZ_MADE = 2
+    IN_PLAYTEST = 4
+    FOR_SALE = 8
+
+    __notes__ = {
+        DESIGNER_RUN: "Designer run",
+        NZ_MADE: "NZ made",
+        IN_PLAYTEST: "In playtest",
+        FOR_SALE: "For sale",
+    }
 
 
 class GameTableSizeRequirement(FlagWithNotes):

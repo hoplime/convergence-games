@@ -3,11 +3,38 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.db.models import ContentWarning, Event, Genre, Room, System, SystemAlias, Table, TimeSlot
+from convergence_games.db.enums import (
+    GameActivityRequirement,
+    GameAgeRating,
+    GameCrunch,
+    GameEquipmentRequirement,
+    GameKSP,
+    GameNarrativism,
+    GameRoomRequirement,
+    GameTableSizeRequirement,
+    GameTone,
+)
+from convergence_games.db.models import (
+    ContentWarning,
+    Event,
+    Game,
+    GameContentWarningLink,
+    GameGenreLink,
+    GameRequirement,
+    GameRequirementTimeSlotLink,
+    Genre,
+    Room,
+    Session,
+    System,
+    SystemAlias,
+    Table,
+    TimeSlot,
+    User,
+)
 
 
 async def create_mock_data(db_session: AsyncSession) -> None:
-    NZT = ZoneInfo("Pacific/Auckland")
+    NZT = ZoneInfo("Pacific/Auckland")  # noqa: N806
 
     event = Event(
         name="Test Event",
@@ -162,10 +189,54 @@ async def create_mock_data(db_session: AsyncSession) -> None:
         ContentWarning(name="Abuse"),
     ]
 
+    game = Game(
+        name="Test Game",
+        tagline="This is a test game",
+        description="This is a test game description",
+        age_rating=GameAgeRating.R16,
+        crunch=GameCrunch.MEDIUM,
+        narrativism=GameNarrativism.NARRATIVIST,
+        tone=GameTone.LIGHT_HEARTED,
+        player_count_minimum=3,
+        player_count_optimum=4,
+        player_count_maximum=6,
+        ksps=GameKSP.FOR_SALE | GameKSP.DESIGNER_RUN,
+        system=systems[0],
+        gamemaster=User(
+            name="John Cena",
+            email="youcantseeme@gmail.com",
+            description="You can't see me",
+        ),
+        event=event,
+        game_requirement=GameRequirement(
+            times_to_run=2,
+            table_size_requirement=GameTableSizeRequirement.LARGE,
+            equipment_requirement=GameEquipmentRequirement.EXTRA_SIDETABLE,
+            activity_requirement=GameActivityRequirement.NONE,
+            room_requirement=GameRoomRequirement.NEAR_ANOTHER_TABLE | GameRoomRequirement.QUIET,
+            room_notes="This game requires a quiet room near another table",
+            # available_time_slots=[event.time_slots[0], event.time_slots[1], event.time_slots[2]],
+        ),
+        sessions=[],
+        # genre_links=[genres[0], genres[1]],
+        # content_warnings=[content_warnings[0], content_warnings[1]],
+    )
+
+    extra_links = [
+        GameGenreLink(game=game, genre=genres[0]),
+        GameGenreLink(game=game, genre=genres[1]),
+        GameContentWarningLink(game=game, content_warning=content_warnings[0]),
+        GameContentWarningLink(game=game, content_warning=content_warnings[1]),
+        GameRequirementTimeSlotLink(game_requirement=game.game_requirement, time_slot=event.time_slots[0]),
+        GameRequirementTimeSlotLink(game_requirement=game.game_requirement, time_slot=event.time_slots[1]),
+    ]
+
     async with db_session as session:
         session.add(event)
         session.add_all(genres)
         session.add_all(systems)
         session.add_all(content_warnings)
+        session.add(game)
+        session.add_all(extra_links)
 
         await session.commit()

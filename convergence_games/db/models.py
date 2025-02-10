@@ -3,15 +3,17 @@ from __future__ import annotations
 import datetime as dt
 
 from advanced_alchemy.base import BigIntAuditBase
-from sqlalchemy import Connection, Enum, ForeignKey, ForeignKeyConstraint, UniqueConstraint
+from sqlalchemy import Connection, Enum, ForeignKey, ForeignKeyConstraint, Integer, UniqueConstraint
 from sqlalchemy import event as sqla_event
 from sqlalchemy.orm import Mapped, Mapper, mapped_column, relationship
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
     GameActivityRequirement,
+    GameAgeRating,
     GameCrunch,
     GameEquipmentRequirement,
+    GameKSP,
     GameNarrativism,
     GameRoomRequirement,
     GameTableSizeRequirement,
@@ -102,7 +104,10 @@ class Genre(Base):
 
     # Relationships
     games: Mapped[list[Game]] = relationship(
-        back_populates="genres", secondary=GameGenreLink.__table__, viewonly=True, lazy="noload"
+        back_populates="genres",
+        secondary=GameGenreLink.__table__,
+        viewonly=True,
+        lazy="noload",
     )
 
     # Assocation Proxy Relationships
@@ -115,7 +120,10 @@ class ContentWarning(Base):
 
     # Relationships
     games: Mapped[list[Game]] = relationship(
-        back_populates="content_warnings", secondary=GameContentWarningLink.__table__, viewonly=True, lazy="noload"
+        back_populates="content_warnings",
+        secondary=GameContentWarningLink.__table__,
+        viewonly=True,
+        lazy="noload",
     )
 
     # Assocation Proxy Relationships
@@ -123,20 +131,26 @@ class ContentWarning(Base):
 
 
 class Game(Base):
+    # Description Fields
     name: Mapped[str] = mapped_column(index=True, unique=True)
-    tagline: Mapped[str]
-    description: Mapped[str]
-    min_age: Mapped[int]
+    tagline: Mapped[str] = mapped_column(default="")
+    description: Mapped[str] = mapped_column(default="")
+
+    # Tags
+    age_rating: Mapped[GameAgeRating] = mapped_column(Enum(GameAgeRating), default=GameAgeRating.G, index=True)
     crunch: Mapped[GameCrunch] = mapped_column(Enum(GameCrunch), default=GameCrunch.MEDIUM, index=True)
     narrativism: Mapped[GameNarrativism] = mapped_column(
         Enum(GameNarrativism), default=GameNarrativism.BALANCED, index=True
     )
     tone: Mapped[GameTone] = mapped_column(Enum(GameTone), default=GameTone.LIGHT_HEARTED, index=True)
+
+    # Player Count
     player_count_minimum: Mapped[int]
-    player_count_optimal: Mapped[int]
+    player_count_optimum: Mapped[int]
     player_count_maximum: Mapped[int]
-    nz_made: Mapped[bool] = mapped_column(default=False)
-    designer_run: Mapped[bool] = mapped_column(default=False)
+
+    # Bonus
+    ksps: Mapped[GameKSP] = mapped_column(Integer, default=GameKSP.NONE)
 
     # Foreign Keys
     system_id: Mapped[int] = mapped_column(ForeignKey("system.id"), index=True)
@@ -147,13 +161,21 @@ class Game(Base):
     system: Mapped[System] = relationship(back_populates="games", lazy="noload")
     gamemaster: Mapped[User] = relationship(back_populates="games", foreign_keys=gamemaster_id, lazy="noload")
     event: Mapped[Event] = relationship(back_populates="games", lazy="noload")
-    game_requirement: Mapped[GameRequirement] = relationship(back_populates="game", lazy="noload")
+    game_requirement: Mapped[GameRequirement] = relationship(
+        back_populates="game", foreign_keys="GameRequirement.game_id", lazy="noload"
+    )
     sessions: Mapped[list[Session]] = relationship(back_populates="game", foreign_keys="Session.game_id", lazy="noload")
     genres: Mapped[list[Genre]] = relationship(
-        back_populates="games", secondary=GameGenreLink.__table__, viewonly=True, lazy="noload"
+        back_populates="games",
+        secondary=GameGenreLink.__table__,
+        viewonly=True,
+        lazy="noload",
     )
     content_warnings: Mapped[list[ContentWarning]] = relationship(
-        back_populates="games", secondary=GameContentWarningLink.__table__, viewonly=True, lazy="noload"
+        back_populates="games",
+        secondary=GameContentWarningLink.__table__,
+        viewonly=True,
+        lazy="noload",
     )
 
     # Assocation Proxy Relationships
@@ -182,13 +204,17 @@ def foreign_key_constraint_with_event(
 class GameRequirement(Base):
     times_to_run: Mapped[int] = mapped_column(default=1)
     extra_time_slot_info: Mapped[str] = mapped_column(default="")
-    table_size_requirement: Mapped[GameTableSizeRequirement] = mapped_column(default=GameTableSizeRequirement.NONE)
+    table_size_requirement: Mapped[GameTableSizeRequirement] = mapped_column(
+        Integer, default=GameTableSizeRequirement.NONE
+    )
     table_size_notes: Mapped[str] = mapped_column(default="")
-    equipment_requirement: Mapped[GameEquipmentRequirement] = mapped_column(default=GameEquipmentRequirement.NONE)
+    equipment_requirement: Mapped[GameEquipmentRequirement] = mapped_column(
+        Integer, default=GameEquipmentRequirement.NONE
+    )
     equipment_notes: Mapped[str] = mapped_column(default="")
-    activity_requirement: Mapped[GameActivityRequirement] = mapped_column(default=GameActivityRequirement.NONE)
+    activity_requirement: Mapped[GameActivityRequirement] = mapped_column(Integer, default=GameActivityRequirement.NONE)
     activity_notes: Mapped[str] = mapped_column(default="")
-    room_requirement: Mapped[GameRoomRequirement] = mapped_column(default=GameRoomRequirement.NONE)
+    room_requirement: Mapped[GameRoomRequirement] = mapped_column(Integer, default=GameRoomRequirement.NONE)
     room_notes: Mapped[str] = mapped_column(default="")
 
     # Foreign Keys
@@ -205,13 +231,17 @@ class GameRequirement(Base):
     available_time_slots: Mapped[list[TimeSlot]] = relationship(
         back_populates="game_requirements",
         secondary="game_requirement_time_slot_link",
+        primaryjoin="GameRequirement.id == GameRequirementTimeSlotLink.game_requirement_id",
+        secondaryjoin="TimeSlot.id == GameRequirementTimeSlotLink.time_slot_id",
         viewonly=True,
         lazy="noload",
     )
 
     # Assocation Proxy Relationships
     time_slot_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
-        back_populates="game_requirement", lazy="noload"
+        back_populates="game_requirement",
+        primaryjoin="GameRequirement.id == GameRequirementTimeSlotLink.game_requirement_id",
+        lazy="noload",
     )
 
     __table_args__ = (
@@ -222,6 +252,12 @@ class GameRequirement(Base):
     )
 
 
+@sqla_event.listens_for(GameRequirement, "before_insert")
+def game_requirement_before_insert(mapper: Mapper, connection: Connection, target: GameRequirement):
+    if target.event_id is None:
+        target.event_id = target.game.event_id
+
+
 class GameRequirementTimeSlotLink(Base):
     time_slot_id: Mapped[int] = mapped_column(ForeignKey("time_slot.id"), primary_key=True)
     game_requirement_id: Mapped[int] = mapped_column(ForeignKey("game_requirement.id"), primary_key=True)
@@ -229,8 +265,12 @@ class GameRequirementTimeSlotLink(Base):
         ForeignKey("event.id"), index=True
     )  # Logically redundant, but necessary for constraints
 
-    time_slot: Mapped[TimeSlot] = relationship(back_populates="game_requirement_links", lazy="noload")
-    game_requirement: Mapped[GameRequirement] = relationship(back_populates="time_slot_links", lazy="noload")
+    time_slot: Mapped[TimeSlot] = relationship(
+        back_populates="game_requirement_links", foreign_keys=time_slot_id, lazy="noload"
+    )
+    game_requirement: Mapped[GameRequirement] = relationship(
+        back_populates="time_slot_links", foreign_keys=game_requirement_id, lazy="noload"
+    )
     event: Mapped[Event] = relationship(back_populates="game_requirement_time_slot_links", lazy="noload")
 
     __table_args__ = (
@@ -240,6 +280,18 @@ class GameRequirementTimeSlotLink(Base):
         foreign_key_constraint_with_event("game_requirement_time_slot_link", "time_slot"),
         foreign_key_constraint_with_event("game_requirement_time_slot_link", "game_requirement"),
     )
+
+
+@sqla_event.listens_for(GameRequirementTimeSlotLink, "before_insert")
+def game_requirement_time_slot_link_before_insert(
+    mapper: Mapper, connection: Connection, target: GameRequirementTimeSlotLink
+):
+    print("game_requirement_time_slot_link_before_insert")
+    if target.event_id is None:
+        if target.time_slot is not None:
+            target.event_id = target.time_slot.event_id
+        elif target.game_requirement is not None:
+            target.event_id = target.game_requirement.event_id
 
 
 # Timetable Information Models
@@ -259,13 +311,17 @@ class TimeSlot(Base):
     game_requirements: Mapped[list[GameRequirement]] = relationship(
         back_populates="available_time_slots",
         secondary=GameRequirementTimeSlotLink.__table__,
+        primaryjoin="TimeSlot.id == GameRequirementTimeSlotLink.time_slot_id",
+        secondaryjoin="GameRequirement.id == GameRequirementTimeSlotLink.game_requirement_id",
         viewonly=True,
         lazy="noload",
     )
 
     # Assocation Proxy Relationships
     game_requirement_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
-        back_populates="time_slot", lazy="noload"
+        back_populates="time_slot",
+        primaryjoin="TimeSlot.id == GameRequirementTimeSlotLink.time_slot_id",
+        lazy="noload",
     )
 
     __table_args__ = (
@@ -283,7 +339,7 @@ class Room(Base):
 
     # Relationships
     event: Mapped[Event] = relationship(back_populates="rooms", lazy="noload")
-    tables: Mapped[list[Table]] = relationship(back_populates="room", lazy="noload")
+    tables: Mapped[list[Table]] = relationship(back_populates="room", foreign_keys="Table.room_id", lazy="noload")
 
     __table_args__ = (
         # This redundant constraint is necessary for the foreign key constraint in Session
@@ -299,7 +355,7 @@ class Table(Base):
     event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
 
     # Relationships
-    room: Mapped[Room] = relationship(back_populates="tables", lazy="noload")
+    room: Mapped[Room] = relationship(back_populates="tables", foreign_keys=room_id, lazy="noload")
     event: Mapped[Event] = relationship(back_populates="tables", lazy="noload")
     sessions: Mapped[list[Session]] = relationship(
         back_populates="table", foreign_keys="Session.table_id", lazy="noload"
