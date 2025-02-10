@@ -30,7 +30,7 @@ class GameStatus(enum.StrEnum):
     CANCELLED = "Cancelled"
 
 
-class GameAgeRating(enum.StrEnum):
+class GameClassification(enum.StrEnum):
     G = "G"
     PG = "PG"
     M = "M"
@@ -39,9 +39,9 @@ class GameAgeRating(enum.StrEnum):
 
     @property
     def age_restriction(self) -> int:
-        if self == GameAgeRating.R16:
+        if self == GameClassification.R16:
             return 16
-        elif self == GameAgeRating.R18:
+        elif self == GameClassification.R18:
             return 18
 
         return 0
@@ -50,6 +50,7 @@ class GameAgeRating(enum.StrEnum):
 class FlagWithNotes(enum.IntFlag):
     _ignore_ = ["__notes__"]
     __notes__: ClassVar[dict[int, str]] = {}
+    __form_notes__: ClassVar[dict[int, str]] = {}
 
     @classmethod
     def all_notes_and_values(cls) -> list[tuple[int, str]]:
@@ -62,6 +63,18 @@ class FlagWithNotes(enum.IntFlag):
     @property
     def notes(self) -> list[str]:
         return [self.note_for(value) for value in self]
+
+    @classmethod
+    def all_form_notes_and_values(cls) -> list[tuple[int, str]]:
+        return [(member.value, cls.form_note_for(member.value)) for member in cls]
+
+    @classmethod
+    def form_note_for(cls, value: int) -> str:
+        return cls.__form_notes__.get(value, "")
+
+    @property
+    def form_notes(self) -> list[str]:
+        return [self.form_note_for(value) for value in self]
 
 
 class GameKSP(FlagWithNotes):
@@ -77,6 +90,13 @@ class GameKSP(FlagWithNotes):
         NZ_MADE: "NZ made",
         IN_PLAYTEST: "In playtest",
         FOR_SALE: "For sale",
+    }
+
+    __form_notes__ = {
+        DESIGNER_RUN: "I am the designer of this system",
+        NZ_MADE: "This game was designed in New Zealand",
+        IN_PLAYTEST: "This game is in playtest",
+        FOR_SALE: "This game will be for sale at the event",
     }
 
 

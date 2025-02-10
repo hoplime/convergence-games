@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, Mapper, mapped_column, relationship
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
     GameActivityRequirement,
-    GameAgeRating,
+    GameClassification,
     GameCrunch,
     GameEquipmentRequirement,
     GameKSP,
@@ -137,7 +137,9 @@ class Game(Base):
     description: Mapped[str] = mapped_column(default="")
 
     # Tags
-    age_rating: Mapped[GameAgeRating] = mapped_column(Enum(GameAgeRating), default=GameAgeRating.G, index=True)
+    classification: Mapped[GameClassification] = mapped_column(
+        Enum(GameClassification), default=GameClassification.G, index=True
+    )
     crunch: Mapped[GameCrunch] = mapped_column(Enum(GameCrunch), default=GameCrunch.MEDIUM, index=True)
     narrativism: Mapped[GameNarrativism] = mapped_column(
         Enum(GameNarrativism), default=GameNarrativism.BALANCED, index=True

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.db.enums import (
     GameActivityRequirement,
-    GameAgeRating,
+    GameClassification,
     GameCrunch,
     GameEquipmentRequirement,
     GameKSP,
@@ -193,7 +193,7 @@ async def create_mock_data(db_session: AsyncSession) -> None:
         name="Test Game",
         tagline="This is a test game",
         description="This is a test game description",
-        age_rating=GameAgeRating.R16,
+        classification=GameClassification.R16,
         crunch=GameCrunch.MEDIUM,
         narrativism=GameNarrativism.NARRATIVIST,
         tone=GameTone.LIGHT_HEARTED,
@@ -215,11 +215,8 @@ async def create_mock_data(db_session: AsyncSession) -> None:
             activity_requirement=GameActivityRequirement.NONE,
             room_requirement=GameRoomRequirement.NEAR_ANOTHER_TABLE | GameRoomRequirement.QUIET,
             room_notes="This game requires a quiet room near another table",
-            # available_time_slots=[event.time_slots[0], event.time_slots[1], event.time_slots[2]],
         ),
         sessions=[],
-        # genre_links=[genres[0], genres[1]],
-        # content_warnings=[content_warnings[0], content_warnings[1]],
     )
 
     extra_links = [

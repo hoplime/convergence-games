@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import TYPE_CHECKING, cast, overload
+from typing import TYPE_CHECKING, NewType, cast, overload
 
 from sqids import Sqids
 from sqids.constants import DEFAULT_ALPHABET
@@ -24,7 +24,9 @@ else:
 
     HasID: TypeAlias = Any
 
-sqids = Sqids(alphabet=SETTINGS.SQIDS_ALPHABET or DEFAULT_ALPHABET, min_length=SETTINGS.SQIDS_MIN_LENGTH)
+_sqids = Sqids(alphabet=SETTINGS.SQIDS_ALPHABET or DEFAULT_ALPHABET, min_length=SETTINGS.SQIDS_MIN_LENGTH)
+
+Sqid = NewType("Sqid", str)
 
 
 @lru_cache
@@ -35,23 +37,23 @@ def _ink(class_name: str) -> int:
     return hash(class_name) % 100
 
 
-def sink(sqid: str) -> int:
+def sink(sqid: Sqid) -> int:
     """
     Extract the ID from a sqid.
     Suitable to dive into the database!
     """
-    return sqids.decode(sqid)[-1]
+    return _sqids.decode(sqid)[-1]
 
 
 @overload
-def swim(obj: HasID) -> str: ...
+def swim(obj: HasID) -> Sqid: ...
 
 
 @overload
-def swim(obj: str, obj_id: int) -> str: ...
+def swim(obj: str, obj_id: int) -> Sqid: ...
 
 
-def swim(obj: HasID | str, obj_id: int | None = None) -> str:
+def swim(obj: HasID | str, obj_id: int | None = None) -> Sqid:
     """
     Create a sqid from an object.
     Suitable to surface to the client!
@@ -63,7 +65,7 @@ def swim(obj: HasID | str, obj_id: int | None = None) -> str:
         class_name = obj.__class__.__name__
         obj_id = cast(int, obj.id)
 
-    return sqids.encode([_ink(class_name), obj_id])
+    return cast(Sqid, _sqids.encode([_ink(class_name), obj_id]))
 
 
 if __name__ == "__main__":
@@ -93,5 +95,5 @@ if __name__ == "__main__":
     # Length test
     for i in range(10):
         x = 10**i
-        sqid = sqids.encode([0, x])
+        sqid = _sqids.encode([0, x])
         print(f"{i}\t{x}\t{sqid}")

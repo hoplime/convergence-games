@@ -15,18 +15,18 @@
                     </span>
                     {# Title #}
                     <label class="fieldset-label">Title</label>
-                    <input type="text" class="input" placeholder="Title" required />
+                    <input type="text" class="input" placeholder="Title" name="title" required />
                     {# System #}
                     <label class="fieldset-label">System</label>
                     {% for system in systems %}
                         <label>
-                            <input type="radio" name="system" class="radio" required />
+                            <input type="radio" name="system" class="radio" value="{{ swim(system) }}" required />
                             <span>{{ system.name }}</span>
                         </label>
                     {% endfor %}
                     {# Tagline #}
                     <label class="fieldset-label">Tagline</label>
-                    <input type="text" class="input" placeholder="Tagline" required />
+                    <input type="text" class="input" placeholder="Tagline" name="tagline" required />
                     {# Description #}
                     {% set initial_content="<b>Some default test text</b>" %}
                     <label class="fieldset-label">Description</label>
@@ -34,67 +34,95 @@
                     {# Genre #}
                     <label class="fieldset-label">Genres</label>
                     {% for genre in genres %}
+                        {# TODO: Must select at least one genre #}
                         <label>
-                            <input type="checkbox" class="checkbox" required />
+                            <input type="checkbox" name="genre" class="checkbox" value="{{ swim(genre) }}" />
                             <span>{{ genre.name }}</span>
                         </label>
                     {% endfor %}
                     {# Tone #}
                     <label class="fieldset-label">Tone</label>
                     <div class="flex flex-col">
-                        <label>
-                            <input type="radio" name="tone" class="radio" required />
-                            <span>Goofy</span>
-                        </label>
-                        <label>
-                            <input type="radio" name="tone" class="radio" required />
-                            <span>Light-hearted</span>
-                        </label>
-                        <label>
-                            <input type="radio" name="tone" class="radio" required />
-                            <span>Serious</span>
-                        </label>
-                        <label>
-                            <input type="radio" name="tone" class="radio" required />
-                            <span>Dark</span>
-                        </label>
+                        {% for tone in tones %}
+                            <label>
+                                <input type="radio" name="tone" class="radio" value="{{ tone }}" required />
+                                <span>{{ tone }}</span>
+                            </label>
+                        {% endfor %}
                     </div>
                     {# Content warnings #}
                     <label class="fieldset-label">Content Warnings</label>
                     {% for content_warning in content_warnings %}
                         <label>
-                            <input type="checkbox" class="checkbox" required />
+                            <input
+                                type="checkbox"
+                                name="content_warning"
+                                class="checkbox"
+                                value="{{ swim(content_warning) }}"
+                            />
                             <span>{{ content_warning.name }}</span>
                         </label>
                     {% endfor %}
                     {# Crunch/weight #}
                     <label class="fieldset-label">Crunch</label>
-                    <div class="rating">
-                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="1 star" />
-                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="2 star" />
-                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="3 star" />
-                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="4 star" />
-                        <input type="radio" name="crunch" class="mask mask-star-2" aria-label="5 star" />
+                    <div class="flex flex-col">
+                        {% for crunch in crunches %}
+                            <label>
+                                <input type="radio" name="crunch" class="radio" value="{{ crunch }}" required />
+                                <span>{{ crunch }}</span>
+                            </label>
+                        {% endfor %}
                     </div>
                     {# Narrative vs mechanics #}
                     <label class="fieldset-label">Narrative/Mechanics</label>
-                    <div class="rating">
-                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="1 star" />
-                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="2 star" />
-                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="3 star" />
-                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="4 star" />
-                        <input type="radio" name="narrative" class="mask mask-star-2" aria-label="5 star" />
+                    <div class="flex flex-col">
+                        {% for narrativism in narrativisms %}
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="narrativism"
+                                    class="radio"
+                                    value="{{ narrativism }}"
+                                    required
+                                />
+                                <span>{{ narrativism }}</span>
+                            </label>
+                        {% endfor %}
                     </div>
                     {# Player Count #}
                     <label class="fieldset-label">Player Count</label>
                     <div>
                         <div class="grid grid-cols-[min-content_min-content] gap-2">
                             <span>Minimum</span>
-                            <input type="range" min="1" max="7" value="2" class="range w-md" step="1" />
-                            <span>Optimal</span>
-                            <input type="range" min="1" max="7" value="4" class="range w-md" step="1" />
+                            <input
+                                type="range"
+                                name="player_count_minimum"
+                                min="1"
+                                max="7"
+                                value="2"
+                                class="range w-md"
+                                step="1"
+                            />
+                            <span>Optimum</span>
+                            <input
+                                type="range"
+                                name="player_count_optimum"
+                                min="1"
+                                max="7"
+                                value="4"
+                                class="range w-md"
+                                step="1"
+                            />
                             <span>Maximum</span>
-                            <input type="range" min="1" max="7" value="6" class="range w-md" step="1" />
+                            <input
+                                type="range"
+                                name="player_count_maximum"
+                                min="1"
+                                max="7"
+                                value="6"
+                                class="range w-md"
+                                step="1"
+                            />
                             <div class="col-start-2">
                                 <div class="mt-2 flex justify-between px-2.5 text-xs">
                                     <span>|</span>
@@ -123,59 +151,43 @@
                         <label
                             class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-green-500 opacity-50"
                         >
-                            <input type="radio" name="classification" class="hidden" checked required />
+                            <input type="radio" name="classification" class="hidden" value="G" checked required />
                             <span class="block text-lg font-bold">G</span>
                         </label>
                         <label
                             class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
                         >
-                            <input type="radio" name="classification" class="hidden" required />
+                            <input type="radio" name="classification" class="hidden" value="PG" required />
                             <span class="block text-lg font-bold">PG</span>
                         </label>
                         <label
                             class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
                         >
-                            <input type="radio" name="classification" class="hidden" required />
+                            <input type="radio" name="classification" class="hidden" value="M" required />
                             <span class="block text-lg font-bold">M</span>
                         </label>
                         <label
                             class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
                         >
-                            <input type="radio" name="classification" class="hidden" required />
-                            <span class="block text-lg font-bold">R13</span>
-                        </label>
-                        <label
-                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
-                        >
-                            <input type="radio" name="classification" class="hidden" required />
+                            <input type="radio" name="classification" class="hidden" value="R16" required />
                             <span class="block text-lg font-bold">R16</span>
                         </label>
                         <label
                             class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
                         >
-                            <input type="radio" name="classification" class="hidden" required />
+                            <input type="radio" name="classification" class="hidden" value="R18" required />
                             <span class="block text-lg font-bold">R18</span>
                         </label>
                     </div>
 
-                    {# Points of Difference #}
+                    {# Key Selling Points #}
                     <label class="fieldset-label">Bonuses</label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>I made this system</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>The system is in playtest</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This system is NZ made</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>I'm selling this system or scenario at the event</span>
-                    </label>
+                    {% for ksp in ksps %}
+                        <label class="fieldset-label">
+                            <input type="checkbox" class="checkbox" name="ksp" value="{{ ksp }}" />
+                            <span>{{ ksp.form_notes[0] }}</span>
+                        </label>
+                    {% endfor %}
                     {# Anything else? #}
                 </fieldset>
 
@@ -263,7 +275,7 @@
                         <p class="validator-hint">You must agree to the Waikato RPG Code of Conduct</p>
                     </label>
                 </fieldset>
-                <button class="btn btn-primary" type="submit">Submit</button>
+                <button class="btn btn-primary" hx-post="/submit_game/{{ swim(event) }}">Submit</button>
             </form>
         </div>
     {% endblock %}

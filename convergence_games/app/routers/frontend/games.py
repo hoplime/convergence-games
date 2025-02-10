@@ -1,5 +1,9 @@
+from typing import Annotated, TypeAlias, cast
+
 from litestar import Controller, get, post
 from litestar.exceptions import NotFoundException
+from litestar.params import Body, RequestEncodingType
+from pydantic import BaseModel, BeforeValidator
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,8 +11,37 @@ from sqlalchemy.orm import selectinload
 
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
+from convergence_games.db.enums import GameClassification, GameCrunch, GameKSP, GameNarrativism, GameTone
 from convergence_games.db.models import ContentWarning, Event, Genre, System
-from convergence_games.db.ocean import sink
+from convergence_games.db.ocean import Sqid, sink
+
+SqidSingle: TypeAlias = Annotated[
+    int,
+    BeforeValidator(lambda sqid: sink(cast(Sqid, sqid))),
+]
+SqidList: TypeAlias = Annotated[
+    list[int],
+    BeforeValidator(
+        lambda sqids: [sink(cast(Sqid, sqids))] if isinstance(sqids, str) else [sink(sqid) for sqid in sqids]
+    ),
+]
+
+
+class SubmitGameForm(BaseModel):
+    title: str
+    system: SqidSingle
+    tagline: str
+    genre: SqidList
+    tone: GameTone
+    content_warning: SqidList
+    crunch: GameCrunch
+    narrativism: GameNarrativism
+    player_count_minimum: int
+    player_count_optimum: int
+    player_count_maximum: int
+    classification: GameClassification
+    ksp: GameKSP
+    time_slot: SqidList
 
 
 class GamesController(Controller):
@@ -17,17 +50,19 @@ class GamesController(Controller):
         return HTMXBlockTemplate(template_name="pages/games.html.jinja", block_name=request.htmx.target)
 
     @get(path="/submit_game/{event_sqid:str}")
-    async def get_submit_game(self, request: Request, db_session: AsyncSession, event_sqid: str) -> Template:
+    async def get_submit_game(self, request: Request, db_session: AsyncSession, event_sqid: Sqid) -> Template:
         event_id = sink(event_sqid)
         event = (
             await db_session.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
         ).scalar_one_or_none()
 
         if not event:
-            raise NotFoundException()
+            raise NotFoundException(detail="Event not found")
 
         print(event.time_slots)
 
+        # TODO: Replace these with search queries
+        all_systems = (await db_session.execute(select(System))).scalars().all()
         all_genres = (await db_session.execute(select(Genre))).scalars().all()
         all_content_warnings = (await db_session.execute(select(ContentWarning))).scalars().all()
 
@@ -36,17 +71,39 @@ class GamesController(Controller):
             block_name=request.htmx.target,
             context={
                 "event": event,
+                "systems": all_systems,
                 "genres": all_genres,
                 "content_warnings": all_content_warnings,
+                "tones": GameTone,
+                "crunches": GameCrunch,
+                "narrativisms": GameNarrativism,
+                "ksps": GameKSP,
             },
         )
 
     @post(path="/submit_game/{event_sqid:str}")
-    async def post_submit_game(self, request: Request, db_session: AsyncSession, event_sqid: str) -> Template:
+    async def post_submit_game(
+        self,
+        request: Request,
+        db_session: AsyncSession,
+        event_sqid: Sqid,
+        data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+    ) -> Template:
+        event_id = sink(event_sqid)
+        event = (
+            await db_session.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
+        ).scalar_one_or_none()
+
+        print(data)
+
+        if not event:
+            raise NotFoundException(detail="Event not found")
+
         return HTMXBlockTemplate(
             template_str="""
             <p>Submitted game for event {{ event_sqid }}</p>
-            """
+            """,
+            context={"event_sqid": event_sqid},
         )
 
     @get(path="/submit_game/system_search")
