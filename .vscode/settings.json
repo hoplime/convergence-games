@@ -14,8 +14,7 @@
     },
     "ruff.enable": true,
     "ruff.organizeImports": true,
-    "ruff.lint.args": ["--config=${workspaceFolder}/pyproject.toml"],
-    "ruff.lint.run": "onSave",
+    "ruff.configuration": "${workspaceFolder}/pyproject.toml",
 
     // Hide files
     "files.exclude": {

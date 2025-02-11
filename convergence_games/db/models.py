@@ -132,7 +132,7 @@ class ContentWarning(Base):
 
 class Game(Base):
     # Description Fields
-    name: Mapped[str] = mapped_column(index=True, unique=True)
+    name: Mapped[str] = mapped_column(index=True)
     tagline: Mapped[str] = mapped_column(default="")
     description: Mapped[str] = mapped_column(default="")
 
@@ -205,7 +205,7 @@ def foreign_key_constraint_with_event(
 
 class GameRequirement(Base):
     times_to_run: Mapped[int] = mapped_column(default=1)
-    extra_time_slot_info: Mapped[str] = mapped_column(default="")
+    scheduling_notes: Mapped[str] = mapped_column(default="")
     table_size_requirement: Mapped[GameTableSizeRequirement] = mapped_column(
         Integer, default=GameTableSizeRequirement.NONE
     )

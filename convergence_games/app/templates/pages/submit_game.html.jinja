@@ -206,7 +206,12 @@
                     {{ event }}
                     {% for time_slot in event.time_slots %}
                         <label class="fieldset-label">
-                            <input type="checkbox" class="checkbox" name="time_slot" value="{{ swim(time_slot) }}" />
+                            <input
+                                type="checkbox"
+                                class="checkbox"
+                                name="available_time_slot"
+                                value="{{ swim(time_slot) }}"
+                            />
                             <span class="bg-warning">
                                 {{ time_slot.name }} {{ time_slot.start_time }} - {{ time_slot.end_time }}
                             </span>
@@ -214,57 +219,67 @@
                     {% endfor %}
 
                     <label class="fieldset-label">Any extra notes/preferences to help with scheduling?</label>
-                    <textarea class="textarea"></textarea>
+                    <textarea class="textarea" name="scheduling_notes"></textarea>
 
-                    <label class="fieldset-label">Room and Table Placement</label>
-                    <span
-                        >What other facilities does your game require? This helps us place you and gives us a heads up
-                        on anything else you'll need.</span
-                    >
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game requires a private room (e.g. for noise or specific set up reasons)</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game requires a larger table</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game might make a lot of noise</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game requires a table with a power outlet</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game requires a whiteboard</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game requires other bulky equipment</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game may require players to move between tables</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game may require players to move to locations away from the venue</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game may requires players to have WiFi or good cellphone reception</span>
-                    </label>
-                    <label class="fieldset-label">
-                        <input type="checkbox" class="checkbox" />
-                        <span>This game requires something else (please provide details)</span>
-                    </label>
-                    <label class="fieldset-label">
-                        If you ticked yes to any of the above, please provide more details below
-                    </label>
-                    <textarea class="textarea"></textarea>
+                    <label class="fieldset-label">Table Size Requirements</label>
+                    {% for table_size_requirement in table_size_requirements %}
+                        <label class="fieldset-label">
+                            <input
+                                type="checkbox"
+                                class="checkbox"
+                                name="table_size_requirement"
+                                value="{{ table_size_requirement }}"
+                            />
+                            <span>{{ table_size_requirement.form_notes[0] }}</span>
+                        </label>
+                    {% endfor %}
+                    <label class="fieldset-label">Any other notes on table size?</label>
+                    <textarea class="textarea" name="table_size_notes"></textarea>
+
+                    <label class="fieldset-label">Equipment Requirements</label>
+                    {% for equipment_requirement in equipment_requirements %}
+                        <label class="fieldset-label">
+                            <input
+                                type="checkbox"
+                                class="checkbox"
+                                name="equipment_requirement"
+                                value="{{ equipment_requirement }}"
+                            />
+                            <span>{{ equipment_requirement.form_notes[0] }}</span>
+                        </label>
+                    {% endfor %}
+                    <label class="fieldset-label">Any other notes on equipment?</label>
+                    <textarea class="textarea" name="equipment_notes"></textarea>
+
+                    <label class="fieldset-label">Activity Requirements</label>
+                    {% for activity_requirement in activity_requirements %}
+                        <label class="fieldset-label">
+                            <input
+                                type="checkbox"
+                                class="checkbox"
+                                name="activity_requirement"
+                                value="{{ activity_requirement }}"
+                            />
+                            <span>{{ activity_requirement.form_notes[0] }}</span>
+                        </label>
+                    {% endfor %}
+                    <label class="fieldset-label">Any other notes on activities?</label>
+                    <textarea class="textarea" name="activity_notes"></textarea>
+
+                    <label class="fieldset-label">Room Requirements</label>
+                    {% for room_requirement in room_requirements %}
+                        <label class="fieldset-label">
+                            <input
+                                type="checkbox"
+                                class="checkbox"
+                                name="room_requirement"
+                                value="{{ room_requirement }}"
+                            />
+                            <span>{{ room_requirement.form_notes[0] }}</span>
+                        </label>
+                    {% endfor %}
+                    <label class="fieldset-label">Any other notes on rooms?</label>
+                    <textarea class="textarea" name="room_notes"></textarea>
                 </fieldset>
 
                 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">

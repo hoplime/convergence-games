@@ -94,9 +94,9 @@ class GameKSP(FlagWithNotes):
 
     __form_notes__ = {
         DESIGNER_RUN: "I am the designer of this system",
-        NZ_MADE: "This game was designed in New Zealand",
-        IN_PLAYTEST: "This game is in playtest",
-        FOR_SALE: "This game will be for sale at the event",
+        NZ_MADE: "This system was designed in New Zealand",
+        IN_PLAYTEST: "This system is in playtest",
+        FOR_SALE: "This system or scenario will be for sale at the event",
     }
 
 
@@ -110,6 +110,11 @@ class GameTableSizeRequirement(FlagWithNotes):
         LARGE: "Large table",
     }
 
+    __form_notes__ = {
+        SMALL: "Small table",
+        LARGE: "Large table (if you require large battlemaps etc)",
+    }
+
 
 class GameEquipmentRequirement(FlagWithNotes):
     NONE = 0
@@ -120,6 +125,14 @@ class GameEquipmentRequirement(FlagWithNotes):
     WIFI_OR_CELL_SERVICE = 16
 
     __notes__ = {
+        POWER_OUTLET: "Power outlet",
+        WHITEBOARD: "Whiteboard",
+        EXTRA_SIDETABLE: "Extra side table",
+        BULKY_EQUIPMENT: "Bulky equipment",
+        WIFI_OR_CELL_SERVICE: "WiFi or cell service",
+    }
+
+    __form_notes__ = {
         POWER_OUTLET: "Power outlet",
         WHITEBOARD: "Whiteboard",
         EXTRA_SIDETABLE: "Extra side table",
@@ -140,6 +153,12 @@ class GameActivityRequirement(FlagWithNotes):
         MOVE_AWAY_FROM_VENUE: "Move away from venue",
     }
 
+    __form_notes__ = {
+        NOISY: "This game may be noisy",
+        MOVE_BETWEEN_TABLES: "Players will need to move between tables",
+        MOVE_AWAY_FROM_VENUE: "Players will need to move away from the venue/to another space",
+    }
+
 
 class GameRoomRequirement(FlagWithNotes):
     NONE = 0
@@ -151,6 +170,12 @@ class GameRoomRequirement(FlagWithNotes):
         QUIET: "Quiet",
         PRIVATE: "Private",
         NEAR_ANOTHER_TABLE: "Near another table",
+    }
+
+    __form_notes__ = {
+        QUIET: "This game requires a quiet room",
+        PRIVATE: "This game requires a private room",
+        NEAR_ANOTHER_TABLE: "This game requires a room near another table (please specify)",
     }
 
 
