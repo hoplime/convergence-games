@@ -18,12 +18,28 @@
                     <input type="text" class="input" placeholder="Title" name="title" required />
                     {# System #}
                     <label class="fieldset-label">System</label>
-                    {% for system in systems %}
+                    <div class="search-container">
+                        <input
+                            type="text"
+                            class="input"
+                            placeholder="System"
+                            id="system-search"
+                            name="system-search"
+                            required
+                        />
+                        <div
+                            hx-get="/submit_game/system_search_results"
+                            hx-vals="js:{search: document.getElementById('system-search').value}"
+                            hx-trigger="keyup changed from:previous input#system-search"
+                            hx-swap="innerHTML"
+                        ></div>
+                    </div>
+                    {# {% for system in systems %}
                         <label>
                             <input type="radio" name="system" class="radio" value="{{ swim(system) }}" required />
                             <span>{{ system.name }}</span>
                         </label>
-                    {% endfor %}
+                    {% endfor %} #}
                     {# Tagline #}
                     <label class="fieldset-label">Tagline</label>
                     <input type="text" class="input" placeholder="Tagline" name="tagline" required />
@@ -149,15 +165,9 @@
                     <label class="fieldset-label">Age Suitabilty & Classification</label>
                     <div class="flex flex-row gap-4">
                         <label
-                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-green-500 opacity-50"
-                        >
-                            <input type="radio" name="classification" class="hidden" value="G" checked required />
-                            <span class="block text-lg font-bold">G</span>
-                        </label>
-                        <label
                             class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
                         >
-                            <input type="radio" name="classification" class="hidden" value="PG" required />
+                            <input type="radio" name="classification" class="hidden" value="PG" checked required />
                             <span class="block text-lg font-bold">PG</span>
                         </label>
                         <label

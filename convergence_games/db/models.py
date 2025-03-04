@@ -138,7 +138,7 @@ class Game(Base):
 
     # Tags
     classification: Mapped[GameClassification] = mapped_column(
-        Enum(GameClassification), default=GameClassification.G, index=True
+        Enum(GameClassification), default=GameClassification.PG, index=True
     )
     crunch: Mapped[GameCrunch] = mapped_column(Enum(GameCrunch), default=GameCrunch.MEDIUM, index=True)
     narrativism: Mapped[GameNarrativism] = mapped_column(

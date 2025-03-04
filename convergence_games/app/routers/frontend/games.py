@@ -1,13 +1,14 @@
-from typing import Annotated, TypeAlias, cast
+from dataclasses import dataclass
+from typing import Annotated, ClassVar, Generic, Protocol, TypeAlias, cast, runtime_checkable
 
 from litestar import Controller, get, post
 from litestar.exceptions import NotFoundException
 from litestar.params import Body, RequestEncodingType
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, ConfigDict
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import Mapped, selectinload
 
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
@@ -23,6 +24,7 @@ from convergence_games.db.enums import (
     GameTone,
 )
 from convergence_games.db.models import (
+    Base,
     ContentWarning,
     Event,
     Game,
@@ -33,7 +35,7 @@ from convergence_games.db.models import (
     Genre,
     System,
 )
-from convergence_games.db.ocean import Sqid, sink
+from convergence_games.db.ocean import Sqid, sink, swim
 
 SqidSingle: TypeAlias = Annotated[
     int,
@@ -77,6 +79,63 @@ class SubmitGameForm(BaseModel):
     activity_notes: str = ""
     room_requirement: Annotated[GameRoomRequirement, IntFlagValidator] = GameRoomRequirement.NONE
     room_notes: str = ""
+
+
+type SearchableBase = System | Genre | ContentWarning
+
+
+@dataclass
+class SearchResult[T: SearchableBase]:
+    name: str
+    match: str
+    score: float
+    result: T
+
+
+async def search_with_fuzzy_match[T: SearchableBase](
+    db_session: AsyncSession, model_type: type[T], search: str
+) -> list[SearchResult[T]]:
+    # TODO: Can we directly query for the names (possibly including aliases) and sqids?
+    query = select(model_type)
+
+    if issubclass(model_type, System):
+        query = query.options(selectinload(model_type.aliases))
+
+    all_rows = (await db_session.execute(query)).scalars().all()
+
+    to_match: list[tuple[str, T]] = []
+    for row in all_rows:
+        to_match.append((row.name, row))
+        if isinstance(row, System):
+            for alias in row.aliases:
+                to_match.append((alias.name, row))
+
+    names_scores_indices = process.extract(
+        query=search,
+        choices=[name for name, _ in to_match],
+        scorer=fuzz.WRatio,
+        processor=utils.default_process,
+        limit=10,
+        score_cutoff=50,
+    )
+
+    already_matched_ids: set[int] = set()
+    top_results: list[SearchResult[T]] = []
+
+    for _, score, index in names_scores_indices:
+        result = to_match[index][1]
+        if result.id not in already_matched_ids:
+            top_results.append(
+                SearchResult(
+                    name=result.name,
+                    match=to_match[index][0],
+                    score=score,
+                    result=result,
+                )
+            )
+            already_matched_ids.add(result.id)
+
+    return top_results
 
 
 class GamesController(Controller):
@@ -199,56 +258,39 @@ class GamesController(Controller):
             context={"event_sqid": event_sqid},
         )
 
-    @get(path="/submit_game/system_search")
-    async def get_system_search(self, request: Request, db_session: AsyncSession, search: str) -> Template:
-        all_systems = (await db_session.execute(select(System).options(selectinload(System.aliases)))).scalars().all()
+    # @get(path="/submit_game/genre_search")
+    # async def get_genre_search(self, request: Request, db_session: AsyncSession, search: str) -> Template:
+    #     all_genres = (await db_session.execute(select(Genre))).scalars().all()
 
-        # Match system name OR alias, pair with system object
-        to_match: list[tuple[str, System]] = []
-        for system in all_systems:
-            to_match.append((system.name, system))
-            for alias in system.aliases:
-                to_match.append((alias.name, system))
+    @get(path="/submit_game/system_search_results")
+    async def get_system_search_results(self, request: Request, db_session: AsyncSession, search: str) -> Template:
+        results = await search_with_fuzzy_match(db_session, System, search)
 
-        names_scores_indices = process.extract(
-            query=search,
-            choices=[name for name, _ in to_match],
-            scorer=fuzz.WRatio,
-            processor=utils.default_process,
-            limit=10,
-            score_cutoff=50,
-        )
-        print(names_scores_indices)
-        # Deduplicate by system object, keep highest score
-        top_systems: list[System] = []
-        for _, score, index in names_scores_indices:
-            system = to_match[index][1]
-            if system not in top_systems:
-                top_systems.append(system)
-                print(f"Adding {system.name} to top systems: {score}")
-        print(top_systems)
         return HTMXBlockTemplate(
             template_str="""
-            <p>You searched for {{ search }}</p>
-            <h1>Results:</h1>
-
-            <table>
-                <tr><th>System name</th><th>Match (possibly alias)</th><th>Score</th></tr>
-                {% for name, score, index in systems_scores_indices %}
-                    <tr><td>{{ to_match[index][1].name }}</td><td>"{{ name }}"</td><td>{{ score }}</td></tr>
+            <ul>
+                {% for result in results %}
+                    <li data-sqid="{{ swim(result.result) }}">{{ result.name }}</li>
                 {% endfor %}
-            </table>
-
-            <h1>Final results in order:</h1>
-
-            {% for system in top_systems %}
-                <div>{{ system.name }}</div>
-            {% endfor %}
+            </ul>
             """,
             context={
-                "search": search,
-                "to_match": to_match,
-                "systems_scores_indices": names_scores_indices,
-                "top_systems": top_systems,
+                "request": request,
+                "results": results,
             },
+        )
+
+    @get(path="/submit_game/system_lock")
+    async def get_system_lock(self, request: Request, db_session: AsyncSession, sqid: Sqid) -> Template:
+        system_id = sink(sqid)
+        system = (await db_session.execute(select(System).where(System.id == system_id))).scalar_one_or_none()
+
+        if not system:
+            raise NotFoundException(detail="System not found")
+
+        return HTMXBlockTemplate(
+            template_str="""
+            <p>Selected system: {{ system.name }}</p>
+            """,
+            context={"system": system},
         )

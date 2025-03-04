@@ -68,6 +68,10 @@
             {
                 "scope": [
                     "meta.tag.other.Page.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.forms.search.SearchContainer.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.forms.search.SearchNew.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.forms.search.SearchResultsList.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.forms.search.SearchSelected.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.layout.NavBar.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.layout.NavButton.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.utilities.Card.html invalid.illegal.unrecognized-tag.html",

@@ -31,7 +31,7 @@ class GameStatus(enum.StrEnum):
 
 
 class GameClassification(enum.StrEnum):
-    G = "G"
+    # G = "G"
     PG = "PG"
     M = "M"
     R16 = "R16"

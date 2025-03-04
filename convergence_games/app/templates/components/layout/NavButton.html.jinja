@@ -11,10 +11,8 @@
     _="
     on load or htmx:load from #wrapper
         if window.location.pathname.match('{{ path_pattern }}')
-            log 'match {{ path_pattern }}'
             add .btn-primary to me
         else
-            log 'no match {{ path_pattern }}'
             remove .btn-primary from me
     "
     class="btn text-xl"
