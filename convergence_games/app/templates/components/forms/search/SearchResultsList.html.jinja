@@ -8,7 +8,9 @@
         <li
             class="list-row hover:bg-accent cursor-pointer"
             hx-get="/search/{{ name }}/select?sqid={{ swim(result.result) }}"
+            hx-trigger="click, keyup[key=='Enter']"
             hx-target="closest .search-container"
+            tabindex="0"
         >
             {{ result.name }}
             {% if result.name != result.match %}<span class="opacity-50">AKA {{ result.match }}</span>{% endif %}
@@ -18,7 +20,9 @@
         <li
             class="list-row hover:bg-accent cursor-pointer"
             hx-get="/search/{{ name }}/new?selected_name={{ search }}"
+            hx-trigger="click, keyup[key=='Enter']"
             hx-target="closest .search-container"
+            tabindex="0"
         >
             Create new {{ name }} "{{ search }}"
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
