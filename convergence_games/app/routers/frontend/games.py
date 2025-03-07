@@ -1,14 +1,14 @@
 from dataclasses import dataclass
-from typing import Annotated, Callable, ClassVar, Generic, Protocol, TypeAlias, cast, runtime_checkable
+from typing import Annotated, Callable, cast
 
 from litestar import Controller, get, post
 from litestar.exceptions import NotFoundException
 from litestar.params import Body, RequestEncodingType
-from pydantic import BaseModel, BeforeValidator, ConfigDict, TypeAdapter
+from pydantic import BaseModel, BeforeValidator, TypeAdapter
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, selectinload
+from sqlalchemy.orm import selectinload
 
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
@@ -24,7 +24,6 @@ from convergence_games.db.enums import (
     GameTone,
 )
 from convergence_games.db.models import (
-    Base,
     ContentWarning,
     Event,
     Game,
@@ -36,17 +35,6 @@ from convergence_games.db.models import (
     System,
 )
 from convergence_games.db.ocean import Sqid, sink
-
-# SqidSingle: TypeAlias = Annotated[
-#     int,
-#     BeforeValidator(lambda sqid: sink(cast(Sqid, sqid))),
-# ]
-# SqidList: TypeAlias = Annotated[
-#     list[int],
-#     BeforeValidator(
-#         lambda sqids: [sink(cast(Sqid, sqids))] if isinstance(sqids, str) else [sink(sqid) for sqid in sqids]
-#     ),
-# ]
 
 
 class NewValue[T](BaseModel):
@@ -101,38 +89,6 @@ class SubmitGameForm(BaseModel):
     room_requirement: Annotated[GameRoomRequirement, IntFlagValidator] = GameRoomRequirement.NONE
     room_notes: str = ""
 
-
-if __name__ == "__main__":
-    game_form = SubmitGameForm.model_validate(
-        {
-            "title": "Test Game",
-            "system": "new:Test System",
-            "tagline": "A test game",
-            "genre": ["new:Test Genre", "new:Test Genre 2", "Tdh1R"],
-            "tone": "Goofy",
-            "content_warning": "new:One Content Warning",
-            "crunch": "Light",
-            "narrativism": "Balanced",
-            "player_count_minimum": 1,
-            "player_count_optimum": 2,
-            "player_count_maximum": 3,
-            "classification": "PG",
-            "ksp": 0,
-            "times_to_run": 1,
-            "available_time_slot": "W1r0j",
-            # "scheduling_notes"
-            # "table_size_requirement"
-            # "table_size_notes"
-            # "equipment_requirement"
-            # "equipment_notes"
-            # "activity_requirement"
-            # "activity_notes"
-            # "room_requirement"
-            # "room_notes"
-        }
-    )
-    print(game_form)
-    exit()
 
 type SearchableBase = System | Genre | ContentWarning
 
