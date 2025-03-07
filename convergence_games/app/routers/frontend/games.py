@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import Annotated, ClassVar, Generic, Protocol, TypeAlias, cast, runtime_checkable
+from typing import Annotated, Callable, ClassVar, Generic, Protocol, TypeAlias, cast, runtime_checkable
 
 from litestar import Controller, get, post
 from litestar.exceptions import NotFoundException
 from litestar.params import Body, RequestEncodingType
-from pydantic import BaseModel, BeforeValidator, ConfigDict
+from pydantic import BaseModel, BeforeValidator, ConfigDict, TypeAdapter
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,30 +35,51 @@ from convergence_games.db.models import (
     Genre,
     System,
 )
-from convergence_games.db.ocean import Sqid, sink, swim
+from convergence_games.db.ocean import Sqid, sink
 
-SqidSingle: TypeAlias = Annotated[
-    int,
-    BeforeValidator(lambda sqid: sink(cast(Sqid, sqid))),
-]
-SqidList: TypeAlias = Annotated[
-    list[int],
-    BeforeValidator(
-        lambda sqids: [sink(cast(Sqid, sqids))] if isinstance(sqids, str) else [sink(sqid) for sqid in sqids]
-    ),
-]
+# SqidSingle: TypeAlias = Annotated[
+#     int,
+#     BeforeValidator(lambda sqid: sink(cast(Sqid, sqid))),
+# ]
+# SqidList: TypeAlias = Annotated[
+#     list[int],
+#     BeforeValidator(
+#         lambda sqids: [sink(cast(Sqid, sqids))] if isinstance(sqids, str) else [sink(sqid) for sqid in sqids]
+#     ),
+# ]
 
+
+class NewValue[T](BaseModel):
+    value: T
+
+
+type SqidOrNew[T] = int | NewValue[T]
+
+
+def make_sqid_or_new_validator[T](new_value_type: type[T]) -> Callable[[str], SqidOrNew[T]]:
+    new_value_type_adapter = TypeAdapter(new_value_type)
+
+    def sqid_or_new_validator(value: str) -> SqidOrNew[T]:
+        if value.startswith("new:"):
+            return NewValue(value=new_value_type_adapter.validate_python(value.removeprefix("new:")))
+        return sink(cast(Sqid, value))
+
+    return sqid_or_new_validator
+
+
+MaybeListValidator = BeforeValidator(lambda value: [value] if isinstance(value, str) else value)
 IntFlagValidator = BeforeValidator(lambda value: sum(map(int, value)) if isinstance(value, list) else int(value))
+SqidOrNewStr = Annotated[SqidOrNew[str], BeforeValidator(make_sqid_or_new_validator(str))]
 
 
 class SubmitGameForm(BaseModel):
     # Stuff that's used for Game
     title: str
-    system: SqidSingle
+    system: SqidOrNewStr
     tagline: str = ""
-    genre: SqidList
+    genre: Annotated[list[SqidOrNewStr], MaybeListValidator]
     tone: GameTone
-    content_warning: SqidList
+    content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator]
     crunch: GameCrunch
     narrativism: GameNarrativism
     player_count_minimum: int
@@ -69,7 +90,7 @@ class SubmitGameForm(BaseModel):
 
     # Stuff that's used for GameRequirement
     times_to_run: int = 1
-    available_time_slot: SqidList
+    available_time_slot: Annotated[list[SqidOrNewStr], MaybeListValidator]
     scheduling_notes: str = ""
     table_size_requirement: Annotated[GameTableSizeRequirement, IntFlagValidator] = GameTableSizeRequirement.NONE
     table_size_notes: str = ""
@@ -80,6 +101,38 @@ class SubmitGameForm(BaseModel):
     room_requirement: Annotated[GameRoomRequirement, IntFlagValidator] = GameRoomRequirement.NONE
     room_notes: str = ""
 
+
+if __name__ == "__main__":
+    game_form = SubmitGameForm.model_validate(
+        {
+            "title": "Test Game",
+            "system": "new:Test System",
+            "tagline": "A test game",
+            "genre": ["new:Test Genre", "new:Test Genre 2", "Tdh1R"],
+            "tone": "Goofy",
+            "content_warning": "new:One Content Warning",
+            "crunch": "Light",
+            "narrativism": "Balanced",
+            "player_count_minimum": 1,
+            "player_count_optimum": 2,
+            "player_count_maximum": 3,
+            "classification": "PG",
+            "ksp": 0,
+            "times_to_run": 1,
+            "available_time_slot": "W1r0j",
+            # "scheduling_notes"
+            # "table_size_requirement"
+            # "table_size_notes"
+            # "equipment_requirement"
+            # "equipment_notes"
+            # "activity_requirement"
+            # "activity_notes"
+            # "room_requirement"
+            # "room_notes"
+        }
+    )
+    print(game_form)
+    exit()
 
 type SearchableBase = System | Genre | ContentWarning
 
@@ -289,18 +342,19 @@ class GamesController(Controller):
         return HTMXBlockTemplate(
             template_name="components/forms/search/SearchSelected.html.jinja",
             context={
+                "name": "system",
                 "selected_name": system.name,
                 "selected_sqid": sqid,
-                "name": "system",
             },
         )
 
     @get(path="/search/system/new")
     async def get_system_search_new(self, selected_name: str) -> Template:
         return HTMXBlockTemplate(
-            template_name="components/forms/search/SearchNew.html.jinja",
+            template_name="components/forms/search/SearchSelected.html.jinja",
             context={
                 "name": "system",
                 "selected_name": selected_name,
+                "new": True,
             },
         )

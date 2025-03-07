@@ -1,10 +1,15 @@
 {#def
     selected_name: str,
-    selected_sqid: str,
+    selected_sqid: str = "",
+    new: bool = False,
     name: str = "search",
 #}
-<div>You've selected {{ selected_name }}</div>
-<input type="hidden" name="{{ name }}" value="{{ selected_sqid }}" />
+{% if new %}
+    <div>{{ selected_name }} (NEW!)</div>
+{% else %}
+    <div>You've selected {{ selected_name }}</div>
+{% endif %}
+<input type="hidden" name="{{ name }}" value="{{ 'new:'~selected_name if new else selected_sqid }}" />
 <button
     type="button"
     class="btn btn-primary"
