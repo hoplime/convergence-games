@@ -258,39 +258,49 @@ class GamesController(Controller):
             context={"event_sqid": event_sqid},
         )
 
-    # @get(path="/submit_game/genre_search")
-    # async def get_genre_search(self, request: Request, db_session: AsyncSession, search: str) -> Template:
-    #     all_genres = (await db_session.execute(select(Genre))).scalars().all()
+    # Searches
+    @get(path="/search/{name:str}")
+    async def get_search(self, name: str) -> Template:
+        return HTMXBlockTemplate(
+            template_name="components/forms/search/SearchContainer.html.jinja",
+            context={"name": name},
+        )
 
-    @get(path="/submit_game/system_search_results")
-    async def get_system_search_results(self, request: Request, db_session: AsyncSession, search: str) -> Template:
+    @get(path="/search/system/results")
+    async def get_system_search_results(self, db_session: AsyncSession, search: str) -> Template:
         results = await search_with_fuzzy_match(db_session, System, search)
 
         return HTMXBlockTemplate(
-            template_str="""
-            <ul>
-                {% for result in results %}
-                    <li data-sqid="{{ swim(result.result) }}">{{ result.name }}</li>
-                {% endfor %}
-            </ul>
-            """,
+            template_name="components/forms/search/SearchResultsList.html.jinja",
             context={
-                "request": request,
+                "name": "system",
                 "results": results,
+                "search": search,
             },
         )
 
-    @get(path="/submit_game/system_lock")
-    async def get_system_lock(self, request: Request, db_session: AsyncSession, sqid: Sqid) -> Template:
-        system_id = sink(sqid)
-        system = (await db_session.execute(select(System).where(System.id == system_id))).scalar_one_or_none()
+    @get(path="/search/system/select")
+    async def get_system_search_selected(self, db_session: AsyncSession, sqid: Sqid) -> Template:
+        system = await db_session.get(System, sink(sqid))
 
         if not system:
             raise NotFoundException(detail="System not found")
 
         return HTMXBlockTemplate(
-            template_str="""
-            <p>Selected system: {{ system.name }}</p>
-            """,
-            context={"system": system},
+            template_name="components/forms/search/SearchSelected.html.jinja",
+            context={
+                "selected_name": system.name,
+                "selected_sqid": sqid,
+                "name": "system",
+            },
+        )
+
+    @get(path="/search/system/new")
+    async def get_system_search_new(self, selected_name: str) -> Template:
+        return HTMXBlockTemplate(
+            template_name="components/forms/search/SearchNew.html.jinja",
+            context={
+                "name": "system",
+                "selected_name": selected_name,
+            },
         )

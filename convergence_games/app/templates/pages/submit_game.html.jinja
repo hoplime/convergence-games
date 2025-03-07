@@ -18,28 +18,7 @@
                     <input type="text" class="input" placeholder="Title" name="title" required />
                     {# System #}
                     <label class="fieldset-label">System</label>
-                    <div class="search-container">
-                        <input
-                            type="text"
-                            class="input"
-                            placeholder="System"
-                            id="system-search"
-                            name="system-search"
-                            required
-                        />
-                        <div
-                            hx-get="/submit_game/system_search_results"
-                            hx-vals="js:{search: document.getElementById('system-search').value}"
-                            hx-trigger="keyup changed from:previous input#system-search"
-                            hx-swap="innerHTML"
-                        ></div>
-                    </div>
-                    {# {% for system in systems %}
-                        <label>
-                            <input type="radio" name="system" class="radio" value="{{ swim(system) }}" required />
-                            <span>{{ system.name }}</span>
-                        </label>
-                    {% endfor %} #}
+                    <forms.search.SearchContainer name="system"></forms.search.SearchContainer>
                     {# Tagline #}
                     <label class="fieldset-label">Tagline</label>
                     <input type="text" class="input" placeholder="Tagline" name="tagline" required />

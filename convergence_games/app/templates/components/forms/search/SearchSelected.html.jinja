@@ -1,7 +1,16 @@
-{# 
-
-This needs to contain:
-The selected result
-A cancel/back/search again UI
-
- #}
+{#def
+    selected_name: str,
+    selected_sqid: str,
+    name: str = "search",
+#}
+<div>You've selected {{ selected_name }}</div>
+<input type="hidden" name="{{ name }}" value="{{ selected_sqid }}" />
+<button
+    type="button"
+    class="btn btn-primary"
+    hx-get="/search/{{ name }}"
+    hx-target="closest .search-container"
+    hx-swap="outerHTML"
+>
+    Cancel
+</button>
