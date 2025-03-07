@@ -210,6 +210,10 @@ class GamesController(Controller):
         if not event:
             raise NotFoundException(detail="Event not found")
 
+        system_kwarg = (
+            {"system_id": data.system} if isinstance(data.system, int) else {"system": System(name=data.system.value)}
+        )
+
         new_game = Game(
             name=data.title,
             tagline=data.tagline,
@@ -222,7 +226,7 @@ class GamesController(Controller):
             player_count_optimum=data.player_count_optimum,
             player_count_maximum=data.player_count_maximum,
             ksps=data.ksp,
-            system_id=data.system,
+            **system_kwarg,
             gamemaster=request.user,  # TODO: Get from session
             event_id=event_id,
             game_requirement=GameRequirement(
