@@ -165,8 +165,7 @@ class GamesController(Controller):
         print(event.time_slots)
 
         # TODO: Replace these with search queries
-        all_systems = (await db_session.execute(select(System))).scalars().all()
-        all_genres = (await db_session.execute(select(Genre))).scalars().all()
+        all_genres = (await db_session.execute(select(Genre).order_by(Genre.name))).scalars().all()
         all_content_warnings = (await db_session.execute(select(ContentWarning))).scalars().all()
 
         return HTMXBlockTemplate(
@@ -174,7 +173,6 @@ class GamesController(Controller):
             block_name=request.htmx.target,
             context={
                 "event": event,
-                "systems": all_systems,
                 "genres": all_genres,
                 "content_warnings": all_content_warnings,
                 "tones": GameTone,
@@ -244,10 +242,21 @@ class GamesController(Controller):
         )
 
         # Genres, Content Warrnings, Available Time Slots
-        new_genre_links = [GameGenreLink(game=new_game, genre_id=genre_id) for genre_id in data.genre]
+        new_genre_links = [
+            (
+                GameGenreLink(game=new_game, genre_id=genre)
+                if isinstance(genre, int)
+                else GameGenreLink(game=new_game, genre=Genre(name=genre.value))
+            )
+            for genre in data.genre
+        ]
         new_content_warning_links = [
-            GameContentWarningLink(game=new_game, content_warning_id=content_warning_id)
-            for content_warning_id in data.content_warning
+            (
+                GameContentWarningLink(game=new_game, content_warning_id=content_warning)
+                if isinstance(content_warning, int)
+                else GameContentWarningLink(game=new_game, content_warning=ContentWarning(name=content_warning.value))
+            )
+            for content_warning in data.content_warning
         ]
         new_time_slot_links = [
             GameRequirementTimeSlotLink(game_requirement=new_game.game_requirement, time_slot_id=time_slot_id)
