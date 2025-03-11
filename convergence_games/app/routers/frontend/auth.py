@@ -11,7 +11,7 @@ import jwt
 from httpx_oauth.clients.discord import DiscordOAuth2
 from httpx_oauth.clients.google import GoogleOAuth2
 from httpx_oauth.oauth2 import BaseOAuth2, OAuth2Token
-from litestar import Controller, get
+from litestar import Controller, get, post
 from litestar.exceptions import HTTPException
 from litestar.response import Redirect
 from sqlalchemy import String, select
@@ -158,6 +158,13 @@ def build_redirect_url(provider_name: LoginProvider) -> str:
 
 class AuthController(Controller):
     path = "/oauth2"
+
+    @post(path="/logout")
+    async def post_logout(self, redirect_path: str = "/profile") -> Redirect:
+        token_key = jwt_cookie_auth.key
+        response = Redirect(path=redirect_path)
+        response.delete_cookie(token_key)
+        return response
 
     @get(path="/{provider_name:str}/login")
     async def get_provider_auth_login(self, provider_name: LoginProvider) -> Redirect:

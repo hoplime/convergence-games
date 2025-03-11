@@ -68,6 +68,8 @@
             {
                 "scope": [
                     "meta.tag.other.Page.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.forms.email_sign_in.SubmitEmail.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.forms.email_sign_in.VerifyCode.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.forms.search.SearchContainer.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.forms.search.SearchResultsList.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.forms.search.SearchSelected.html invalid.illegal.unrecognized-tag.html",

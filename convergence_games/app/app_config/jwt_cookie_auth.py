@@ -40,8 +40,8 @@ class LaxJWTCookieAuthenticationMiddleware(JWTCookieAuthenticationMiddleware):
 
 
 jwt_cookie_auth = JWTCookieAuth(
-    retrieve_user_handler=retrieve_user_handler,
     token_secret=SETTINGS.TOKEN_SECRET,
+    retrieve_user_handler=retrieve_user_handler,
     token_cls=CustomToken,
     authentication_middleware_class=LaxJWTCookieAuthenticationMiddleware,
     exclude=["/oauth2", "/site.webmanifest", "/static"],
