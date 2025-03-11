@@ -1,8 +1,16 @@
 {#def
     id: str = "tiptap",
-    initial_content: str = ""
+    form_input_name: str = "tiptap",
+    initial_content: str = "",
+    debug: bool = False
 #}
 <div id="{{ id }}"></div>
+<input type="hidden" name="{{ form_input_name }}">
 <script type="text/javascript">
-    convergence.createEditor(document.querySelector("#{{ id }}"), "{{ initial_content }}");
+    let editor = convergence.createEditor(
+        document.querySelector("#{{ id }}"),
+        document.querySelector("input[name='{{ form_input_name }}']"),
+        "{{ initial_content }}",
+        {{ 'true' if debug else 'false' }}
+    );
 </script>

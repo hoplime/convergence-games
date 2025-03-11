@@ -84,7 +84,12 @@ const createEditorButton = (parent_element: Element, label: string, fn: () => vo
     return button;
 };
 
-const createEditor = (container_element: Element, initial_content: string = "", debug: boolean = true) => {
+const createEditor = (
+    container_element: Element,
+    form_input_element: Element,
+    initial_content: string = "",
+    debug: boolean = true,
+) => {
     // Create the editor and add it to the container
     container_element.className = "border-1 p-1 rounded-md";
     let controls_element = document.createElement("div");
@@ -204,8 +209,11 @@ const createEditor = (container_element: Element, initial_content: string = "", 
         content: initial_content,
         onUpdate: ({ editor }) => {
             let json_content = editor.getJSON();
-            console.log(json_content);
-            debug_element.innerHTML = JSON.stringify(json_content, null, 2);
+            if (debug) {
+                console.log(json_content);
+                debug_element.innerHTML = JSON.stringify(json_content, null, 2);
+            }
+            form_input_element.setAttribute("value", JSON.stringify(json_content));
         },
     });
 

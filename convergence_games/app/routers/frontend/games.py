@@ -65,6 +65,7 @@ class SubmitGameForm(BaseModel):
     title: str
     system: SqidOrNewStr
     tagline: str = ""
+    description: str = ""
     genre: Annotated[list[SqidOrNewStr], MaybeListValidator]
     tone: GameTone
     content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator]
@@ -215,7 +216,7 @@ class GamesController(Controller):
         new_game = Game(
             name=data.title,
             tagline=data.tagline,
-            description="",  # TODO
+            description=data.description,
             classification=data.classification,
             crunch=data.crunch,
             narrativism=data.narrativism,
@@ -225,7 +226,7 @@ class GamesController(Controller):
             player_count_maximum=data.player_count_maximum,
             ksps=data.ksp,
             **system_kwarg,
-            gamemaster=request.user,  # TODO: Get from session
+            gamemaster=request.user,
             event_id=event_id,
             game_requirement=GameRequirement(
                 times_to_run=data.times_to_run,  # TODO

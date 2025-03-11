@@ -23,9 +23,8 @@
                     <label class="fieldset-label">Tagline</label>
                     <input type="text" class="input" placeholder="Tagline" name="tagline" required />
                     {# Description #}
-                    {% set initial_content="<b>Some default test text</b>" %}
                     <label class="fieldset-label">Description</label>
-                    <utilities.TipTap :initial_content="initial_content" />
+                    <utilities.TipTap form_input_name="description" />
                     {# Genre #}
                     <label class="fieldset-label">Genres</label>
                     {% for genre in genres %}
@@ -188,7 +187,25 @@
                     </span>
 
                     <label class="fieldset-label">How many times do you want to run this game?</label>
-                    <div class="bg-warning">TODO the numbers</div>
+                    <div class="grid grid-cols-[min-content] gap-2">
+                        <input type="range" name="times_to_run" min="1" max="5" value="1" class="range w-md" step="1" />
+                        <div>
+                            <div class="mt-2 flex justify-between px-2.5 text-xs">
+                                <span>|</span>
+                                <span>|</span>
+                                <span>|</span>
+                                <span>|</span>
+                                <span>|</span>
+                            </div>
+                            <div class="mt-2 flex justify-between px-2.5 text-xs">
+                                <span>1</span>
+                                <span>2</span>
+                                <span>3</span>
+                                <span>4</span>
+                                <span>5</span>
+                            </div>
+                        </div>
+                    </div>
 
                     <label class="fieldset-label">In which time slots could you run this game?</label>
                     <span>Please be flexible and mark all time slots you could do</span>

@@ -134,7 +134,7 @@ class Game(Base):
     # Description Fields
     name: Mapped[str] = mapped_column(index=True)
     tagline: Mapped[str] = mapped_column(default="")
-    description: Mapped[str] = mapped_column(default="")
+    description: Mapped[str] = mapped_column(default="")  # TODO: JSON type?
 
     # Tags
     classification: Mapped[GameClassification] = mapped_column(
