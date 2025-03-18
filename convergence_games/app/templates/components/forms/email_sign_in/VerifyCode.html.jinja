@@ -5,5 +5,5 @@
     <input type="hidden" name="email" value="{{ email }}" />
     <div>Please enter the code sent to {{ email }}:</div>
     <input type="text" class="form-input" placeholder="Code" id="code" maxlength="6" />
-    <button class="btn btn-primary" hx-post="/oauth2/verify_email_code">Submit</button>
+    <a class="btn btn-primary" hx-post="/oauth2/verify_email_code">Submit</a>
 </form>
