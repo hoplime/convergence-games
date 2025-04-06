@@ -33,7 +33,7 @@ from convergence_games.db.models import (
 )
 
 
-async def create_mock_data(db_session: AsyncSession) -> None:
+async def create_mock_data(transaction: AsyncSession) -> None:
     NZT = ZoneInfo("Pacific/Auckland")  # noqa: N806
 
     event = Event(
@@ -228,12 +228,9 @@ async def create_mock_data(db_session: AsyncSession) -> None:
         GameRequirementTimeSlotLink(game_requirement=game.game_requirement, time_slot=event.time_slots[1]),
     ]
 
-    async with db_session as session:
-        session.add(event)
-        session.add_all(genres)
-        session.add_all(systems)
-        session.add_all(content_warnings)
-        session.add(game)
-        session.add_all(extra_links)
-
-        await session.commit()
+    transaction.add(event)
+    transaction.add_all(genres)
+    transaction.add_all(systems)
+    transaction.add_all(content_warnings)
+    transaction.add(game)
+    transaction.add_all(extra_links)

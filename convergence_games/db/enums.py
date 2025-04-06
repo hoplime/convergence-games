@@ -187,6 +187,7 @@ class Role(enum.StrEnum):
 
 
 class LoginProvider(enum.StrEnum):
+    EMAIL = "email"
     GOOGLE = "google"
     DISCORD = "discord"
     FACEBOOK = "facebook"

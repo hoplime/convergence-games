@@ -3,9 +3,10 @@ from __future__ import annotations
 import datetime as dt
 
 from advanced_alchemy.base import BigIntAuditBase
+from advanced_alchemy.types import DateTimeUTC
 from sqlalchemy import Connection, Enum, ForeignKey, ForeignKeyConstraint, Integer, UniqueConstraint
 from sqlalchemy import event as sqla_event
-from sqlalchemy.orm import Mapped, Mapper, mapped_column, relationship
+from sqlalchemy.orm import Mapped, Mapper, mapped_column, relationship, validates
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
@@ -404,7 +405,6 @@ class Session(Base):
 # User Information Models
 class User(Base):
     name: Mapped[str] = mapped_column(index=True)
-    email: Mapped[str] = mapped_column(index=True, unique=True)
     description: Mapped[str] = mapped_column(default="")
 
     # Relationships
@@ -454,6 +454,7 @@ class UserEventRole(Base):
 class UserLogin(Base):
     provider: Mapped[LoginProvider] = mapped_column(Enum(LoginProvider, validate_strings=True), index=True)
     provider_user_id: Mapped[str] = mapped_column(index=True)
+    provider_email: Mapped[str | None] = mapped_column(index=True)
 
     # Foreign Keys
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
@@ -462,3 +463,18 @@ class UserLogin(Base):
     user: Mapped[User] = relationship(back_populates="logins", foreign_keys=user_id, lazy="noload")
 
     __table_args__ = (UniqueConstraint("provider", "provider_user_id"), UniqueConstraint("user_id", "provider"))
+
+
+class UserEmailVerificationCode(Base):
+    code: Mapped[str] = mapped_column(index=True)
+    email: Mapped[str] = mapped_column(index=True)
+    expires_at: Mapped[dt.datetime] = mapped_column(
+        DateTimeUTC(timezone=True),
+        default=dt.datetime.now(tz=dt.timezone.utc) + dt.timedelta(hours=4),
+    )
+
+    @validates("expires_at")
+    def validate_tz_info(self, _: str, value: dt.datetime) -> dt.datetime:
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=dt.timezone.utc)
+        return value

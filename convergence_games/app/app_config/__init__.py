@@ -1,4 +1,5 @@
 from .compression_config import compression_config
+from .dependencies import dependencies
 from .htmx_plugin import htmx_plugin
 from .jwt_cookie_auth import jwt_cookie_auth
 from .openapi_config import openapi_config
@@ -12,4 +13,5 @@ __all__ = [
     "sqlalchemy_plugin",
     "template_config",
     "jwt_cookie_auth",
+    "dependencies",
 ]

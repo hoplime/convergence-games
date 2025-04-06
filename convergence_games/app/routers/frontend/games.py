@@ -103,7 +103,7 @@ class SearchResult[T: SearchableBase]:
 
 
 async def search_with_fuzzy_match[T: SearchableBase](
-    db_session: AsyncSession, model_type: type[T], search: str
+    transaction: AsyncSession, model_type: type[T], search: str
 ) -> list[SearchResult[T]]:
     # TODO: Can we directly query for the names (possibly including aliases) and sqids?
     query = select(model_type)
@@ -111,7 +111,7 @@ async def search_with_fuzzy_match[T: SearchableBase](
     if issubclass(model_type, System):
         query = query.options(selectinload(model_type.aliases))
 
-    all_rows = (await db_session.execute(query)).scalars().all()
+    all_rows = (await transaction.execute(query)).scalars().all()
 
     to_match: list[tuple[str, T]] = []
     for row in all_rows:
@@ -154,10 +154,10 @@ class GamesController(Controller):
         return HTMXBlockTemplate(template_name="pages/games.html.jinja", block_name=request.htmx.target)
 
     @get(path="/submit_game/{event_sqid:str}")
-    async def get_submit_game(self, request: Request, db_session: AsyncSession, event_sqid: Sqid) -> Template:
+    async def get_submit_game(self, request: Request, transaction: AsyncSession, event_sqid: Sqid) -> Template:
         event_id = sink(event_sqid)
         event = (
-            await db_session.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
+            await transaction.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
         ).scalar_one_or_none()
 
         if not event:
@@ -166,8 +166,8 @@ class GamesController(Controller):
         print(event.time_slots)
 
         # TODO: Replace these with search queries
-        all_genres = (await db_session.execute(select(Genre).order_by(Genre.name))).scalars().all()
-        all_content_warnings = (await db_session.execute(select(ContentWarning))).scalars().all()
+        all_genres = (await transaction.execute(select(Genre).order_by(Genre.name))).scalars().all()
+        all_content_warnings = (await transaction.execute(select(ContentWarning))).scalars().all()
 
         return HTMXBlockTemplate(
             template_name="pages/submit_game.html.jinja",
@@ -191,7 +191,7 @@ class GamesController(Controller):
     async def post_submit_game(
         self,
         request: Request,
-        db_session: AsyncSession,
+        transaction: AsyncSession,
         event_sqid: Sqid,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Template:
@@ -201,7 +201,7 @@ class GamesController(Controller):
 
         event_id = sink(event_sqid)
         event = (
-            await db_session.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
+            await transaction.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
         ).scalar_one_or_none()
 
         print(data)
@@ -268,11 +268,8 @@ class GamesController(Controller):
         print(new_game)
         print(new_links)
 
-        async with db_session as session:
-            session.add(new_game)
-            session.add_all(new_links)
-
-            await session.commit()
+        transaction.add(new_game)
+        transaction.add_all(new_links)
 
         return HTMXBlockTemplate(
             template_str="""
@@ -290,8 +287,8 @@ class GamesController(Controller):
         )
 
     @get(path="/search/system/results")
-    async def get_system_search_results(self, db_session: AsyncSession, search: str) -> Template:
-        results = await search_with_fuzzy_match(db_session, System, search)
+    async def get_system_search_results(self, transaction: AsyncSession, search: str) -> Template:
+        results = await search_with_fuzzy_match(transaction, System, search)
 
         return HTMXBlockTemplate(
             template_name="components/forms/search/SearchResultsList.html.jinja",
@@ -303,8 +300,8 @@ class GamesController(Controller):
         )
 
     @get(path="/search/system/select")
-    async def get_system_search_selected(self, db_session: AsyncSession, sqid: Sqid) -> Template:
-        system = await db_session.get(System, sink(sqid))
+    async def get_system_search_selected(self, transaction: AsyncSession, sqid: Sqid) -> Template:
+        system = await transaction.get(System, sink(sqid))
 
         if not system:
             raise NotFoundException(detail="System not found")

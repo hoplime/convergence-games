@@ -166,17 +166,24 @@ class AuthController(Controller):
         response.delete_cookie(token_key)
         return response
 
+    @post(path="/email/authorize")
+    async def post_email_authorize(self, email: str, code: str, transaction: AsyncSession) -> Redirect:
+        user_id = 1  # TODO: Get user ID from email verification code
+        login = jwt_cookie_auth.login(str(user_id))
+
+        return Redirect(path="/profile", cookies=login.cookies)
+
     @get(path="/{provider_name:str}/login")
     async def get_provider_auth_login(self, provider_name: LoginProvider) -> Redirect:
         provider = get_oauth_provider(provider_name)
         redirect_uri = build_redirect_url(provider_name)
 
         auth_url = await provider.client.get_authorization_url(redirect_uri=redirect_uri)
-        return Redirect(path=auth_url, status_code=302)
+        return Redirect(path=auth_url)
 
     @get(path="/{provider_name:str}/authorize")
     async def get_provider_auth_authorize(
-        self, code: str, provider_name: LoginProvider, db_session: AsyncSession
+        self, code: str, provider_name: LoginProvider, transaction: AsyncSession
     ) -> Redirect:
         provider = get_oauth_provider(provider_name)
         redirect_uri = build_redirect_url(provider_name)
@@ -184,34 +191,33 @@ class AuthController(Controller):
         oauth2_token = await provider.client.get_access_token(code=code, redirect_uri=redirect_uri)
         profile_info = await provider.get_profile_info(oauth2_token)
 
-        async with db_session.begin():
-            stmt = (
-                select(UserLogin)
-                .where(sql_cast(UserLogin.provider, String) == provider_name.name)
-                .where(UserLogin.provider_user_id == profile_info.user_id)
-                .options(selectinload(UserLogin.user))
+        stmt = (
+            select(UserLogin)
+            .where(sql_cast(UserLogin.provider, String) == provider_name.name)
+            .where(UserLogin.provider_user_id == profile_info.user_id)
+            .options(selectinload(UserLogin.user))
+        )
+        user_login = (await transaction.execute(stmt)).scalar_one_or_none()
+
+        # TODO: Handle duplicate emails from different providers
+
+        if user_login is None:
+            user = User(
+                name=f"{profile_info.user_first_name} {profile_info.user_last_name}",
+                email=profile_info.user_email,
+                logins=[
+                    UserLogin(
+                        provider=provider_name,
+                        provider_user_id=profile_info.user_id,
+                    ),
+                ],
             )
-            user_login = (await db_session.execute(stmt)).scalar_one_or_none()
+            transaction.add(user)
+        else:
+            user = user_login.user
 
-            # TODO: Handle duplicate emails from different providers
-
-            if user_login is None:
-                user = User(
-                    name=f"{profile_info.user_first_name} {profile_info.user_last_name}",
-                    email=profile_info.user_email,
-                    logins=[
-                        UserLogin(
-                            provider=provider_name,
-                            provider_user_id=profile_info.user_id,
-                        ),
-                    ],
-                )
-                db_session.add(user)
-            else:
-                user = user_login.user
-
-            await db_session.flush()
-            user_id = user.id
+        await transaction.flush()
+        user_id = user.id
 
         login = jwt_cookie_auth.login(str(user_id))
 

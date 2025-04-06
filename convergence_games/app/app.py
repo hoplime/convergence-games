@@ -6,6 +6,7 @@ from convergence_games.settings import SETTINGS
 
 from .app_config import (
     compression_config,
+    dependencies,
     htmx_plugin,
     jwt_cookie_auth,
     openapi_config,
@@ -17,7 +18,7 @@ from .routers import routers
 
 app = Litestar(
     route_handlers=routers,
-    dependencies={},
+    dependencies=dependencies,
     on_app_init=[jwt_cookie_auth.on_app_init],
     plugins=[sqlalchemy_plugin, htmx_plugin],
     openapi_config=openapi_config,
