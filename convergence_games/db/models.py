@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 from advanced_alchemy.base import BigIntAuditBase
 from advanced_alchemy.types import DateTimeUTC
@@ -22,6 +23,7 @@ from convergence_games.db.enums import (
     LoginProvider,
     Role,
 )
+from convergence_games.settings import SETTINGS
 
 
 class UserAuditColumns:
@@ -478,3 +480,17 @@ class UserEmailVerificationCode(Base):
         if value.tzinfo is None:
             value = value.replace(tzinfo=dt.timezone.utc)
         return value
+
+    @staticmethod
+    def generate_magic_link_code(code: str, email: str) -> str:
+        # Encode the code and email in base64
+        code = f"{code}:{email}"
+        encoded_code = urlsafe_b64encode(code.encode()).decode()
+        return encoded_code
+
+    @staticmethod
+    def decode_magic_link_code(magic_link_code: str) -> tuple[str, str]:
+        # Decode the code from base64
+        decoded_code = urlsafe_b64decode(magic_link_code.encode()).decode()
+        code, email = decoded_code.split(":")
+        return code, email

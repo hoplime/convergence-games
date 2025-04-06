@@ -5,6 +5,9 @@ from sqlalchemy.engine import URL
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
+    # Website
+    BASE_DOMAIN: str = "http://localhost:8000"
+
     # General
     DEBUG: bool = False
 
@@ -41,6 +44,11 @@ class Settings(BaseSettings):
     FACEBOOK_CLIENT_SECRET: str = ""
     DISCORD_CLIENT_ID: str = ""
     DISCORD_CLIENT_SECRET: str = ""
+
+    # Email
+    BREVO_API_KEY: str = ""
+    BREVO_SENDER_NAME: str = "Waikato Role-playing Guild"
+    BREVO_SENDER_EMAIL: str = "noreply@waikatorpg.co.nz"
 
 
 SETTINGS = Settings()

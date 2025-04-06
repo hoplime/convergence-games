@@ -204,7 +204,6 @@ async def create_mock_data(transaction: AsyncSession) -> None:
         system=systems[0],
         gamemaster=User(
             name="John Cena",
-            email="youcantseeme@gmail.com",
             description="You can't see me",
         ),
         event=event,

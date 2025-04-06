@@ -4,6 +4,14 @@
 <form>
     <input type="hidden" name="email" value="{{ email }}" />
     <div>Please enter the code sent to {{ email }}:</div>
-    <input type="text" class="form-input" placeholder="Code" id="code" maxlength="6" />
-    <a class="btn btn-primary" hx-post="/oauth2/verify_email_code">Submit</a>
+    <input
+        type="text"
+        class="form-input"
+        placeholder="Code"
+        id="code"
+        pattern="[0-9]{6}"
+        oninput="this.value = this.value.replace(/[^0-9.]/g, '')"
+        maxlength="6"
+    />
+    <a class="btn btn-primary" hx-post="/oauth2/email/verify_email_code">Submit</a>
 </form>
