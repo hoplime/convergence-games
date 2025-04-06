@@ -12,6 +12,7 @@ from .app_config import (
     sqlalchemy_plugin,
     template_config,
 )
+from .events import all_listeners
 from .routers import routers
 
 app = Litestar(
@@ -22,5 +23,6 @@ app = Litestar(
     openapi_config=openapi_config,
     template_config=template_config,
     compression_config=compression_config,
+    listeners=all_listeners,
     debug=SETTINGS.DEBUG,
 )
