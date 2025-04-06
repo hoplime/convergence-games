@@ -22,7 +22,7 @@ async def event_email_sign_in(email: str, transaction: AsyncSession, **kwargs) -
     await transaction.commit()
     print(f"event_email_sign_in, email: {email}, new_code: {new_code}")
     magic_link_code = UserEmailVerificationCode.generate_magic_link_code(new_code, email)
-    magic_link_url = f"{SETTINGS.BASE_DOMAIN}/magic_link?code={magic_link_code}"
+    magic_link_url = f"{SETTINGS.BASE_DOMAIN}/email_auth/magic_link?code={magic_link_code}"
 
     async with httpx.AsyncClient() as client:
         await client.post(

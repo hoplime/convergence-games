@@ -156,7 +156,7 @@ def build_redirect_url(provider_name: LoginProvider) -> str:
     return f"{SETTINGS.BASE_REDIRECT_URI}/oauth2/{provider_name}/authorize"
 
 
-class AuthController(Controller):
+class OAuthController(Controller):
     path = "/oauth2"
 
     @post(path="/logout")
@@ -165,13 +165,6 @@ class AuthController(Controller):
         response = Redirect(path=redirect_path)
         response.delete_cookie(token_key)
         return response
-
-    @post(path="/email/authorize")
-    async def post_email_authorize(self, email: str, code: str, transaction: AsyncSession) -> Redirect:
-        user_id = 1  # TODO: Get user ID from email verification code
-        login = jwt_cookie_auth.login(str(user_id))
-
-        return Redirect(path="/profile", cookies=login.cookies)
 
     @get(path="/{provider_name:str}/login")
     async def get_provider_auth_login(self, provider_name: LoginProvider) -> Redirect:

@@ -492,5 +492,5 @@ class UserEmailVerificationCode(Base):
     def decode_magic_link_code(magic_link_code: str) -> tuple[str, str]:
         # Decode the code from base64
         decoded_code = urlsafe_b64decode(magic_link_code.encode()).decode()
-        code, email = decoded_code.split(":")
+        code, email = decoded_code.split(":", 1)
         return code, email

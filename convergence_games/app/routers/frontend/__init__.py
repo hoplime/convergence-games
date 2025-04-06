@@ -1,24 +1,27 @@
 from litestar.router import Router
 
-from .auth import AuthController
 from .editor_test import EditorTestController
+from .email_auth import EmailAuthController
 from .favicon import favicon_router
 from .games import GamesController
 from .home import HomeController
+from .oauth import OAuthController
 from .profile import ProfileController
 from .static import static_files_router
 
 router = Router(
     path="/",
     response_headers={"Vary": "hx-target"},
+    include_in_schema=False,
     tags=["frontend"],
     route_handlers=[
-        AuthController,
+        EditorTestController,
+        EmailAuthController,
         favicon_router,
         GamesController,
         HomeController,
+        OAuthController,
         ProfileController,
-        EditorTestController,
         static_files_router,
     ],
 )
