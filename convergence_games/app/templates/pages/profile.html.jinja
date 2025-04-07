@@ -2,7 +2,15 @@
     {% block content %}
         <title>Profile - Convergence 2025</title>
         <div>You are logged in as {{ request.user.name }}</div>
-        <div>Email: {{ request.user.email }}</div>
+        <div>
+            {% for key in ['email', 'discord', 'google', 'facebook'] %}
+                {% if key in user_logins %}
+                    <p>{{ key }} User ID: {{ user_logins[key].provider_user_id }}</p>
+                {% else %}
+                    <p>Not linked: {{ key }} TODO - link account</p>
+                {% endif %}
+            {% endfor %}
+        </div>
         <button class="btn btn-error" hx-post="/oauth2/logout" hx-target="#content">Logout</button>
     {% endblock %}
 </Page>

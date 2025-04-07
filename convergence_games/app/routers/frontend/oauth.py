@@ -197,11 +197,11 @@ class OAuthController(Controller):
         if user_login is None:
             user = User(
                 name=f"{profile_info.user_first_name} {profile_info.user_last_name}",
-                email=profile_info.user_email,
                 logins=[
                     UserLogin(
                         provider=provider_name,
                         provider_user_id=profile_info.user_id,
+                        provider_email=profile_info.user_email,
                     ),
                 ],
             )
