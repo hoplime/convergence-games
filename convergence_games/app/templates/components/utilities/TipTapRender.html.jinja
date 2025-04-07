@@ -1,0 +1,11 @@
+{#def
+    initial_content_json: str = ""
+#}
+{% set id = random_id() %}
+<div id="tiptap-{{ id }}" class="text-[1rem]"></div>
+<script>
+    convergence.renderEditorContent(
+        document.getElementById("tiptap-{{ id }}"),
+        {{ initial_content_json | tojson }}
+    );
+</script>

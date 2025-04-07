@@ -1,5 +1,5 @@
 import FileHandler from "@tiptap-pro/extension-file-handler";
-import { Editor, mergeAttributes } from "@tiptap/core";
+import { Editor, mergeAttributes, generateHTML } from "@tiptap/core";
 import BlockQuote from "@tiptap/extension-blockquote";
 import BulletList from "@tiptap/extension-bullet-list";
 import Color from "@tiptap/extension-color";
@@ -80,18 +80,125 @@ const createEditorButton = (parent_element: Element, label: string, fn: () => vo
     button.className = "rounded-md bg-gray-200 hover:bg-gray-300 px-2 py-1 [&>img]:w-6 [&>img]:h-6";
     button.innerHTML = label;
     button.onclick = fn;
+    button.type = "button";
     parent_element.appendChild(button);
     return button;
 };
 
+const editor_extensions = [
+    StarterKit,
+    Underline,
+    TextStyle,
+    Color,
+    Paragraph.configure({
+        HTMLAttributes: {
+            class: "mb-2",
+        },
+    }),
+    ListItem.configure({
+        HTMLAttributes: {
+            class: "ml-6 [&>p]:mb-0",
+        },
+    }),
+    BulletList.configure({
+        HTMLAttributes: {
+            class: "list-disc",
+        },
+    }),
+    OrderedList.configure({
+        HTMLAttributes: {
+            class: "list-decimal",
+        },
+    }),
+    Heading.configure({
+        levels: [1, 2],
+    }).extend({
+        renderHTML({ node, HTMLAttributes }) {
+            const level = this.options.levels.includes(node.attrs.level) ? node.attrs.level : this.options.levels[0];
+            const classes: { [index: number]: string } = {
+                1: "text-3xl font-bold mt-4",
+                2: "text-xl font-bold mt-4",
+            };
+            return [
+                `h${level}`,
+                mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: `${classes[level]}` }),
+                0,
+            ];
+        },
+    }),
+    BlockQuote.configure({
+        HTMLAttributes: {
+            class: "border-l-4 border-gray-300 pl-2",
+        },
+    }),
+    ImageResize,
+    FileHandler.configure({
+        allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
+        onDrop: (currentEditor, files, pos) => {
+            // console.log(files);
+            files.forEach((file) => {
+                const fileReader = new FileReader();
+
+                fileReader.readAsDataURL(file);
+                fileReader.onload = () => {
+                    currentEditor
+                        .chain()
+                        .insertContentAt(pos, {
+                            type: "image",
+                            attrs: {
+                                src: fileReader.result,
+                            },
+                        })
+                        .focus()
+                        .run();
+                };
+            });
+        },
+        onPaste: (currentEditor, files, htmlContent) => {
+            // console.log(files);
+            files.forEach((file) => {
+                if (htmlContent) {
+                    // if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
+                    // you could extract the pasted file from this url string and upload it to a server for example
+                    // console.log(htmlContent); // eslint-disable-line no-console
+                    return false;
+                }
+
+                const fileReader = new FileReader();
+
+                fileReader.readAsDataURL(file);
+                fileReader.onload = () => {
+                    currentEditor
+                        .chain()
+                        .insertContentAt(currentEditor.state.selection.anchor, {
+                            type: "image",
+                            attrs: {
+                                src: fileReader.result,
+                            },
+                        })
+                        .focus()
+                        .run();
+                };
+            });
+        },
+    }),
+];
+
+const renderEditorContent = (container_element: Element, initial_content_json: string) => {
+    let initital_content = initial_content_json ? JSON.parse(initial_content_json) : { type: "doc", content: [] };
+
+    let rendered_content = generateHTML(initital_content, editor_extensions);
+    container_element.innerHTML = rendered_content;
+};
+
 const createEditor = (
     container_element: Element,
-    form_input_element: Element,
-    initial_content: string = "",
+    form_input_name: string,
+    initial_content_json: string = "",
     debug: boolean = true,
 ) => {
     // Create the editor and add it to the container
-    container_element.className = "border-1 p-1 rounded-md";
+    container_element.className = `${container_element.className} border-1 p-1 rounded-md`;
     let controls_element = document.createElement("div");
     controls_element.className = "flex flex-row gap-x-2 p-1";
     let editor_element = document.createElement("div");
@@ -104,109 +211,19 @@ const createEditor = (
         container_element.appendChild(debug_element);
     }
 
+    let initital_content = initial_content_json ? JSON.parse(initial_content_json) : { type: "doc", content: [] };
+
+    // Create the form input
+    let form_input_element = document.createElement("input");
+    form_input_element.type = "hidden";
+    form_input_element.name = form_input_name;
+    form_input_element.setAttribute("value", JSON.stringify(initital_content));
+    container_element.appendChild(form_input_element);
+
     let editor = new Editor({
         element: editor_element,
-        extensions: [
-            StarterKit,
-            Underline,
-            TextStyle,
-            Color,
-            Paragraph.configure({
-                HTMLAttributes: {
-                    class: "mb-2",
-                },
-            }),
-            ListItem.configure({
-                HTMLAttributes: {
-                    class: "ml-6 [&>p]:mb-0",
-                },
-            }),
-            BulletList.configure({
-                HTMLAttributes: {
-                    class: "list-disc",
-                },
-            }),
-            OrderedList.configure({
-                HTMLAttributes: {
-                    class: "list-decimal",
-                },
-            }),
-            Heading.configure({
-                levels: [1, 2],
-            }).extend({
-                renderHTML({ node, HTMLAttributes }) {
-                    const level = this.options.levels.includes(node.attrs.level)
-                        ? node.attrs.level
-                        : this.options.levels[0];
-                    const classes: { [index: number]: string } = {
-                        1: "text-3xl font-bold mt-4",
-                        2: "text-xl font-bold mt-4",
-                    };
-                    return [
-                        `h${level}`,
-                        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: `${classes[level]}` }),
-                        0,
-                    ];
-                },
-            }),
-            BlockQuote.configure({
-                HTMLAttributes: {
-                    class: "border-l-4 border-gray-300 pl-2",
-                },
-            }),
-            ImageResize,
-            FileHandler.configure({
-                allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
-                onDrop: (currentEditor, files, pos) => {
-                    // console.log(files);
-                    files.forEach((file) => {
-                        const fileReader = new FileReader();
-
-                        fileReader.readAsDataURL(file);
-                        fileReader.onload = () => {
-                            currentEditor
-                                .chain()
-                                .insertContentAt(pos, {
-                                    type: "image",
-                                    attrs: {
-                                        src: fileReader.result,
-                                    },
-                                })
-                                .focus()
-                                .run();
-                        };
-                    });
-                },
-                onPaste: (currentEditor, files, htmlContent) => {
-                    // console.log(files);
-                    files.forEach((file) => {
-                        if (htmlContent) {
-                            // if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
-                            // you could extract the pasted file from this url string and upload it to a server for example
-                            // console.log(htmlContent); // eslint-disable-line no-console
-                            return false;
-                        }
-
-                        const fileReader = new FileReader();
-
-                        fileReader.readAsDataURL(file);
-                        fileReader.onload = () => {
-                            currentEditor
-                                .chain()
-                                .insertContentAt(currentEditor.state.selection.anchor, {
-                                    type: "image",
-                                    attrs: {
-                                        src: fileReader.result,
-                                    },
-                                })
-                                .focus()
-                                .run();
-                        };
-                    });
-                },
-            }),
-        ],
-        content: initial_content,
+        extensions: editor_extensions,
+        content: initital_content,
         onUpdate: ({ editor }) => {
             let json_content = editor.getJSON();
             if (debug) {
@@ -253,4 +270,4 @@ const createEditor = (
     return editor;
 };
 
-export { createEditor };
+export { createEditor, renderEditorContent };

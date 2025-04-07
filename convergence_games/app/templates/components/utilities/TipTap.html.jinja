@@ -1,16 +1,15 @@
 {#def
-    id: str = "tiptap",
     form_input_name: str = "tiptap",
-    initial_content: str = "",
+    initial_content_json: str = "",
     debug: bool = False
 #}
-<div id="{{ id }}"></div>
-<input type="hidden" name="{{ form_input_name }}">
-<script type="text/javascript">
-    let editor = convergence.createEditor(
-        document.querySelector("#{{ id }}"),
-        document.querySelector("input[name='{{ form_input_name }}']"),
-        "{{ initial_content }}",
+{% set id = random_id() %}
+<div id="tiptap-{{ id }}" class="text-[1rem]"></div>
+<script>
+    convergence.createEditor(
+        document.getElementById("tiptap-{{ id }}"),
+        "{{ form_input_name }}",
+        {{ initial_content_json | tojson }},
         {{ 'true' if debug else 'false' }}
     );
 </script>

@@ -1,8 +1,49 @@
 <Page>
     {% block content %}
         <title>Profile - Convergence 2025</title>
-        <div>Profile</div>
-        <form></form>
+        <div>Profile for {{ request.user.first_name }} {{ request.user.last_name }}</div>
+        <form id="profile-form" hx-post="/profile" hx-target="#content">
+            <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                <legend class="fieldset-legend">Public Information</legend>
+                {# Title #}
+                <label class="fieldset-label">Name</label>
+                <div>
+                    <input
+                        type="text"
+                        class="input"
+                        placeholder="First"
+                        name="first_name"
+                        value="{{ request.user.first_name }}"
+                        required
+                    />
+                    <input
+                        type="text"
+                        class="input"
+                        placeholder="Last"
+                        name="last_name"
+                        value="{{ request.user.last_name }}"
+                    />
+                </div>
+                {# Bio #}
+                <label class="fieldset-label">Bio</label>
+                <utilities.TipTap form_input_name="description" :initial_content_json="request.user.description" />
+            </fieldset>
+            <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                <legend class="fieldset-legend">Private Information and Settings</legend>
+                {# Over 18 #}
+                <label class="fieldset-label">
+                    <input type="checkbox" class="checkbox" name="over_18" {{ "checked" if request.user.over_18 }} />
+                    <span>I am 18+</span>
+                </label>
+            </fieldset>
+            <button
+                class="btn btn-primary hidden"
+                type="submit"
+                _="on change from #profile-form or keyup from #profile-form remove .hidden from me"
+            >
+                Save
+            </button>
+        </form>
         <div>
             {% for key in ['email', 'discord', 'google', 'facebook'] %}
                 {% if key in user_logins %}

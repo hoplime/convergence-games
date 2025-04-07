@@ -76,7 +76,8 @@
                     "meta.tag.other.layout.NavBar.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.layout.NavButton.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.utilities.Card.html invalid.illegal.unrecognized-tag.html",
-                    "meta.tag.other.utilities.TipTap.html invalid.illegal.unrecognized-tag.html"
+                    "meta.tag.other.utilities.TipTap.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.utilities.TipTapRender.html invalid.illegal.unrecognized-tag.html"
                 ],
                 "name": "Custom JinjaX Components",
                 "settings": {

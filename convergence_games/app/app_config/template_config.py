@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 import jinjax
@@ -53,6 +54,7 @@ jinja_env.filters["debug"] = debug
 jinja_env.filters["extract_title"] = extract_title
 
 jinja_env.globals["swim"] = swim
+jinja_env.globals["random_id"] = lambda: str(uuid.uuid4())
 
 catalog = jinjax.Catalog(jinja_env=jinja_env)
 catalog.add_folder(COMPONENTS_DIR_PATH)

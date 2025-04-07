@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from typing import Annotated, Sequence
+from typing import Annotated, Literal, Sequence
 
 from litestar import Controller, get, post
+from litestar.exceptions import HTTPException
 from litestar.params import Body, RequestEncodingType
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,8 +20,32 @@ class PostEmailSignInForm:
 
 @dataclass
 class PostProfileEditForm:
-    name: str
+    first_name: str
+    last_name: str
     description: str
+    over_18: Literal["on"] | None = None
+
+    @property
+    def is_over_18(self) -> bool:
+        return self.over_18 is not None
+
+
+async def render_profile(
+    request: Request,
+    transaction: AsyncSession,
+) -> Template:
+    if request.user is None:
+        return HTMXBlockTemplate(template_name="pages/register.html.jinja", block_name=request.htmx.target)
+
+    user_logins: Sequence[UserLogin] = (
+        (await transaction.execute(select(UserLogin).where(UserLogin.user_id == request.user.id))).scalars().all()
+    )
+    user_login_dict = {login.provider: login for login in user_logins}
+    return HTMXBlockTemplate(
+        template_name="pages/profile.html.jinja",
+        block_name=request.htmx.target,
+        context={"user_logins": user_login_dict},
+    )
 
 
 class ProfileController(Controller):
@@ -42,41 +67,23 @@ class ProfileController(Controller):
 
     @get(path="/profile")
     async def get_profile(self, request: Request, transaction: AsyncSession) -> Template:
-        if request.user is None:
-            return HTMXBlockTemplate(template_name="pages/register.html.jinja", block_name=request.htmx.target)
+        return await render_profile(request, transaction)
 
-        user_logins: Sequence[UserLogin] = (
-            (await transaction.execute(select(UserLogin).where(UserLogin.user_id == request.user.id))).scalars().all()
-        )
-        user_login_dict = {login.provider: login for login in user_logins}
-        print(user_login_dict)
-        return HTMXBlockTemplate(
-            template_name="pages/profile.html.jinja",
-            block_name=request.htmx.target,
-            context={"user_logins": user_login_dict},
-        )
-
-    @get(path="/profile/edit")
-    async def get_profile_edit(self, request: Request) -> Template:
-        if request.user is None:
-            return HTMXBlockTemplate(template_name="pages/register.html.jinja", block_name=request.htmx.target)
-
-        return HTMXBlockTemplate(template_name="pages/profile_edit.html.jinja", block_name=request.htmx.target)
-
-    @post(path="/profile/edit")
-    async def post_profile_edit(
+    @post(path="/profile")
+    async def post_profile(
         self,
         request: Request,
         data: Annotated[PostProfileEditForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
         transaction: AsyncSession,
     ) -> Template:
         if request.user is None:
-            return HTMXBlockTemplate(template_name="pages/register.html.jinja", block_name=request.htmx.target)
+            raise HTTPException(status_code=401, detail="Unauthorized")
 
         user = request.user
-        user.name = data.name
+        user.first_name = data.first_name
+        user.last_name = data.last_name
         user.description = data.description
+        user.over_18 = data.is_over_18
         transaction.add(user)
-        await transaction.commit()
 
-        return HTMXBlockTemplate(template_name="pages/profile_edit.html.jinja", block_name=request.htmx.target)
+        return await render_profile(request, transaction)

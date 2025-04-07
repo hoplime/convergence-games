@@ -1,3 +1,3 @@
-import { createEditor } from "./editor";
+import { createEditor, renderEditorContent } from "./editor";
 
-export { createEditor };
+export { createEditor, renderEditorContent };
