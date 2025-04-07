@@ -1,19 +1,40 @@
 {#def
     title: str = "Multislider",
     input_name: str = "multislider",
+    constrain_above: str | None = None,
+    constrain_below: str | None = None,
     value: int = 5
 #}
 <span>{{ title }}</span>
-<input
-    type="range"
-    name="{{ input_name }}"
-    value="{{ value }}"
-    class="range w-md"
-    step="1"
-    _="on load 
-        get closest parent @data-min-value
-        then set my @min to it
-        then get closest parent @data-max-value
-        then set my @max to it
-    "
-/>
+{%
+    set hs = "on load
+    get closest parent @data-min-value
+    then set my @min to it
+    then get closest parent @data-max-value
+    then set my @max to it"
+%}
+{% if constrain_above %}
+    {%
+        set hs = hs ~ "
+        on input from <input[name='"~ constrain_above ~"'] />
+            set :v to its value
+            then
+            if :v > my value
+                set my value to :v
+                then trigger input on me
+            end"
+    %}
+{% endif %}
+{% if constrain_below %}
+    {%
+        set hs = hs ~ "
+        on input from <input[name='"~ constrain_below ~"'] />
+            set :v to its value
+            then
+            if :v < my value
+                set my value to :v
+                then trigger input on me
+            end"
+    %}
+{% endif %}
+<input type="range" name="{{ input_name }}" value="{{ value }}" class="range w-md" step="1" _="{{ hs }}" />

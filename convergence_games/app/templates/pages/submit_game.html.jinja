@@ -91,9 +91,25 @@
                         :display_titles="true"
                         :allow_more="true"
                     >
-                        <forms.multislider.Multislider title="Minimum" input_name="player_count_minimum" value="2" />
-                        <forms.multislider.Multislider title="Optimum" input_name="player_count_optimum" value="4" />
-                        <forms.multislider.Multislider title="Maximum" input_name="player_count_maximum" value="6" />
+                        <forms.multislider.Multislider
+                            title="Minimum"
+                            input_name="player_count_minimum"
+                            constrain_below="player_count_optimum"
+                            value="2"
+                        />
+                        <forms.multislider.Multislider
+                            title="Optimum"
+                            input_name="player_count_optimum"
+                            constrain_above="player_count_minimum"
+                            constrain_below="player_count_maximum"
+                            value="4"
+                        />
+                        <forms.multislider.Multislider
+                            title="Maximum"
+                            input_name="player_count_maximum"
+                            constrain_above="player_count_optimum"
+                            value="6"
+                        />
                     </forms.multislider.MultisliderContainer>
                     {# Age suitability #}
                     <label class="fieldset-label">Age Suitabilty & Classification</label>
