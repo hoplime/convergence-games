@@ -17,6 +17,12 @@ class PostEmailSignInForm:
     email: str
 
 
+@dataclass
+class PostProfileEditForm:
+    name: str
+    description: str
+
+
 class ProfileController(Controller):
     @get(path="/email_sign_in")
     async def get_email_sign_in(self, request: Request) -> Template:
@@ -49,3 +55,28 @@ class ProfileController(Controller):
             block_name=request.htmx.target,
             context={"user_logins": user_login_dict},
         )
+
+    @get(path="/profile/edit")
+    async def get_profile_edit(self, request: Request) -> Template:
+        if request.user is None:
+            return HTMXBlockTemplate(template_name="pages/register.html.jinja", block_name=request.htmx.target)
+
+        return HTMXBlockTemplate(template_name="pages/profile_edit.html.jinja", block_name=request.htmx.target)
+
+    @post(path="/profile/edit")
+    async def post_profile_edit(
+        self,
+        request: Request,
+        data: Annotated[PostProfileEditForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        transaction: AsyncSession,
+    ) -> Template:
+        if request.user is None:
+            return HTMXBlockTemplate(template_name="pages/register.html.jinja", block_name=request.htmx.target)
+
+        user = request.user
+        user.name = data.name
+        user.description = data.description
+        transaction.add(user)
+        await transaction.commit()
+
+        return HTMXBlockTemplate(template_name="pages/profile_edit.html.jinja", block_name=request.htmx.target)

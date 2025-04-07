@@ -406,8 +406,10 @@ class Session(Base):
 
 # User Information Models
 class User(Base):
-    name: Mapped[str] = mapped_column(index=True)
+    first_name: Mapped[str] = mapped_column(index=True)
+    last_name: Mapped[str] = mapped_column(index=True)
     description: Mapped[str] = mapped_column(default="")
+    over_18: Mapped[bool] = mapped_column(default=False)
 
     # Relationships
     games: Mapped[list[Game]] = relationship(

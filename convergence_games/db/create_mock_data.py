@@ -203,7 +203,8 @@ async def create_mock_data(transaction: AsyncSession) -> None:
         ksps=GameKSP.FOR_SALE | GameKSP.DESIGNER_RUN,
         system=systems[0],
         gamemaster=User(
-            name="John Cena",
+            first_name="John",
+            last_name="Cena",
             description="You can't see me",
         ),
         event=event,

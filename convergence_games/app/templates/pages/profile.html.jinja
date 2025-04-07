@@ -1,7 +1,8 @@
 <Page>
     {% block content %}
         <title>Profile - Convergence 2025</title>
-        <div>You are logged in as {{ request.user.name }}</div>
+        <div>Profile</div>
+        <form></form>
         <div>
             {% for key in ['email', 'discord', 'google', 'facebook'] %}
                 {% if key in user_logins %}

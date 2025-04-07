@@ -42,8 +42,10 @@ async def login_with_email_and_code(
 
     if user_login is None:
         # We need to create a new user and login
+        # TODO: More information form to collect name
         user = User(
-            name="",
+            first_name="",
+            last_name="",
             logins=[
                 UserLogin(
                     provider="email",
