@@ -25,6 +25,7 @@ async def login_with_email_and_code(
             select(UserEmailVerificationCode)
             .where(UserEmailVerificationCode.code == code)
             .where(UserEmailVerificationCode.email == email)
+            .where(UserEmailVerificationCode.expires_at >= dt.datetime.now(tz=dt.timezone.utc))
         )
     ).scalar_one_or_none()
 
