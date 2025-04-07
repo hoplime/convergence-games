@@ -205,7 +205,7 @@ async def create_mock_data(transaction: AsyncSession) -> None:
         gamemaster=User(
             first_name="John",
             last_name="Cena",
-            description="You can't see me",
+            description="",
         ),
         event=event,
         game_requirement=GameRequirement(
