@@ -1,0 +1,7 @@
+{#def
+    link: bool = False
+#}
+<a href="/oauth2/google/login" class="btn btn-ghost">
+    <img src="static/icons/logos/google.svg" class="h-8" alt="Google Logo" />
+    <span>{{ 'Link' if link else 'Sign in with' }} Google</span>
+</a>

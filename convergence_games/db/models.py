@@ -23,7 +23,6 @@ from convergence_games.db.enums import (
     LoginProvider,
     Role,
 )
-from convergence_games.settings import SETTINGS
 
 
 class UserAuditColumns:

@@ -2,7 +2,8 @@
     {% block content %}
         <title>Profile - Convergence 2025</title>
         <div>Profile for {{ request.user.first_name }} {{ request.user.last_name }}</div>
-        <form id="profile-form" hx-post="/profile" hx-target="#content">
+        <form id="profile-form">
+            <button type="submit" disabled class="hidden" aria-hidden="true"></button>
             <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
                 <legend class="fieldset-legend">Public Information</legend>
                 {# Title #}
@@ -36,20 +37,20 @@
                     <span>I am 18+</span>
                 </label>
             </fieldset>
-            <button
-                class="btn btn-primary hidden"
-                type="submit"
-                _="on change from #profile-form or keyup from #profile-form remove .hidden from me"
-            >
-                Save
-            </button>
+            <div _="on change from #profile-form or keyup from #profile-form remove .hidden from me" class="hidden">
+                <button class="btn btn-neutral" type="button" hx-get="/profile" hx-target="#content">Discard</button>
+                <button class="btn btn-primary" type="button" hx-post="/profile" hx-target="#content">Save</button>
+            </div>
         </form>
-        <div>
+        <div class="grid max-w-96 gap-4">
             {% for key in ['email', 'discord', 'google', 'facebook'] %}
                 {% if key in user_logins %}
-                    <p>{{ key }} User ID: {{ user_logins[key].provider_user_id }}</p>
+                    <button class="btn btn-ghost pointer-events-none">
+                        <img src="static/icons/logos/{{ key }}.svg" class="h-8" alt="{{ key.capitalize() }} Logo" />
+                        <span>{{ key.capitalize() }} - {{ user_logins[key].provider_email }}</span>
+                    </button>
                 {% else %}
-                    <p>Not linked: {{ key }} TODO - link account</p>
+                    {{ catalog.irender("forms.sign_in_buttons." ~ key.capitalize(), link=true) }}
                 {% endif %}
             {% endfor %}
         </div>
