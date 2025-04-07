@@ -1,0 +1,29 @@
+{#def
+    min_value: int = 1,
+    max_value: int = 10,
+    display_titles: bool = true,
+    allow_more: bool = true,
+#}
+<div>
+    <div
+        class="grid grid-cols-[min-content_min-content] gap-2"
+        data-min-value="{{ min_value }}"
+        data-max-value="{{ max_value }}"
+    >
+        {{ content }}
+        <div class="col-start-2">
+            <div class="mt-2 flex justify-between px-2.5 text-xs">
+                {% for i in range(min_value, max_value + 1) %}
+                    <span>|</span>
+                {% endfor %}
+            </div>
+            <div class="mt-2 flex justify-between px-2.5 text-xs">
+                {% for i in range(min_value, max_value + 1) %}
+                    <span class="{{ 'after:absolute after:content-[\'+\']' if allow_more and i == max_value else '' }}">
+                        {{ i }}
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>

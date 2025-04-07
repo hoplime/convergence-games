@@ -1,0 +1,19 @@
+{#def
+    title: str = "Multislider",
+    input_name: str = "multislider",
+    value: int = 5
+#}
+<span>{{ title }}</span>
+<input
+    type="range"
+    name="{{ input_name }}"
+    value="{{ value }}"
+    class="range w-md"
+    step="1"
+    _="on load 
+        get closest parent @data-min-value
+        then set my @min to it
+        then get closest parent @data-max-value
+        then set my @max to it
+    "
+/>

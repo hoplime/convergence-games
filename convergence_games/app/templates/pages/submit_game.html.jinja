@@ -85,60 +85,16 @@
                     </div>
                     {# Player Count #}
                     <label class="fieldset-label">Player Count</label>
-                    <div>
-                        <div class="grid grid-cols-[min-content_min-content] gap-2">
-                            <span>Minimum</span>
-                            <input
-                                type="range"
-                                name="player_count_minimum"
-                                min="1"
-                                max="7"
-                                value="2"
-                                class="range w-md"
-                                step="1"
-                            />
-                            <span>Optimum</span>
-                            <input
-                                type="range"
-                                name="player_count_optimum"
-                                min="1"
-                                max="7"
-                                value="4"
-                                class="range w-md"
-                                step="1"
-                            />
-                            <span>Maximum</span>
-                            <input
-                                type="range"
-                                name="player_count_maximum"
-                                min="1"
-                                max="7"
-                                value="6"
-                                class="range w-md"
-                                step="1"
-                            />
-                            <div class="col-start-2">
-                                <div class="mt-2 flex justify-between px-2.5 text-xs">
-                                    <span>|</span>
-                                    <span>|</span>
-                                    <span>|</span>
-                                    <span>|</span>
-                                    <span>|</span>
-                                    <span>|</span>
-                                    <span>|</span>
-                                </div>
-                                <div class="mt-2 flex justify-between px-2.5 text-xs">
-                                    <span>1</span>
-                                    <span>2</span>
-                                    <span>3</span>
-                                    <span>4</span>
-                                    <span>5</span>
-                                    <span>6</span>
-                                    <span class="after:absolute after:content-['+']">7</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <forms.multislider.MultisliderContainer
+                        :min_value="1"
+                        :max_value="7"
+                        :display_titles="true"
+                        :allow_more="true"
+                    >
+                        <forms.multislider.Multislider title="Minimum" input_name="player_count_minimum" value="2" />
+                        <forms.multislider.Multislider title="Optimum" input_name="player_count_optimum" value="4" />
+                        <forms.multislider.Multislider title="Maximum" input_name="player_count_maximum" value="6" />
+                    </forms.multislider.MultisliderContainer>
                     {# Age suitability #}
                     <label class="fieldset-label">Age Suitabilty & Classification</label>
                     <div class="flex flex-row gap-4">
@@ -153,12 +109,6 @@
                         >
                             <input type="radio" name="classification" class="hidden" value="M" required />
                             <span class="block text-lg font-bold">M</span>
-                        </label>
-                        <label
-                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
-                        >
-                            <input type="radio" name="classification" class="hidden" value="R16" required />
-                            <span class="block text-lg font-bold">R16</span>
                         </label>
                         <label
                             class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"

@@ -193,7 +193,7 @@ async def create_mock_data(transaction: AsyncSession) -> None:
         name="Test Game",
         tagline="This is a test game",
         description="This is a test game description",
-        classification=GameClassification.R16,
+        classification=GameClassification.R18,
         crunch=GameCrunch.MEDIUM,
         narrativism=GameNarrativism.NARRATIVIST,
         tone=GameTone.LIGHT_HEARTED,

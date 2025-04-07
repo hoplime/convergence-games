@@ -34,14 +34,14 @@ class GameClassification(enum.StrEnum):
     # G = "G"
     PG = "PG"
     M = "M"
-    R16 = "R16"
+    # R16 = "R16"
     R18 = "R18"
 
     @property
     def age_restriction(self) -> int:
-        if self == GameClassification.R16:
-            return 16
-        elif self == GameClassification.R18:
+        # if self == GameClassification.R16:
+        #     return 16
+        if self == GameClassification.R18:
             return 18
 
         return 0
