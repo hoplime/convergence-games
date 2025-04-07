@@ -202,7 +202,7 @@ const createEditor = (
     let controls_element = document.createElement("div");
     controls_element.className = "flex flex-row gap-x-2 p-1";
     let editor_element = document.createElement("div");
-    editor_element.className = "border-t-1 py-1 px-4";
+    editor_element.className = "border-t-1 p-1";
     container_element.appendChild(controls_element);
     container_element.appendChild(editor_element);
     let debug_element = document.createElement("pre");
@@ -211,19 +211,24 @@ const createEditor = (
         container_element.appendChild(debug_element);
     }
 
-    let initital_content = initial_content_json ? JSON.parse(initial_content_json) : { type: "doc", content: [] };
+    let initial_content = initial_content_json ? JSON.parse(initial_content_json) : { type: "doc", content: [] };
 
     // Create the form input
     let form_input_element = document.createElement("input");
     form_input_element.type = "hidden";
     form_input_element.name = form_input_name;
-    form_input_element.setAttribute("value", JSON.stringify(initital_content));
+    form_input_element.setAttribute("value", JSON.stringify(initial_content));
     container_element.appendChild(form_input_element);
 
     let editor = new Editor({
         element: editor_element,
         extensions: editor_extensions,
-        content: initital_content,
+        content: initial_content,
+        editorProps: {
+            attributes: {
+                class: "p-2",
+            },
+        },
         onUpdate: ({ editor }) => {
             let json_content = editor.getJSON();
             if (debug) {
