@@ -10,7 +10,6 @@ from litestar.params import Body, Parameter, RequestEncodingType
 from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
 from convergence_games.db.models import User, UserEmailVerificationCode, UserLogin
@@ -21,12 +20,13 @@ async def login_with_email_and_code(
     code: str,
     transaction: AsyncSession,
 ) -> Redirect:
-    stmt = (
-        select(UserEmailVerificationCode)
-        .where(UserEmailVerificationCode.code == code)
-        .where(UserEmailVerificationCode.email == email)
-    )
-    user_email_verification_code = (x := await transaction.execute(stmt)).scalar_one_or_none()
+    user_email_verification_code = (
+        await transaction.execute(
+            select(UserEmailVerificationCode)
+            .where(UserEmailVerificationCode.code == code)
+            .where(UserEmailVerificationCode.email == email)
+        )
+    ).scalar_one_or_none()
 
     if user_email_verification_code is None:
         raise HTTPException(status_code=401, detail="Invalid code or code expired")
