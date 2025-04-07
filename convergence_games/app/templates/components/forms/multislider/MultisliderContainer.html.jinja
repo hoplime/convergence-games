@@ -2,13 +2,14 @@
     min_value: int = 1,
     max_value: int = 10,
     display_titles: bool = true,
-    allow_more: bool = true,
+    allow_more: bool = true
 #}
 <div>
     <div
-        class="grid grid-cols-[min-content_min-content] gap-2"
+        class="group grid grid-cols-[min-content_min-content_min-content] gap-2"
         data-min-value="{{ min_value }}"
         data-max-value="{{ max_value }}"
+        data-allow-more="{{ allow_more }}"
     >
         {{ content }}
         <div class="col-start-2">

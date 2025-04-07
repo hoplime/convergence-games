@@ -7,17 +7,20 @@
 #}
 <span>{{ title }}</span>
 {%
-    set hs = "on load
-    get closest parent @data-min-value
-    then set my @min to it
-    then get closest parent @data-max-value
-    then set my @max to it"
+    set hs = "
+    on load
+        get closest parent @data-min-value
+        then set my @min to it
+        then get closest parent @data-max-value
+        then set my @max to it
+    end
+    "
 %}
 {% if constrain_above %}
     {%
         set hs = hs ~ "
         on input from <input[name='"~ constrain_above ~"'] />
-            set :v to its value
+            set :v to its value as Number
             then
             if :v > my value
                 set my value to :v
@@ -29,7 +32,7 @@
     {%
         set hs = hs ~ "
         on input from <input[name='"~ constrain_below ~"'] />
-            set :v to its value
+            set :v to its value as Number
             then
             if :v < my value
                 set my value to :v
@@ -38,3 +41,58 @@
     %}
 {% endif %}
 <input type="range" name="{{ input_name }}" value="{{ value }}" class="range w-md" step="1" _="{{ hs }}" />
+{%
+    set more_hs = "
+    on input from <input[name='"~ input_name ~"']/>
+        set my value to its value as Number
+        then trigger input on me
+    end
+    "
+%}
+{% if constrain_above %}
+    {%
+        set more_hs = more_hs ~ "
+        on input from <input[name='"~ constrain_above ~"_more'] />
+            set :v to its value as Number
+            then
+            if :v > my value
+                log :v
+                then set my value to :v
+                then trigger input on me
+            end
+        end"
+    %}
+{% endif %}
+{% if constrain_below %}
+    {%
+        set more_hs = more_hs ~ "
+        on input from <input[name='"~ constrain_below ~"_more'] />
+            set :v to its value as Number
+            then
+            if :v < my value
+                log :v
+                then set my value to :v
+                then trigger input on me
+            end
+        end"
+    %}
+{% endif %}
+<div>
+    <div
+        class="not-[group-[:data-allow-more='true']]:hidden row-end-[-1]"
+        _="
+        on load from <input[name='{{ input_name }}']/>
+        or input from <input[name='{{ input_name }}']/>
+            set :v to its value
+            set :m to its @max
+            then
+            if :v >= :m
+                remove .hidden from me
+            else
+                add .hidden to me
+            end
+        "
+    >
+        <input type="number" name="{{ input_name }}_more" class="input w-16" step="1" _="{{ more_hs }}" />
+    </div>
+</div>
