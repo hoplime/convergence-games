@@ -44,6 +44,7 @@
 {%
     set more_hs = "
     on input from <input[name='"~ input_name ~"']/>
+    or load from <input[name='"~ input_name ~"']/>
         set my value to its value as Number
         then trigger input on me
     end
@@ -51,8 +52,6 @@
     on input
         set :v to my value as Number
         set :m to <input[name='"~ input_name ~"']/>'s value as Number
-        then log :v
-        then log :m
         then
         if :v < :m
             set <input[name='"~ input_name ~"']/>'s value to :v
@@ -91,7 +90,7 @@
 {% endif %}
 <div>
     <div
-        class="not-[group-[:data-allow-more='true']]:hidden row-end-[-1]"
+        class="not-group-data-[allow-more=True]:hidden row-end-[-1]"
         _="
         on load from <input[name='{{ input_name }}']/>
         or input from <input[name='{{ input_name }}']/>

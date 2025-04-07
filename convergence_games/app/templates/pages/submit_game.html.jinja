@@ -153,25 +153,14 @@
                     </span>
 
                     <label class="fieldset-label">How many times do you want to run this game?</label>
-                    <div class="grid grid-cols-[min-content] gap-2">
-                        <input type="range" name="times_to_run" min="1" max="5" value="1" class="range w-md" step="1" />
-                        <div>
-                            <div class="mt-2 flex justify-between px-2.5 text-xs">
-                                <span>|</span>
-                                <span>|</span>
-                                <span>|</span>
-                                <span>|</span>
-                                <span>|</span>
-                            </div>
-                            <div class="mt-2 flex justify-between px-2.5 text-xs">
-                                <span>1</span>
-                                <span>2</span>
-                                <span>3</span>
-                                <span>4</span>
-                                <span>5</span>
-                            </div>
-                        </div>
-                    </div>
+                    <forms.multislider.MultisliderContainer
+                        :min_value="1"
+                        :max_value="5"
+                        :display_titles="false"
+                        :allow_more="false"
+                    >
+                        <forms.multislider.Multislider title="Maximum" input_name="times_to_run" />
+                    </forms.multislider.MultisliderContainer>
 
                     <label class="fieldset-label">In which time slots could you run this game?</label>
                     <span>Please be flexible and mark all time slots you could do</span>
