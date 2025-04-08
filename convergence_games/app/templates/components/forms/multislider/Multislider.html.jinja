@@ -67,6 +67,7 @@
             set :v to its value as Number
             then
             if :v > my value
+                log me
                 log :v
                 then set my value to :v
                 then trigger input on me
@@ -81,6 +82,7 @@
             set :v to its value as Number
             then
             if :v < my value
+                log me
                 log :v
                 then set my value to :v
                 then trigger input on me
@@ -104,6 +106,13 @@
             end
         "
     >
-        <input type="number" name="{{ input_name }}_more" class="input input-xs w-16" step="1" _="{{ more_hs }}" />
+        <input
+            type="number"
+            name="{{ input_name }}_more"
+            class="input input-xs w-16"
+            step="1"
+            value="{{ value }}"
+            _="{{ more_hs }}"
+        />
     </div>
 </div>
