@@ -155,7 +155,7 @@
                     <label class="fieldset-label">How many times do you want to run this game?</label>
                     <forms.multislider.MultisliderContainer
                         :min_value="1"
-                        :max_value="5"
+                        :max_value="event.time_slots|length"
                         :display_titles="false"
                         :allow_more="false"
                     >
@@ -164,7 +164,6 @@
 
                     <label class="fieldset-label">In which time slots could you run this game?</label>
                     <span>Please be flexible and mark all time slots you could do</span>
-                    {{ event }}
                     {% for time_slot in event.time_slots %}
                         <label class="fieldset-label">
                             <input
@@ -173,8 +172,9 @@
                                 name="available_time_slot"
                                 value="{{ swim(time_slot) }}"
                             />
-                            <span class="bg-warning">
-                                {{ time_slot.name }} {{ time_slot.start_time }} - {{ time_slot.end_time }}
+                            <span>
+                                {{ time_slot.name }}: {{ time_slot.start_time | nice_time_format }} -
+                                {{ time_slot.end_time | nice_time_format }}
                             </span>
                         </label>
                     {% endfor %}

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from hashlib import sha256
 from typing import TYPE_CHECKING, NewType, cast, overload
 
 from sqids import Sqids
@@ -34,7 +35,7 @@ def _ink(class_name: str) -> int:
     """
     Get the ink for a class.
     """
-    return hash(class_name) % 100
+    return int(sha256(class_name.encode()).hexdigest(), base=16) % 256
 
 
 def sink(sqid: Sqid) -> int:

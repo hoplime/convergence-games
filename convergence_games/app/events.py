@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from convergence_games.app.app_config.template_config import jinja_env
 from convergence_games.db.models import UserEmailVerificationCode
 from convergence_games.settings import SETTINGS
+from convergence_games.utils.time_utils import nice_time_format
 
 EVENT_EMAIL_SIGN_IN = "event_email_sign_in"
 
@@ -29,9 +30,7 @@ async def event_email_sign_in(email: str, transaction: AsyncSession, tz: dt.tzin
     magic_link_code = UserEmailVerificationCode.generate_magic_link_code(code, email)
     magic_link_url = f"{SETTINGS.BASE_DOMAIN}/email_auth/magic_link?code={magic_link_code}"
 
-    if tz is None:
-        tz = zoneinfo.ZoneInfo("Pacific/Auckland")
-    formatted_expires_at = user_email_verification_code.expires_at.astimezone(tz).strftime("%a %B %d %I:%M%p %Z")
+    formatted_expires_at = nice_time_format(user_email_verification_code.expires_at, tz=tz)
     html_content = jinja_env.get_template("emails/sign_in_code.html.jinja").render(
         magic_link_url=magic_link_url,
         code=code,

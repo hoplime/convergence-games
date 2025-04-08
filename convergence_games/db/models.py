@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import zoneinfo
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 from advanced_alchemy.base import BigIntAuditBase
@@ -64,8 +65,9 @@ class GameContentWarningLink(Base):
 class Event(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
     description: Mapped[str] = mapped_column(default="")
-    start_date: Mapped[dt.datetime] = mapped_column(index=True)
-    end_date: Mapped[dt.datetime] = mapped_column(index=True)
+    start_date: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True), index=True)
+    end_date: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True), index=True)
+    timezone: Mapped[str] = mapped_column(default="Pacific/Auckland")
 
     # Relationships
     rooms: Mapped[list[Room]] = relationship(back_populates="event", lazy="noload")
@@ -301,8 +303,8 @@ def game_requirement_time_slot_link_before_insert(
 # Timetable Information Models
 class TimeSlot(Base):
     name: Mapped[str]
-    start_time: Mapped[dt.datetime]
-    end_time: Mapped[dt.datetime]
+    start_time: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True))
+    end_time: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True))
 
     # Foreign Keys
     event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
@@ -332,6 +334,10 @@ class TimeSlot(Base):
         # This redundant constraint is necessary for the foreign key constraint in Session
         UniqueConstraint("id", "event_id"),
     )
+
+    @property
+    def duration(self) -> dt.timedelta:
+        return self.end_time - self.start_time
 
 
 class Room(Base):
