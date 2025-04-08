@@ -9,6 +9,7 @@ from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import ColumnExpressionArgument
 
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
@@ -22,6 +23,7 @@ from convergence_games.db.enums import (
     GameRoomRequirement,
     GameTableSizeRequirement,
     GameTone,
+    SubmissionStatus,
 )
 from convergence_games.db.models import (
     ContentWarning,
@@ -103,13 +105,19 @@ class SearchResult[T: SearchableBase]:
 
 
 async def search_with_fuzzy_match[T: SearchableBase](
-    transaction: AsyncSession, model_type: type[T], search: str
+    transaction: AsyncSession,
+    model_type: type[T],
+    search: str,
+    extra_filters: ColumnExpressionArgument[bool] | None = None,
 ) -> list[SearchResult[T]]:
     # TODO: Can we directly query for the names (possibly including aliases) and sqids?
     query = select(model_type)
 
     if issubclass(model_type, System):
         query = query.options(selectinload(model_type.aliases))
+
+    if extra_filters is not None:
+        query = query.where(extra_filters)
 
     all_rows = (await transaction.execute(query)).scalars().all()
 
@@ -162,8 +170,6 @@ class GamesController(Controller):
 
         if not event:
             raise NotFoundException(detail="Event not found")
-
-        print(event.time_slots)
 
         # TODO: Replace these with search queries
         all_genres = (await transaction.execute(select(Genre).order_by(Genre.name))).scalars().all()
@@ -287,8 +293,11 @@ class GamesController(Controller):
         )
 
     @get(path="/search/system/results")
-    async def get_system_search_results(self, transaction: AsyncSession, search: str) -> Template:
-        results = await search_with_fuzzy_match(transaction, System, search)
+    async def get_system_search_results(self, request: Request, transaction: AsyncSession, search: str) -> Template:
+        extra_filters = System.submission_status == SubmissionStatus.APPROVED
+        if request.user:
+            extra_filters = extra_filters | (System.created_by == request.user.id)
+        results = await search_with_fuzzy_match(transaction, System, search, extra_filters)
 
         return HTMXBlockTemplate(
             template_name="components/forms/search/SearchResultsList.html.jinja",
@@ -296,6 +305,7 @@ class GamesController(Controller):
                 "name": "system",
                 "results": results,
                 "search": search,
+                "mode": "select",
             },
         )
 
@@ -311,7 +321,7 @@ class GamesController(Controller):
             context={
                 "name": "system",
                 "selected_name": system.name,
-                "selected_sqid": sqid,
+                "value": sqid,
             },
         )
 
@@ -322,6 +332,50 @@ class GamesController(Controller):
             context={
                 "name": "system",
                 "selected_name": selected_name,
-                "new": True,
+                "value": f"new:{selected_name}",
+            },
+        )
+
+    @get(path="/search/genre/results")
+    async def get_genre_search_results(self, request: Request, transaction: AsyncSession, search: str) -> Template:
+        extra_filters = Genre.submission_status == SubmissionStatus.APPROVED
+        if request.user:
+            extra_filters = extra_filters | (Genre.created_by == request.user.id)
+        results = await search_with_fuzzy_match(transaction, Genre, search, extra_filters)
+
+        return HTMXBlockTemplate(
+            template_name="components/forms/search/SearchResultsList.html.jinja",
+            context={
+                "name": "genre",
+                "results": results,
+                "search": search,
+                "mode": "checks",
+            },
+        )
+
+    @get(path="/search/genre/select")
+    async def get_genre_search_selected(self, transaction: AsyncSession, sqid: Sqid) -> Template:
+        genre = await transaction.get(Genre, sink(sqid))
+
+        if not genre:
+            raise NotFoundException(detail="Genre not found")
+
+        return HTMXBlockTemplate(
+            template_name="components/forms/search_checks/SearchCheckChip.html.jinja",
+            context={
+                "name": "genre",
+                "selected_name": genre.name,
+                "value": sqid,
+            },
+        )
+
+    @get(path="/search/genre/new")
+    async def get_genre_search_new(self, selected_name: str) -> Template:
+        return HTMXBlockTemplate(
+            template_name="components/forms/search_checks/SearchCheckChip.html.jinja",
+            context={
+                "name": "genre",
+                "selected_name": selected_name,
+                "value": f"new:{selected_name}",
             },
         )

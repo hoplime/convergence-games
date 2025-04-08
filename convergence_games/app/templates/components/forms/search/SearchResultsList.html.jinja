@@ -2,6 +2,7 @@
     name: str = "search",
     results: list[SearchResult] = [],
     search: str = "",
+    mode: Literal["select", "checks"] = "select"
 #}
 <ul class="list rounded-box absolute z-10 bg-white shadow-md">
     {% for result in results %}
@@ -9,7 +10,15 @@
             class="list-row hover:bg-accent cursor-pointer"
             hx-get="/search/{{ name }}/select?sqid={{ swim(result.result) }}"
             hx-trigger="click, keyup[key=='Enter']"
-            hx-target="closest .search-container"
+            {% if mode == "select" %}
+                hx-target="closest .search-container"
+            {% elif mode == "checks" %}
+                hx-target="previous .search-chip-container" hx-swap="beforeend" _="on click or keyup[key=='Enter'] get
+                the previous
+                <input /> then set its value to '' then it.focus() then get the closest
+                <ul />
+                then remove it"
+            {% endif %}
             tabindex="0"
         >
             {{ result.name }}
@@ -21,7 +30,15 @@
             class="list-row hover:bg-accent cursor-pointer"
             hx-get="/search/{{ name }}/new?selected_name={{ search }}"
             hx-trigger="click, keyup[key=='Enter']"
-            hx-target="closest .search-container"
+            {% if mode == "select" %}
+                hx-target="closest .search-container"
+            {% elif mode == "checks" %}
+                hx-target="previous .search-chip-container" hx-swap="beforeend" _="on click or keyup[key=='Enter'] get
+                the previous
+                <input /> then set its value to '' then it.focus() then get the closest
+                <ul />
+                then remove it"
+            {% endif %}
             tabindex="0"
         >
             Create new {{ name }} "{{ search }}"

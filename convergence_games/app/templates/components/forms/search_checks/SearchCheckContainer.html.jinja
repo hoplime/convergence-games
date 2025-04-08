@@ -6,13 +6,7 @@
         {# w-[clamp(4.5rem,30rem,100%)]  #}
         <div
             class="search-chip-container hidden flex-row flex-wrap justify-start gap-1 self-start has-[:not(.hidden)]:flex"
-        >
-            <forms.search_checks.SearchCheckChip name="CHIP 1" :input_name="name" value="1" />
-            <forms.search_checks.SearchCheckChip name="CHIP 2" :input_name="name" value="2" />
-            <forms.search_checks.SearchCheckChip name="CHIP fd af af a3" :input_name="name" value="3" />
-            <forms.search_checks.SearchCheckChip name="CHIP 4" :input_name="name" value="4" />
-            <forms.search_checks.SearchCheckChip name="CHIP 5" :input_name="name" value="5" />
-        </div>
+        ></div>
         <input type="text" placeholder="{{ name.capitalize() }}..." id="{{ name }}-search" name="{{ name }}-search" />
     </div>
     <div

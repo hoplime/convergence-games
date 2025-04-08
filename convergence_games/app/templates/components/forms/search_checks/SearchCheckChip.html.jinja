@@ -1,11 +1,11 @@
 {#def
-    name: str,
-    input_name: str = "search",
-    value: str = "0",
+    selected_name: str,
+    value: str = "",
+    name: str = "search",
 #}
 <div class="badge badge-outline pr-2">
-    <input type="checkbox" name="{{ input_name }}" value="{{ value }}" class="hidden" checked />
-    <h1>{{ name }}</h1>
+    <input type="checkbox" name="{{ name }}" value="{{ value }}" class="hidden" checked />
+    <h1>{{ selected_name }}</h1>
     {# <span class="text-red-500">X</span> #}
     <svg
         xmlns="http://www.w3.org/2000/svg"
