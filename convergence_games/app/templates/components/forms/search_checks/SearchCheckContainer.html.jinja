@@ -1,0 +1,59 @@
+{#def
+    name: str = "search",
+#}
+<div class="search-container">
+    <div class="input flex h-fit flex-col gap-0">
+        {# w-[clamp(4.5rem,30rem,100%)]  #}
+        <div class="search-chip-container mt-2 flex flex-row flex-wrap justify-start gap-1 self-start">
+            <div class="badge badge-outline">
+                <h1>CHIP 1</h1>
+                <span class="text-red">X</span>
+            </div>
+            <div class="badge badge-outline">
+                <h1>CHIP 2</h1>
+                <span class="text-red">X</span>
+            </div>
+            <div class="badge badge-outline">
+                <h1>CHIP 3f daw fa</h1>
+                <span class="text-red">X</span>
+            </div>
+            <div class="badge badge-outline">
+                <h1>CHIP 4</h1>
+                <span class="text-red">X</span>
+            </div>
+            <div class="badge badge-outline">
+                <h1>CHIP 4</h1>
+                <span class="text-red">X</span>
+            </div>
+            <div class="badge badge-outline">
+                <h1>CH4</h1>
+                <span class="text-red">X</span>
+            </div>
+            <div class="badge badge-outline">
+                <h1>CHIP 4</h1>
+                <span class="text-red">X</span>
+            </div>
+            <div class="badge badge-outline">
+                <h1>CHIP 4</h1>
+                <span class="text-red">X</span>
+            </div>
+            <div class="badge badge-outline">
+                <h1>CHIP 4</h1>
+                <span class="text-red">X</span>
+            </div>
+        </div>
+        <input
+            type="text"
+            class="m-2"
+            placeholder="{{ name.capitalize() }}..."
+            id="{{ name }}-search"
+            name="{{ name }}-search"
+        />
+    </div>
+    <div
+        hx-get="/search/{{ name }}/results"
+        hx-vals="js:{search: document.getElementById('{{ name }}-search').value}"
+        hx-trigger="keyup changed from:previous input#{{ name }}-search"
+        hx-swap="innerHTML"
+    ></div>
+</div>

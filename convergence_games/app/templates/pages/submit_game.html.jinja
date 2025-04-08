@@ -3,9 +3,6 @@
         <title>Submit Game - Convergence 2025</title>
         <div>
             <h1 class="text-xl font-bold">Submit Game</h1>
-            <span class="text-warning">
-                TODO: Inputs with warning background color need to be smart/fuzzy find multi selects
-            </span>
             <form>
                 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
                     <legend class="fieldset-legend">Game Information</legend>
@@ -27,13 +24,7 @@
                     <utilities.TipTap form_input_name="description" />
                     {# Genre #}
                     <label class="fieldset-label">Genres</label>
-                    {% for genre in genres %}
-                        {# TODO: Must select at least one genre #}
-                        <label>
-                            <input type="checkbox" name="genre" class="checkbox" value="{{ swim(genre) }}" />
-                            <span>{{ genre.name }}</span>
-                        </label>
-                    {% endfor %}
+                    <forms.search_checks.SearchCheckContainer name="genre"></forms.search_checks.SearchCheckContainer>
                     {# Tone #}
                     <label class="fieldset-label">Tone</label>
                     <div class="flex flex-col">
