@@ -38,17 +38,9 @@
                     </div>
                     {# Content warnings #}
                     <label class="fieldset-label">Content Warnings</label>
-                    {% for content_warning in content_warnings %}
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="content_warning"
-                                class="checkbox"
-                                value="{{ swim(content_warning) }}"
-                            />
-                            <span>{{ content_warning.name }}</span>
-                        </label>
-                    {% endfor %}
+                    <forms.search_checks.SearchCheckContainer
+                        name="content_warning"
+                    ></forms.search_checks.SearchCheckContainer>
                     {# Crunch/weight #}
                     <label class="fieldset-label">Crunch</label>
                     <div class="flex flex-col">

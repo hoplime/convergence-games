@@ -379,3 +379,49 @@ class GamesController(Controller):
                 "value": f"new:{selected_name}",
             },
         )
+
+    @get(path="/search/content_warning/results")
+    async def get_content_warning_search_results(
+        self, request: Request, transaction: AsyncSession, search: str
+    ) -> Template:
+        extra_filters = ContentWarning.submission_status == SubmissionStatus.APPROVED
+        if request.user:
+            extra_filters = extra_filters | (ContentWarning.created_by == request.user.id)
+        results = await search_with_fuzzy_match(transaction, ContentWarning, search, extra_filters)
+
+        return HTMXBlockTemplate(
+            template_name="components/forms/search/SearchResultsList.html.jinja",
+            context={
+                "name": "content_warning",
+                "results": results,
+                "search": search,
+                "mode": "checks",
+            },
+        )
+
+    @get(path="/search/content_warning/select")
+    async def get_content_warning_search_selected(self, transaction: AsyncSession, sqid: Sqid) -> Template:
+        content_warning = await transaction.get(ContentWarning, sink(sqid))
+
+        if not content_warning:
+            raise NotFoundException(detail="Content warning not found")
+
+        return HTMXBlockTemplate(
+            template_name="components/forms/search_checks/SearchCheckChip.html.jinja",
+            context={
+                "name": "content_warning",
+                "selected_name": content_warning.name,
+                "value": sqid,
+            },
+        )
+
+    @get(path="/search/content_warning/new")
+    async def get_content_warning_search_new(self, selected_name: str) -> Template:
+        return HTMXBlockTemplate(
+            template_name="components/forms/search_checks/SearchCheckChip.html.jinja",
+            context={
+                "name": "content_warning",
+                "selected_name": selected_name,
+                "value": f"new:{selected_name}",
+            },
+        )

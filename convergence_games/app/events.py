@@ -1,6 +1,5 @@
 import datetime as dt
 import random
-import zoneinfo
 
 import httpx
 from litestar.events import listener
