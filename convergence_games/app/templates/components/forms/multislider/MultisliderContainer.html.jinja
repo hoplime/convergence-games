@@ -6,13 +6,14 @@
 #}
 <div>
     <div
-        class="group grid grid-cols-[min-content_min-content_min-content] gap-2"
+        class="{{ 'grid-cols-[min-content_min-content_min-content]' if display_titles else 'grid-cols-[min-content_min-content]' }} group grid gap-2"
         data-min-value="{{ min_value }}"
         data-max-value="{{ max_value }}"
         data-allow-more="{{ allow_more }}"
+        data-display-titles="{{ display_titles }}"
     >
         {{ content }}
-        <div class="col-start-2">
+        <div class="{{ 'col-start-2' if display_titles else 'col-start-1' }}">
             <div class="mt-2 flex justify-between px-2.5 text-xs">
                 {% for i in range(min_value, max_value + 1) %}
                     <span>|</span>
