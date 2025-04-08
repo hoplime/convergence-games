@@ -22,7 +22,7 @@ class GameTone(enum.StrEnum):
     DARK = "Dark"
 
 
-class GameStatus(enum.StrEnum):
+class SubmissionStatus(enum.StrEnum):
     DRAFT = "Draft"
     SUBMITTED = "Submitted"
     APPROVED = "Approved"

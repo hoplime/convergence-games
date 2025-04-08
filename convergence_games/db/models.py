@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import zoneinfo
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 from advanced_alchemy.base import BigIntAuditBase
@@ -23,6 +22,7 @@ from convergence_games.db.enums import (
     GameTone,
     LoginProvider,
     Role,
+    SubmissionStatus,
 )
 
 
@@ -86,6 +86,9 @@ class Event(Base):
 class System(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
     description: Mapped[str] = mapped_column(default="")
+    submission_status: Mapped[SubmissionStatus] = mapped_column(
+        Enum(SubmissionStatus), default=SubmissionStatus.DRAFT, index=True
+    )
 
     # Relationships
     games: Mapped[list[Game]] = relationship(back_populates="system", lazy="noload")
@@ -105,6 +108,10 @@ class SystemAlias(Base):
 class Genre(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
     description: Mapped[str] = mapped_column(default="")
+    suggested: Mapped[bool] = mapped_column(default=False)
+    submission_status: Mapped[SubmissionStatus] = mapped_column(
+        Enum(SubmissionStatus), default=SubmissionStatus.DRAFT, index=True
+    )
 
     # Relationships
     games: Mapped[list[Game]] = relationship(
@@ -121,6 +128,10 @@ class Genre(Base):
 class ContentWarning(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
     description: Mapped[str] = mapped_column(default="")
+    suggested: Mapped[bool] = mapped_column(default=False)
+    submission_status: Mapped[SubmissionStatus] = mapped_column(
+        Enum(SubmissionStatus), default=SubmissionStatus.DRAFT, index=True
+    )
 
     # Relationships
     games: Mapped[list[Game]] = relationship(
@@ -157,6 +168,9 @@ class Game(Base):
 
     # Bonus
     ksps: Mapped[GameKSP] = mapped_column(Integer, default=GameKSP.NONE)
+    submission_status: Mapped[SubmissionStatus] = mapped_column(
+        Enum(SubmissionStatus), default=SubmissionStatus.DRAFT, index=True
+    )
 
     # Foreign Keys
     system_id: Mapped[int] = mapped_column(ForeignKey("system.id"), index=True)
