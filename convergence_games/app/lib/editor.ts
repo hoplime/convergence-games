@@ -42,7 +42,7 @@ const PRESET_COLORS = ["#000000", "#ff0000", "#00ff00", "#0000ff"];
 // TipTap Editor setup
 const createColorPicker = (parent_element: Element, editor: Editor) => {
     let color_picker_container = document.createElement("div");
-    color_picker_container.className = "rounded-md bg-gray-200 hover:bg-gray-300 px-2 py-1";
+    color_picker_container.className = "rounded-md bg-base-200 hover:bg-base-300 px-2 py-1";
 
     // Label
     let color_picker_label = document.createElement("label");
@@ -77,7 +77,7 @@ const createColorPicker = (parent_element: Element, editor: Editor) => {
 
 const createEditorButton = (parent_element: Element, label: string, fn: () => void) => {
     let button = document.createElement("button");
-    button.className = "rounded-md bg-gray-200 hover:bg-gray-300 px-2 py-1 [&>img]:w-6 [&>img]:h-6";
+    button.className = "rounded-md bg-base-200 hover:bg-base-300 px-2 py-1 [&>img]:w-6 [&>img]:h-6";
     button.innerHTML = label;
     button.onclick = fn;
     button.type = "button";
