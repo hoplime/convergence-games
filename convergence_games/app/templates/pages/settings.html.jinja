@@ -49,7 +49,11 @@
                             <button
                                 data-theme="{{ theme_name }}"
                                 class="p-4"
-                                _="on click set <html/>'s @data-theme to me's @data-theme"
+                                _="on click
+                                set localStorage.theme to my @data-theme
+                                then
+                                set <html/>'s @data-theme to my @data-theme
+                                "
                             >
                                 <div class="bg-base-100 grid shrink-0 grid-cols-2 gap-0.5 rounded-md p-1 shadow-sm">
                                     <div class="bg-accent size-1 rounded-full"></div>
