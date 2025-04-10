@@ -27,16 +27,21 @@
                 {% if request.user %}
                     <li class="menu-title">{{ request.user.first_name }}</li>
                     <li>
-                        <a hx-get="/profile" hx-target="#content" {{ blur_on_click }}>Profile</a>
+                        <a hx-get="/profile" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Profile</a>
                     </li>
-                    <li><a hx-get="/settings" hx-target="#content" {{ blur_on_click }}>Settings</a></li>
+                    <li>
+                        <a hx-get="/settings" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Settings</a>
+                    </li>
                     <li></li>
-                    {# <li><a hx-get="/games" hx-target="#content">My Games</a></li> #}
-                    <li><a hx-post="/oauth2/logout" hx-target="#content" {{ blur_on_click }}>Logout</a></li>
+                    <li>
+                        <a hx-post="/oauth2/logout" hx-target="#content" hx-push-url="true" {{ blur_on_click }}
+                            >Logout</a
+                        >
+                    </li>
                 {% else %}
                     <li class="menu-title">Not Logged In</li>
                     <li>
-                        <a hx-get="/profile" hx-target="#content" {{ blur_on_click }}> Login </a>
+                        <a hx-get="/profile" hx-target="#content" hx-push-url="true" {{ blur_on_click }}> Login </a>
                     </li>
                 {% endif %}
             </ul>

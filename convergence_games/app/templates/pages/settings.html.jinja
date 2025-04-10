@@ -1,0 +1,68 @@
+<Page>
+    {% block content %}
+        <title>Settings - Convergence 2025</title>
+        <div>Settings</div>
+        <div>
+            <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                <legend class="fieldset-legend">Theme</legend>
+                <ul class="menu flex w-full flex-row gap-4">
+                    {%
+                        for theme_name in [
+                            "light",
+                            "dark",
+                            "cupcake",
+                            "bumblebee",
+                            "emerald",
+                            "corporate",
+                            "synthwave",
+                            "retro",
+                            "cyberpunk",
+                            "valentine",
+                            "halloween",
+                            "garden",
+                            "forest",
+                            "aqua",
+                            "lofi",
+                            "pastel",
+                            "fantasy",
+                            "wireframe",
+                            "black",
+                            "luxury",
+                            "dracula",
+                            "cmyk",
+                            "autumn",
+                            "business",
+                            "acid",
+                            "lemonade",
+                            "night",
+                            "coffee",
+                            "winter",
+                            "dim",
+                            "nord",
+                            "sunset",
+                            "caramellatte"
+                            "abyss",
+                            "silk",
+                        ]
+                    %}
+                        <li class="w-full">
+                            <button
+                                data-theme="{{ theme_name }}"
+                                class="p-4"
+                                _="on click set <html/>'s @data-theme to me's @data-theme"
+                            >
+                                <div class="bg-base-100 grid shrink-0 grid-cols-2 gap-0.5 rounded-md p-1 shadow-sm">
+                                    <div class="bg-accent size-1 rounded-full"></div>
+                                    <div class="bg-base-content size-1 rounded-full"></div>
+                                    <div class="bg-primary size-1 rounded-full"></div>
+                                    <div class="bg-secondary size-1 rounded-full"></div>
+                                </div>
+                                <div>{{ theme_name }}</div>
+                            </button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </fieldset>
+        </div>
+    {% endblock %}
+</Page>
