@@ -21,7 +21,7 @@
     "@tiptap/extension-underline": "^2.11.2",
     "@tiptap/pm": "^2.11.2",
     "@tiptap/starter-kit": "^2.11.2",
-    "daisyui": "^5.0.0",
+    "daisyui": "^5.0.18",
     "tailwindcss": "^4.0.0",
     "tiptap-extension-resize-image": "^1.2.1"
   },
