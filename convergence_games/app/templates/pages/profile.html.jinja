@@ -30,30 +30,38 @@
                 <utilities.TipTap form_input_name="description" :initial_content_json="request.user.description" />
             </fieldset>
             <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
-                <legend class="fieldset-legend">Private Information and Settings</legend>
+                <legend class="fieldset-legend">Private Information</legend>
                 {# Over 18 #}
                 <label class="fieldset-label">
                     <input type="checkbox" class="checkbox" name="over_18" {{ "checked" if request.user.over_18 }} />
                     <span>I am 18+</span>
                 </label>
             </fieldset>
-            <div _="on change from #profile-form or keyup from #profile-form remove .hidden from me" class="hidden">
+            <div
+                _="on change from #profile-form or keyup from #profile-form remove .hidden from me"
+                class="hidden py-4"
+            >
                 <button class="btn btn-neutral" type="button" hx-get="/profile" hx-target="#content">Discard</button>
                 <button class="btn btn-primary" type="button" hx-post="/profile" hx-target="#content">Save</button>
             </div>
         </form>
-        <div class="grid max-w-96 gap-4">
-            {% for key in ['email', 'discord', 'google', 'facebook'] %}
-                {% if key in user_logins %}
-                    <button class="btn btn-ghost pointer-events-none">
-                        <img src="static/icons/logos/{{ key }}.svg" class="h-8" alt="{{ key.capitalize() }} Logo" />
-                        <span>{{ key.capitalize() }} - {{ user_logins[key].provider_email }}</span>
-                    </button>
-                {% else %}
-                    {{ catalog.irender("forms.sign_in_buttons." ~ key.capitalize(), link=true) }}
-                {% endif %}
-            {% endfor %}
+        <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+            <legend class="fieldset-legend">Accounts</legend>
+            <div class="grid max-w-96 gap-4">
+                {% for key in ['email', 'discord', 'google', 'facebook'] %}
+                    {% if key in user_logins %}
+                        <button class="btn btn-ghost pointer-events-none">
+                            <img src="static/icons/logos/{{ key }}.svg" class="h-8" alt="{{ key.capitalize() }} Logo" />
+                            <span>{{ key.capitalize() }} - {{ user_logins[key].provider_email }}</span>
+                        </button>
+                    {% else %}
+                        {{ catalog.irender("forms.sign_in_buttons." ~ key.capitalize(), link=true) }}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </fieldset>
+        <div class="py-4">
+            <button class="btn btn-error" hx-post="/oauth2/logout" hx-target="#content">Logout</button>
         </div>
-        <button class="btn btn-error" hx-post="/oauth2/logout" hx-target="#content">Logout</button>
     {% endblock %}
 </Page>
