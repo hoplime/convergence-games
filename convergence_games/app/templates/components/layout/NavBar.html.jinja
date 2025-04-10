@@ -1,3 +1,4 @@
+{% set blur_on_click = '_="on click js document.activeElement.blur()"' %}
 <nav class="navbar">
     <div class="flex-1">
         <a class="btn btn-ghost text-xl normal-case" href="/">Convergence</a>
@@ -24,14 +25,19 @@
             </div>
             <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
                 {% if request.user %}
+                    <li class="menu-title">{{ request.user.first_name }}</li>
                     <li>
-                        <a class="justify-between" hx-get="/profile" hx-target="#content">Profile</a>
+                        <a hx-get="/profile" hx-target="#content" {{ blur_on_click }}>Profile</a>
                     </li>
-                    <li><a hx-get="/settings">Settings</a></li>
+                    <li><a hx-get="/settings" hx-target="#content" {{ blur_on_click }}>Settings</a></li>
+                    <li></li>
                     {# <li><a hx-get="/games" hx-target="#content">My Games</a></li> #}
-                    <li><a hx-post="/oauth2/logout" hx-target="#content">Logout</a></li>
+                    <li><a hx-post="/oauth2/logout" hx-target="#content" {{ blur_on_click }}>Logout</a></li>
                 {% else %}
-                    <li><a hx-get="profile" hx-target="#content">Login</a></li>
+                    <li class="menu-title">Not Logged In</li>
+                    <li>
+                        <a hx-get="/profile" hx-target="#content" {{ blur_on_click }}> Login </a>
+                    </li>
                 {% endif %}
             </ul>
         </div>
