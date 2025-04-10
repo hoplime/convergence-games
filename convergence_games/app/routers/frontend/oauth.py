@@ -192,12 +192,10 @@ class OAuthController(Controller):
         )
         user_login = (await transaction.execute(stmt)).scalar_one_or_none()
 
-        # TODO: Handle duplicate emails from different providers
-
         if user_login is None:
             user = User(
-                first_name=profile_info.user_first_name,
-                last_name=profile_info.user_last_name,
+                first_name=profile_info.user_first_name or "",
+                last_name=profile_info.user_last_name or "",
                 logins=[
                     UserLogin(
                         provider=provider_name,
