@@ -9,7 +9,7 @@
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
         {# Libraries #}
-        <script src="/static/js/htmx.min.js"></script>
+        <script src="/static/js/htmx.js"></script>
         <script src="/static/js/preload.js"></script>
         <script src="/static/js/_hyperscript.min.js"></script>
         <script src="/static/js/lib.js"></script>
@@ -34,22 +34,24 @@
         </div>
     </body>
     <script>
-        // Set the theme based on localStorage
-        const theme = localStorage.getItem("theme");
-        if (theme !== null) {
-            document.documentElement.setAttribute("data-theme", theme);
-        } else {
-            // Set the theme based on system preference
-            const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-            if (prefersDarkScheme.matches) {
-                document.documentElement.setAttribute("data-theme", "dark");
-            }
+        if (typeof theme === "undefined") {
+            // Set the theme based on localStorage
+            const theme = localStorage.getItem("theme");
+            if (theme !== null) {
+                document.documentElement.setAttribute("data-theme", theme);
+            } else {
+                // Set the theme based on system preference
+                const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+                if (prefersDarkScheme.matches) {
+                    document.documentElement.setAttribute("data-theme", "dark");
+                }
 
-            // Listen for changes in the system preference
-            prefersDarkScheme.addEventListener("change", (e) => {
-                const newColorScheme = e.matches ? "dark" : "light";
-                document.documentElement.setAttribute("data-theme", newColorScheme);
-            });
+                // Listen for changes in the system preference
+                prefersDarkScheme.addEventListener("change", (e) => {
+                    const newColorScheme = e.matches ? "dark" : "light";
+                    document.documentElement.setAttribute("data-theme", newColorScheme);
+                });
+            }
         }
     </script>
 </html>

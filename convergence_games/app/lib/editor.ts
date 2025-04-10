@@ -197,12 +197,20 @@ const createEditor = (
     initial_content_json: string = "",
     debug: boolean = true,
 ) => {
-    // If the container element is not empty, return
+    const form_input_id = container_element.id + "_input";
+
     if (container_element.innerHTML !== "") {
-        return;
+        const current_editor_input = document.getElementById(form_input_id);
+        if (current_editor_input !== null) {
+            const current_editor_value = (current_editor_input as HTMLInputElement).value;
+            initial_content_json = current_editor_value;
+        }
+
+        container_element.innerHTML = "";
     }
+
     // Create the editor and add it to the container
-    container_element.className = `${container_element.className} border-1 p-1 rounded-md`;
+    container_element.className = `text-[1rem] border-1 p-1 rounded-md`;
     let controls_element = document.createElement("div");
     controls_element.className = "flex flex-row gap-x-2 p-1";
     let editor_element = document.createElement("div");
@@ -219,6 +227,7 @@ const createEditor = (
 
     // Create the form input
     let form_input_element = document.createElement("input");
+    form_input_element.id = form_input_id;
     form_input_element.type = "hidden";
     form_input_element.name = form_input_name;
     form_input_element.setAttribute("value", JSON.stringify(initial_content));
