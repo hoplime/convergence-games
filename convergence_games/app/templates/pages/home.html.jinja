@@ -1,6 +1,9 @@
 <Page>
     {% block content %}
         <title>Convergence 2025</title>
-        <p>Placeholder content</p>
+        {% set submit_game_url = "/submit_game/" ~ swim("Event", 1) %}
+        <button class="btn btn-xl btn-primary" hx-get="{{ submit_game_url }}" hx-target="#content" hx-push-url="true">
+            Submit Game to Convergence 2025
+        </button>
     {% endblock %}
 </Page>
