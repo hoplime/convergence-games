@@ -197,6 +197,10 @@ const createEditor = (
     initial_content_json: string = "",
     debug: boolean = true,
 ) => {
+    // If the container element is not empty, return
+    if (container_element.innerHTML !== "") {
+        return;
+    }
     // Create the editor and add it to the container
     container_element.className = `${container_element.className} border-1 p-1 rounded-md`;
     let controls_element = document.createElement("div");
