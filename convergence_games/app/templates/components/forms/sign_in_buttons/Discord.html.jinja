@@ -1,7 +1,8 @@
 {#def
-    link: bool = False
+    linking_account_sqid: str | None = None,
 #}
-<a href="/oauth2/discord/login" class="btn btn-ghost">
+{% set href="/oauth2/discord/login?linking_account_sqid=" ~ linking_account_sqid if linking_account_sqid is not none else "/oauth2/discord/login" %}
+<a href="{{ href }}" class="btn btn-ghost">
     <img src="static/icons/logos/discord.svg" class="h-8" alt="Discord Logo" />
-    <span>{{ 'Link' if link else 'Sign in with' }} Discord</span>
+    <span>{{ 'Link' if linking_account_sqid is not none else 'Sign in with' }} Discord</span>
 </a>

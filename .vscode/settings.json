@@ -68,7 +68,6 @@
             {
                 "scope": [
                     "meta.tag.other.Page.html invalid.illegal.unrecognized-tag.html",
-                    "meta.tag.other.forms.email_sign_in.SubmitEmail.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.forms.email_sign_in.VerifyCode.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.forms.multislider.Multislider.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.forms.multislider.MultisliderContainer.html invalid.illegal.unrecognized-tag.html",

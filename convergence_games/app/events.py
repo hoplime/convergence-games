@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.app.app_config.template_config import jinja_env
 from convergence_games.db.models import UserEmailVerificationCode
+from convergence_games.db.ocean import Sqid
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.time_utils import nice_time_format
 
@@ -14,7 +15,9 @@ EVENT_EMAIL_SIGN_IN = "event_email_sign_in"
 
 
 @listener(EVENT_EMAIL_SIGN_IN)
-async def event_email_sign_in(email: str, transaction: AsyncSession, tz: dt.tzinfo | None = None, **kwargs) -> None:
+async def event_email_sign_in(
+    email: str, linking_account_sqid: Sqid | None, transaction: AsyncSession, tz: dt.tzinfo | None = None, **kwargs
+) -> None:
     code = "".join([random.choice("0123456789") for _ in range(6)])
 
     user_email_verification_code = UserEmailVerificationCode(
@@ -28,6 +31,8 @@ async def event_email_sign_in(email: str, transaction: AsyncSession, tz: dt.tzin
     print(f"event_email_sign_in, email: {email}, new_code: {code}")
     magic_link_code = UserEmailVerificationCode.generate_magic_link_code(code, email)
     magic_link_url = f"{SETTINGS.BASE_DOMAIN}/email_auth/magic_link?code={magic_link_code}"
+    if linking_account_sqid is not None:
+        magic_link_url += f"&linking_account_sqid={linking_account_sqid}"
 
     formatted_expires_at = nice_time_format(user_email_verification_code.expires_at, tz=tz)
     html_content = jinja_env.get_template("emails/sign_in_code.html.jinja").render(

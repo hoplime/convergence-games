@@ -11,6 +11,7 @@ from convergence_games.app.events import EVENT_EMAIL_SIGN_IN
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.models import UserLogin
+from convergence_games.db.ocean import Sqid
 
 
 @dataclass
@@ -50,8 +51,14 @@ async def render_profile(
 
 class ProfileController(Controller):
     @get(path="/email_sign_in")
-    async def get_email_sign_in(self, request: Request) -> Template:
-        return HTMXBlockTemplate(template_name="pages/email_sign_in.html.jinja", block_name=request.htmx.target)
+    async def get_email_sign_in(self, request: Request, linking_account_sqid: Sqid | None = None) -> Template:
+        return HTMXBlockTemplate(
+            template_name="pages/email_sign_in.html.jinja",
+            block_name=request.htmx.target,
+            context={
+                "linking_account_sqid": linking_account_sqid,
+            },
+        )
 
     @post(path="/email_sign_in")
     async def post_email_sign_in(
@@ -59,10 +66,20 @@ class ProfileController(Controller):
         request: Request,
         data: Annotated[PostEmailSignInForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
         transaction: AsyncSession,
+        linking_account_sqid: Sqid | None = None,
     ) -> Template:
-        request.app.emit(EVENT_EMAIL_SIGN_IN, email=data.email, transaction=transaction)
+        request.app.emit(
+            EVENT_EMAIL_SIGN_IN,
+            email=data.email,
+            linking_account_sqid=linking_account_sqid,
+            transaction=transaction,
+        )
         return HTMXBlockTemplate(
-            template_name="components/forms/email_sign_in/VerifyCode.html.jinja", context={"email": data.email}
+            template_name="components/forms/email_sign_in/VerifyCode.html.jinja",
+            context={
+                "email": data.email,
+                "linking_account_sqid": linking_account_sqid,
+            },
         )
 
     @get(path="/profile")

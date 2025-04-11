@@ -55,7 +55,7 @@
                             <span>{{ key.capitalize() }} - {{ user_logins[key].provider_email }}</span>
                         </button>
                     {% else %}
-                        {{ catalog.irender("forms.sign_in_buttons." ~ key.capitalize(), link=true) }}
+                        {{ catalog.irender("forms.sign_in_buttons." ~ key.capitalize(), linking_account_sqid=swim(request.user)) }}
                     {% endif %}
                 {% endfor %}
             </div>

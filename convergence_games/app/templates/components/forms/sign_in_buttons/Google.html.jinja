@@ -1,7 +1,8 @@
 {#def
-    link: bool = False
+    linking_account_sqid: str | None = None,
 #}
-<a href="/oauth2/google/login" class="btn btn-ghost">
+{% set href="/oauth2/google/login?linking_account_sqid=" ~ linking_account_sqid if linking_account_sqid is not none else "/oauth2/google/login" %}
+<a href="{{ href }}" class="btn btn-ghost">
     <img src="static/icons/logos/google.svg" class="h-8" alt="Google Logo" />
-    <span>{{ 'Link' if link else 'Sign in with' }} Google</span>
+    <span>{{ 'Link' if linking_account_sqid is not none else 'Sign in with' }} Google</span>
 </a>

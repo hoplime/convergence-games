@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import base64
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
 import httpx
 import jwt
@@ -13,14 +12,15 @@ from httpx_oauth.clients.google import GoogleOAuth2
 from httpx_oauth.oauth2 import BaseOAuth2, OAuth2Token
 from litestar import Controller, get, post
 from litestar.exceptions import HTTPException
+from litestar.params import Parameter
 from litestar.response import Redirect
-from sqlalchemy import String, select
-from sqlalchemy import cast as sql_cast
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
-from convergence_games.db.models import LoginProvider, User, UserLogin
+from convergence_games.app.request_type import Request
+from convergence_games.app.services.common_auth import ProfileInfo, authorize_flow
+from convergence_games.db.models import LoginProvider
+from convergence_games.db.ocean import Sqid, sink
 from convergence_games.settings import SETTINGS
 
 
@@ -63,15 +63,6 @@ class OAuthProvider(ABC):
 
     @abstractmethod
     async def get_profile_info(self, oauth2_token: OAuth2Token) -> ProfileInfo: ...
-
-
-@dataclass
-class ProfileInfo:
-    user_first_name: str | None = None
-    user_last_name: str | None = None
-    user_id: str | None = None
-    user_email: str | None = None
-    user_profile_picture: str | None = None
 
 
 class GoogleOAuthProvider(OAuthProvider):
@@ -151,8 +142,7 @@ def get_oauth_provider(provider_name: LoginProvider) -> OAuthProvider:
     return provider_client
 
 
-def build_redirect_url(provider_name: LoginProvider) -> str:
-    # TODO: If BASE_REDIRECT_URI is None, use the current request host
+def build_redirect_uri(provider_name: LoginProvider) -> str:
     return f"{SETTINGS.BASE_REDIRECT_URI}/oauth2/{provider_name}/authorize"
 
 
@@ -167,50 +157,42 @@ class OAuthController(Controller):
         return response
 
     @get(path="/{provider_name:str}/login")
-    async def get_provider_auth_login(self, provider_name: LoginProvider) -> Redirect:
-        provider = get_oauth_provider(provider_name)
-        redirect_uri = build_redirect_url(provider_name)
+    async def get_provider_auth_login(
+        self,
+        provider_name: LoginProvider,
+        request: Request,
+        linking_account_sqid: Sqid | None = None,
+    ) -> Redirect:
+        linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
+        if linking_account_id is not None and (request.user is None or linking_account_id != request.user.id):
+            raise HTTPException(detail="Invalid linking account ID", status_code=403)
 
-        auth_url = await provider.client.get_authorization_url(redirect_uri=redirect_uri)
+        provider = get_oauth_provider(provider_name)
+        redirect_uri = build_redirect_uri(provider_name)
+
+        auth_url = await provider.client.get_authorization_url(redirect_uri=redirect_uri, state=linking_account_sqid)
         return Redirect(path=auth_url)
 
     @get(path="/{provider_name:str}/authorize")
     async def get_provider_auth_authorize(
-        self, code: str, provider_name: LoginProvider, transaction: AsyncSession
+        self,
+        code: str,
+        provider_name: LoginProvider,
+        transaction: AsyncSession,
+        state_query: Annotated[str | None, Parameter(query="state")] = None,
     ) -> Redirect:
+        # TODO: Better state handling with a signing key - not just using it to encode the SQID
+        linking_account_sqid = cast(Sqid, state_query) if state_query is not None else None
+        linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
         provider = get_oauth_provider(provider_name)
-        redirect_uri = build_redirect_url(provider_name)
+        redirect_uri = build_redirect_uri(provider_name)
 
         oauth2_token = await provider.client.get_access_token(code=code, redirect_uri=redirect_uri)
         profile_info = await provider.get_profile_info(oauth2_token)
 
-        stmt = (
-            select(UserLogin)
-            .where(sql_cast(UserLogin.provider, String) == provider_name.name)
-            .where(UserLogin.provider_user_id == profile_info.user_id)
-            .options(selectinload(UserLogin.user))
+        return await authorize_flow(
+            transaction=transaction,
+            provider_name=provider_name,
+            profile_info=profile_info,
+            linking_account_id=linking_account_id,
         )
-        user_login = (await transaction.execute(stmt)).scalar_one_or_none()
-
-        if user_login is None:
-            user = User(
-                first_name=profile_info.user_first_name or "",
-                last_name=profile_info.user_last_name or "",
-                logins=[
-                    UserLogin(
-                        provider=provider_name,
-                        provider_user_id=profile_info.user_id,
-                        provider_email=profile_info.user_email,
-                    ),
-                ],
-            )
-            transaction.add(user)
-        else:
-            user = user_login.user
-
-        await transaction.flush()
-        user_id = user.id
-
-        login = jwt_cookie_auth.login(str(user_id))
-
-        return Redirect(path="/profile", cookies=login.cookies)

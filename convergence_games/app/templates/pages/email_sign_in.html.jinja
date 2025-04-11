@@ -1,6 +1,12 @@
 <Page>
     {% block content %}
         <title>Sign In with Email - Convergence 2025</title>
-        <forms.email_sign_in.SubmitEmail />
+        <form>
+            {% set hx_post = "/email_sign_in?linking_account_sqid=" ~ linking_account_sqid if linking_account_sqid is not none else "/email_sign_in" %}
+            <input type="text" class="form-input" placeholder="Email" name="email" />
+            <button class="btn btn-primary" hx-post="{{ hx_post }}" hx-target="closest form" hx-swap="outerHTML">
+                Submit
+            </button>
+        </form>
     {% endblock %}
 </Page>
