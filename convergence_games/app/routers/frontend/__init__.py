@@ -1,14 +1,30 @@
+from typing import cast
+
+from litestar.response import Redirect
 from litestar.router import Router
+from litestar.types.callable_types import BeforeRequestHookHandler
+
+from convergence_games.app.request_type import Request
 
 from .editor_test import EditorTestController
 from .email_auth import EmailAuthController
-from .favicon import favicon_router
 from .games import GamesController
 from .home import HomeController
 from .oauth import OAuthController
 from .profile import ProfileController
 from .settings import SettingsController
-from .static import static_files_router
+
+
+async def before_request_handler(request: Request) -> Redirect | None:
+    # If we're logged in BUT hasn't set up their profile yet, redirect to the profile setup page
+    if (
+        request.method == "GET"
+        and request.scope["path"] != "/profile"
+        and request.user
+        and not request.user.is_profile_setup
+    ):
+        return Redirect(path="/profile")
+
 
 router = Router(
     path="/",
@@ -18,12 +34,11 @@ router = Router(
     route_handlers=[
         EditorTestController,
         EmailAuthController,
-        favicon_router,
         GamesController,
         HomeController,
         OAuthController,
         ProfileController,
         SettingsController,
-        static_files_router,
     ],
+    before_request=cast(BeforeRequestHookHandler, before_request_handler),
 )

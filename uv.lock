@@ -181,7 +181,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.5" },
     { name = "jinja2-fragments", specifier = ">=1.7.0" },
     { name = "jinjax", specifier = ">=0.48" },
-    { name = "litestar", extras = ["brotli", "jinja", "jwt", "sqlalchemy"], specifier = ">=2.14.0" },
+    { name = "litestar", extras = ["brotli", "jinja", "jwt", "sqlalchemy"], specifier = ">=2.15.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.10.5" },
     { name = "pydantic-settings", specifier = ">=2.7.1" },
@@ -380,7 +380,7 @@ wheels = [
 
 [[package]]
 name = "litestar"
-version = "2.14.0"
+version = "2.15.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -396,9 +396,9 @@ dependencies = [
     { name = "rich-click" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d7/8f/e91ea2b8518bf909c51c9b286173feebe3c9b03c389854b82345c92e1c70/litestar-2.14.0.tar.gz", hash = "sha256:ac154e46fb74ec4bbce7660f6f437adb7d413ea9bad52cd7954dc1d25e243716", size = 394285 }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/c9/d3a431379383cb479d7122017083b9858fe92c6d3333b9d278ed7d559865/litestar-2.15.2.tar.gz", hash = "sha256:de3320e7e412bf09f420b1703cbf04295f1a5377230dad0484d7da8c7ddf5a37", size = 397217 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/e7/c5b5ccb7a7d61733320a3c228faed338542e667a547d9f0cf3d5512b0c78/litestar-2.14.0-py3-none-any.whl", hash = "sha256:5602065e263e453ee742aafe38681ba4aa9f5e3df21326cfd2082d1a766ca4fb", size = 567643 },
+    { url = "https://files.pythonhosted.org/packages/f4/db/4ddf71ddb51c70ef4f91bb5c59a84436cecfcfed0e5733f9b31b4b360dbc/litestar-2.15.2-py3-none-any.whl", hash = "sha256:41e7670d67bac70b466008a74eeb2aa63f4f71c09ffade4f603fc00d2bbc771f", size = 571057 },
 ]
 
 [package.optional-dependencies]
