@@ -37,6 +37,7 @@ async def authorize_flow(
     ).scalar_one_or_none()
     # TODO: If linking_account_id is not None, but there is a UserLogin for this provider under a different provider user...
     # Maybe prevent that from happening in the first place by disallowing starting the linking process if there is already a login for this provider and this user?
+    # Currently the front end doesn't allow this on a single tab but it's easy to mess up
 
     if user_login is None:
         # This account hasn't been used to login before

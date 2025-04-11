@@ -23,7 +23,7 @@ class PostEmailSignInForm:
 class PostProfileEditForm:
     first_name: str
     last_name: str
-    description: str
+    description: str | None = None
     over_18: Literal["on"] | None = None
 
     @property
@@ -37,6 +37,9 @@ async def render_profile(
 ) -> Template:
     if request.user is None:
         return HTMXBlockTemplate(template_name="pages/register.html.jinja", block_name=request.htmx.target)
+
+    if not request.user.is_profile_setup:
+        return HTMXBlockTemplate(template_name="pages/more_info.html.jinja", block_name=request.htmx.target)
 
     user_logins: Sequence[UserLogin] = (
         (await transaction.execute(select(UserLogin).where(UserLogin.user_id == request.user.id))).scalars().all()
@@ -99,7 +102,8 @@ class ProfileController(Controller):
         user = request.user
         user.first_name = data.first_name
         user.last_name = data.last_name
-        user.description = data.description
+        if data.description is not None:
+            user.description = data.description
         user.over_18 = data.is_over_18
         transaction.add(user)
 

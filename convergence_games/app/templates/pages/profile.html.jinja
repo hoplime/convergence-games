@@ -2,7 +2,7 @@
     {% block content %}
         <title>Profile - Convergence 2025</title>
         <div>Profile for {{ request.user.first_name }} {{ request.user.last_name }}</div>
-        <form id="profile-form">
+        <form id="profile-form" hx-post="/profile" hx-target="#content">
             <button type="submit" disabled class="hidden" aria-hidden="true"></button>
             <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
                 <legend class="fieldset-legend">Public Information</legend>
@@ -42,7 +42,7 @@
                 class="hidden py-4"
             >
                 <button class="btn btn-neutral" type="button" hx-get="/profile" hx-target="#content">Discard</button>
-                <button class="btn btn-primary" type="button" hx-post="/profile" hx-target="#content">Save</button>
+                <button class="btn btn-primary" type="submit">Save</button>
             </div>
         </form>
         <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">

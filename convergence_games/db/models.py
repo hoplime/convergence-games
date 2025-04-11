@@ -425,8 +425,8 @@ class Session(Base):
 
 # User Information Models
 class User(Base):
-    first_name: Mapped[str] = mapped_column(index=True)
-    last_name: Mapped[str] = mapped_column(index=True)
+    first_name: Mapped[str] = mapped_column(index=True, default="")
+    last_name: Mapped[str] = mapped_column(index=True, default="")
     description: Mapped[str] = mapped_column(default="")
     over_18: Mapped[bool] = mapped_column(default=False)
 
@@ -443,6 +443,10 @@ class User(Base):
     event_roles: Mapped[list[UserEventRole]] = relationship(
         back_populates="user", primaryjoin="User.id == UserEventRole.user_id", lazy="noload"
     )
+
+    @property
+    def is_profile_setup(self) -> bool:
+        return self.first_name != ""
 
 
 class UserEventStatus(Base):
