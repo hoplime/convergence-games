@@ -1,12 +1,13 @@
 import enum
-from abc import ABC
 from typing import ClassVar
 
 
 class GameCrunch(enum.StrEnum):
+    NEARLY_NOTHING = "Nearly nothing"
     LIGHT = "Light"
     MEDIUM = "Medium"
     HEAVY = "Heavy"
+    EXTRA_HEAVY = "Extra heavy"
 
 
 class GameNarrativism(enum.StrEnum):
