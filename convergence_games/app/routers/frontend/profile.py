@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from typing import Annotated, Literal, Sequence
 
 from litestar import Controller, get, post
+from litestar.datastructures import Cookie
 from litestar.exceptions import HTTPException
-from litestar.params import Body, RequestEncodingType
+from litestar.params import Body, Parameter, RequestEncodingType
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,12 +35,24 @@ class PostProfileEditForm:
 async def render_profile(
     request: Request,
     transaction: AsyncSession,
+    did_invalid_action: bool = False,
 ) -> Template:
+    cookies = [Cookie(key="did-invalid-action", max_age=0)]
+
     if request.user is None:
-        return HTMXBlockTemplate(template_name="pages/register.html.jinja", block_name=request.htmx.target)
+        return HTMXBlockTemplate(
+            template_name="pages/register.html.jinja",
+            block_name=request.htmx.target,
+            context={"did_invalid_action": did_invalid_action},
+            cookies=cookies,
+        )
 
     if not request.user.is_profile_setup:
-        return HTMXBlockTemplate(template_name="pages/more_info.html.jinja", block_name=request.htmx.target)
+        return HTMXBlockTemplate(
+            template_name="pages/more_info.html.jinja",
+            block_name=request.htmx.target,
+            cookies=cookies,
+        )
 
     user_logins: Sequence[UserLogin] = (
         (await transaction.execute(select(UserLogin).where(UserLogin.user_id == request.user.id))).scalars().all()
@@ -49,6 +62,7 @@ async def render_profile(
         template_name="pages/profile.html.jinja",
         block_name=request.htmx.target,
         context={"user_logins": user_login_dict},
+        cookies=cookies,
     )
 
 
@@ -86,8 +100,13 @@ class ProfileController(Controller):
         )
 
     @get(path="/profile")
-    async def get_profile(self, request: Request, transaction: AsyncSession) -> Template:
-        return await render_profile(request, transaction)
+    async def get_profile(
+        self,
+        request: Request,
+        transaction: AsyncSession,
+        did_invalid_action: Annotated[bool, Parameter(cookie="did-invalid-action")] = False,
+    ) -> Template:
+        return await render_profile(request, transaction, did_invalid_action=did_invalid_action)
 
     @post(path="/profile")
     async def post_profile(

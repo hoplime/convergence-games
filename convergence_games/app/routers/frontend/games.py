@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnExpressionArgument
 
+from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import (
@@ -161,7 +162,7 @@ class GamesController(Controller):
     async def get_games(self, request: Request) -> Template:
         return HTMXBlockTemplate(template_name="pages/games.html.jinja", block_name=request.htmx.target)
 
-    @get(path="/submit_game/{event_sqid:str}")
+    @get(path="/submit_game/{event_sqid:str}", guards=[user_guard])
     async def get_submit_game(self, request: Request, transaction: AsyncSession, event_sqid: Sqid) -> Template:
         event_id = sink(event_sqid)
         event = (

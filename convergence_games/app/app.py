@@ -7,6 +7,7 @@ from convergence_games.settings import SETTINGS
 from .app_config import (
     compression_config,
     dependencies,
+    exception_handlers,
     htmx_plugin,
     jwt_cookie_auth,
     openapi_config,
@@ -24,6 +25,7 @@ app = Litestar(
     openapi_config=openapi_config,
     template_config=template_config,
     compression_config=compression_config,
+    exception_handlers=exception_handlers,  # type: ignore[assignment]
     listeners=all_listeners,
     debug=SETTINGS.DEBUG,
 )
