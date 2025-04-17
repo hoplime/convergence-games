@@ -75,8 +75,11 @@ class SubmitGameForm(BaseModel):
     crunch: GameCrunch
     narrativism: GameNarrativism
     player_count_minimum: int
+    player_count_minimum_more: int | None = None
     player_count_optimum: int
+    player_count_optimum_more: int | None = None
     player_count_maximum: int
+    player_count_maximum_more: int | None = None
     classification: GameClassification
     ksp: Annotated[GameKSP, IntFlagValidator] = GameKSP.NONE
 
@@ -157,11 +160,7 @@ async def search_with_fuzzy_match[T: SearchableBase](
     return top_results
 
 
-class GamesController(Controller):
-    @get(path="/games")
-    async def get_games(self, request: Request) -> Template:
-        return HTMXBlockTemplate(template_name="pages/games.html.jinja", block_name=request.htmx.target)
-
+class SubmitGameController(Controller):
     @get(path="/submit_game/{event_sqid:str}", guards=[user_guard])
     async def get_submit_game(self, request: Request, transaction: AsyncSession, event_sqid: Sqid) -> Template:
         event_id = sink(event_sqid)
@@ -228,9 +227,9 @@ class GamesController(Controller):
             crunch=data.crunch,
             narrativism=data.narrativism,
             tone=data.tone,
-            player_count_minimum=data.player_count_minimum,
-            player_count_optimum=data.player_count_optimum,
-            player_count_maximum=data.player_count_maximum,
+            player_count_minimum=max(data.player_count_minimum, data.player_count_minimum_more or 0),
+            player_count_optimum=max(data.player_count_optimum, data.player_count_optimum_more or 0),
+            player_count_maximum=max(data.player_count_maximum, data.player_count_maximum_more or 0),
             ksps=data.ksp,
             **system_kwarg,
             gamemaster=request.user,
@@ -249,12 +248,22 @@ class GamesController(Controller):
             ),
         )
 
+        async def create_if_not_exists[T: Genre | ContentWarning](
+            model_type: type[T],
+            name: str,
+        ) -> T:
+            existing = await transaction.execute(select(model_type).where(model_type.name == name))
+            existing = existing.scalars().one_or_none()
+            if existing is not None:
+                return existing
+            return model_type(name=name)
+
         # Genres, Content Warrnings, Available Time Slots
         new_genre_links = [
             (
                 GameGenreLink(game=new_game, genre_id=genre)
                 if isinstance(genre, int)
-                else GameGenreLink(game=new_game, genre=Genre(name=genre.value))
+                else GameGenreLink(game=new_game, genre=await create_if_not_exists(Genre, genre.value))
             )
             for genre in data.genre
         ]
@@ -262,7 +271,9 @@ class GamesController(Controller):
             (
                 GameContentWarningLink(game=new_game, content_warning_id=content_warning)
                 if isinstance(content_warning, int)
-                else GameContentWarningLink(game=new_game, content_warning=ContentWarning(name=content_warning.value))
+                else GameContentWarningLink(
+                    game=new_game, content_warning=await create_if_not_exists(ContentWarning, content_warning.value)
+                )
             )
             for content_warning in data.content_warning
         ]

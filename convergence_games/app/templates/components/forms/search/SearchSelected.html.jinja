@@ -8,7 +8,7 @@
 {% else %}
     <div>You've selected {{ selected_name }}</div>
 {% endif %}
-<input type="hidden" name="{{ name }}" value="{{ 'new:'~selected_name if new else selected_sqid }}" />
+<input type="hidden" name="{{ name }}" value="{{ value }}" />
 <button
     type="button"
     class="btn btn-primary"
