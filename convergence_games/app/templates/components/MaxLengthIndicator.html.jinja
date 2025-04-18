@@ -1,0 +1,18 @@
+{#def
+    selector: str = "previous <input />",
+    buffer_num: int = 20,
+    classes: str = "size-fit"
+#}
+<span
+    class="{{ classes }}"
+    _="
+    on input from {{ selector }}
+    set :max to its @maxlength then
+    set :current to its value.length then
+    if :current + {{ buffer_num }} > :max
+        put `${:current}/${:max}` into me
+    else
+        put '' into me
+    end
+"
+></span>

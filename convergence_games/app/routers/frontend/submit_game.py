@@ -4,6 +4,7 @@ from typing import Annotated, Callable, cast
 from litestar import Controller, get, post
 from litestar.exceptions import NotFoundException
 from litestar.params import Body, RequestEncodingType
+from litestar.response import Redirect
 from pydantic import BaseModel, BeforeValidator, TypeAdapter
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
@@ -193,18 +194,14 @@ class SubmitGameController(Controller):
             },
         )
 
-    @post(path="/submit_game/{event_sqid:str}")
+    @post(path="/submit_game/{event_sqid:str}", guards=[user_guard])
     async def post_submit_game(
         self,
         request: Request,
         transaction: AsyncSession,
         event_sqid: Sqid,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
-    ) -> Template:
-        # TODO: Use a guard instead of this check
-        if not request.user:
-            raise NotFoundException(detail="User not found")
-
+    ) -> Redirect:
         event_id = sink(event_sqid)
         event = (
             await transaction.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
@@ -289,12 +286,7 @@ class SubmitGameController(Controller):
         transaction.add(new_game)
         transaction.add_all(new_links)
 
-        return HTMXBlockTemplate(
-            template_str="""
-            <p>Submitted game for event {{ event_sqid }}</p>
-            """,
-            context={"event_sqid": event_sqid},
-        )
+        return Redirect(path=f"/event/{event_sqid}/profile")
 
     # Searches
     @get(path="/search/{name:str}")

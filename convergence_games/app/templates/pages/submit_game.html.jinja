@@ -12,22 +12,77 @@
                         able to edit this until shortly before the event.
                     </span>
                     {# Title #}
-                    <label class="fieldset-label">Title</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Title <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>Title of the game</p>
+                            <p>e.g. "A Wild Sheep Chase" or "Gatsby and the Great Race"</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <input type="text" class="input" placeholder="Title" name="title" required />
                     {# System #}
-                    <label class="fieldset-label">System</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">System <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>Which RPG system does your one-shot use?</p>
+                            <p>e.g. "Dungeons & Dragons 5e" or "Blades in the Dark"</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <forms.search.SearchContainer name="system"></forms.search.SearchContainer>
                     {# Tagline #}
-                    <label class="fieldset-label">Tagline</label>
-                    <input type="text" class="input" placeholder="Tagline" name="tagline" required />
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Tagline <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>Up to 140 characters to grab attention.</p>
+                            <p>
+                                e.g. "The King is dead! And one of you did it. Will you betray the kingdom, or betray
+                                your friends and find the killer?"
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <div class="flex items-center gap-4">
+                        <input
+                            type="text"
+                            class="input"
+                            placeholder="Tagline"
+                            name="tagline"
+                            maxlength="140"
+                            required
+                        />
+                        <MaxLengthIndicator />
+                    </div>
                     {# Description #}
-                    <label class="fieldset-label">Description</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Description <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>A full description of your game.</p>
+                            <p>
+                                Include as much detail as you need, typically 3-5 paragraphs. A good description sets
+                                out the world, describes what players will be doing, anything special and unique about
+                                the system and scenario, and gives players a fair idea of what the session might be
+                                like.
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
                     <utilities.TipTap form_input_name="description" />
                     {# Genre #}
-                    <label class="fieldset-label">Genres</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Genres <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>What movie/book/game 'genres' describe your one-shot?</p>
+                            <p>e.g. "Fantasy", "Cyberpunk", "Political Thriller"</p>
+                            <p>Pick 1-5</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <forms.search_checks.SearchCheckContainer name="genre"></forms.search_checks.SearchCheckContainer>
                     {# Tone #}
-                    <label class="fieldset-label">Tone</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Tone <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <div class="flex flex-col">
                         {% for tone in tones %}
                             <label>
@@ -37,12 +92,24 @@
                         {% endfor %}
                     </div>
                     {# Content warnings #}
-                    <label class="fieldset-label">Content Warnings</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Content Warnings <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <forms.search_checks.SearchCheckContainer
                         name="content_warning"
                     ></forms.search_checks.SearchCheckContainer>
                     {# Crunch/weight #}
-                    <label class="fieldset-label">Complexity</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Complexity <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <div class="flex flex-col">
                         {% for crunch in crunches %}
                             <label>
@@ -52,7 +119,13 @@
                         {% endfor %}
                     </div>
                     {# Narrative vs mechanics #}
-                    <label class="fieldset-label">Narrative/Mechanics</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Narrative/Mechanics <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <div class="flex flex-col">
                         {% for narrativism in narrativisms %}
                             <label>
@@ -68,7 +141,13 @@
                         {% endfor %}
                     </div>
                     {# Player Count #}
-                    <label class="fieldset-label">Player Count</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Player Count <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <forms.multislider.MultisliderContainer
                         :min_value="1"
                         :max_value="7"
@@ -96,7 +175,13 @@
                         />
                     </forms.multislider.MultisliderContainer>
                     {# Age suitability #}
-                    <label class="fieldset-label">Age Suitabilty & Classification</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Age Suitabilty & Classification <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <div class="flex flex-row gap-4">
                         <label
                             class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
@@ -119,7 +204,13 @@
                     </div>
 
                     {# Key Selling Points #}
-                    <label class="fieldset-label">Bonuses</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Bonuses <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     {% for ksp in ksps %}
                         <label class="fieldset-label">
                             <input type="checkbox" class="checkbox" name="ksp" value="{{ ksp }}" />
@@ -136,7 +227,15 @@
                         game is offered. You'll be able to edit this until the schedule is fixed prior to the event.
                     </span>
 
-                    <label class="fieldset-label">How many times do you want to run this game?</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label"
+                            >How many times do you want to run this game? <TooltipIcon
+                        /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <forms.multislider.MultisliderContainer
                         :min_value="1"
                         :max_value="event.time_slots|length"
@@ -146,7 +245,15 @@
                         <forms.multislider.Multislider title="Times" value="2" input_name="times_to_run" />
                     </forms.multislider.MultisliderContainer>
 
-                    <label class="fieldset-label">In which time slots could you run this game?</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label"
+                            >In which time slots could you run this game? <TooltipIcon
+                        /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <span>Please be flexible and mark all time slots you could do</span>
                     {% for time_slot in event.time_slots %}
                         <label class="fieldset-label">
@@ -163,10 +270,24 @@
                         </label>
                     {% endfor %}
 
-                    <label class="fieldset-label">Any extra notes/preferences to help with scheduling?</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label"
+                            >Any extra notes/preferences to help with scheduling? <TooltipIcon
+                        /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <textarea class="textarea" name="scheduling_notes"></textarea>
 
-                    <label class="fieldset-label">Table Size Requirements</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Table Size Requirements <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     {% for table_size_requirement in table_size_requirements %}
                         <label class="fieldset-label">
                             <input
@@ -178,10 +299,22 @@
                             <span>{{ table_size_requirement.form_notes[0] }}</span>
                         </label>
                     {% endfor %}
-                    <label class="fieldset-label">Any other notes on table size?</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Any other notes on table size? <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <textarea class="textarea" name="table_size_notes"></textarea>
 
-                    <label class="fieldset-label">Equipment Requirements</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Equipment Requirements <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     {% for equipment_requirement in equipment_requirements %}
                         <label class="fieldset-label">
                             <input
@@ -193,10 +326,22 @@
                             <span>{{ equipment_requirement.form_notes[0] }}</span>
                         </label>
                     {% endfor %}
-                    <label class="fieldset-label">Any other notes on equipment?</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Any other notes on equipment? <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <textarea class="textarea" name="equipment_notes"></textarea>
 
-                    <label class="fieldset-label">Activity Requirements</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Activity Requirements <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     {% for activity_requirement in activity_requirements %}
                         <label class="fieldset-label">
                             <input
@@ -208,10 +353,22 @@
                             <span>{{ activity_requirement.form_notes[0] }}</span>
                         </label>
                     {% endfor %}
-                    <label class="fieldset-label">Any other notes on activities?</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Any other notes on activities? <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <textarea class="textarea" name="activity_notes"></textarea>
 
-                    <label class="fieldset-label">Room Requirements</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Room Requirements <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     {% for room_requirement in room_requirements %}
                         <label class="fieldset-label">
                             <input
@@ -223,7 +380,13 @@
                             <span>{{ room_requirement.form_notes[0] }}</span>
                         </label>
                     {% endfor %}
-                    <label class="fieldset-label">Any other notes on rooms?</label>
+                    <Tooltip classes="w-fit">
+                        <label class="fieldset-label">Any other notes on rooms? <TooltipIcon /></label>
+                        <TooltipContent classes="text-left">
+                            <p>TTL1</p>
+                            <p>TTL2</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <textarea class="textarea" name="room_notes"></textarea>
                 </fieldset>
 
