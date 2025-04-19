@@ -12,27 +12,30 @@
                         able to edit this until shortly before the event.
                     </span>
                     {# Title #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Title <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>Title of the game</p>
                             <p>e.g. "A Wild Sheep Chase" or "Gatsby and the Great Race"</p>
                         </TooltipContent>
                     </Tooltip>
                     <input type="text" class="input" placeholder="Title" name="title" required />
                     {# System #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">System <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>Which RPG system does your one-shot use?</p>
                             <p>e.g. "Dungeons & Dragons 5e" or "Blades in the Dark"</p>
                         </TooltipContent>
                     </Tooltip>
-                    <forms.search.SearchContainer name="system"></forms.search.SearchContainer>
+                    <forms.search.SearchContainer
+                        name="system"
+                        placeholder="Search for a system..."
+                    ></forms.search.SearchContainer>
                     {# Tagline #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Tagline <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>Up to 140 characters to grab attention.</p>
                             <p>
                                 e.g. "The King is dead! And one of you did it. Will you betray the kingdom, or betray
@@ -52,12 +55,12 @@
                         <MaxLengthIndicator />
                     </div>
                     {# Description #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Description <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>A full description of your game.</p>
                             <p>
-                                Include as much detail as you need, typically 3-5 paragraphs. A good description sets
+                                Include as much detail as you need, typically a few paragraphs. A good description sets
                                 out the world, describes what players will be doing, anything special and unique about
                                 the system and scenario, and gives players a fair idea of what the session might be
                                 like.
@@ -66,21 +69,23 @@
                     </Tooltip>
                     <utilities.TipTap form_input_name="description" />
                     {# Genre #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Genres <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>What movie/book/game 'genres' describe your one-shot?</p>
                             <p>e.g. "Fantasy", "Cyberpunk", "Political Thriller"</p>
                             <p>Pick 1-5</p>
                         </TooltipContent>
                     </Tooltip>
-                    <forms.search_checks.SearchCheckContainer name="genre"></forms.search_checks.SearchCheckContainer>
+                    <forms.search_checks.SearchCheckContainer
+                        name="genre"
+                        placeholder="Search for genres..."
+                    ></forms.search_checks.SearchCheckContainer>
                     {# Tone #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Tone <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
+                        <TooltipContent class="text-left">
+                            <p>Just a rough guide for the target tone of the game.</p>
                         </TooltipContent>
                     </Tooltip>
                     <div class="flex flex-col">
@@ -92,24 +97,95 @@
                         {% endfor %}
                     </div>
                     {# Content warnings #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Content Warnings <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
+                        <TooltipContent class="text-left">
+                            <p>
+                                There may be content in your game which are common phobias, or more horrific/mature
+                                themes. Make sure you note anything you know may come up so people join games where they
+                                are comfortable.
+                            </p>
+                            <p>
+                                Convergence will be using the X card and open table policy, by submitting you agree to
+                                use these two safety tools at minimum.
+                            </p>
                         </TooltipContent>
                     </Tooltip>
                     <forms.search_checks.SearchCheckContainer
                         name="content_warning"
+                        placeholder="Search for content warnings..."
                     ></forms.search_checks.SearchCheckContainer>
                     {# Crunch/weight #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Complexity <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
+                    <Collapse>
+                        <CollapseTitle>More Info</CollapseTitle>
+                        <CollapseContent class="flex flex-col gap-4">
+                            <!-- prettier-ignore-start -->
+                            <h1 class="font-semibold">How much complexity does your session present for players? Consider:</h2>
+                            <ul class="list-disc pl-4">
+                            <li>How long does it take for a new player to understand the core rules?</li>
+                            <li>How much reference material do players need?</li>
+                            <li>How much additional complexity (rules, mechanics, options) will emerge during play?</li>
+                            </ul>
+
+                            <h1 class="font-semibold">Use this scale to rate your game:</h1>
+
+                            <h2 class="font-semibold">Nearly Nothing</h2>
+                            <ul class="list-disc pl-4">
+                            <li>No explanation needed, or takes under a minute to grasp.</li>
+                            <li>Players need no reference materials.</li>
+                            <li>Mechanics are extremely minimal, such as a single rule (e.g., “Roll a d6, 5-6 = success”).</li>
+                            <li>No character sheets or only the simplest notes.</li>
+                            </ul>
+                            <ul>Examples: Freeform roleplay, single-die resolution without modifiers.</ul>
+
+                            <h2 class="font-semibold">Light</h2>
+                            <ul class="list-disc pl-4">
+                            <li>Takes 1-5 minutes to explain.</li>
+                            <li>Players may need a small reference (e.g., a simple cheat sheet or note card).</li>
+                            <li>Uses a single resolution mechanic with minimal stats.</li>
+                            <li>Character sheets are small, typically a few attributes or keywords.</li>
+                            </ul>
+                            <i>Examples: Honey Heist, Wanderhome, many one-page RPGs.</i>
+
+                            <h2 class="font-semibold">Medium</h2>
+                            <ul class="list-disc pl-4">
+                            <li>Takes up to 10 minutes to teach.</li>
+                            <li>Players may need a one-page reference sheet.</li>
+                            <li>Mechanics may involve multiple dice types, a multi-step resolution process, or stats that modify rolls.</li>
+                            <li>Character sheets may have several attributes, skills, or equipment that matter in play.</li>
+                            <li>Occasional rule lookups may be needed.</li>
+                            </ul>
+                            <i>Examples: Call of Cthulhu 7e, Mörk Borg, many PbtA (Powered by the Apocalypse), many OSR (Old School Renaissance) games.</i>
+
+                            <h2 class="font-semibold">Heavy</h2>
+                            <ul class="list-disc pl-4">
+                            <li>Takes 10+ minutes to explain, or assumes prior RPG knowledge.</li>
+                            <li>Players may need multiple pages of reference material.</li>
+                            <li>Mechanics involve multiple types of rolls, modifiers, and conditions.</li>
+                            <li>Character sheets contain many stats, abilities, and equipment options.</li>
+                            <li>Rule lookups and referencing mechanics are common during play.</li>
+                            </ul>
+                            <i>Examples: Dungeons & Dragons 5e, Pathfinder 2e.</i>
+
+                            <h2 class="font-semibold">Extra heavy</h2>
+                            <ul class="list-disc pl-4">
+                            <li>Learning the system may require dedicated reading or prior experience with RPGs.</li>
+                            <li>Players may need multi-page reference sheets or books at the table.</li>
+                            <li>Character sheets are complex, often with multiple interconnected stats, abilities, and systems.</li>
+                            <li>Resolution mechanics can be intricate, requiring extended rule lookups or calculations.</li>
+                            <li>Games may include deep subsystems (e.g., crafting, downtime, detailed combat maneuvers) that add significant decision-making overhead.</li>
+                            </ul>
+                            <i>Examples: Shadowrun (various editions), Rolemaster, GURPS (with full options), Phoenix Command, Pathfinder with extensive supplements.</i>
+                            <!-- prettier-ignore-end -->
+                        </CollapseContent>
+                    </Collapse>
                     <div class="flex flex-col">
                         {% for crunch in crunches %}
                             <label>
@@ -119,9 +195,9 @@
                         {% endfor %}
                     </div>
                     {# Narrative vs mechanics #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Narrative/Mechanics <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -141,9 +217,9 @@
                         {% endfor %}
                     </div>
                     {# Player Count #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Player Count <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -175,9 +251,9 @@
                         />
                     </forms.multislider.MultisliderContainer>
                     {# Age suitability #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Age Suitabilty & Classification <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -204,9 +280,9 @@
                     </div>
 
                     {# Key Selling Points #}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Bonuses <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -227,11 +303,11 @@
                         game is offered. You'll be able to edit this until the schedule is fixed prior to the event.
                     </span>
 
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label"
                             >How many times do you want to run this game? <TooltipIcon
                         /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -245,11 +321,11 @@
                         <forms.multislider.Multislider title="Times" value="2" input_name="times_to_run" />
                     </forms.multislider.MultisliderContainer>
 
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label"
                             >In which time slots could you run this game? <TooltipIcon
                         /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -270,20 +346,20 @@
                         </label>
                     {% endfor %}
 
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label"
                             >Any extra notes/preferences to help with scheduling? <TooltipIcon
                         /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
                     <textarea class="textarea" name="scheduling_notes"></textarea>
 
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Table Size Requirements <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -299,18 +375,18 @@
                             <span>{{ table_size_requirement.form_notes[0] }}</span>
                         </label>
                     {% endfor %}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Any other notes on table size? <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
                     <textarea class="textarea" name="table_size_notes"></textarea>
 
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Equipment Requirements <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -326,18 +402,18 @@
                             <span>{{ equipment_requirement.form_notes[0] }}</span>
                         </label>
                     {% endfor %}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Any other notes on equipment? <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
                     <textarea class="textarea" name="equipment_notes"></textarea>
 
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Activity Requirements <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -353,18 +429,18 @@
                             <span>{{ activity_requirement.form_notes[0] }}</span>
                         </label>
                     {% endfor %}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Any other notes on activities? <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
                     <textarea class="textarea" name="activity_notes"></textarea>
 
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Room Requirements <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>
@@ -380,9 +456,9 @@
                             <span>{{ room_requirement.form_notes[0] }}</span>
                         </label>
                     {% endfor %}
-                    <Tooltip classes="w-fit">
+                    <Tooltip class="w-fit">
                         <label class="fieldset-label">Any other notes on rooms? <TooltipIcon /></label>
-                        <TooltipContent classes="text-left">
+                        <TooltipContent class="text-left">
                             <p>TTL1</p>
                             <p>TTL2</p>
                         </TooltipContent>

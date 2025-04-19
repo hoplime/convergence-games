@@ -291,9 +291,14 @@ class SubmitGameController(Controller):
     # Searches
     @get(path="/search/{name:str}")
     async def get_search(self, name: str) -> Template:
+        placeholders: dict[str, str] = {
+            "system": "Search for a system...",
+            "genre": "Search for genres...",
+            "content_warning": "Search for content warnings...",
+        }
         return HTMXBlockTemplate(
             template_name="components/forms/search/SearchContainer.html.jinja",
-            context={"name": name},
+            context={"name": name, "placholder": placeholders.get(name, "Search...")},
         )
 
     @get(path="/search/system/results")

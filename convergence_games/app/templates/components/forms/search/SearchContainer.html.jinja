@@ -1,11 +1,12 @@
 {#def
     name: str = "search",
+    placeholder: str = ""
 #}
-<div class="search-container">
+<div {{ attrs.render(class="search-container") }}>
     <input
         type="text"
         class="input"
-        placeholder="{{ name.capitalize() }}..."
+        placeholder="{{ placeholder if placeholder else name.capitalize() ~ '...' }}"
         id="{{ name }}-search"
         name="{{ name }}-search"
         required

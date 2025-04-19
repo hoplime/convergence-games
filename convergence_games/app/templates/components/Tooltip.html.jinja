@@ -1,5 +1,4 @@
 {#def
-    classes: str = "",
     toggleable: bool = True,
     align: str = "right",
 #}
@@ -12,7 +11,7 @@
     ""
 %}
 <div
-    class="tooltip {{ align_class }} {{ classes }}"
+    {{ attrs.render(class="tooltip " ~ align_class) }}
     {{ '_="on click add .tooltip-open to me end on click from elsewhere remove .tooltip-open from me"' if toggleable }}
 >
     {{ content }}

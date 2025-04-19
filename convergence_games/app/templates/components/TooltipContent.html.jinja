@@ -1,4 +1,3 @@
 {#def
-    classes: str = ""
 #}
-<div class="tooltip-content {{ classes }}">{{ content }}</div>
+<div {{ attrs.render(class="tooltip-content") }}>{{ content }}</div>

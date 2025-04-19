@@ -1,13 +1,19 @@
 {#def
     name: str = "search",
+    placeholder: str = "",
 #}
-<div class="search-container">
+<div {{ attrs.render(class="search-container") }}>
     <div class="input flex h-fit flex-col gap-2 p-2">
         {# w-[clamp(4.5rem,30rem,100%)]  #}
         <div
             class="search-chip-container hidden flex-row flex-wrap justify-start gap-1 self-start has-[:not(.hidden)]:flex"
         ></div>
-        <input type="text" placeholder="{{ name.capitalize() }}..." id="{{ name }}-search" name="{{ name }}-search" />
+        <input
+            type="text"
+            placeholder="{{ placeholder if placeholder else name.capitalize() ~ '...' }}"
+            id="{{ name }}-search"
+            name="{{ name }}-search"
+        />
     </div>
     <div
         hx-get="/search/{{ name }}/results"
