@@ -202,58 +202,7 @@
                             <p>Try to pick only two or three things.</p>
                         </TooltipContent>
                     </Tooltip>
-                    <div class="flex flex-col">
-                        <label>
-                            <input type="checkbox" name="core" value="roleplaying" class="checkbox" />
-                            <span>Role-play</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="core" value="combat" class="checkbox" />
-                            <span>Combat</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="core" value="exploration" class="checkbox" />
-                            <span>Exploration</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="core" value="puzzle" class="checkbox" />
-                            <span>Puzzles</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="core" value="social" class="checkbox" />
-                            <span>Social</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="core" value="investigation" class="checkbox" />
-                            <span>Investigation / Solving Mysteries</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="core" value="romance" class="checkbox" />
-                            <span>Romance</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="core" value="stealth" class="checkbox" />
-                            <span>Stealth / Infiltration</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="core" value="moral-dilemma" class="checkbox" />
-                            <span>Moral Dilemmas</span>
-                        </label>
-                    </div>
-                    {# <div class="flex flex-col">
-                        {% for narrativism in narrativisms %}
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="narrativism"
-                                    class="radio"
-                                    value="{{ narrativism }}"
-                                    required
-                                />
-                                <span>{{ narrativism }}</span>
-                            </label>
-                        {% endfor %}
-                    </div> #}
+                    <FlagCheckboxes :flag_enum="core_activities" name="core_activity" />
                     {# Player Count #}
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Player Count <TooltipIcon /></label>

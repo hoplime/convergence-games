@@ -18,6 +18,7 @@ from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import (
     GameActivityRequirement,
     GameClassification,
+    GameCoreActivity,
     GameCrunch,
     GameEquipmentRequirement,
     GameKSP,
@@ -185,7 +186,7 @@ class SubmitGameController(Controller):
                 "content_warnings": all_content_warnings,
                 "tones": GameTone,
                 "crunches": GameCrunch,
-                "narrativisms": GameNarrativism,
+                "core_activities": GameCoreActivity,
                 "ksps": GameKSP,
                 "table_size_requirements": GameTableSizeRequirement,
                 "equipment_requirements": GameEquipmentRequirement,
