@@ -119,8 +119,7 @@
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Complexity <TooltipIcon /></label>
                         <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
+                            <p>Read more info for an explanation of the complexity scale</p>
                         </TooltipContent>
                     </Tooltip>
                     <Collapse>
@@ -129,58 +128,58 @@
                             <!-- prettier-ignore-start -->
                             <h1 class="font-semibold">How much complexity does your session present for players? Consider:</h2>
                             <ul class="list-disc pl-4">
-                            <li>How long does it take for a new player to understand the core rules?</li>
-                            <li>How much reference material do players need?</li>
-                            <li>How much additional complexity (rules, mechanics, options) will emerge during play?</li>
+                                <li>How long does it take for a new player to understand the core rules?</li>
+                                <li>How much reference material do players need?</li>
+                                <li>How much additional complexity (rules, mechanics, options) will emerge during play?</li>
                             </ul>
 
                             <h1 class="font-semibold">Use this scale to rate your game:</h1>
 
                             <h2 class="font-semibold">Nearly Nothing</h2>
                             <ul class="list-disc pl-4">
-                            <li>No explanation needed, or takes under a minute to grasp.</li>
-                            <li>Players need no reference materials.</li>
-                            <li>Mechanics are extremely minimal, such as a single rule (e.g., “Roll a d6, 5-6 = success”).</li>
-                            <li>No character sheets or only the simplest notes.</li>
+                                <li>No explanation needed, or takes under a minute to grasp.</li>
+                                <li>Players need no reference materials.</li>
+                                <li>Mechanics are extremely minimal, such as a single rule (e.g., “Roll a d6, 5-6 = success”).</li>
+                                <li>No character sheets or only the simplest notes.</li>
                             </ul>
                             <ul>Examples: Freeform roleplay, single-die resolution without modifiers.</ul>
 
                             <h2 class="font-semibold">Light</h2>
                             <ul class="list-disc pl-4">
-                            <li>Takes 1-5 minutes to explain.</li>
-                            <li>Players may need a small reference (e.g., a simple cheat sheet or note card).</li>
-                            <li>Uses a single resolution mechanic with minimal stats.</li>
-                            <li>Character sheets are small, typically a few attributes or keywords.</li>
+                                <li>Takes 1-5 minutes to explain.</li>
+                                <li>Players may need a small reference (e.g., a simple cheat sheet or note card).</li>
+                                <li>Uses a single resolution mechanic with minimal stats.</li>
+                                <li>Character sheets are small, typically a few attributes or keywords.</li>
                             </ul>
                             <i>Examples: Honey Heist, Wanderhome, many one-page RPGs.</i>
 
                             <h2 class="font-semibold">Medium</h2>
                             <ul class="list-disc pl-4">
-                            <li>Takes up to 10 minutes to teach.</li>
-                            <li>Players may need a one-page reference sheet.</li>
-                            <li>Mechanics may involve multiple dice types, a multi-step resolution process, or stats that modify rolls.</li>
-                            <li>Character sheets may have several attributes, skills, or equipment that matter in play.</li>
-                            <li>Occasional rule lookups may be needed.</li>
+                                <li>Takes up to 10 minutes to teach.</li>
+                                <li>Players may need a one-page reference sheet.</li>
+                                <li>Mechanics may involve multiple dice types, a multi-step resolution process, or stats that modify rolls.</li>
+                                <li>Character sheets may have several attributes, skills, or equipment that matter in play.</li>
+                                <li>Occasional rule lookups may be needed.</li>
                             </ul>
                             <i>Examples: Call of Cthulhu 7e, Mörk Borg, many PbtA (Powered by the Apocalypse), many OSR (Old School Renaissance) games.</i>
 
                             <h2 class="font-semibold">Heavy</h2>
                             <ul class="list-disc pl-4">
-                            <li>Takes 10+ minutes to explain, or assumes prior RPG knowledge.</li>
-                            <li>Players may need multiple pages of reference material.</li>
-                            <li>Mechanics involve multiple types of rolls, modifiers, and conditions.</li>
-                            <li>Character sheets contain many stats, abilities, and equipment options.</li>
-                            <li>Rule lookups and referencing mechanics are common during play.</li>
+                                <li>Takes 10+ minutes to explain, or assumes prior RPG knowledge.</li>
+                                <li>Players may need multiple pages of reference material.</li>
+                                <li>Mechanics involve multiple types of rolls, modifiers, and conditions.</li>
+                                <li>Character sheets contain many stats, abilities, and equipment options.</li>
+                                <li>Rule lookups and referencing mechanics are common during play.</li>
                             </ul>
                             <i>Examples: Dungeons & Dragons 5e, Pathfinder 2e.</i>
 
                             <h2 class="font-semibold">Extra heavy</h2>
                             <ul class="list-disc pl-4">
-                            <li>Learning the system may require dedicated reading or prior experience with RPGs.</li>
-                            <li>Players may need multi-page reference sheets or books at the table.</li>
-                            <li>Character sheets are complex, often with multiple interconnected stats, abilities, and systems.</li>
-                            <li>Resolution mechanics can be intricate, requiring extended rule lookups or calculations.</li>
-                            <li>Games may include deep subsystems (e.g., crafting, downtime, detailed combat maneuvers) that add significant decision-making overhead.</li>
+                                <li>Learning the system may require dedicated reading or prior experience with RPGs.</li>
+                                <li>Players may need multi-page reference sheets or books at the table.</li>
+                                <li>Character sheets are complex, often with multiple interconnected stats, abilities, and systems.</li>
+                                <li>Resolution mechanics can be intricate, requiring extended rule lookups or calculations.</li>
+                                <li>Games may include deep subsystems (e.g., crafting, downtime, detailed combat maneuvers) that add significant decision-making overhead.</li>
                             </ul>
                             <i>Examples: Shadowrun (various editions), Rolemaster, GURPS (with full options), Phoenix Command, Pathfinder with extensive supplements.</i>
                             <!-- prettier-ignore-end -->
@@ -194,15 +193,54 @@
                             </label>
                         {% endfor %}
                     </div>
-                    {# Narrative vs mechanics #}
+                    {# Core activities #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Narrative/Mechanics <TooltipIcon /></label>
+                        <label class="fieldset-label">Core Activities <TooltipIcon /></label>
                         <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
+                            <p>What do players spend most of their time doing in this one-shot?</p>
+                            <p>How do they interact with the world and achieve their goals?</p>
+                            <p>Try to pick only two or three things.</p>
                         </TooltipContent>
                     </Tooltip>
                     <div class="flex flex-col">
+                        <label>
+                            <input type="checkbox" name="core" value="roleplaying" class="checkbox" />
+                            <span>Role-play</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="core" value="combat" class="checkbox" />
+                            <span>Combat</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="core" value="exploration" class="checkbox" />
+                            <span>Exploration</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="core" value="puzzle" class="checkbox" />
+                            <span>Puzzles</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="core" value="social" class="checkbox" />
+                            <span>Social</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="core" value="investigation" class="checkbox" />
+                            <span>Investigation / Solving Mysteries</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="core" value="romance" class="checkbox" />
+                            <span>Romance</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="core" value="stealth" class="checkbox" />
+                            <span>Stealth / Infiltration</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="core" value="moral-dilemma" class="checkbox" />
+                            <span>Moral Dilemmas</span>
+                        </label>
+                    </div>
+                    {# <div class="flex flex-col">
                         {% for narrativism in narrativisms %}
                             <label>
                                 <input
@@ -215,7 +253,7 @@
                                 <span>{{ narrativism }}</span>
                             </label>
                         {% endfor %}
-                    </div>
+                    </div> #}
                     {# Player Count #}
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Player Count <TooltipIcon /></label>
@@ -287,12 +325,7 @@
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
-                    {% for ksp in ksps %}
-                        <label class="fieldset-label">
-                            <input type="checkbox" class="checkbox" name="ksp" value="{{ ksp }}" />
-                            <span>{{ ksp.form_notes[0] }}</span>
-                        </label>
-                    {% endfor %}
+                    <FlagCheckboxes :flag_enum="ksps" name="ksp" />
                     {# Anything else? #}
                 </fieldset>
 
@@ -364,17 +397,7 @@
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
-                    {% for table_size_requirement in table_size_requirements %}
-                        <label class="fieldset-label">
-                            <input
-                                type="checkbox"
-                                class="checkbox"
-                                name="table_size_requirement"
-                                value="{{ table_size_requirement }}"
-                            />
-                            <span>{{ table_size_requirement.form_notes[0] }}</span>
-                        </label>
-                    {% endfor %}
+                    <FlagCheckboxes :flag_enum="table_size_requirements" name="table_size_requirement" />
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Any other notes on table size? <TooltipIcon /></label>
                         <TooltipContent class="text-left">
@@ -391,17 +414,7 @@
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
-                    {% for equipment_requirement in equipment_requirements %}
-                        <label class="fieldset-label">
-                            <input
-                                type="checkbox"
-                                class="checkbox"
-                                name="equipment_requirement"
-                                value="{{ equipment_requirement }}"
-                            />
-                            <span>{{ equipment_requirement.form_notes[0] }}</span>
-                        </label>
-                    {% endfor %}
+                    <FlagCheckboxes :flag_enum="equipment_requirements" name="equipment_requirement" />
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Any other notes on equipment? <TooltipIcon /></label>
                         <TooltipContent class="text-left">
@@ -418,17 +431,7 @@
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
-                    {% for activity_requirement in activity_requirements %}
-                        <label class="fieldset-label">
-                            <input
-                                type="checkbox"
-                                class="checkbox"
-                                name="activity_requirement"
-                                value="{{ activity_requirement }}"
-                            />
-                            <span>{{ activity_requirement.form_notes[0] }}</span>
-                        </label>
-                    {% endfor %}
+                    <FlagCheckboxes :flag_enum="activity_requirements" name="activity_requirement" />
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Any other notes on activities? <TooltipIcon /></label>
                         <TooltipContent class="text-left">
@@ -445,17 +448,7 @@
                             <p>TTL2</p>
                         </TooltipContent>
                     </Tooltip>
-                    {% for room_requirement in room_requirements %}
-                        <label class="fieldset-label">
-                            <input
-                                type="checkbox"
-                                class="checkbox"
-                                name="room_requirement"
-                                value="{{ room_requirement }}"
-                            />
-                            <span>{{ room_requirement.form_notes[0] }}</span>
-                        </label>
-                    {% endfor %}
+                    <FlagCheckboxes :flag_enum="room_requirements" name="room_requirement" />
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Any other notes on rooms? <TooltipIcon /></label>
                         <TooltipContent class="text-left">

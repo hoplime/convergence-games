@@ -52,6 +52,7 @@ class FlagWithNotes(enum.IntFlag):
     _ignore_ = ["__notes__"]
     __notes__: ClassVar[dict[int, str]] = {}
     __form_notes__: ClassVar[dict[int, str]] = {}
+    __tooltips__: ClassVar[dict[int, str]] = {}
 
     @classmethod
     def all_notes_and_values(cls) -> list[tuple[int, str]]:
@@ -76,6 +77,72 @@ class FlagWithNotes(enum.IntFlag):
     @property
     def form_notes(self) -> list[str]:
         return [self.form_note_for(value) for value in self]
+
+    @classmethod
+    def all_tooltips_and_values(cls) -> list[tuple[int, str]]:
+        return [(member.value, cls.tooltip_for(member.value)) for member in cls]
+
+    @classmethod
+    def tooltip_for(cls, value: int) -> str:
+        return cls.__tooltips__.get(value, "")
+
+    @property
+    def tooltips(self) -> list[str]:
+        return [self.tooltip_for(value) for value in self]
+
+
+class GameCoreActivity(FlagWithNotes):
+    # Core activities
+    NONE = 0
+    COMBAT = 1
+    EXPLORATION = 2
+    INVESTIGATION = 4
+    MORAL_DILLEMMA = 8
+    PUZZLES = 16
+    ROLEPLAYING = 32
+    ROMANCE = 64
+    SOCIAL = 128
+    STEALTH = 256
+    SURVIVAL = 512
+
+    __notes__ = {
+        COMBAT: "Combat",
+        EXPLORATION: "Exploration",
+        INVESTIGATION: "Investigation",
+        MORAL_DILLEMMA: "Moral dilemmas",
+        PUZZLES: "Puzzles",
+        ROLEPLAYING: "Roleplaying",
+        ROMANCE: "Romance",
+        SOCIAL: "Social",
+        STEALTH: "Stealth",
+        SURVIVAL: "Survival",
+    }
+
+    __form_notes__ = {
+        COMBAT: "Combat / Tactical combat",
+        EXPLORATION: "Exploration",
+        INVESTIGATION: "Investigation / Mystery Solving",
+        MORAL_DILLEMMA: "Moral dilemmas",
+        PUZZLES: "Puzzles",
+        ROLEPLAYING: "Roleplaying",
+        ROMANCE: "Romance",
+        SOCIAL: "Social",
+        STEALTH: "Stealth / Infiltration",
+        SURVIVAL: "Survival",
+    }
+
+    __tooltips__ = {
+        COMBAT: "Players using weapons / magical abilities to fight will move the story forward, and with tactical decisions and strategy will be important",
+        EXPLORATION: "Exploration will be a significant part of the game, with players needing to discover new locations and secrets",
+        INVESTIGATION: "Investigation will be a significant part of the game, with players needing to gather clues and solve mysteries",
+        MORAL_DILLEMMA: "Moral dilemmas will be a significant part of the game, with players needing to make difficult decisions with no clear right or wrong answer",
+        PUZZLES: "Puzzles will be a significant part of the game, with players needing to solve problems to progress",
+        ROLEPLAYING: "Talking to NPCs will be the main way to move the story forward, with dialogue and relationships driving the narrative",
+        ROMANCE: "Romance will be a significant part of the game, with players needing to navigate relationships and emotions",
+        SOCIAL: "Social interaction between players will be a significant part of the game, with players needing to work together and communicate",
+        STEALTH: "Stealth will be a significant part of the game, with players needing to avoid detection and move quietly",
+        SURVIVAL: "Survival will be a significant part of the game, with players needing to manage resources and stay alive",
+    }
 
 
 class GameKSP(FlagWithNotes):

@@ -1,0 +1,11 @@
+{#def
+    flag_enum: FlagWithNotes,
+    name: str = "flag",
+    display_tooltips: bool = True
+#}
+{% for f in flag_enum %}
+    <label class="fieldset-label">
+        <input type="checkbox" name="{{ name }}" value="{{ f }}" class="checkbox" />
+        <span>{{ f.form_notes[0] }}</span>
+    </label>
+{% endfor %}
