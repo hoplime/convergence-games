@@ -70,6 +70,8 @@
                     "meta.tag.other.Collapse.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.CollapseContent.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.CollapseTitle.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.ErrorHolder.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.ErrorHolderOobCollection.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.FlagCheckboxes.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.MaxLengthIndicator.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.Page.html invalid.illegal.unrecognized-tag.html",

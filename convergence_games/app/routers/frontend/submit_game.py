@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Annotated, Callable, cast
 
-from litestar import Controller, get, post
-from litestar.exceptions import NotFoundException
+from litestar import Controller, Response, get, post
+from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body, RequestEncodingType
 from litestar.response import Redirect
 from pydantic import BaseModel, BeforeValidator, TypeAdapter
@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnExpressionArgument
 
+from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
@@ -161,6 +162,21 @@ async def search_with_fuzzy_match[T: SearchableBase](
     return top_results
 
 
+def handle_submit_game_form_validation_error(request: Request, exc: ValidationException) -> Response:
+    print(request)
+    print(exc)
+    form_errors: dict[str, list[str]] = {field_name: [] for field_name in SubmitGameForm.model_fields.keys()}
+    if exc.extra is not None:
+        for extra in exc.extra:
+            extra = cast(dict[str, str], extra)
+            field_name = extra["key"]
+            message = extra["message"]
+            form_errors[field_name].append(message)
+
+    template_str = catalog.render("ErrorHolderOobCollection", form_errors=form_errors)
+    return HTMXBlockTemplate(template_str=template_str)
+
+
 class SubmitGameController(Controller):
     @get(path="/submit_game/{event_sqid:str}", guards=[user_guard])
     async def get_submit_game(self, request: Request, transaction: AsyncSession, event_sqid: Sqid) -> Template:
@@ -194,7 +210,11 @@ class SubmitGameController(Controller):
             },
         )
 
-    @post(path="/submit_game/{event_sqid:str}", guards=[user_guard])
+    @post(
+        path="/submit_game/{event_sqid:str}",
+        guards=[user_guard],
+        exception_handlers={ValidationException: handle_submit_game_form_validation_error},  # type: ignore[assignment]
+    )
     async def post_submit_game(
         self,
         request: Request,

@@ -1,0 +1,6 @@
+{#def
+    form_errors: dict[str, list[str]] = {}
+#}
+{% for name, errors in form_errors.items() %}
+    <ErrorHolder :name="name" :message="errors | join(', ')" hx-swap-oob="true" />
+{% endfor %}

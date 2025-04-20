@@ -5,7 +5,7 @@
             <h1 class="text-xl font-bold">Submit Game</h1>
             <form>
                 <button type="submit" disabled class="hidden" aria-hidden="true"></button>
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
                     <legend class="fieldset-legend">Game Information</legend>
                     <span>
                         This information will be publicly visible for players to decide their preferences. You'll be
@@ -13,28 +13,36 @@
                     </span>
                     {# Title #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Title <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Title <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>Title of the game</p>
                             <p>e.g. "A Wild Sheep Chase" or "Gatsby and the Great Race"</p>
                         </TooltipContent>
                     </Tooltip>
-                    <input type="text" class="input" placeholder="Title" name="title" required />
+                    <div>
+                        <input type="text" class="input" placeholder="Title" name="title" required />
+                        <ErrorHolder name="title" />
+                    </div>
+
                     {# System #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">System <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">System <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>Which RPG system does your one-shot use?</p>
                             <p>e.g. "Dungeons & Dragons 5e" or "Blades in the Dark"</p>
                         </TooltipContent>
                     </Tooltip>
-                    <forms.search.SearchContainer
-                        name="system"
-                        placeholder="Search for a system..."
-                    ></forms.search.SearchContainer>
+                    <div>
+                        <forms.search.SearchContainer
+                            name="system"
+                            placeholder="Search for a system..."
+                        ></forms.search.SearchContainer>
+                        <ErrorHolder name="system" />
+                    </div>
+
                     {# Tagline #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Tagline <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Tagline <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>Up to 140 characters to grab attention.</p>
                             <p>
@@ -43,20 +51,24 @@
                             </p>
                         </TooltipContent>
                     </Tooltip>
-                    <div class="flex items-center gap-4">
-                        <input
-                            type="text"
-                            class="input"
-                            placeholder="Tagline"
-                            name="tagline"
-                            maxlength="140"
-                            required
-                        />
-                        <MaxLengthIndicator />
+                    <div>
+                        <div class="flex items-center gap-4">
+                            <input
+                                type="text"
+                                class="input"
+                                placeholder="Tagline"
+                                name="tagline"
+                                maxlength="140"
+                                required
+                            />
+                            <MaxLengthIndicator />
+                        </div>
+                        <ErrorHolder name="tagline" />
                     </div>
+
                     {# Description #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Description <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Description <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>A full description of your game.</p>
                             <p>
@@ -68,9 +80,11 @@
                         </TooltipContent>
                     </Tooltip>
                     <utilities.TipTap form_input_name="description" />
+                    <ErrorHolder name="description" />
+
                     {# Genre #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Genres <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Genres <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>What movie/book/game 'genres' describe your one-shot?</p>
                             <p>e.g. "Fantasy", "Cyberpunk", "Political Thriller"</p>
@@ -81,24 +95,26 @@
                         name="genre"
                         placeholder="Search for genres..."
                     ></forms.search_checks.SearchCheckContainer>
+                    <ErrorHolder name="genre" />
+
                     {# Tone #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Tone <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Tone <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>Just a rough guide for the target tone of the game.</p>
                         </TooltipContent>
                     </Tooltip>
-                    <div class="flex flex-col">
-                        {% for tone in tones %}
-                            <label>
-                                <input type="radio" name="tone" class="radio" value="{{ tone }}" required />
-                                <span>{{ tone }}</span>
-                            </label>
-                        {% endfor %}
-                    </div>
+                    {% for tone in tones %}
+                        <label>
+                            <input type="radio" name="tone" class="radio" value="{{ tone }}" required />
+                            <span>{{ tone }}</span>
+                        </label>
+                    {% endfor %}
+                    <ErrorHolder name="tone" />
+
                     {# Content warnings #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Content Warnings <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Content Warnings <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>
                                 There may be content in your game which are common phobias, or more horrific/mature
@@ -115,14 +131,17 @@
                         name="content_warning"
                         placeholder="Search for content warnings..."
                     ></forms.search_checks.SearchCheckContainer>
+                    <ErrorHolder name="content_warning" />
+
                     {# Crunch/weight #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Complexity <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Complexity <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>Read more info for an explanation of the complexity scale</p>
                         </TooltipContent>
                     </Tooltip>
-                    <Collapse>
+                    <Collapse class="collapse-arrow border">
+                        <input type="checkbox" />
                         <CollapseTitle>More Info</CollapseTitle>
                         <CollapseContent class="flex flex-col gap-4">
                             <!-- prettier-ignore-start -->
@@ -185,17 +204,17 @@
                             <!-- prettier-ignore-end -->
                         </CollapseContent>
                     </Collapse>
-                    <div class="flex flex-col">
-                        {% for crunch in crunches %}
-                            <label>
-                                <input type="radio" name="crunch" class="radio" value="{{ crunch }}" required />
-                                <span>{{ crunch }}</span>
-                            </label>
-                        {% endfor %}
-                    </div>
+                    {% for crunch in crunches %}
+                        <label>
+                            <input type="radio" name="crunch" class="radio" value="{{ crunch }}" required />
+                            <span>{{ crunch }}</span>
+                        </label>
+                    {% endfor %}
+                    <ErrorHolder name="crunch" />
+
                     {# Core activities #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Core Activities <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Core Activities <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>What do players spend most of their time doing in this one-shot?</p>
                             <p>How do they interact with the world and achieve their goals?</p>
@@ -203,9 +222,11 @@
                         </TooltipContent>
                     </Tooltip>
                     <FlagCheckboxes :flag_enum="core_activities" name="core_activity" />
+                    <ErrorHolder name="core_activity" />
+
                     {# Player Count #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Player Count <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Player Count <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>What's the minimum, optimal and maximum players your session can accomodate?</p>
                             <p></p>
@@ -237,9 +258,15 @@
                             value="6"
                         />
                     </forms.multislider.MultisliderContainer>
+                    <ErrorHolder name="player_count_minimum" />
+                    <ErrorHolder name="player_count_optimum" />
+                    <ErrorHolder name="player_count_maximum" />
+
                     {# Age suitability #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Age Suitabilty & Classification <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold"
+                            >Age Suitabilty & Classification <TooltipIcon
+                        /></label>
                         <TooltipContent class="text-left">
                             <p>If your game was a movie, what would be its rating?</p>
                             <p>
@@ -289,27 +316,29 @@
                             </TooltipContent>
                         </Tooltip>
                     </div>
+                    <ErrorHolder name="classification" />
 
                     {# Key Selling Points #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label">Bonuses <TooltipIcon /></label>
+                        <label class="fieldset-label font-semibold">Bonuses <TooltipIcon /></label>
                         <TooltipContent class="text-left">
                             <p>These are miscellaneous key selling points for your session or game.</p>
                         </TooltipContent>
                     </Tooltip>
                     <FlagCheckboxes :flag_enum="ksps" name="ksp" :display_tooltips="false" />
-                    {# Anything else? #}
+                    <ErrorHolder name="ksp" />
                 </fieldset>
 
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
                     <legend class="fieldset-legend">Scheduling Information</legend>
                     <span>
                         This information will be visible to the organisers so they can schedule the sessions where your
                         game is offered. You'll be able to edit this until the schedule is fixed prior to the event.
                     </span>
 
+                    {# Times to run#}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label"
+                        <label class="fieldset-label font-semibold"
                             >How many times do you want to run this game? <TooltipIcon
                         /></label>
                         <TooltipContent class="text-left">
@@ -328,9 +357,11 @@
                     >
                         <forms.multislider.Multislider title="Times" value="2" input_name="times_to_run" />
                     </forms.multislider.MultisliderContainer>
+                    <ErrorHolder name="times_to_run" />
 
+                    {# Available time slots #}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label"
+                        <label class="fieldset-label font-semibold"
                             >In which time slots could you run this game? <TooltipIcon
                         /></label>
                         <TooltipContent class="text-left">
@@ -339,7 +370,7 @@
                     </Tooltip>
                     <span>Please be flexible and mark all time slots you could do</span>
                     {% for time_slot in event.time_slots %}
-                        <label class="fieldset-label">
+                        <label class="fieldset-label font-semibold">
                             <input
                                 type="checkbox"
                                 class="checkbox"
@@ -352,36 +383,66 @@
                             </span>
                         </label>
                     {% endfor %}
+                    <ErrorHolder name="available_time_slot" />
 
                     <label class="fieldset-label"
                         >Any extra notes/preferences to help with scheduling? <TooltipIcon
                     /></label>
                     <textarea class="textarea" name="scheduling_notes"></textarea>
+                    <ErrorHolder name="scheduling_notes" />
 
-                    <label class="fieldset-label">Table Size Requirements <TooltipIcon /></label>
-                    <FlagCheckboxes :flag_enum="table_size_requirements" name="table_size_requirement" />
-                    <label class="fieldset-label">Any other notes on table size? <TooltipIcon /></label>
+                    {# Table Size Requirements #}
+                    <label class="fieldset-label font-semibold">Table Size Requirements</label>
+                    <FlagCheckboxes
+                        :flag_enum="table_size_requirements"
+                        name="table_size_requirement"
+                        :display_tooltips="false"
+                    />
+                    <ErrorHolder name="table_size_requirement" />
+
+                    <label class="fieldset-label">Any other notes on table size? </label>
                     <textarea class="textarea" name="table_size_notes"></textarea>
+                    <ErrorHolder name="table_size_notes" />
 
-                    <label class="fieldset-label">Equipment Requirements <TooltipIcon /></label>
-                    <FlagCheckboxes :flag_enum="equipment_requirements" name="equipment_requirement" />
-                    <label class="fieldset-label">Any other notes on equipment? <TooltipIcon /></label>
+                    {# Equipment Requirements #}
+                    <label class="fieldset-label font-semibold">Equipment Requirements</label>
+                    <FlagCheckboxes
+                        :flag_enum="equipment_requirements"
+                        name="equipment_requirement"
+                        :display_tooltips="false"
+                    />
+                    <ErrorHolder name="equipment_requirement" />
+
+                    <label>Any other notes on equipment?</label>
                     <textarea class="textarea" name="equipment_notes"></textarea>
+                    <ErrorHolder name="equipment_notes" />
 
-                    <label class="fieldset-label">Activity Requirements <TooltipIcon /></label>
-                    <FlagCheckboxes :flag_enum="activity_requirements" name="activity_requirement" />
-                    <label class="fieldset-label">Any other notes on activities? <TooltipIcon /></label>
+                    {# Activity Requirements #}
+                    <label class="fieldset-label font-semibold">Activity Requirements</label>
+                    <FlagCheckboxes
+                        :flag_enum="activity_requirements"
+                        name="activity_requirement"
+                        :display_tooltips="false"
+                    />
+                    <ErrorHolder name="activity_requirement" />
+
+                    <label class="fieldset-label">Any other notes on activities?</label>
                     <textarea class="textarea" name="activity_notes"></textarea>
+                    <ErrorHolder name="activity_notes" />
 
-                    <label class="fieldset-label">Room Requirements <TooltipIcon /></label>
-                    <FlagCheckboxes :flag_enum="room_requirements" name="room_requirement" />
-                    <label class="fieldset-label">Any other notes on rooms? <TooltipIcon /></label>
+                    {# Room Requirements #}
+                    <label class="fieldset-label font-semibold">Room Requirements</label>
+                    <FlagCheckboxes :flag_enum="room_requirements" name="room_requirement" :display_tooltips="false" />
+                    <ErrorHolder name="room_requirement" />
+
+                    <label class="fieldset-label">Any other notes on rooms?</label>
                     <textarea class="textarea" name="room_notes"></textarea>
+                    <ErrorHolder name="room_notes" />
                 </fieldset>
 
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
                     <legend class="fieldset-legend">Housekeeping</legend>
-                    <label class="fieldset-label">
+                    <label class="fieldset-label font-semibold">
                         <input type="checkbox" class="checkbox validator" required title="Required" />
                         <span>I agree to the <a class="link" href="TODO">Waikato RPG Code of Conduct</a></span>
                         <p class="validator-hint">You must agree to the Waikato RPG Code of Conduct</p>

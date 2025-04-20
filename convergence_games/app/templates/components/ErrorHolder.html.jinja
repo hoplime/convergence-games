@@ -1,0 +1,5 @@
+{#def
+    name: str = "field-name",
+    message: str = ""
+#}
+<div id="error-holder-{{ name }}" {{ attrs.render(class="text-error") }}>{{ message }}</div>
