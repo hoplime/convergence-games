@@ -22,7 +22,6 @@ from convergence_games.db.enums import (
     GameCrunch,
     GameEquipmentRequirement,
     GameKSP,
-    GameNarrativism,
     GameRoomRequirement,
     GameTableSizeRequirement,
     GameTone,
@@ -75,7 +74,7 @@ class SubmitGameForm(BaseModel):
     tone: GameTone
     content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator]
     crunch: GameCrunch
-    narrativism: GameNarrativism
+    core_activity: GameCoreActivity
     player_count_minimum: int
     player_count_minimum_more: int | None = None
     player_count_optimum: int
@@ -223,7 +222,7 @@ class SubmitGameController(Controller):
             description=data.description,
             classification=data.classification,
             crunch=data.crunch,
-            narrativism=data.narrativism,
+            core_activity=data.core_activity,
             tone=data.tone,
             player_count_minimum=max(data.player_count_minimum, data.player_count_minimum_more or 0),
             player_count_optimum=max(data.player_count_optimum, data.player_count_optimum_more or 0),

@@ -13,10 +13,10 @@ from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
     GameActivityRequirement,
     GameClassification,
+    GameCoreActivity,
     GameCrunch,
     GameEquipmentRequirement,
     GameKSP,
-    GameNarrativism,
     GameRoomRequirement,
     GameTableSizeRequirement,
     GameTone,
@@ -156,9 +156,7 @@ class Game(Base):
         Enum(GameClassification), default=GameClassification.PG, index=True
     )
     crunch: Mapped[GameCrunch] = mapped_column(Enum(GameCrunch), default=GameCrunch.MEDIUM, index=True)
-    narrativism: Mapped[GameNarrativism] = mapped_column(
-        Enum(GameNarrativism), default=GameNarrativism.BALANCED, index=True
-    )
+    core_activity: Mapped[GameCoreActivity] = mapped_column(Integer, default=GameCoreActivity.NONE, index=True)
     tone: Mapped[GameTone] = mapped_column(Enum(GameTone), default=GameTone.LIGHT_HEARTED, index=True)
 
     # Player Count

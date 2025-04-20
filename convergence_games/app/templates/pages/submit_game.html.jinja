@@ -207,8 +207,8 @@
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Player Count <TooltipIcon /></label>
                         <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
+                            <p>What's the minimum, optimal and maximum players your session can accomodate?</p>
+                            <p></p>
                         </TooltipContent>
                     </Tooltip>
                     <forms.multislider.MultisliderContainer
@@ -241,40 +241,63 @@
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Age Suitabilty & Classification <TooltipIcon /></label>
                         <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
+                            <p>If your game was a movie, what would be its rating?</p>
+                            <p>
+                                Note that R18 actually prevents players under 18 from joining the game. We expect most
+                                submissions to be PG or M.
+                            </p>
                         </TooltipContent>
                     </Tooltip>
                     <div class="flex flex-row gap-4">
-                        <label
-                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
-                        >
-                            <input type="radio" name="classification" class="hidden" value="PG" checked required />
-                            <span class="block text-lg font-bold">PG</span>
-                        </label>
-                        <label
-                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
-                        >
-                            <input type="radio" name="classification" class="hidden" value="M" required />
-                            <span class="block text-lg font-bold">M</span>
-                        </label>
-                        <label
-                            class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
-                        >
-                            <input type="radio" name="classification" class="hidden" value="R18" required />
-                            <span class="block text-lg font-bold">R18</span>
-                        </label>
+                        <Tooltip>
+                            <label
+                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
+                            >
+                                <input type="radio" name="classification" class="hidden" value="PG" checked required />
+                                <span class="block text-lg font-bold">PG</span>
+                            </label>
+                            <TooltipContent>
+                                <p>Parental Guidance</p>
+                                <p>
+                                    Some material may not be suitable for children - but 13 is the minimum age at
+                                    Convergence.
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <label
+                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
+                            >
+                                <input type="radio" name="classification" class="hidden" value="M" required />
+                                <span class="block text-lg font-bold">M</span>
+                            </label>
+                            <TooltipContent>
+                                <p>Mature</p>
+                                <p>Content may be more suitable for older teens and adults.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <label
+                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
+                            >
+                                <input type="radio" name="classification" class="hidden" value="R18" required />
+                                <span class="block text-lg font-bold">R18</span>
+                            </label>
+                            <TooltipContent>
+                                <p>Restricted 18</p>
+                                <p>Content is suitable only for adults. No one under 18 may join this game.</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
 
                     {# Key Selling Points #}
                     <Tooltip class="w-fit">
                         <label class="fieldset-label">Bonuses <TooltipIcon /></label>
                         <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
+                            <p>These are miscellaneous key selling points for your session or game.</p>
                         </TooltipContent>
                     </Tooltip>
-                    <FlagCheckboxes :flag_enum="ksps" name="ksp" />
+                    <FlagCheckboxes :flag_enum="ksps" name="ksp" :display_tooltips="false" />
                     {# Anything else? #}
                 </fieldset>
 
@@ -290,8 +313,11 @@
                             >How many times do you want to run this game? <TooltipIcon
                         /></label>
                         <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
+                            <p>Barring over-scheduling, you will likely run this session this many times.</p>
+                            <p>
+                                If you are submitting multiple games, keep that in mind - we only have five time slots
+                                available! You get to choose how many times you want your game to run.
+                            </p>
                         </TooltipContent>
                     </Tooltip>
                     <forms.multislider.MultisliderContainer
@@ -308,8 +334,7 @@
                             >In which time slots could you run this game? <TooltipIcon
                         /></label>
                         <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
+                            <p>We will not schedule you outside of these time slots without contacting you to agree.</p>
                         </TooltipContent>
                     </Tooltip>
                     <span>Please be flexible and mark all time slots you could do</span>
@@ -328,83 +353,29 @@
                         </label>
                     {% endfor %}
 
-                    <Tooltip class="w-fit">
-                        <label class="fieldset-label"
-                            >Any extra notes/preferences to help with scheduling? <TooltipIcon
-                        /></label>
-                        <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <label class="fieldset-label"
+                        >Any extra notes/preferences to help with scheduling? <TooltipIcon
+                    /></label>
                     <textarea class="textarea" name="scheduling_notes"></textarea>
 
-                    <Tooltip class="w-fit">
-                        <label class="fieldset-label">Table Size Requirements <TooltipIcon /></label>
-                        <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <label class="fieldset-label">Table Size Requirements <TooltipIcon /></label>
                     <FlagCheckboxes :flag_enum="table_size_requirements" name="table_size_requirement" />
-                    <Tooltip class="w-fit">
-                        <label class="fieldset-label">Any other notes on table size? <TooltipIcon /></label>
-                        <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <label class="fieldset-label">Any other notes on table size? <TooltipIcon /></label>
                     <textarea class="textarea" name="table_size_notes"></textarea>
 
-                    <Tooltip class="w-fit">
-                        <label class="fieldset-label">Equipment Requirements <TooltipIcon /></label>
-                        <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <label class="fieldset-label">Equipment Requirements <TooltipIcon /></label>
                     <FlagCheckboxes :flag_enum="equipment_requirements" name="equipment_requirement" />
-                    <Tooltip class="w-fit">
-                        <label class="fieldset-label">Any other notes on equipment? <TooltipIcon /></label>
-                        <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <label class="fieldset-label">Any other notes on equipment? <TooltipIcon /></label>
                     <textarea class="textarea" name="equipment_notes"></textarea>
 
-                    <Tooltip class="w-fit">
-                        <label class="fieldset-label">Activity Requirements <TooltipIcon /></label>
-                        <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <label class="fieldset-label">Activity Requirements <TooltipIcon /></label>
                     <FlagCheckboxes :flag_enum="activity_requirements" name="activity_requirement" />
-                    <Tooltip class="w-fit">
-                        <label class="fieldset-label">Any other notes on activities? <TooltipIcon /></label>
-                        <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <label class="fieldset-label">Any other notes on activities? <TooltipIcon /></label>
                     <textarea class="textarea" name="activity_notes"></textarea>
 
-                    <Tooltip class="w-fit">
-                        <label class="fieldset-label">Room Requirements <TooltipIcon /></label>
-                        <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <label class="fieldset-label">Room Requirements <TooltipIcon /></label>
                     <FlagCheckboxes :flag_enum="room_requirements" name="room_requirement" />
-                    <Tooltip class="w-fit">
-                        <label class="fieldset-label">Any other notes on rooms? <TooltipIcon /></label>
-                        <TooltipContent class="text-left">
-                            <p>TTL1</p>
-                            <p>TTL2</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <label class="fieldset-label">Any other notes on rooms? <TooltipIcon /></label>
                     <textarea class="textarea" name="room_notes"></textarea>
                 </fieldset>
 

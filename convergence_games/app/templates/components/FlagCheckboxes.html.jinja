@@ -5,7 +5,7 @@
 #}
 {% for f in flag_enum %}
     {% if display_tooltips %}
-        <Tooltip class="w-fit">
+        <Tooltip class="w-fit" toggleable="false">
             <label class="fieldset-label">
                 <input type="checkbox" name="{{ name }}" value="{{ f }}" class="checkbox" />
                 <span>{{ f.form_notes[0] }}</span>

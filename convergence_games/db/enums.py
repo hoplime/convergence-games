@@ -10,12 +10,6 @@ class GameCrunch(enum.StrEnum):
     EXTRA_HEAVY = "Extra heavy"
 
 
-class GameNarrativism(enum.StrEnum):
-    NARRATIVIST = "Narrativist"
-    BALANCED = "Balanced"
-    GAMEIST = "Gameist"
-
-
 class GameTone(enum.StrEnum):
     GOOFY = "Goofy"
     LIGHT_HEARTED = "Light-hearted"
