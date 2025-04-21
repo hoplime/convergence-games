@@ -4,8 +4,10 @@ convergence_games/app/static/js/lib.js
 convergence_games/app/static/js/lib.js.map
 
 # Editor helpers and docs
+.git/
 .github/
 .prettierrc.json
+.pytest_cache/
 .vscode/
 scripts/
 compose.dev.yaml
