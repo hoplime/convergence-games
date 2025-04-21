@@ -29,7 +29,7 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-FROM debian:bookworm-slim@sha256:b1211f6d19afd012477bd34fdcabb6b663d680e0f4b0537da6e6b0fd057a3ec3
+FROM debian:bookworm-slim@sha256:b1211f6d19afd012477bd34fdcabb6b663d680e0f4b0537da6e6b0fd057a3ec3 AS default
 
 # Copy built files
 COPY --from=python-builder /python /python
@@ -44,3 +44,19 @@ ARG BUILD_TIME
 ENV LAST_UPDATED=$BUILD_TIME
 
 CMD ["python", "-m", "uvicorn", "--host=0.0.0.0", "convergence_games.app:app"]
+
+FROM default AS azure
+
+COPY azure/sshd_config /etc/ssh/
+COPY azure/entrypoint.sh ./entrypoint.sh
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends dialog \
+    && apt-get install -y --no-install-recommends openssh-server \
+    && echo "root:Docker!" | chpasswd \
+    && chmod u+x ./entrypoint.sh
+
+EXPOSE 8000 2222
+
+ENTRYPOINT [ "./entrypoint.sh" ]
+
+FROM default
