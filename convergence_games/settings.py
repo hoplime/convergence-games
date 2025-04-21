@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
 
@@ -10,6 +12,8 @@ class Settings(BaseSettings):
 
     # General
     DEBUG: bool = False
+    ENVIRONMENT: Literal["development", "production"] = "development"
+    LAST_UPDATED: str = ""
 
     # Database
     DATABASE_DRIVER: str = "postgresql+asyncpg"

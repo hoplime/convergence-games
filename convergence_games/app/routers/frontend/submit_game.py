@@ -5,7 +5,7 @@ from litestar import Controller, Response, get, post
 from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body, RequestEncodingType
 from litestar.response import Redirect
-from pydantic import BaseModel, BeforeValidator, TypeAdapter
+from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,9 +67,9 @@ SqidOrNewStr = Annotated[SqidOrNew[str], BeforeValidator(make_sqid_or_new_valida
 
 class SubmitGameForm(BaseModel):
     # Stuff that's used for Game
-    title: str
+    title: Annotated[str, Field(min_length=1, max_length=100)]
     system: SqidOrNewStr
-    tagline: str = ""
+    tagline: Annotated[str, Field(min_length=10, max_length=140)] = ""
     description: str = ""
     genre: Annotated[list[SqidOrNewStr], MaybeListValidator]
     tone: GameTone

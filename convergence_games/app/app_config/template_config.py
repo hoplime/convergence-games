@@ -8,6 +8,7 @@ from litestar.template.config import TemplateConfig
 
 from convergence_games.app.paths import COMPONENTS_DIR_PATH, TEMPLATES_DIR_PATH
 from convergence_games.db.ocean import swim
+from convergence_games.settings import SETTINGS
 from convergence_games.utils.time_utils import nice_time_format
 
 
@@ -57,6 +58,7 @@ jinja_env.filters["nice_time_format"] = nice_time_format
 
 jinja_env.globals["swim"] = swim
 jinja_env.globals["random_id"] = lambda: str(uuid.uuid4())
+jinja_env.globals["SETTINGS"] = SETTINGS
 
 catalog = jinjax.Catalog(jinja_env=jinja_env)
 catalog.add_folder(COMPONENTS_DIR_PATH)
