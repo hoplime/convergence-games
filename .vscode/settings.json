@@ -109,7 +109,7 @@
         "commands": [
             {
                 "match": "\\.jinja$",
-                "cmd": "${workspaceFolder}/.venv/bin/python component_hinting_helper.py convergence_games/app/templates/components/ --add-vscode-settings"
+                "cmd": "${workspaceFolder}/.venv/bin/python scripts/component_hinting_helper.py convergence_games/app/templates/components/ --add-vscode-settings"
             },
             {
                 "match": "\\.ts$",

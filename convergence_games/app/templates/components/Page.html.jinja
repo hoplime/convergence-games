@@ -30,7 +30,12 @@
             {% if SETTINGS.ENVIRONMENT == "development" %}
                 <div class="alert alert-warning alert-soft fixed bottom-0 right-0 flex flex-col font-bold">
                     <p>⚠️DISCLAIMER - NO DESIGN APPLIED⚠️</p>
-                    <p>This is the development build last updated {{ SETTINGS.LAST_UPDATED }}</p>
+                    <p>
+                        This is the development build
+                        {% if SETTINGS.LAST_UPDATED is not none %}
+                            last updated {{ SETTINGS.LAST_UPDATED | nice_time_format }}
+                        {% endif %}
+                    </p>
                 </div>
             {% endif %}
             <layout.Footer />

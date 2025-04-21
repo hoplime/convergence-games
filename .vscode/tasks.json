@@ -31,7 +31,7 @@
         },
         {
             "type": "npm",
-            "script": "build",
+            "script": "build:tsc",
             "path": "",
             "group": "build",
             "label": "build",

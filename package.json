@@ -2,8 +2,9 @@
   "scripts": {
     "tailwind:watch:forever": "pm2 start npm -- run tailwind:watch",
     "tailwind:watch": "tailwindcss -i ./style.css -o ./convergence_games/app/static/css/style.css --minify --watch",
-    "tailwind:compile": "tailwindcss -i ./style.css -o ./convergence_games/app/static/css/style.css --minify",
-    "build": "tsc && vite build"
+    "build:css": "tailwindcss -i ./style.css -o ./convergence_games/app/static/css/style.css --minify",
+    "build:tsc": "tsc && vite build",
+    "build": "npm run build:tsc && npm run build:css"
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.0.0",
