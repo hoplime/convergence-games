@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["development", "production"] = "development"
     LAST_UPDATED: AwareDatetime | None = None
 
+    @property
+    def RELEASE(self) -> str:  # noqa: N802
+        """Get the release version from the last updated date."""
+        if self.LAST_UPDATED:
+            return self.LAST_UPDATED.strftime("%Y-%m-%d %H:%M:%S")
+        return "unknown"
+
     # Database
     DATABASE_DRIVER: str = "postgresql+asyncpg"
     DATABASE_USERNAME: str = ""

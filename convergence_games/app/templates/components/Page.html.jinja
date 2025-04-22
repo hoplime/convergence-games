@@ -13,9 +13,7 @@
             <script>
                 window.sentryOnLoad = function() {
                     Sentry.init({
-                        {% if SETTINGS.LAST_UPDATED -%}
-                            release: "{{ SETTINGS.LAST_UPDATED | nice_time_format }}",
-                        {%- endif %}
+                        release: "{{ SETTINGS.RELEASE }}",
                         environment: "{{ SETTINGS.ENVIRONMENT }}",
                         replaysSessionSampleRate: {{ SETTINGS.SENTRY_REPLAYS_SESSION_SAMPLE_RATE }},
                         replaysOnErrorSampleRate: {{ SETTINGS.SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE }},

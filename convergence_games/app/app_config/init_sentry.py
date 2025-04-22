@@ -1,5 +1,5 @@
 import sentry_sdk
-from sentry_sdk.scrubber import DEFAULT_DENYLIST, DEFAULT_PII_DENYLIST, EventScrubber
+from sentry_sdk.scrubber import EventScrubber
 
 from convergence_games.settings import SETTINGS
 
@@ -12,6 +12,7 @@ def init_sentry() -> None:
     sentry_sdk.init(
         dsn=SETTINGS.SENTRY_DSN,
         environment=SETTINGS.SENTRY_ENVIRONMENT,
+        release=SETTINGS.RELEASE,
         send_default_pii=True,
         traces_sample_rate=1.0,
         profiles_sample_rate=1.0,
