@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     def RELEASE(self) -> str:  # noqa: N802
         """Get the release version from the last updated date."""
         if self.LAST_UPDATED:
-            return self.LAST_UPDATED.strftime("%Y-%m-%d %H:%M:%S")
+            return self.LAST_UPDATED.strftime("%Y.%m.%d+%H.%M.%S")
         return "unknown"
 
     # Database
