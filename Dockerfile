@@ -31,6 +31,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM debian:bookworm-slim@sha256:b1211f6d19afd012477bd34fdcabb6b663d680e0f4b0537da6e6b0fd057a3ec3 AS default
 
+# Install ca-certificates - so we can use https to get JWKs from Google etc
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        &&\
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+
 # Copy built files
 COPY --from=python-builder /python /python
 COPY --from=python-builder /app /app
