@@ -9,6 +9,27 @@
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
         {# Libraries #}
+        {% if SETTINGS.SENTRY_LOADER_SRC -%}
+            <script>
+                window.sentryOnLoad = function() {
+                    Sentry.init({
+                        {% if SETTINGS.LAST_UPDATED -%}
+                            release: "{{ SETTINGS.LAST_UPDATED | nice_time_format }}",
+                        {%- endif %}
+                        environment: "{{ SETTINGS.ENVIRONMENT }}",
+                        replaysSessionSampleRate: {{ SETTINGS.SENTRY_REPLAYS_SESSION_SAMPLE_RATE }},
+                        replaysOnErrorSampleRate: {{ SETTINGS.SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE }},
+                        integrations: [
+                            Sentry.replayIntegration({
+                                blockAllMedia: false,
+                                maskAllText: false,
+                            })
+                        ]
+                    });
+                }
+            </script>
+            <script src="{{ SETTINGS.SENTRY_LOADER_SRC }}" crossorigin="anonymous"></script>
+        {%- endif %}
         <script src="/static/js/htmx.js"></script>
         <script src="/static/js/preload.js"></script>
         <script src="/static/js/_hyperscript.min.js"></script>

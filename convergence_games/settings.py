@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import AwareDatetime
+from pydantic import AwareDatetime, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
 
@@ -54,6 +54,26 @@ class Settings(BaseSettings):
     BREVO_API_KEY: str = ""
     BREVO_SENDER_NAME: str = "Waikato Role-playing Guild"
     BREVO_SENDER_EMAIL: str = "noreply@waikatorpg.co.nz"
+
+    # Sentry
+    SENTRY_ENABLE: bool = True
+    SENTRY_ENVIRONMENT: str = ""
+    # Backend settings
+    SENTRY_DSN: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = 1.0
+    SENTRY_PROFILES_SAMPLE_RATE: float = 1.0
+    SENTRY_SEND_DEFAULT_PII: bool = True
+    # Frontend settings
+    SENTRY_LOADER_SRC: str = ""
+    SENTRY_REPLAYS_SESSION_SAMPLE_RATE: float = 1.0
+    SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: float = 1.0
+
+    @model_validator(mode="after")
+    def set_default_sentry_environment(self) -> Self:
+        """Set the default Sentry environment to the current environment."""
+        if not self.SENTRY_ENVIRONMENT:
+            self.SENTRY_ENVIRONMENT = self.ENVIRONMENT
+        return self
 
 
 SETTINGS = Settings()

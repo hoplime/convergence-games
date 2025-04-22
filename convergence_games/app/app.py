@@ -9,6 +9,7 @@ from .app_config import (
     dependencies,
     exception_handlers,
     htmx_plugin,
+    init_sentry,
     jwt_cookie_auth,
     openapi_config,
     sqlalchemy_plugin,
@@ -16,6 +17,8 @@ from .app_config import (
 )
 from .events import all_listeners
 from .routers import routers
+
+init_sentry()
 
 app = Litestar(
     route_handlers=routers,

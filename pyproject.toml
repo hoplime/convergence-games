@@ -18,10 +18,11 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "pydantic-settings>=2.7.1",
     "pydantic>=2.10.5",
+    "rapidfuzz>=3.12.1",
+    "sentry-sdk[litestar]>=2.26.1",
     "sqids>=0.5.1",
     "sqlalchemy>=2.0.37",
     "uvicorn[standard]>=0.34.0",
-    "rapidfuzz>=3.12.1",
 ]
 
 [project.urls]
