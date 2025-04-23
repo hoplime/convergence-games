@@ -101,7 +101,7 @@
                     <Tooltip class="w-fit">
                         <label class="fieldset-label font-semibold">Tone <TooltipIcon /></label>
                         <TooltipContent class="text-left">
-                            <p>Just a rough guide for the target tone of the game.</p>
+                            <p>A rough guide for the <i>target</i> tone of the game.</p>
                         </TooltipContent>
                     </Tooltip>
                     {% for tone in tones %}
@@ -396,7 +396,7 @@
                     <FlagCheckboxes
                         :flag_enum="table_size_requirements"
                         name="table_size_requirement"
-                        :display_tooltips="false"
+                        :display_tooltips="true"
                     />
                     <ErrorHolder name="table_size_requirement" />
 

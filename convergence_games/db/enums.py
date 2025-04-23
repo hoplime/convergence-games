@@ -174,7 +174,12 @@ class GameTableSizeRequirement(FlagWithNotes):
 
     __form_notes__ = {
         SMALL: "Small table",
-        LARGE: "Large table (if you require large battlemaps etc)",
+        LARGE: "Large table",
+    }
+
+    __tooltips__ = {
+        SMALL: "Suitable for up to 4 players with props, or up to 6 players",
+        LARGE: "If you require large battlemaps, or more than 8 players",
     }
 
 
