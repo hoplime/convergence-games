@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 import jinjax
+from humanize import naturaldelta
 from jinja2 import Environment, FileSystemLoader
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.template.config import TemplateConfig
@@ -55,6 +56,7 @@ jinja_env = Environment(
 jinja_env.filters["debug"] = debug
 jinja_env.filters["extract_title"] = extract_title
 jinja_env.filters["nice_time_format"] = nice_time_format
+jinja_env.filters["humanize"] = naturaldelta
 
 jinja_env.globals["swim"] = swim
 jinja_env.globals["random_id"] = lambda: str(uuid.uuid4())

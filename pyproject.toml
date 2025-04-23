@@ -23,6 +23,7 @@ dependencies = [
     "sqids>=0.5.1",
     "sqlalchemy>=2.0.37",
     "uvicorn[standard]>=0.34.0",
+    "humanize>=4.12.2",
 ]
 
 [project.urls]

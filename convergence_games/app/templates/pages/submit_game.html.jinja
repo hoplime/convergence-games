@@ -139,7 +139,7 @@
                                 are comfortable.
                             </p>
                             <p>
-                                Convergence will be using the X card and open table policy, by submitting you agree to
+                                Convergence will be using the X-Card and Open Table Policy, by submitting you agree to
                                 use these two safety tools at minimum.
                             </p>
                         </TooltipContent>
@@ -396,7 +396,7 @@
                             />
                             <span>
                                 {{ time_slot.name }}: {{ time_slot.start_time | nice_time_format }} -
-                                {{ time_slot.end_time | nice_time_format }}
+                                {{ time_slot.end_time | nice_time_format }} ({{ time_slot.duration | humanize }})
                             </span>
                         </label>
                     {% endfor %}
@@ -461,8 +461,23 @@
                     <legend class="fieldset-legend">Housekeeping</legend>
                     <label class="fieldset-label font-semibold">
                         <input type="checkbox" class="checkbox validator" required title="Required" />
-                        <span>I agree to the <a class="link" href="TODO">Waikato RPG Code of Conduct</a></span>
+                        <span>
+                            I agree to the
+                            <a class="link" href="https://www.waikatorpg.co.nz/policies-and-code-of-conduct">
+                                Waikato RPG Code of Conduct
+                            </a>
+                        </span>
                         <p class="validator-hint">You must agree to the Waikato RPG Code of Conduct</p>
+                    </label>
+                    <label class="fieldset-label font-semibold">
+                        <input type="checkbox" class="checkbox validator" required title="Required" />
+                        <span>
+                            I agree to the use of
+                            <a class="link" href="https://www.waikatorpg.co.nz/safety-tools">
+                                the X-Card and Open Table Policy
+                            </a>
+                        </span>
+                        <p class="validator-hint">You must agree to use the X-Card and Open Table Policy</p>
                     </label>
                 </fieldset>
                 <button class="btn btn-primary" hx-post="/submit_game/{{ swim(event) }}">Submit</button>
