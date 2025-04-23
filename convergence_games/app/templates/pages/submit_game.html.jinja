@@ -3,6 +3,10 @@
         <title>Submit Game - Convergence 2025</title>
         <div>
             <h1 class="text-xl font-bold">Submit Game</h1>
+            <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
+                <legend class="fieldset-legend">Event Information</legend>
+                <span> </span>
+            </fieldset>
             <form>
                 <button type="submit" disabled class="hidden" aria-hidden="true"></button>
                 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
@@ -20,7 +24,8 @@
                         </TooltipContent>
                     </Tooltip>
                     <div>
-                        <input type="text" class="input" placeholder="Title" name="title" required />
+                        <input type="text" class="input" placeholder="Title" name="title" maxlength="100" required />
+                        <MaxLengthIndicator />
                         <ErrorHolder name="title" />
                     </div>
 
