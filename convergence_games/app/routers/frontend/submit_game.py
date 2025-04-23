@@ -73,9 +73,9 @@ class SubmitGameForm(BaseModel):
     description: str = ""
     genre: Annotated[list[SqidOrNewStr], MaybeListValidator]
     tone: GameTone
-    content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator]
+    content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator] = []
     crunch: GameCrunch
-    core_activity: GameCoreActivity
+    core_activity: Annotated[GameCoreActivity, IntFlagValidator] = GameCoreActivity.NONE
     player_count_minimum: int
     player_count_minimum_more: int | None = None
     player_count_optimum: int
