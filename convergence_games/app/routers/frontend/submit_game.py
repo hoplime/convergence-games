@@ -115,6 +115,7 @@ async def search_with_fuzzy_match[T: SearchableBase](
     model_type: type[T],
     search: str,
     extra_filters: ColumnExpressionArgument[bool] | None = None,
+    suggested_on_empty: bool = False,
 ) -> list[SearchResult[T]]:
     # TODO: Can we directly query for the names (possibly including aliases) and sqids?
     query = select(model_type)
@@ -124,6 +125,23 @@ async def search_with_fuzzy_match[T: SearchableBase](
 
     if extra_filters is not None:
         query = query.where(extra_filters)
+
+    if not search:
+        if suggested_on_empty:
+            assert issubclass(model_type, Genre) or issubclass(model_type, ContentWarning)
+            query = query.where(model_type.suggested).order_by(model_type.name)
+            all_rows = (await transaction.execute(query)).scalars().all()
+            return [
+                SearchResult(
+                    name=row.name,
+                    match=row.name,
+                    score=100,
+                    result=row,
+                )
+                for row in all_rows
+            ]
+        else:
+            return []
 
     all_rows = (await transaction.execute(query)).scalars().all()
 
@@ -370,7 +388,7 @@ class SubmitGameController(Controller):
         extra_filters = Genre.submission_status == SubmissionStatus.APPROVED
         if request.user:
             extra_filters = extra_filters | (Genre.created_by == request.user.id)
-        results = await search_with_fuzzy_match(transaction, Genre, search, extra_filters)
+        results = await search_with_fuzzy_match(transaction, Genre, search, extra_filters, suggested_on_empty=True)
 
         return HTMXBlockTemplate(
             template_name="components/forms/search/SearchResultsList.html.jinja",
@@ -416,7 +434,9 @@ class SubmitGameController(Controller):
         extra_filters = ContentWarning.submission_status == SubmissionStatus.APPROVED
         if request.user:
             extra_filters = extra_filters | (ContentWarning.created_by == request.user.id)
-        results = await search_with_fuzzy_match(transaction, ContentWarning, search, extra_filters)
+        results = await search_with_fuzzy_match(
+            transaction, ContentWarning, search, extra_filters, suggested_on_empty=True
+        )
 
         return HTMXBlockTemplate(
             template_name="components/forms/search/SearchResultsList.html.jinja",

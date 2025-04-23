@@ -1,9 +1,15 @@
 {#def
     name: str = "search",
     placeholder: str = "",
+    suggested_on_empty: bool = False,
 #}
-<div {{ attrs.render(class="search-container") }}>
-    <div class="input flex h-fit flex-col gap-2 p-2">
+<div
+    {{ attrs.render(class="search-container") }}
+    _="on focusin from elsewhere add .hidden to #{{ name }}-search-results end
+       on focusout get the event.relatedTarget then if it == null add .hidden to #{{ name }}-search-results end
+       on focusin remove .hidden from #{{ name }}-search-results"
+>
+    <div class="input flex h-fit flex-col gap-2 p-2" _="on click get #{{ name }}-search then it.focus()">
         {# w-[clamp(4.5rem,30rem,100%)]  #}
         <div
             class="search-chip-container hidden flex-row flex-wrap justify-start gap-1 self-start has-[:not(.hidden)]:flex"
@@ -16,9 +22,10 @@
         />
     </div>
     <div
+        id="{{ name }}-search-results"
         hx-get="/search/{{ name }}/results"
         hx-vals="js:{search: document.getElementById('{{ name }}-search').value}"
-        hx-trigger="keyup changed from:previous input#{{ name }}-search"
+        hx-trigger="{{ 'click from:previous input#' ~ name ~ '-search, ' if suggested_on_empty }}keyup from:previous input#{{ name }}-search, changed from:previous input#{{ name }}-search"
         hx-swap="innerHTML"
     ></div>
 </div>
