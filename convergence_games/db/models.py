@@ -495,7 +495,7 @@ class UserEmailVerificationCode(Base):
     email: Mapped[str] = mapped_column(index=True)
     expires_at: Mapped[dt.datetime] = mapped_column(
         DateTimeUTC(timezone=True),
-        default=dt.datetime.now(tz=dt.timezone.utc) + dt.timedelta(hours=4),
+        default=lambda: dt.datetime.now(tz=dt.timezone.utc) + dt.timedelta(hours=4),
     )
 
     @validates("expires_at")
