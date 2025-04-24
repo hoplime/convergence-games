@@ -69,13 +69,11 @@
             } else {
                 // Set the theme based on system preference
                 const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-                if (prefersDarkScheme.matches) {
-                    document.documentElement.setAttribute("data-theme", "dark");
-                }
+                document.documentElement.setAttribute("data-theme", prefersDarkScheme.matches ? "convergence_dark" : "convergence_light");
 
                 // Listen for changes in the system preference
                 prefersDarkScheme.addEventListener("change", (e) => {
-                    const newColorScheme = e.matches ? "dark" : "light";
+                    const newColorScheme = e.matches ? "convergence_dark" : "convergence_light";
                     document.documentElement.setAttribute("data-theme", newColorScheme);
                 });
             }
