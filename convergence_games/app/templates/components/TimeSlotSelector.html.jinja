@@ -1,0 +1,73 @@
+{#def
+    time_slots: list[TimeSlot] = [],
+    name: str = "available_time_slot",
+    break_points: list[int] = [],
+#}
+{% if break_points %}
+    <label class="fieldset-label font-semibold">
+        <input
+            type="radio"
+            class="radio"
+            name="{{ name }}-breakpoint"
+            checked
+            _="on change remove @disabled from <input[name='{{ name }}'] />"
+        />
+        <span>{{ break_points | join('/') }} hours are fine</span>
+    </label>
+    {% for break_point in break_points[1:] %}
+        <label class="fieldset-label font-semibold">
+            <input
+                type="radio"
+                class="radio"
+                name="{{ name }}-breakpoint"
+                _="on change 
+                    repeat in <input[name='{{ name }}'] />
+                        if it @data-duration != null and its @data-duration as Int < {{ break_point }} then
+                            add @disabled to it then
+                            set it.checked to false
+                        end
+                    end"
+            />
+            <span>This requires {{ break_point }} hour{{ 's' if break_point > 1 else '' }}</span>
+        </label>
+    {% endfor %}
+{% endif %}
+<span></span>
+<span>Please be flexible and mark all time slots you could do</span>
+<label class="fieldset-label font-semibold">
+    <input
+        type="checkbox"
+        class="checkbox"
+        name="{{ name }}"
+        value="any"
+        _="
+        on change
+            repeat in <input[name='{{ name }}']:not(:disabled) />
+                if it != me then
+                set it.checked to me.checked
+            end
+        end
+        
+        on change from <input[name='{{ name }}']:not(:disabled) />
+            if it != me and not it.checked then
+            set me.checked to false
+        end
+        "
+    />
+    <span>Any time slots are fine</span>
+</label>
+{% for time_slot in time_slots %}
+    <label class="fieldset-label font-semibold has-[:disabled]:line-through">
+        <input
+            type="checkbox"
+            class="checkbox"
+            name="{{ name }}"
+            value="{{ swim(time_slot) }}"
+            data-duration="{{ time_slot.duration.total_seconds() / 60 / 60 | int }}"
+        />
+        <span>
+            {{ time_slot.name }} ({{ time_slot.duration | humanize }}):
+            {{ time_slot.end_time | time_range_format(time_slot.start_time) }}
+        </span>
+    </label>
+{% endfor %}

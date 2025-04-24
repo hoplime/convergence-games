@@ -10,7 +10,7 @@ from litestar.template.config import TemplateConfig
 from convergence_games.app.paths import COMPONENTS_DIR_PATH, TEMPLATES_DIR_PATH
 from convergence_games.db.ocean import swim
 from convergence_games.settings import SETTINGS
-from convergence_games.utils.time_utils import nice_time_format
+from convergence_games.utils.time_utils import nice_time_format, time_range_format
 
 
 def extract_title(text: jinjax.catalog.CallerWrapper) -> str:
@@ -56,6 +56,7 @@ jinja_env = Environment(
 jinja_env.filters["debug"] = debug
 jinja_env.filters["extract_title"] = extract_title
 jinja_env.filters["nice_time_format"] = nice_time_format
+jinja_env.filters["time_range_format"] = time_range_format
 jinja_env.filters["humanize"] = naturaldelta
 
 jinja_env.globals["swim"] = swim

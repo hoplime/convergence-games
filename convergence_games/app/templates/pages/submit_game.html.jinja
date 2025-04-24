@@ -357,9 +357,9 @@
 
                     {# Times to run#}
                     <Tooltip class="w-fit">
-                        <label class="fieldset-label font-semibold"
-                            >How many times do you want to run this game? <TooltipIcon
-                        /></label>
+                        <label class="fieldset-label font-semibold">
+                            How many times do you want to run this game? <TooltipIcon />
+                        </label>
                         <TooltipContent class="text-left">
                             <p>Barring over-scheduling, you will likely run this session this many times.</p>
                             <p>
@@ -387,21 +387,7 @@
                             <p>We will not schedule you outside of these time slots without contacting you to agree.</p>
                         </TooltipContent>
                     </Tooltip>
-                    <span>Please be flexible and mark all time slots you could do</span>
-                    {% for time_slot in event.time_slots %}
-                        <label class="fieldset-label font-semibold">
-                            <input
-                                type="checkbox"
-                                class="checkbox"
-                                name="available_time_slot"
-                                value="{{ swim(time_slot) }}"
-                            />
-                            <span>
-                                {{ time_slot.name }}: {{ time_slot.start_time | nice_time_format }} -
-                                {{ time_slot.end_time | nice_time_format }} ({{ time_slot.duration | humanize }})
-                            </span>
-                        </label>
-                    {% endfor %}
+                    <TimeSlotSelector :time_slots="event.time_slots" :break_points="[3,4]" />
                     <ErrorHolder name="available_time_slot" />
 
                     <label class="fieldset-label"
