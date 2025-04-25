@@ -1,0 +1,21 @@
+<Page>
+    {% block content %}
+        <title>{{ game.name }} - Convergence 2025</title>
+        <div class="mx-auto flex max-w-screen-lg flex-col gap-2">
+            {# Header content #}
+            <h1 class="text-2xl">{{ game.name }}</h1>
+            <h2 class="text-xl">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</h2>
+            <ul class="flex flex-row flex-wrap gap-4 gap-y-2 text-xs">
+                <li>{{ game.tone }}</li>
+                <li>{{ game.crunch }}</li>
+                {% for genre in game.genres %}
+                    <li>{{ genre.name }}</li>
+                {% endfor %}
+                {% for ksp in (game.ksps | GameKSP).notes %}
+                    <li>{{ ksp }}</li>
+                {% endfor %}
+            </ul>
+            <utilities.TipTapRender :initial_content_json="game.description" />
+        </div>
+    {% endblock %}
+</Page>

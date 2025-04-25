@@ -8,6 +8,14 @@ from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.template.config import TemplateConfig
 
 from convergence_games.app.paths import COMPONENTS_DIR_PATH, TEMPLATES_DIR_PATH
+from convergence_games.db.enums import (
+    GameActivityRequirement,
+    GameCoreActivity,
+    GameEquipmentRequirement,
+    GameKSP,
+    GameRoomRequirement,
+    GameTableSizeRequirement,
+)
 from convergence_games.db.ocean import swim
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.time_utils import nice_time_format, time_range_format
@@ -58,6 +66,13 @@ jinja_env.filters["extract_title"] = extract_title
 jinja_env.filters["nice_time_format"] = nice_time_format
 jinja_env.filters["time_range_format"] = time_range_format
 jinja_env.filters["humanize"] = naturaldelta
+
+jinja_env.filters["GameActivityRequirement"] = GameActivityRequirement
+jinja_env.filters["GameCoreActivity"] = GameCoreActivity
+jinja_env.filters["GameEquipmentRequirement"] = GameEquipmentRequirement
+jinja_env.filters["GameKSP"] = GameKSP
+jinja_env.filters["GameRoomRequirement"] = GameRoomRequirement
+jinja_env.filters["GameTableSizeRequirement"] = GameTableSizeRequirement
 
 jinja_env.globals["swim"] = swim
 jinja_env.globals["random_id"] = lambda: str(uuid.uuid4())

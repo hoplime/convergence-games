@@ -446,6 +446,10 @@ class User(Base):
     def is_profile_setup(self) -> bool:
         return self.first_name != ""
 
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}" if self.last_name else self.first_name
+
 
 class UserEventStatus(Base):
     golden_d20s: Mapped[int] = mapped_column(default=0)

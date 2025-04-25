@@ -318,9 +318,6 @@ class SubmitGameController(Controller):
         ]
         new_links = new_genre_links + new_content_warning_links + new_time_slot_links
 
-        print(new_game)
-        print(new_links)
-
         transaction.add(new_game)
         transaction.add_all(new_links)
 

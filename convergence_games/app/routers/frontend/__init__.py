@@ -9,6 +9,7 @@ from convergence_games.app.request_type import Request
 from .editor_test import EditorTestController
 from .email_auth import EmailAuthController
 from .event_profile import EventProfileController
+from .game import GameController
 from .home import HomeController
 from .oauth import OAuthController
 from .profile import ProfileController
@@ -36,6 +37,7 @@ router = Router(
         EditorTestController,
         EmailAuthController,
         EventProfileController,
+        GameController,
         HomeController,
         OAuthController,
         ProfileController,
