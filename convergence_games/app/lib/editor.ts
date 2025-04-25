@@ -1,10 +1,10 @@
-import FileHandler from "@tiptap-pro/extension-file-handler";
+// import FileHandler from "@tiptap-pro/extension-file-handler";
 import { Editor, mergeAttributes, generateHTML } from "@tiptap/core";
 import BlockQuote from "@tiptap/extension-blockquote";
 import BulletList from "@tiptap/extension-bullet-list";
 import Color from "@tiptap/extension-color";
 import Heading from "@tiptap/extension-heading";
-import ImageResize from "tiptap-extension-resize-image";
+// import ImageResize from "tiptap-extension-resize-image";
 
 import ListItem from "@tiptap/extension-list-item";
 import OrderedList from "@tiptap/extension-ordered-list";
@@ -120,57 +120,57 @@ const editor_extensions = [
             class: "border-l-4 border-base-content pl-2",
         },
     }),
-    ImageResize,
-    FileHandler.configure({
-        allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
-        onDrop: (currentEditor, files, pos) => {
-            // console.log(files);
-            files.forEach((file) => {
-                const fileReader = new FileReader();
+    // ImageResize,
+    // FileHandler.configure({
+    //     allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
+    //     onDrop: (currentEditor, files, pos) => {
+    //         // console.log(files);
+    //         files.forEach((file) => {
+    //             const fileReader = new FileReader();
 
-                fileReader.readAsDataURL(file);
-                fileReader.onload = () => {
-                    currentEditor
-                        .chain()
-                        .insertContentAt(pos, {
-                            type: "image",
-                            attrs: {
-                                src: fileReader.result,
-                            },
-                        })
-                        .focus()
-                        .run();
-                };
-            });
-        },
-        onPaste: (currentEditor, files, htmlContent) => {
-            // console.log(files);
-            files.forEach((file) => {
-                if (htmlContent) {
-                    // if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
-                    // you could extract the pasted file from this url string and upload it to a server for example
-                    // console.log(htmlContent); // eslint-disable-line no-console
-                    return false;
-                }
+    //             fileReader.readAsDataURL(file);
+    //             fileReader.onload = () => {
+    //                 currentEditor
+    //                     .chain()
+    //                     .insertContentAt(pos, {
+    //                         type: "image",
+    //                         attrs: {
+    //                             src: fileReader.result,
+    //                         },
+    //                     })
+    //                     .focus()
+    //                     .run();
+    //             };
+    //         });
+    //     },
+    //     onPaste: (currentEditor, files, htmlContent) => {
+    //         // console.log(files);
+    //         files.forEach((file) => {
+    //             if (htmlContent) {
+    //                 // if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
+    //                 // you could extract the pasted file from this url string and upload it to a server for example
+    //                 // console.log(htmlContent); // eslint-disable-line no-console
+    //                 return false;
+    //             }
 
-                const fileReader = new FileReader();
+    //             const fileReader = new FileReader();
 
-                fileReader.readAsDataURL(file);
-                fileReader.onload = () => {
-                    currentEditor
-                        .chain()
-                        .insertContentAt(currentEditor.state.selection.anchor, {
-                            type: "image",
-                            attrs: {
-                                src: fileReader.result,
-                            },
-                        })
-                        .focus()
-                        .run();
-                };
-            });
-        },
-    }),
+    //             fileReader.readAsDataURL(file);
+    //             fileReader.onload = () => {
+    //                 currentEditor
+    //                     .chain()
+    //                     .insertContentAt(currentEditor.state.selection.anchor, {
+    //                         type: "image",
+    //                         attrs: {
+    //                             src: fileReader.result,
+    //                         },
+    //                     })
+    //                     .focus()
+    //                     .run();
+    //             };
+    //         });
+    //     },
+    // }),
 ];
 
 const renderEditorContent = (container_element: Element, initial_content_json: string) => {
