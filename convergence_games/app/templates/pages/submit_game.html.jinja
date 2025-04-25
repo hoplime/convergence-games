@@ -305,8 +305,8 @@
                             <TooltipContent>
                                 <p>Parental Guidance</p>
                                 <p>
-                                    Some material may not be suitable for children - but 13 is the minimum age at
-                                    Convergence.
+                                    Note that the minimum age for players at Convergence is 13, and this game should be
+                                    suitable for younger teens. Otherwise consider the M rating.
                                 </p>
                             </TooltipContent>
                         </Tooltip>
@@ -390,9 +390,7 @@
                     <TimeSlotSelector :time_slots="event.time_slots" :break_points="[3,4]" />
                     <ErrorHolder name="available_time_slot" />
 
-                    <label class="fieldset-label"
-                        >Any extra notes/preferences to help with scheduling? <TooltipIcon
-                    /></label>
+                    <label class="fieldset-label">Any extra notes/preferences to help with scheduling?</label>
                     <textarea class="textarea" name="scheduling_notes"></textarea>
                     <ErrorHolder name="scheduling_notes" />
 
@@ -418,7 +416,7 @@
                     />
                     <ErrorHolder name="equipment_requirement" />
 
-                    <label>Any other notes on equipment?</label>
+                    <label class="fieldset-label">Any other notes on equipment?</label>
                     <textarea class="textarea" name="equipment_notes"></textarea>
                     <ErrorHolder name="equipment_notes" />
 
