@@ -1,7 +1,7 @@
 <Page>
     {% block content %}
         <title>Submit Game - Convergence 2025</title>
-        <div>
+        <div class="mx-auto flex max-w-screen-lg flex-col gap-2">
             <h1 class="text-xl font-bold">Submit Game</h1>
             <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
                 <legend class="fieldset-legend">Event Information</legend>
@@ -389,7 +389,7 @@
                     <div class="flex flex-row gap-4">
                         <Tooltip :toggleable="false">
                             <label
-                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
+                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-black bg-yellow-300 text-black opacity-50"
                             >
                                 <input type="radio" name="classification" class="hidden" value="PG" checked required />
                                 <span class="block text-lg font-bold">PG</span>
@@ -404,7 +404,7 @@
                         </Tooltip>
                         <Tooltip :toggleable="false">
                             <label
-                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-gray-500 bg-yellow-300 opacity-50"
+                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-black bg-yellow-300 text-black opacity-50"
                             >
                                 <input type="radio" name="classification" class="hidden" value="M" required />
                                 <span class="block text-lg font-bold">M</span>
@@ -416,7 +416,7 @@
                         </Tooltip>
                         <Tooltip :toggleable="false">
                             <label
-                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-gray-500 bg-red-500 opacity-50"
+                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-black bg-red-500 text-black opacity-50"
                             >
                                 <input type="radio" name="classification" class="hidden" value="R18" required />
                                 <span class="block text-lg font-bold">R18</span>

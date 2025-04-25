@@ -212,7 +212,7 @@ const createEditor = (
     // Create the editor and add it to the container
     container_element.className = `text-[1rem] border-1 p-1 rounded-md`;
     let controls_element = document.createElement("div");
-    controls_element.className = "flex flex-row gap-x-2 p-1";
+    controls_element.className = "flex flex-row flex-wrap gap-x-2 p-1";
     let editor_element = document.createElement("div");
     editor_element.className = "border-t-1 p-1";
     container_element.appendChild(controls_element);
