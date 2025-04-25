@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import Literal, Self
 
 from pydantic import AwareDatetime, model_validator
@@ -16,7 +17,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["development", "production"] = "development"
     LAST_UPDATED: AwareDatetime | None = None
 
-    @property
+    @cached_property
     def RELEASE(self) -> str:  # noqa: N802
         """Get the release version from the last updated date."""
         if self.LAST_UPDATED:
