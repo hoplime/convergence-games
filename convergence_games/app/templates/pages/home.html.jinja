@@ -2,7 +2,7 @@
     {% block content %}
         <title>Convergence 2025</title>
         {% set submit_game_url = "/submit_game/" ~ swim("Event", 1) %}
-        <div class="flex flex-col gap-4">
+        <PageContainer>
             <h2 class="text-xl">What is Convergence?</h2>
             <p>
                 The biggest annual event from the Waikato Role-Playing Guild is returning this September: Convergence!
@@ -45,6 +45,6 @@
                 Lots more details and information will be available as we get closer to the event, so keep an eye on
                 this site and our social media.
             </p>
-        </div>
+        </PageContainer>
     {% endblock %}
 </Page>

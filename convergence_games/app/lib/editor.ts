@@ -15,44 +15,31 @@ import StarterKit from "@tiptap/starter-kit";
 
 const PRESET_COLORS = ["#000000", "#ff0000", "#00ff00", "#0000ff"];
 
-// TODO: Fix implementation of ImageResize extension to allow styling and aligning controls
-// Fork and PR likely required
-// const ImageResizeWithoutAlign = ImageResize.extend({
-//     addNodeView() {
-//         const originalAddNodeView = ImageResize.config.addNodeView;
-
-//         return (props) => {
-//             if (!originalAddNodeView) {
-//                 return {
-//                     dom: document.createElement("div"),
-//                 };
-//             }
-
-//             let $original_node_view_renderer = originalAddNodeView.call(this);
-//             let $original_node_view = $original_node_view_renderer(props);
-//             let $original_wrapper = $original_node_view.dom as HTMLElement;
-//             $original_wrapper.children[0].classList.add("[&:nth-child(2)]:hidden");
-
-//             $original_node_view.dom = $original_wrapper;
-//             return $original_node_view;
-//         };
-//     },
-// });
+const get_cached_file_contents = (file_path: string) => {
+    return fetch(file_path, { cache: "force-cache" }).then((response) => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+    });
+};
 
 // TipTap Editor setup
-const createColorPicker = (parent_element: Element, editor: Editor) => {
+const createColorPicker = (parent_element: Element, icon_path: string, editor: Editor) => {
     let color_picker_container = document.createElement("div");
-    color_picker_container.className = "rounded-md bg-base-200 hover:bg-base-300 px-2 py-1";
+    color_picker_container.className = "rounded-md px-2 py-1 cursor-pointer hover:bg-base-300";
 
     // Label
     let color_picker_label = document.createElement("label");
-    color_picker_label.className = "flex items-center";
+    color_picker_label.className = "flex items-center [&>svg]:w-6 [&>svg]:h-6";
     color_picker_container.appendChild(color_picker_label);
 
-    let color_picker_label_image = document.createElement("img");
-    color_picker_label_image.src = "/static/editor/format-color-text.svg";
-    color_picker_label_image.className = "w-6 h-6";
+    let color_picker_label_image = document.createElement("svg");
     color_picker_label.appendChild(color_picker_label_image);
+
+    get_cached_file_contents(icon_path).then((resolved_label) => {
+        color_picker_label_image.outerHTML = resolved_label;
+    });
 
     // Input
     let color_picker = document.createElement("input");
@@ -75,10 +62,12 @@ const createColorPicker = (parent_element: Element, editor: Editor) => {
     return color_picker_container;
 };
 
-const createEditorButton = (parent_element: Element, label: string, fn: () => void) => {
+const createEditorButton = (parent_element: Element, icon_path: string, fn: () => void) => {
     let button = document.createElement("button");
-    button.className = "rounded-md bg-base-200 hover:bg-base-300 px-2 py-1 [&>img]:w-6 [&>img]:h-6";
-    button.innerHTML = label;
+    button.className = "rounded-md px-2 py-1 [&>svg]:w-6 [&>svg]:h-6 text-red cursor-pointer hover:bg-base-300";
+    get_cached_file_contents(icon_path).then((resolved_label) => {
+        button.innerHTML = resolved_label;
+    });
     button.onclick = fn;
     button.type = "button";
     parent_element.appendChild(button);
@@ -128,7 +117,7 @@ const editor_extensions = [
     }),
     BlockQuote.configure({
         HTMLAttributes: {
-            class: "border-l-4 border-gray-300 pl-2",
+            class: "border-l-4 border-base-content pl-2",
         },
     }),
     ImageResize,
@@ -212,7 +201,7 @@ const createEditor = (
     // Create the editor and add it to the container
     container_element.className = `text-[1rem] border-1 p-1 rounded-md`;
     let controls_element = document.createElement("div");
-    controls_element.className = "flex flex-row flex-wrap gap-x-2 p-1";
+    controls_element.className = "flex flex-row flex-wrap gap-x-2 p-1 bg-base-200";
     let editor_element = document.createElement("div");
     editor_element.className = "border-t-1 p-1";
     container_element.appendChild(controls_element);
@@ -253,35 +242,35 @@ const createEditor = (
     });
 
     // Create the control buttons
-    createColorPicker(controls_element, editor);
-    createEditorButton(controls_element, '<img src="/static/editor/format-header-1.svg">', () =>
+    createColorPicker(controls_element, "/static/editor/format-color-text.svg", editor);
+    createEditorButton(controls_element, "/static/editor/format-header-1.svg", () =>
         editor.chain().focus().setHeading({ level: 1 }).run(),
     );
-    createEditorButton(controls_element, '<img src="/static/editor/format-header-2.svg">', () =>
+    createEditorButton(controls_element, "/static/editor/format-header-2.svg", () =>
         editor.chain().focus().setHeading({ level: 2 }).run(),
     );
-    createEditorButton(controls_element, '<img src="/static/editor/format-paragraph.svg">', () =>
+    createEditorButton(controls_element, "/static/editor/format-paragraph.svg", () =>
         editor.chain().focus().setParagraph().run(),
     );
-    createEditorButton(controls_element, '<img src="/static/editor/format-bold.svg">', () =>
+    createEditorButton(controls_element, "/static/editor/format-bold.svg", () =>
         editor.chain().focus().toggleBold().run(),
     );
-    createEditorButton(controls_element, '<img src="/static/editor/format-italic.svg">', () =>
+    createEditorButton(controls_element, "/static/editor/format-italic.svg", () =>
         editor.chain().focus().toggleItalic().run(),
     );
-    createEditorButton(controls_element, '<img src="/static/editor/format-underline.svg">', () =>
+    createEditorButton(controls_element, "/static/editor/format-underline.svg", () =>
         editor.chain().focus().toggleUnderline().run(),
     );
-    createEditorButton(controls_element, '<img src="/static/editor/format-strikethrough-variant.svg">', () =>
+    createEditorButton(controls_element, "/static/editor/format-strikethrough-variant.svg", () =>
         editor.chain().focus().toggleStrike().run(),
     );
-    createEditorButton(controls_element, '<img src="/static/editor/format-list-bulleted.svg">', () =>
+    createEditorButton(controls_element, "/static/editor/format-list-bulleted.svg", () =>
         editor.chain().focus().toggleBulletList().run(),
     );
-    createEditorButton(controls_element, '<img src="/static/editor/format-list-numbered.svg">', () =>
+    createEditorButton(controls_element, "/static/editor/format-list-numbered.svg", () =>
         editor.chain().focus().toggleOrderedList().run(),
     );
-    createEditorButton(controls_element, '<img src="/static/editor/format-quote-open.svg">', () =>
+    createEditorButton(controls_element, "/static/editor/format-quote-open.svg", () =>
         editor.chain().focus().toggleBlockquote().run(),
     );
 

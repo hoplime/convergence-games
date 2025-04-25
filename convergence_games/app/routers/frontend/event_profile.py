@@ -1,6 +1,6 @@
 from litestar import Controller, get
 
-from convergence_games.db.ocean import Sqid, sink
+from convergence_games.db.ocean import Sqid
 
 
 class EventProfileController(Controller):

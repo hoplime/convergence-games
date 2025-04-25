@@ -67,8 +67,6 @@
             set :v to its value as Number
             then
             if :v > my value
-                log me
-                log :v
                 then set my value to :v
                 then trigger change on me
             end
@@ -83,8 +81,6 @@
             set :v to its value as Number
             then
             if :v < my value
-                log me
-                log :v
                 then set my value to :v
                 then trigger change on me
             end
@@ -98,7 +94,6 @@
         on load
             get closest <div[data-allow-more] />
             then set :a to its @data-allow-more
-            then log :a
             then if :a != 'True'
                 remove me
             end

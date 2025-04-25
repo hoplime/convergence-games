@@ -1,24 +1,31 @@
 <Page>
     {% block content %}
         <title>Game Submission Confirmed - Convergence 2025</title>
-        <div class="card bg-base-200 border-base-300 rounded-box border">
-            <div class="card-body">
-                <h1 class="card-title text-xl">Game Submission Confirmation</h1>
-                <p>Your game <i>{{ game.name }}</i> has been successfully submitted and is pending review!</p>
-                <p>
-                    Thank you for your submission, we will contact you with extra information and details on ticket
-                    codes and other rewards when your submission is accepted. Don't buy a ticket yet!
-                </p>
-                <div class="card-actions justify-start">
-                    <a class="btn btn-primary" hx-get="/game/{{ swim(game) }}" hx-target="#content" hx-push-url="true">
-                        View your Game
-                    </a>
-                    <a class="btn btn-primary" hx-get="/games" hx-target="#content" hx-push-url="true" disabled>
-                        View All Games Coming Soon
-                    </a>
-                    <a class="btn btn-neutral" hx-get="/" hx-target="#content" hx-push-url="true">Return Home</a>
+        <PageContainer>
+            <div class="card bg-base-200 border-base-300 rounded-box border">
+                <div class="card-body">
+                    <h1 class="card-title text-xl">Game Submission Confirmation</h1>
+                    <p>Your game <i>{{ game.name }}</i> has been successfully submitted and is pending review!</p>
+                    <p>
+                        Thank you for your submission, we will contact you with extra information and details on ticket
+                        codes and other rewards when your submission is accepted. Don't buy a ticket yet!
+                    </p>
+                    <div class="card-actions justify-start">
+                        <a
+                            class="btn btn-primary"
+                            hx-get="/game/{{ swim(game) }}"
+                            hx-target="#content"
+                            hx-push-url="true"
+                        >
+                            View your Game
+                        </a>
+                        <a class="btn btn-primary" hx-get="/games" hx-target="#content" hx-push-url="true" disabled>
+                            View All Games Coming Soon
+                        </a>
+                        <a class="btn btn-neutral" hx-get="/" hx-target="#content" hx-push-url="true">Return Home</a>
+                    </div>
                 </div>
             </div>
-        </div>
+        </PageContainer>
     {% endblock %}
 </Page>

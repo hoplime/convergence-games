@@ -1,8 +1,8 @@
 <Page>
     {% block content %}
         <title>Settings - Convergence 2025</title>
-        <div>Settings</div>
-        <div>
+        <PageContainer>
+            <div>Settings</div>
             <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
                 <legend class="fieldset-legend">Theme</legend>
                 <ul class="menu flex w-full flex-row gap-4">
@@ -69,6 +69,6 @@
                     {% endfor %}
                 </ul>
             </fieldset>
-        </div>
+        </PageContainer>
     {% endblock %}
 </Page>

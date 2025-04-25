@@ -1,13 +1,16 @@
 <Page>
     {% block content %}
         <title>Sign In or Create an Account - Convergence 2025</title>
-        {% if did_invalid_action %}
-            <div class="alert alert-warning">You need to sign in to complete that action</div>
-        {% endif %}
-        <div class="m-auto grid max-w-96 gap-4">
-            <forms.sign_in_buttons.Email />
-            <forms.sign_in_buttons.Discord />
-            <forms.sign_in_buttons.Google />
-        </div>
+
+        <PageContainer>
+            {% if did_invalid_action %}
+                <div class="alert alert-warning">You need to sign in to complete that action</div>
+            {% endif %}
+            <div class="m-auto grid max-w-96 gap-4">
+                <forms.sign_in_buttons.Email />
+                <forms.sign_in_buttons.Discord />
+                <forms.sign_in_buttons.Google />
+            </div>
+        </PageContainer>
     {% endblock %}
 </Page>

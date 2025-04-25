@@ -1,7 +1,7 @@
 <Page>
     {% block content %}
         <title>{{ game.name }} - Convergence 2025</title>
-        <div class="mx-auto flex max-w-screen-lg flex-col gap-2">
+        <PageContainer>
             {# Header content #}
             <h1 class="text-2xl">{{ game.name }}</h1>
             <h2 class="text-xl">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</h2>
@@ -31,6 +31,6 @@
                     </div>
                 </div>
             {% endif %}
-        </div>
+        </PageContainer>
     {% endblock %}
 </Page>

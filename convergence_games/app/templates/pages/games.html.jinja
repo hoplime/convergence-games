@@ -1,10 +1,12 @@
 <Page>
     {% block content %}
         <title>Games - Convergence 2025</title>
-        <utilities.Card>
-            {% for i in range(19, 9, -1) %}
-                <div class="bg-accent">Test {{ i }}</div>
-            {% endfor %}
-        </utilities.Card>
+        <PageContainer>
+            <utilities.Card>
+                {% for i in range(19, 9, -1) %}
+                    <div class="bg-accent">Test {{ i }}</div>
+                {% endfor %}
+            </utilities.Card>
+        </PageContainer>
     {% endblock %}
 </Page>
