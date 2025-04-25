@@ -386,46 +386,48 @@
                             </p>
                         </TooltipContent>
                     </Tooltip>
-                    <div class="flex flex-row gap-4">
-                        <Tooltip :toggleable="false">
-                            <label
-                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-black bg-yellow-300 text-black opacity-50"
+                    <div class="flex flex-col gap-4">
+                        <label class="flex flex-row gap-2">
+                            <input type="radio" name="classification" class="peer hidden" value="PG" checked required />
+                            <div
+                                class="flex size-12 shrink-0 items-center justify-center rounded-full border-black bg-yellow-300 text-black opacity-50 peer-checked:border-2 peer-checked:opacity-100"
                             >
-                                <input type="radio" name="classification" class="hidden" value="PG" checked required />
                                 <span class="block text-lg font-bold">PG</span>
-                            </label>
-                            <TooltipContent>
+                            </div>
+                            <div class="opacity-50 peer-checked:opacity-100">
                                 <p>Parental Guidance</p>
                                 <p>
                                     Note that the minimum age for players at Convergence is 13, and this game should be
                                     suitable for younger teens. Otherwise consider the M rating.
                                 </p>
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip :toggleable="false">
-                            <label
-                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-full border-black bg-yellow-300 text-black opacity-50"
+                            </div>
+                        </label>
+
+                        <label class="flex flex-row gap-2">
+                            <input type="radio" name="classification" class="peer hidden" value="M" required />
+                            <div
+                                class="flex size-12 shrink-0 items-center justify-center rounded-full border-black bg-yellow-300 text-black opacity-50 peer-checked:border-2 peer-checked:opacity-100"
                             >
-                                <input type="radio" name="classification" class="hidden" value="M" required />
                                 <span class="block text-lg font-bold">M</span>
-                            </label>
-                            <TooltipContent>
+                            </div>
+                            <div class="opacity-50 peer-checked:opacity-100">
                                 <p>Mature</p>
                                 <p>Content may be more suitable for older teens and adults.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip :toggleable="false">
-                            <label
-                                class="has-checked:border-2 has-checked:opacity-100 flex h-12 w-12 items-center justify-center rounded-md border-black bg-red-500 text-black opacity-50"
+                            </div>
+                        </label>
+
+                        <label class="flex flex-row gap-2">
+                            <input type="radio" name="classification" class="peer hidden" value="R18" required />
+                            <div
+                                class="flex size-12 shrink-0 items-center justify-center rounded-md border-black bg-red-500 text-black opacity-50 peer-checked:border-2 peer-checked:opacity-100"
                             >
-                                <input type="radio" name="classification" class="hidden" value="R18" required />
                                 <span class="block text-lg font-bold">R18</span>
-                            </label>
-                            <TooltipContent>
+                            </div>
+                            <div class="opacity-50 peer-checked:opacity-100">
                                 <p>Restricted 18</p>
                                 <p>Content is suitable only for adults. No one under 18 may join this game.</p>
-                            </TooltipContent>
-                        </Tooltip>
+                            </div>
+                        </label>
                     </div>
                     <ErrorHolder name="classification" />
 

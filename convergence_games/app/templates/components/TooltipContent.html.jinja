@@ -1,3 +1,12 @@
 {#def
+    fallback: bool = True,
 #}
-<div {{ attrs.render(class="tooltip-content") }}>{{ content }}</div>
+<div
+    {{ attrs.render(class="tooltip-content") }}
+    {% if fallback %}
+        _=" on load or resize from window if window.innerWidth > 768 then add .tooltip-content then remove
+        .collapse-content else add .collapse-content then remove .tooltip-content end "
+    {% endif %}
+>
+    {{ content }}
+</div>

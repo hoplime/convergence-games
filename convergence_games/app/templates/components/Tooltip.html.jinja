@@ -1,6 +1,6 @@
 {#def
-    toggleable: bool = True,
     align: str = "right",
+    fallback: bool = True,
 #}
 {%
     set align_class =
@@ -12,7 +12,10 @@
 %}
 <div
     {{ attrs.render(class="tooltip " ~ align_class) }}
-    {{ '_="on click add .tooltip-open to me end on click from elsewhere remove .tooltip-open from me"' if toggleable }}
+    {% if fallback %}
+        tabindex="0" _="on load or resize from window if window.innerWidth > 768 then add .tooltip remove .collapse else
+        add .collapse remove .tooltip end"
+    {% endif %}
 >
     {{ content }}
 </div>

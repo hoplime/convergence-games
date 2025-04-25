@@ -46,6 +46,17 @@
         <div id="wrapper" class="flex min-h-[100vh] w-full flex-col gap-4">
             <layout.NavBar />
             <main id="content" class="sm:px-4">{{ content }}</main>
+            {% if SETTINGS.ENVIRONMENT == "development" %}
+                <div class="alert alert-warning alert-soft text-xs fixed bottom-0 right-0 flex flex-col font-bold">
+                    <p>⚠️DISCLAIMER - NO DESIGN APPLIED⚠️</p>
+                    <p>
+                        This is the development build
+                        {% if SETTINGS.LAST_UPDATED is not none %}
+                            last updated {{ SETTINGS.LAST_UPDATED | nice_time_format }}
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
             <layout.Footer />
         </div>
     </body>
