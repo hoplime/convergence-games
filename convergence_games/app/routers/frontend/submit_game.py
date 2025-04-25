@@ -4,7 +4,6 @@ from typing import Annotated, Callable, cast
 from litestar import Controller, Response, get, post
 from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body, RequestEncodingType
-from litestar.response import Redirect
 from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
