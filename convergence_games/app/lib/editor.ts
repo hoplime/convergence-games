@@ -16,7 +16,7 @@ import StarterKit from "@tiptap/starter-kit";
 const PRESET_COLORS = ["#000000", "#ff0000", "#00ff00", "#0000ff"];
 
 const get_cached_file_contents = (file_path: string) => {
-    return fetch(file_path, { cache: "force-cache" }).then((response) => {
+    return fetch(file_path).then((response) => {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
