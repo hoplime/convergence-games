@@ -3,7 +3,7 @@
         <title>Submit Game - Convergence 2025</title>
         <PageContainer>
             <h1 class="text-xl font-bold">Submit Game</h1>
-            <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
+            <FieldsetBase>
                 <legend class="fieldset-legend">Event Information</legend>
                 <p>Thanks for choosing to submit a game to Convergence 2025!</p>
                 <p>
@@ -110,10 +110,10 @@
                         >
                     </CollapseContent>
                 </Collapse>
-            </fieldset>
+            </FieldsetBase>
             <form>
                 <button type="submit" disabled class="hidden" aria-hidden="true"></button>
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
+                <FieldsetBase>
                     <legend class="fieldset-legend">Game Information</legend>
                     <span>
                         This information will be publicly visible for players to decide their preferences. You'll be
@@ -440,9 +440,9 @@
                     </Tooltip>
                     <FlagCheckboxes :flag_enum="ksps" name="ksp" :display_tooltips="false" />
                     <ErrorHolder name="ksp" />
-                </fieldset>
+                </FieldsetBase>
 
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
+                <FieldsetBase>
                     <legend class="fieldset-legend">Scheduling Information</legend>
                     <span>
                         This information will be visible to the organisers so they can schedule the sessions where your
@@ -535,9 +535,9 @@
                     <label class="fieldset-label">Any other notes on rooms?</label>
                     <textarea class="textarea" name="room_notes"></textarea>
                     <ErrorHolder name="room_notes" />
-                </fieldset>
+                </FieldsetBase>
 
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box gap-4 border p-4">
+                <FieldsetBase>
                     <legend class="fieldset-legend">Housekeeping</legend>
                     <label class="fieldset-label font-semibold">
                         <input type="checkbox" class="checkbox validator" required title="Required" />
@@ -559,7 +559,7 @@
                         </span>
                         <p class="validator-hint">You must agree to use the X-Card and Open Table Policy</p>
                     </label>
-                </fieldset>
+                </FieldsetBase>
                 <button class="btn btn-primary mt-4" hx-post="/submit_game/{{ swim(event) }}" hx-target="#content">
                     Submit
                 </button>

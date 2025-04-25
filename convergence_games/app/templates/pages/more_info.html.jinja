@@ -5,7 +5,7 @@
             <div>We need some more info to complete your profile</div>
             <form id="more-info-form" hx-post="/profile" hx-target="#content">
                 <button type="submit" disabled class="hidden" aria-hidden="true"></button>
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                <FieldsetBase>
                     <legend class="fieldset-legend">Public Information</legend>
                     {# Name #}
                     <label class="fieldset-label">Name</label>
@@ -26,15 +26,15 @@
                             value="{{ request.user.last_name }}"
                         />
                     </div>
-                </fieldset>
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                </FieldsetBase>
+                <FieldsetBase>
                     <legend class="fieldset-legend">Private Information</legend>
                     {# Over 18 #}
                     <label class="fieldset-label">
                         <input type="checkbox" class="checkbox" name="over_18" />
                         <span>I am 18+</span>
                     </label>
-                </fieldset>
+                </FieldsetBase>
                 <button class="btn btn-primary" type="submit">Submit</button>
             </form>
         </PageContainer>

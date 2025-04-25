@@ -5,7 +5,7 @@
             <div>Profile for {{ request.user.first_name }} {{ request.user.last_name }}</div>
             <form id="profile-form" hx-post="/profile" hx-target="#content">
                 <button type="submit" disabled class="hidden" aria-hidden="true"></button>
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                <FieldsetBase>
                     <legend class="fieldset-legend">Public Information</legend>
                     {# Title #}
                     <label class="fieldset-label">Name</label>
@@ -29,8 +29,8 @@
                     {# Bio #}
                     <label class="fieldset-label">Bio</label>
                     <utilities.TipTap form_input_name="description" :initial_content_json="request.user.description" />
-                </fieldset>
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+                </FieldsetBase>
+                <FieldsetBase>
                     <legend class="fieldset-legend">Private Information</legend>
                     {# Over 18 #}
                     <label class="fieldset-label">
@@ -42,7 +42,7 @@
                         />
                         <span>I am 18+</span>
                     </label>
-                </fieldset>
+                </FieldsetBase>
                 <div
                     _="on change from #profile-form or keyup from #profile-form remove .hidden from me"
                     class="hidden py-4"
@@ -53,7 +53,7 @@
                     <button class="btn btn-primary" type="submit">Save</button>
                 </div>
             </form>
-            <fieldset class="fieldset bg-base-200 border-base-300 rounded-box border p-4">
+            <FieldsetBase>
                 <legend class="fieldset-legend">Accounts</legend>
                 <div class="grid max-w-96 gap-4">
                     {% for key in ['email', 'discord', 'google', 'facebook'] %}
@@ -71,7 +71,7 @@
                         {% endif %}
                     {% endfor %}
                 </div>
-            </fieldset>
+            </FieldsetBase>
             <div class="py-4">
                 <button class="btn btn-error" hx-post="/oauth2/logout" hx-target="#content">Logout</button>
             </div>
