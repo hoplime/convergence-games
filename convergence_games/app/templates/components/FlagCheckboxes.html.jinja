@@ -6,7 +6,7 @@
 {% for f in flag_enum %}
     {% if display_tooltips %}
         <Tooltip class="w-fit">
-            <label class="fieldset-label">
+            <label class="flex items-center gap-2">
                 <input type="checkbox" name="{{ name }}" value="{{ f }}" class="checkbox" />
                 <span>{{ f.form_notes[0] }}</span>
                 <TooltipIcon />
@@ -18,7 +18,7 @@
             </TooltipContent>
         </Tooltip>
     {% else %}
-        <label class="fieldset-label">
+        <label class="flex items-center gap-2">
             <input type="checkbox" name="{{ name }}" value="{{ f }}" class="checkbox" />
             <span>{{ f.form_notes[0] }}</span>
         </label>

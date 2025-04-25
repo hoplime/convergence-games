@@ -4,7 +4,7 @@
     break_points: list[int] = [],
 #}
 {% if break_points %}
-    <label class="fieldset-label font-semibold">
+    <label class="flex items-center gap-2">
         <input
             type="radio"
             class="radio"
@@ -15,7 +15,7 @@
         <span>{{ break_points | join('/') }} hours are fine</span>
     </label>
     {% for break_point in break_points[1:] %}
-        <label class="fieldset-label font-semibold">
+        <label class="flex items-center gap-2">
             <input
                 type="radio"
                 class="radio"
@@ -34,7 +34,7 @@
 {% endif %}
 <span></span>
 <span>Please be flexible and mark all time slots you could do</span>
-<label class="fieldset-label font-semibold">
+<label class="flex items-center gap-2">
     <input
         type="checkbox"
         class="checkbox"
@@ -53,7 +53,7 @@
     <span>Any time slots are fine</span>
 </label>
 {% for time_slot in time_slots %}
-    <label class="fieldset-label font-semibold has-[:disabled]:line-through">
+    <label class="flex items-center gap-2 has-[:disabled]:line-through">
         <input
             type="checkbox"
             class="checkbox"
@@ -63,7 +63,7 @@
         />
         <span>
             {{ time_slot.name }} ({{ time_slot.duration | humanize }}):
-            {{ time_slot.end_time | time_range_format(time_slot.start_time) }}
+            {{ time_slot.start_time | time_range_format(time_slot.end_time) }}
         </span>
     </label>
 {% endfor %}
