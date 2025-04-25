@@ -466,7 +466,9 @@
                         <p class="validator-hint">You must agree to use the X-Card and Open Table Policy</p>
                     </label>
                 </fieldset>
-                <button class="btn btn-primary" hx-post="/submit_game/{{ swim(event) }}">Submit</button>
+                <button class="btn btn-primary" hx-post="/submit_game/{{ swim(event) }}" hx-target="#content">
+                    Submit
+                </button>
             </form>
         </div>
     {% endblock %}

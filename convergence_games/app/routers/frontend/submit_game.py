@@ -192,7 +192,7 @@ def handle_submit_game_form_validation_error(request: Request, exc: ValidationEx
             form_errors[field_name].append(message)
 
     template_str = catalog.render("ErrorHolderOobCollection", form_errors=form_errors)
-    return HTMXBlockTemplate(template_str=template_str)
+    return HTMXBlockTemplate(re_swap="none", template_str=template_str)
 
 
 class SubmitGameController(Controller):
@@ -239,7 +239,7 @@ class SubmitGameController(Controller):
         transaction: AsyncSession,
         event_sqid: Sqid,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
-    ) -> Redirect:
+    ) -> HTMXBlockTemplate:
         event_id = sink(event_sqid)
         event = (
             await transaction.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
@@ -321,7 +321,15 @@ class SubmitGameController(Controller):
         transaction.add(new_game)
         transaction.add_all(new_links)
 
-        return Redirect(path=f"/event/{event_sqid}/profile")
+        await transaction.flush()
+        await transaction.refresh(new_game)
+
+        return HTMXBlockTemplate(
+            re_target="#content",
+            block_name="content",
+            template_name="pages/submit_game_confirmation.html.jinja",
+            context={"game": new_game},
+        )
 
     # Searches
     @get(path="/search/{name:str}")

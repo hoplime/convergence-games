@@ -1,0 +1,24 @@
+<Page>
+    {% block content %}
+        <title>Game Submission Confirmed - Convergence 2025</title>
+        <div class="card">
+            <h1>Game Submission Confirmation</h1>
+            <div class="card-body">
+                <p>Your game <i>{{ game.name }}</i> has been successfully submitted and is pending review!</p>
+                <p>
+                    Thank you for your submission, we will contact you with extra information and details on ticket
+                    codes and other rewards when your submission is accepted. Don't buy a ticket yet!
+                </p>
+                <div class="card-actions justify-start">
+                    <a class="btn btn-primary" hx-get="/game/{{ swim(game) }}" hx-target="#content" hx-push-url="true">
+                        View your Game
+                    </a>
+                    <a class="btn btn-primary" hx-get="/games" hx-target="#content" hx-push-url="true">
+                        View All Games
+                    </a>
+                    <a class="btn btn-neutral" hx-get="/" hx-target="#content" hx-push-url="true">Return Home</a>
+                </div>
+            </div>
+        </div>
+    {% endblock %}
+</Page>

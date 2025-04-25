@@ -38,18 +38,14 @@
     <input
         type="checkbox"
         class="checkbox"
-        name="{{ name }}"
-        value="any"
         _="
         on change
             repeat in <input[name='{{ name }}']:not(:disabled) />
-                if it != me then
                 set it.checked to me.checked
             end
         end
         
         on change from <input[name='{{ name }}']:not(:disabled) />
-            if it != me and not it.checked then
             set me.checked to false
         end
         "
