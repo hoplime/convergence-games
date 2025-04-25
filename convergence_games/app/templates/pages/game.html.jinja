@@ -16,6 +16,21 @@
                 {% endfor %}
             </ul>
             <utilities.TipTapRender :initial_content_json="game.description" />
+            {% if game.gamemaster_id == request.user.id %}
+                <div class="card bg-base-200 border-base-300 rounded-box border">
+                    <div class="card-body">
+                        <h2 class="card-title text-xl">Game Master Section</h2>
+                        <p>You are the game master of this game.</p>
+                        <div>
+                            Submission Status:
+                            <span class="{{ game.submission_status.color_classes }}">{{ game.submission_status }}</span>
+                        </div>
+                        <div class="card-actions justify-start">
+                            <a href="#" class="btn btn-primary" disabled>Edit Game Coming Soon</a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     {% endblock %}
 </Page>

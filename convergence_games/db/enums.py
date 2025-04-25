@@ -24,6 +24,21 @@ class SubmissionStatus(enum.StrEnum):
     REJECTED = "Rejected"
     CANCELLED = "Cancelled"
 
+    @property
+    def color_classes(self) -> str:
+        if self == SubmissionStatus.DRAFT:
+            return "badge badge-neutral"
+        if self == SubmissionStatus.SUBMITTED:
+            return "badge badge-warning"
+        if self == SubmissionStatus.APPROVED:
+            return "badge badge-success"
+        if self == SubmissionStatus.REJECTED:
+            return "badge badge-error"
+        if self == SubmissionStatus.CANCELLED:
+            return "badge badge-error"
+
+        return ""
+
 
 class GameClassification(enum.StrEnum):
     # G = "G"

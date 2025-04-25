@@ -87,7 +87,7 @@ class System(Base):
     name: Mapped[str] = mapped_column(index=True, unique=True)
     description: Mapped[str] = mapped_column(default="")
     submission_status: Mapped[SubmissionStatus] = mapped_column(
-        Enum(SubmissionStatus), default=SubmissionStatus.DRAFT, index=True
+        Enum(SubmissionStatus), default=SubmissionStatus.SUBMITTED, index=True
     )
 
     # Relationships
@@ -110,7 +110,7 @@ class Genre(Base):
     description: Mapped[str] = mapped_column(default="")
     suggested: Mapped[bool] = mapped_column(default=False)
     submission_status: Mapped[SubmissionStatus] = mapped_column(
-        Enum(SubmissionStatus), default=SubmissionStatus.DRAFT, index=True
+        Enum(SubmissionStatus), default=SubmissionStatus.SUBMITTED, index=True
     )
 
     # Relationships
@@ -130,7 +130,7 @@ class ContentWarning(Base):
     description: Mapped[str] = mapped_column(default="")
     suggested: Mapped[bool] = mapped_column(default=False)
     submission_status: Mapped[SubmissionStatus] = mapped_column(
-        Enum(SubmissionStatus), default=SubmissionStatus.DRAFT, index=True
+        Enum(SubmissionStatus), default=SubmissionStatus.SUBMITTED, index=True
     )
 
     # Relationships
@@ -167,7 +167,7 @@ class Game(Base):
     # Bonus
     ksps: Mapped[GameKSP] = mapped_column(Integer, default=GameKSP.NONE)
     submission_status: Mapped[SubmissionStatus] = mapped_column(
-        Enum(SubmissionStatus), default=SubmissionStatus.DRAFT, index=True
+        Enum(SubmissionStatus), default=SubmissionStatus.SUBMITTED, index=True
     )
 
     # Foreign Keys
