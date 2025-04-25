@@ -59,7 +59,7 @@ class Settings(BaseSettings):
 
     # Email
     BREVO_API_KEY: str = ""
-    BREVO_SENDER_NAME: str = "Waikato Role-playing Guild"
+    BREVO_SENDER_NAME: str = "Waikato Role-Playing Guild"
     BREVO_SENDER_EMAIL: str = "noreply@waikatorpg.co.nz"
 
     # Sentry

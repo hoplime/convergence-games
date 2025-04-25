@@ -2,8 +2,49 @@
     {% block content %}
         <title>Convergence 2025</title>
         {% set submit_game_url = "/submit_game/" ~ swim("Event", 1) %}
-        <button class="btn btn-xl btn-primary" hx-get="{{ submit_game_url }}" hx-target="#content" hx-push-url="true">
-            Submit Game to Convergence 2025
-        </button>
+        <div class="flex flex-col gap-4">
+            <h2 class="text-xl">What is Convergence?</h2>
+            <p>
+                The biggest annual event from the Waikato Role-Playing Guild is returning this September: Convergence!
+            </p>
+            <p>
+                We will be bringing you an epic weekend of role-playing, giveaways, and banter, capped off with a social
+                function on Sunday evening. For news and updates,
+                <a href="https://www.facebook.com/events/1580938195953418" target="_blank" class="link">
+                    select Going on the Facebook event </a
+                >, <a href="https://discord.gg/4wBtAG2rjt" target="_blank" class="link">join our Discord server</a> or
+                <a href="https://linktr.ee/waikatoroleplayingguild" target="_blank" class="link"
+                    >browse around our social medias and links on Linktree.</a
+                >
+            </p>
+            <h2 class="text-xl">Want to be a Game Master?</h2>
+            <p>Game submissions are now open for Convergence, and we'd love for you to run some sessions!</p>
+            <button
+                class="btn btn-xl btn-primary"
+                hx-get="{{ submit_game_url }}"
+                hx-target="#content"
+                hx-push-url="true"
+            >
+                Submit a Game to Convergence 2025
+            </button>
+            <h2 class="text-xl">A Little More About Convergence</h2>
+            <p>
+                Convergence is a 2 day games convention, organised by The Waikato Role-Playing Guild. The aim is to give
+                new and experienced players a chance to meet like minded people, make new friends, try new games and
+                have a blast doing so. At Convergence there will be games running, seminars, socialising, and vendors
+                providing a range of gaming related equipment. The games will run in 3 and 4 hour slots, depending on
+                the game itself.
+            </p>
+            <p>
+                All the games will be run as “one-shots” meaning it will be a self-contained adventure within the time
+                slot. There will be games for newbies and experienced players alike. Pre-generated characters will be
+                provided where needed. We'll make sure you have everything you need to hit the ground running and have a
+                fantastic weekend!
+            </p>
+            <p>
+                Lots more details and information will be available as we get closer to the event, so keep an eye on
+                this site and our social media.
+            </p>
+        </div>
     {% endblock %}
 </Page>
