@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ENVIRONMENT: Literal["development", "production"] = "development"
     LAST_UPDATED: AwareDatetime | None = None
+    USE_CACHE_BUSTED_FILES: bool = False
 
     @cached_property
     def RELEASE(self) -> str:  # noqa: N802
@@ -23,6 +24,20 @@ class Settings(BaseSettings):
         if self.LAST_UPDATED:
             return self.LAST_UPDATED.strftime("%Y.%m.%d+%H.%M.%S")
         return "unknown"
+
+    @cached_property
+    def LIB_JS(self) -> str:  # noqa: N802
+        """Get the lib.js file path."""
+        if self.USE_CACHE_BUSTED_FILES:
+            return f"/static/js/lib.{self.RELEASE}.js"
+        return "/static/js/lib.js"
+
+    @cached_property
+    def STYLE_CSS(self) -> str:  # noqa: N802
+        """Get the style.css file path."""
+        if self.USE_CACHE_BUSTED_FILES:
+            return f"/static/css/style.{self.RELEASE}.css"
+        return "/static/css/style.css"
 
     # Database
     DATABASE_DRIVER: str = "postgresql+asyncpg"
