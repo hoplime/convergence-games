@@ -1,3 +1,4 @@
+import datetime as dt
 from typing import Any, cast
 
 from litestar.connection import ASGIConnection
@@ -45,4 +46,5 @@ jwt_cookie_auth = JWTCookieAuth(
     token_cls=CustomToken,
     authentication_middleware_class=LaxJWTCookieAuthenticationMiddleware,
     exclude=["/site.webmanifest", "/static"],
+    default_token_expiration=dt.timedelta(days=365),  # 1 year
 )
