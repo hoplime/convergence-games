@@ -195,6 +195,7 @@
                             name="tagline"
                             minlength="10"
                             maxlength="140"
+                            value="{{ game and game.tagline }}"
                             required
                         />
                         <MaxLengthIndicator />
@@ -214,7 +215,7 @@
                             </p>
                         </TooltipContent>
                     </Tooltip>
-                    <utilities.TipTap form_input_name="description" />
+                    <utilities.TipTap form_input_name="description" :initial_content_json="game and game.description" />
                     <ErrorHolder name="description" />
 
                     {# Genre #}
@@ -230,7 +231,15 @@
                         name="genre"
                         placeholder="Search for genres..."
                         :suggested_on_empty="true"
-                    ></forms.search_checks.SearchCheckContainer>
+                    >
+                        {% for genre in game.genres %}
+                            <forms.search_checks.SearchCheckChip
+                                :selected_name="genre.name"
+                                :value="swim(genre)"
+                                name="genre"
+                            />
+                        {% endfor %}
+                    </forms.search_checks.SearchCheckContainer>
                     <ErrorHolder name="genre" />
 
                     {# Tone #}
@@ -242,7 +251,14 @@
                     </Tooltip>
                     {% for tone in tones %}
                         <label>
-                            <input type="radio" name="tone" class="radio" value="{{ tone }}" required />
+                            <input
+                                type="radio"
+                                name="tone"
+                                class="radio"
+                                value="{{ tone }}"
+                                {{ "checked" if game.tone == tone }}
+                                required
+                            />
                             <span>{{ tone }}</span>
                         </label>
                     {% endfor %}
@@ -267,7 +283,15 @@
                         name="content_warning"
                         placeholder="Search for content warnings..."
                         :suggested_on_empty="true"
-                    ></forms.search_checks.SearchCheckContainer>
+                    >
+                        {% for content_warning in game.content_warnings %}
+                            <forms.search_checks.SearchCheckChip
+                                :selected_name="content_warning.name"
+                                :value="swim(content_warning)"
+                                name="content_warning"
+                            />
+                        {% endfor %}
+                    </forms.search_checks.SearchCheckContainer>
                     <ErrorHolder name="content_warning" />
 
                     {# Crunch/weight #}
@@ -343,7 +367,14 @@
                     </Collapse>
                     {% for crunch in crunches %}
                         <label>
-                            <input type="radio" name="crunch" class="radio" value="{{ crunch }}" required />
+                            <input
+                                type="radio"
+                                name="crunch"
+                                class="radio"
+                                value="{{ crunch }}"
+                                {{ "checked" if game.crunch == crunch }}
+                                required
+                            />
                             <span>{{ crunch }}</span>
                         </label>
                     {% endfor %}
@@ -358,7 +389,11 @@
                             <p>Try to pick only two or three things.</p>
                         </TooltipContent>
                     </Tooltip>
-                    <FlagCheckboxes :flag_enum="core_activities" name="core_activity" />
+                    <FlagCheckboxes
+                        :flag_enum="core_activities"
+                        name="core_activity"
+                        :value="{{ game and game.core_activity }}"
+                    />
                     <ErrorHolder name="core_activity" />
 
                     {# Player Count #}

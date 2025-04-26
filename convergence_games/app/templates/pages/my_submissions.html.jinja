@@ -3,25 +3,37 @@
         <title>My Submissions - Convergence 2025</title>
         <PageContainer>
             <div>My Submissions</div>
-            {% if games %}
-                <ul class="list bg-base-200 rounded-box">
-                    {% for game in games %}
-                        <li class="list-row items-center">
-                            <div>{{ game.name }}</div>
-                            <div></div>
-                            <div class="{{ game.submission_status.color_classes }}">{{ game.submission_status }}</div>
-                            <div>
-                                ({{ game.game_requirement.times_to_run }}<span class="hidden md:inline-block">
-                                    &nbsp;sessions</span
-                                >)
-                            </div>
-                            <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral btn-outline">View</a>
-                            <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral btn-outline">Edit</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-4">
+                {% if games %}
+                    <ul class="list bg-base-200 rounded-box">
+                        {% for game in games %}
+                            <li class="list-row items-center">
+                                <div>{{ game.name }}</div>
+                                <div></div>
+                                <div class="{{ game.submission_status.color_classes }}">
+                                    {{ game.submission_status }}
+                                </div>
+                                <div>
+                                    ({{ game.game_requirement.times_to_run }}<span class="hidden md:inline-block">
+                                        &nbsp;sessions</span
+                                    >)
+                                </div>
+                                <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral btn-outline">View</a>
+                                <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral btn-outline"
+                                    >Edit</a
+                                >
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <button
+                        class="btn btn-xl btn-primary mx-auto"
+                        hx-get="/submit-game"
+                        hx-target="#content"
+                        hx-push-url="true"
+                    >
+                        Submit another game
+                    </button>
+                {% else %}
                     <p>You haven't submitted anything yet.</p>
                     <button
                         class="btn btn-xl btn-primary mx-auto"
@@ -31,8 +43,8 @@
                     >
                         Submit a Game to Convergence 2025
                     </button>
-                </div>
-            {% endif %}
+                {% endif %}
+            </div>
         </PageContainer>
     {% endblock %}
 </Page>

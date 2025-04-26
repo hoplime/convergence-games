@@ -13,7 +13,9 @@
         {# w-[clamp(4.5rem,30rem,100%)]  #}
         <div
             class="search-chip-container hidden flex-row flex-wrap justify-start gap-1 self-start pt-3 has-[:not(.hidden)]:flex"
-        ></div>
+        >
+            {{ content }}
+        </div>
         <input
             type="text"
             class="box-border inline-flex h-10"

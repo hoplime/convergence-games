@@ -1,13 +1,20 @@
 {#def
     flag_enum: FlagWithNotes,
     name: str = "flag",
-    display_tooltips: bool = True
+    display_tooltips: bool = True,
+    value: FlagWithNotes = 0
 #}
 {% for f in flag_enum %}
     {% if display_tooltips and f.tooltips[0] %}
         <Tooltip class="w-fit">
             <label class="flex items-center gap-2">
-                <input type="checkbox" name="{{ name }}" value="{{ f }}" class="checkbox" />
+                <input
+                    type="checkbox"
+                    name="{{ name }}"
+                    value="{{ f }}"
+                    class="checkbox"
+                    {{ "checked" if value and bitwise_and(value, f) }}
+                />
                 <span>{{ f.form_notes[0] }}</span>
                 <TooltipIcon />
             </label>
