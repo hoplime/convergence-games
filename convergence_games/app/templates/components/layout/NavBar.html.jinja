@@ -23,9 +23,9 @@
                     </svg>
                 </div>
             </div>
-            <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+            <ul tabindex="0" class="menu dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
                 {% if request.user %}
-                    <li class="menu-title">{{ request.user.first_name }}</li>
+                    <li class="menu-title">{{ request.user.full_name }}</li>
                     <li>
                         <a hx-get="/profile" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Profile</a>
                     </li>
