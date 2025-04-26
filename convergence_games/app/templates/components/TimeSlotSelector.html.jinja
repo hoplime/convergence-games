@@ -2,6 +2,7 @@
     time_slots: list[TimeSlot] = [],
     name: str = "available_time_slot",
     break_points: list[int] = [],
+    values: list[TimeSlot] = [],
 #}
 {% if break_points %}
     <label class="flex items-center gap-2">
@@ -60,6 +61,7 @@
             name="{{ name }}"
             value="{{ swim(time_slot) }}"
             data-duration="{{ time_slot.duration.total_seconds() / 60 / 60 | int }}"
+            {{ "checked" if time_slot in values else "" }}
         />
         <span>
             {{ time_slot.name }} ({{ time_slot.duration | humanize }}):

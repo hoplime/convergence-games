@@ -196,7 +196,7 @@ class SubmitGameController(Controller):
                     selectinload(Game.system),
                     selectinload(Game.gamemaster),
                     selectinload(Game.event).selectinload(Event.time_slots),
-                    selectinload(Game.game_requirement),
+                    selectinload(Game.game_requirement).selectinload(GameRequirement.available_time_slots),
                     selectinload(Game.genres),
                     selectinload(Game.content_warnings),
                 )

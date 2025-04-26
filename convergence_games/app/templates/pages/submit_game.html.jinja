@@ -421,20 +421,20 @@
                             title="Minimum"
                             input_name="player_count_minimum"
                             constrain_below="player_count_optimum"
-                            value="2"
+                            :value="game.player_count_minimum if game is defined else 3"
                         />
                         <forms.multislider.Multislider
                             title="Optimum"
                             input_name="player_count_optimum"
                             constrain_above="player_count_minimum"
                             constrain_below="player_count_maximum"
-                            value="4"
+                            :value="game.player_count_optimum if game is defined else 4"
                         />
                         <forms.multislider.Multislider
                             title="Maximum"
                             input_name="player_count_maximum"
                             constrain_above="player_count_optimum"
-                            value="6"
+                            :value="game.player_count_maximum if game is defined else 5"
                         />
                     </forms.multislider.MultisliderContainer>
                     <ErrorHolder name="player_count_minimum" />
@@ -456,7 +456,14 @@
                     </Tooltip>
                     <div class="flex flex-col gap-4">
                         <label class="flex flex-row gap-2">
-                            <input type="radio" name="classification" class="peer hidden" value="PG" checked required />
+                            <input
+                                type="radio"
+                                name="classification"
+                                class="peer hidden"
+                                value="PG"
+                                {{ "checked" if game is defined and game.classification == "R18" }}
+                                required
+                            />
                             <div
                                 class="flex size-12 shrink-0 items-center justify-center rounded-full border-black bg-yellow-300 text-black opacity-50 peer-checked:border-2 peer-checked:opacity-100"
                             >
@@ -472,7 +479,14 @@
                         </label>
 
                         <label class="flex flex-row gap-2">
-                            <input type="radio" name="classification" class="peer hidden" value="M" required />
+                            <input
+                                type="radio"
+                                name="classification"
+                                class="peer hidden"
+                                value="M"
+                                {{ "checked" if game is defined and game.classification == "R18" }}
+                                required
+                            />
                             <div
                                 class="flex size-12 shrink-0 items-center justify-center rounded-full border-black bg-yellow-300 text-black opacity-50 peer-checked:border-2 peer-checked:opacity-100"
                             >
@@ -485,7 +499,14 @@
                         </label>
 
                         <label class="flex flex-row gap-2">
-                            <input type="radio" name="classification" class="peer hidden" value="R18" required />
+                            <input
+                                type="radio"
+                                name="classification"
+                                class="peer hidden"
+                                value="R18"
+                                {{ "checked" if game is defined and game.classification == "R18" }}
+                                required
+                            />
                             <div
                                 class="flex size-12 shrink-0 items-center justify-center rounded-md border-black bg-red-500 text-black opacity-50 peer-checked:border-2 peer-checked:opacity-100"
                             >
@@ -542,7 +563,11 @@
                         :display_titles="false"
                         :allow_more="false"
                     >
-                        <forms.multislider.Multislider title="Times" value="2" input_name="times_to_run" />
+                        <forms.multislider.Multislider
+                            title="Times"
+                            :value="game.game_requirement.times_to_run if game is defined else 2"
+                            input_name="times_to_run"
+                        />
                     </forms.multislider.MultisliderContainer>
                     <ErrorHolder name="times_to_run" />
 
@@ -555,7 +580,11 @@
                             <p>We will not schedule you outside of these time slots without contacting you to agree.</p>
                         </TooltipContent>
                     </Tooltip>
-                    <TimeSlotSelector :time_slots="event.time_slots" :break_points="[3,4]" />
+                    <TimeSlotSelector
+                        :time_slots="event.time_slots"
+                        :break_points="[3,4]"
+                        :values="game.game_requirement.available_time_slots if game is defined else []"
+                    />
                     <ErrorHolder name="available_time_slot" />
 
                     <label class="fieldset-label">Any extra notes/preferences to help with scheduling?</label>
