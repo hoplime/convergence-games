@@ -12,7 +12,7 @@
             checked
             _="on change remove @disabled from <input[name='{{ name }}'] />"
         />
-        <span>{{ break_points | join('/') }} hours are fine</span>
+        <span>{{ break_points | join(' or ') }} hours are fine</span>
     </label>
     {% for break_point in break_points[1:] %}
         <label class="flex items-center gap-2">
