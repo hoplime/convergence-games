@@ -195,7 +195,7 @@
                             name="tagline"
                             minlength="10"
                             maxlength="140"
-                            value="{{ game and game.tagline }}"
+                            value="{{ game.tagline if game is defined }}"
                             required
                         />
                         <MaxLengthIndicator />
@@ -215,7 +215,10 @@
                             </p>
                         </TooltipContent>
                     </Tooltip>
-                    <utilities.TipTap form_input_name="description" :initial_content_json="game and game.description" />
+                    <utilities.TipTap
+                        form_input_name="description"
+                        :initial_content_json="game.description if game is defined else ''"
+                    />
                     <ErrorHolder name="description" />
 
                     {# Genre #}
@@ -232,13 +235,15 @@
                         placeholder="Search for genres..."
                         :suggested_on_empty="true"
                     >
-                        {% for genre in game.genres %}
-                            <forms.search_checks.SearchCheckChip
-                                :selected_name="genre.name"
-                                :value="swim(genre)"
-                                name="genre"
-                            />
-                        {% endfor %}
+                        {% if game is defined %}
+                            {% for genre in game.genres %}
+                                <forms.search_checks.SearchCheckChip
+                                    :selected_name="genre.name"
+                                    :value="swim(genre)"
+                                    name="genre"
+                                />
+                            {% endfor %}
+                        {% endif %}
                     </forms.search_checks.SearchCheckContainer>
                     <ErrorHolder name="genre" />
 
@@ -256,7 +261,7 @@
                                 name="tone"
                                 class="radio"
                                 value="{{ tone }}"
-                                {{ "checked" if game.tone == tone }}
+                                {{ "checked" if game is defined and game.tone == tone }}
                                 required
                             />
                             <span>{{ tone }}</span>
@@ -284,13 +289,15 @@
                         placeholder="Search for content warnings..."
                         :suggested_on_empty="true"
                     >
-                        {% for content_warning in game.content_warnings %}
-                            <forms.search_checks.SearchCheckChip
-                                :selected_name="content_warning.name"
-                                :value="swim(content_warning)"
-                                name="content_warning"
-                            />
-                        {% endfor %}
+                        {% if game is defined %}
+                            {% for content_warning in game.content_warnings %}
+                                <forms.search_checks.SearchCheckChip
+                                    :selected_name="content_warning.name"
+                                    :value="swim(content_warning)"
+                                    name="content_warning"
+                                />
+                            {% endfor %}
+                        {% endif %}
                     </forms.search_checks.SearchCheckContainer>
                     <ErrorHolder name="content_warning" />
 
@@ -372,7 +379,7 @@
                                 name="crunch"
                                 class="radio"
                                 value="{{ crunch }}"
-                                {{ "checked" if game.crunch == crunch }}
+                                {{ "checked" if game is defined and game.crunch == crunch }}
                                 required
                             />
                             <span>{{ crunch }}</span>
@@ -392,7 +399,7 @@
                     <FlagCheckboxes
                         :flag_enum="core_activities"
                         name="core_activity"
-                        :value="{{ game and game.core_activity }}"
+                        :value="{{ game is defined and game.core_activity }}"
                     />
                     <ErrorHolder name="core_activity" />
 
