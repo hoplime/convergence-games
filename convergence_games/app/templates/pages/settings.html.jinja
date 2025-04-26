@@ -5,7 +5,7 @@
             <div>Settings</div>
             <FieldsetBase>
                 <legend class="fieldset-legend">Theme</legend>
-                <ul class="menu flex w-full flex-row gap-4">
+                <ul class="menu grid w-full grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                     {%
                         for theme_name in [
                             "convergence_light",
@@ -57,7 +57,9 @@
                                 set <html/>'s @data-theme to my @data-theme
                                 "
                             >
-                                <div class="bg-base-100 grid shrink-0 grid-cols-2 gap-0.5 rounded-md p-1 shadow-sm">
+                                <div
+                                    class="bg-base-100 border-1 grid shrink-0 grid-cols-2 gap-0.5 rounded-md p-1 shadow-sm"
+                                >
                                     <div class="bg-accent size-1 rounded-full"></div>
                                     <div class="bg-base-content size-1 rounded-full"></div>
                                     <div class="bg-primary size-1 rounded-full"></div>
