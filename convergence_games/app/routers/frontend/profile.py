@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.app.events import EVENT_EMAIL_SIGN_IN
+from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.models import UserLogin
@@ -108,15 +109,14 @@ class ProfileController(Controller):
     ) -> Template:
         return await render_profile(request, transaction, did_invalid_action=did_invalid_action)
 
-    @post(path="/profile")
+    @post(path="/profile", guards=[user_guard])
     async def post_profile(
         self,
         request: Request,
         data: Annotated[PostProfileEditForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
         transaction: AsyncSession,
     ) -> Template:
-        if request.user is None:
-            raise HTTPException(status_code=401, detail="Unauthorized")
+        assert request.user is not None
 
         user = request.user
         user.first_name = data.first_name

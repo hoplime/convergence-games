@@ -6,11 +6,9 @@ from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body, RequestEncodingType
 from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter, ValidationInfo, field_validator
 from pydantic_core import PydanticCustomError
-from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.sql import ColumnExpressionArgument
 
 from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import user_guard
@@ -26,7 +24,6 @@ from convergence_games.db.enums import (
     GameRoomRequirement,
     GameTableSizeRequirement,
     GameTone,
-    SubmissionStatus,
 )
 from convergence_games.db.models import (
     ContentWarning,
@@ -42,6 +39,7 @@ from convergence_games.db.models import (
 from convergence_games.db.ocean import Sqid, sink
 
 
+# region Submit Game Form
 class NewValue[T](BaseModel):
     value: T
 
@@ -114,6 +112,10 @@ class SubmitGameForm(BaseModel):
         return value
 
 
+# endregion
+
+
+# region Form Error
 @dataclass
 class FormError:
     field_name: str
@@ -145,6 +147,10 @@ def handle_submit_game_form_validation_error(request: Request, exc: ValidationEx
     return HTMXBlockTemplate(re_swap="none", template_str=template_str)
 
 
+# endregion
+
+
+# region Submit Game Controller
 class SubmitGameController(Controller):
     @get(path="/submit-game", guards=[user_guard])
     async def get_submit_game(self, request: Request, transaction: AsyncSession) -> Template:
@@ -162,6 +168,54 @@ class SubmitGameController(Controller):
             block_name=request.htmx.target,
             context={
                 "event": event,
+                "tones": GameTone,
+                "crunches": GameCrunch,
+                "core_activities": GameCoreActivity,
+                "ksps": GameKSP,
+                "table_size_requirements": GameTableSizeRequirement,
+                "equipment_requirements": GameEquipmentRequirement,
+                "activity_requirements": GameActivityRequirement,
+                "room_requirements": GameRoomRequirement,
+            },
+        )
+
+    @get(path="/game/{game_sqid:str}/edit", guards=[user_guard])
+    async def get_edit_game(
+        self,
+        request: Request,
+        transaction: AsyncSession,
+        game_sqid: Sqid,
+    ) -> Template:
+        assert request.user is not None
+
+        game_id = sink(game_sqid)
+        game = (
+            await transaction.execute(
+                select(Game)
+                .options(
+                    selectinload(Game.system),
+                    selectinload(Game.gamemaster),
+                    selectinload(Game.event),
+                    selectinload(Game.game_requirement),
+                    selectinload(Game.genres),
+                    selectinload(Game.content_warnings),
+                )
+                .where(Game.id == game_id)
+            )
+        ).scalar_one_or_none()
+
+        if not game:
+            raise NotFoundException(detail="Game not found")
+
+        if game.gamemaster_id != request.user.id:
+            raise NotFoundException(detail="Game not found")
+
+        return HTMXBlockTemplate(
+            template_name="pages/submit_game.html.jinja",
+            block_name=request.htmx.target,
+            context={
+                "event": game.event,
+                "game": game,
                 "tones": GameTone,
                 "crunches": GameCrunch,
                 "core_activities": GameCoreActivity,
@@ -275,3 +329,6 @@ class SubmitGameController(Controller):
             template_name="pages/submit_game_confirmation.html.jinja",
             context={"game": new_game},
         )
+
+
+# endregion
