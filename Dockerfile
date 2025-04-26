@@ -31,6 +31,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM debian:bookworm-slim@sha256:b1211f6d19afd012477bd34fdcabb6b663d680e0f4b0537da6e6b0fd057a3ec3 AS default
 
+WORKDIR /app
+
 # Install ca-certificates - so we can use https to get JWKs from Google etc
 # Also install ssh dependencies - so we can use ssh to connect to the container in Azure
 RUN apt-get update && \
@@ -53,7 +55,6 @@ COPY --from=node-builder /app/convergence_games/app/static/js/lib.js /app/conver
 COPY --from=node-builder /app/convergence_games/app/static/js/lib.js.map /app/convergence_games/app/static/js/lib.js.map
 
 # Set up the environment
-WORKDIR /app
 ENV PATH="/app/.venv/bin:$PATH"
 ARG BUILD_TIME
 ENV LAST_UPDATED=$BUILD_TIME
