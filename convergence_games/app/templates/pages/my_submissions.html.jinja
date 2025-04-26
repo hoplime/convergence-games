@@ -1,0 +1,19 @@
+<Page>
+    {% block content %}
+        <title>My Submissions - Convergence 2025</title>
+        <PageContainer>
+            <div>My Submissions</div>
+            <ul class="list bg-base-200 rounded-box">
+                {% for game in games %}
+                    <li class="list-row items-center">
+                        <div>{{ game.name }}</div>
+                        <div class="{{ game.submission_status.color_classes }}">{{ game.submission_status }}</div>
+                        <div>({{ game.game_requirement.times_to_run }} sessions)</div>
+                        <a href="/game/{{ swim(game) }}" class="btn btn-neutral btn-outline">View</a>
+                        <a href="/game/{{ swim(game) }}/edit" class="btn btn-neutral btn-outline">Edit</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </PageContainer>
+    {% endblock %}
+</Page>

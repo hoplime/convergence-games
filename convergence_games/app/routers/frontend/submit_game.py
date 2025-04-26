@@ -4,7 +4,7 @@ from typing import Annotated, Callable, cast
 from litestar import Controller, Response, get, post
 from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body, RequestEncodingType
-from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter, ValidationError, ValidationInfo, field_validator
+from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter, ValidationInfo, field_validator
 from pydantic_core import PydanticCustomError
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
@@ -227,7 +227,7 @@ def handle_submit_game_form_validation_error(request: Request, exc: ValidationEx
 
 
 class SubmitGameController(Controller):
-    @get(path="/submit_game/{event_sqid:str}", guards=[user_guard])
+    @get(path="/submit-game/{event_sqid:str}", guards=[user_guard])
     async def get_submit_game(self, request: Request, transaction: AsyncSession, event_sqid: Sqid) -> Template:
         event_id = sink(event_sqid)
         event = (
@@ -260,7 +260,7 @@ class SubmitGameController(Controller):
         )
 
     @post(
-        path="/submit_game/{event_sqid:str}",
+        path="/submit-game/{event_sqid:str}",
         guards=[user_guard],
         exception_handlers={ValidationException: handle_submit_game_form_validation_error},  # type: ignore[assignment]
     )

@@ -11,6 +11,7 @@ from .email_auth import EmailAuthController
 from .event_profile import EventProfileController
 from .game import GameController
 from .home import HomeController
+from .my_submissions import MySubmissionsController
 from .oauth import OAuthController
 from .profile import ProfileController
 from .settings import SettingsController
@@ -39,6 +40,7 @@ router = Router(
         EventProfileController,
         GameController,
         HomeController,
+        MySubmissionsController,
         OAuthController,
         ProfileController,
         SettingsController,
