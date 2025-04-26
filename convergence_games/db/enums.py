@@ -260,6 +260,11 @@ class GameRoomRequirement(FlagWithNotes):
         NEAR_ANOTHER_TABLE: "This game requires a room near another table (please specify)",
     }
 
+    __tooltips__ = {
+        QUIET: "Note that we have limited private/quiet rooms available, so be mindful this may require some flexibility",
+        PRIVATE: "Note that we have limited private/quiet rooms available, so be mindful this may require some flexibility",
+    }
+
 
 class Role(enum.StrEnum):
     OWNER = "Owner"  # Can do anything a Manager can do, and assign roles to other users
