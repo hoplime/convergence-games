@@ -1,17 +1,17 @@
-// import FileHandler from "@tiptap-pro/extension-file-handler";
-import { Editor, mergeAttributes, generateHTML } from "@tiptap/core";
+import { Editor, generateHTML, mergeAttributes } from "@tiptap/core";
 import BlockQuote from "@tiptap/extension-blockquote";
 import BulletList from "@tiptap/extension-bullet-list";
 import Color from "@tiptap/extension-color";
 import Heading from "@tiptap/extension-heading";
-// import ImageResize from "tiptap-extension-resize-image";
-
+import Link from "@tiptap/extension-link";
 import ListItem from "@tiptap/extension-list-item";
 import OrderedList from "@tiptap/extension-ordered-list";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextStyle from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
+// import FileHandler from "@tiptap-pro/extension-file-handler";
+// import ImageResize from "tiptap-extension-resize-image";
 
 const PRESET_COLORS = ["#000000", "#ff0000", "#00ff00", "#0000ff"];
 
@@ -119,6 +119,15 @@ const editor_extensions = [
         HTMLAttributes: {
             class: "border-l-4 border-base-content pl-2",
         },
+    }),
+    Link.configure({
+        HTMLAttributes: {
+            class: "link",
+        },
+        linkOnPaste: true,
+        autolink: true,
+        defaultProtocol: "https",
+        protocols: ["http", "https", "mailto"],
     }),
     // ImageResize,
     // FileHandler.configure({
@@ -273,6 +282,30 @@ const createEditor = (
     createEditorButton(controls_element, "/static/editor/format-quote-open.svg", () =>
         editor.chain().focus().toggleBlockquote().run(),
     );
+    createEditorButton(controls_element, "/static/editor/format-link.svg", () => {
+        const previousUrl = editor.getAttributes("link").href;
+        const url = window.prompt("Enter a URL to link:", previousUrl);
+
+        // On cancel, do nothing
+        if (url === null) {
+            return;
+        }
+
+        // On empty, remove the link
+        if (url === "") {
+            editor.chain().focus().extendMarkRange("link").unsetLink().run();
+            return;
+        }
+
+        // Update the link
+        try {
+            editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+        } catch (e) {
+            if (e instanceof Error) {
+                alert(e.message);
+            }
+        }
+    });
 
     return editor;
 };
