@@ -8,12 +8,17 @@
                     {% for game in games %}
                         <li class="list-row items-center">
                             <div>{{ game.name }}</div>
+                            <div></div>
                             <div class="{{ game.submission_status.color_classes }}">{{ game.submission_status }}</div>
-                            <div>({{ game.game_requirement.times_to_run }} sessions)</div>
-                            <a href="/game/{{ swim(game) }}" class="btn btn-neutral btn-outline">View</a>
-                            <a href="/game/{{ swim(game) }}/edit" class="btn btn-neutral btn-outline" disabled
-                                >Edit Coming Soon</a
-                            >
+                            <div>
+                                ({{ game.game_requirement.times_to_run }}<span class="hidden md:inline-block">
+                                    sessions</span
+                                >)
+                            </div>
+                            <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral btn-outline">View</a>
+                            <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral btn-outline" disabled>
+                                Edit
+                            </a>
                         </li>
                     {% endfor %}
                 </ul>
