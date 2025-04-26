@@ -3,7 +3,7 @@
         <title>Submit Game - Convergence 2025</title>
         <PageContainer>
             <h1 class="text-xl font-bold">Submit Game</h1>
-            <form class="flex flex-col gap-4">
+            <form class="flex flex-col gap-4" hx-post="/submit-game" hx-target="#content" hx-disinherit="*">
                 <button type="submit" disabled class="hidden" aria-hidden="true"></button>
 
                 {# Event Information #}
@@ -169,6 +169,7 @@
                             class="input"
                             placeholder="Tagline"
                             name="tagline"
+                            minlength="10"
                             maxlength="140"
                             required
                         />
@@ -566,7 +567,7 @@
 
                 {# Submit #}
                 <ErrorHolder name="form" />
-                <button class="btn btn-primary btn-lg" hx-post="/submit-game" hx-target="#content">Submit</button>
+                <button class="btn btn-primary btn-lg" type="submit">Submit</button>
             </form>
         </PageContainer>
     {% endblock %}
