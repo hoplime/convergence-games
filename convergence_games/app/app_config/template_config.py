@@ -1,5 +1,6 @@
 import uuid
 from typing import Any
+from urllib.parse import quote, unquote
 
 import jinjax
 from humanize import naturaldelta
@@ -66,6 +67,8 @@ jinja_env.filters["extract_title"] = extract_title
 jinja_env.filters["nice_time_format"] = nice_time_format
 jinja_env.filters["time_range_format"] = time_range_format
 jinja_env.filters["humanize"] = naturaldelta
+jinja_env.filters["quote"] = quote
+jinja_env.filters["unquote"] = unquote
 
 jinja_env.filters["GameActivityRequirement"] = GameActivityRequirement
 jinja_env.filters["GameCoreActivity"] = GameCoreActivity
