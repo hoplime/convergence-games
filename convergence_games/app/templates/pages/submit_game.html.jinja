@@ -506,7 +506,12 @@
                             <p>These are miscellaneous key selling points for your session or game.</p>
                         </TooltipContent>
                     </Tooltip>
-                    <FlagCheckboxes :flag_enum="ksps" name="ksp" :display_tooltips="false" />
+                    <FlagCheckboxes
+                        :flag_enum="ksps"
+                        name="ksp"
+                        :display_tooltips="false"
+                        :value="{{ game is defined and game.ksps }}"
+                    />
                     <ErrorHolder name="ksp" />
                 </FieldsetBase>
 
@@ -563,6 +568,7 @@
                         :flag_enum="table_size_requirements"
                         name="table_size_requirement"
                         :display_tooltips="true"
+                        :value="{{ game is defined and game.game_requirement.table_size_requirement }}"
                     />
                     <ErrorHolder name="table_size_requirement" />
 
@@ -576,6 +582,7 @@
                         :flag_enum="equipment_requirements"
                         name="equipment_requirement"
                         :display_tooltips="false"
+                        :value="{{ game is defined and game.game_requirement.equipment_requirement }}"
                     />
                     <ErrorHolder name="equipment_requirement" />
 
@@ -589,6 +596,7 @@
                         :flag_enum="activity_requirements"
                         name="activity_requirement"
                         :display_tooltips="false"
+                        :value="{{ game is defined and game.game_requirement.activity_requirement }}"
                     />
                     <ErrorHolder name="activity_requirement" />
 
@@ -598,7 +606,12 @@
 
                     {# Room Requirements #}
                     <label class="fieldset-label font-semibold">Room Requirements</label>
-                    <FlagCheckboxes :flag_enum="room_requirements" name="room_requirement" :display_tooltips="true" />
+                    <FlagCheckboxes
+                        :flag_enum="room_requirements"
+                        name="room_requirement"
+                        :display_tooltips="true"
+                        :value="{{ game is defined and game.game_requirement.room_requirement }}"
+                    />
                     <ErrorHolder name="room_requirement" />
 
                     <label class="fieldset-label">Any other notes on rooms?</label>

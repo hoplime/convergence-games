@@ -26,7 +26,13 @@
         </Tooltip>
     {% else %}
         <label class="flex items-center gap-2">
-            <input type="checkbox" name="{{ name }}" value="{{ f }}" class="checkbox" />
+            <input
+                type="checkbox"
+                name="{{ name }}"
+                value="{{ f }}"
+                class="checkbox"
+                {{ "checked" if value and bitwise_and(value, f) }}
+            />
             <span>{{ f.form_notes[0] }}</span>
         </label>
     {% endif %}
