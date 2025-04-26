@@ -11,7 +11,7 @@
             hx-get="/search/{{ name }}/select?sqid={{ swim(result.result) }}"
             hx-trigger="click, keyup[key=='Enter']"
             {% if mode == "select" %}
-                hx-target="closest .search-container"
+                hx-target="closest .search-container" hx-swap="outerHTML"
             {% elif mode == "checks" %}
                 hx-target="previous .search-chip-container" hx-swap="beforeend" _="on click or keyup[key=='Enter'] get
                 the previous

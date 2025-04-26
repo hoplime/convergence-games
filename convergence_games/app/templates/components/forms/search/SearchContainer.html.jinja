@@ -16,5 +16,6 @@
         hx-vals="js:{search: encodeURIComponent(document.getElementById('{{ name }}-search').value)}"
         hx-trigger="keyup changed from:previous input#{{ name }}-search"
         hx-swap="innerHTML"
+        hx-disinherit="hx-swap"
     ></div>
 </div>

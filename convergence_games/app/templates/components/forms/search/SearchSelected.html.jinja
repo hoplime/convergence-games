@@ -2,19 +2,22 @@
     selected_name: str,
     value: str = "",
     name: str = "search",
+    new: bool = False,
 #}
-{% if new %}
-    <div>{{ selected_name }} (NEW!)</div>
-{% else %}
-    <div>You've selected {{ selected_name }}</div>
-{% endif %}
-<input type="hidden" name="{{ name }}" value="{{ value }}" />
-<button
-    type="button"
-    class="btn btn-primary"
-    hx-get="/search/{{ name }}"
-    hx-target="closest .search-container"
-    hx-swap="outerHTML"
->
-    Cancel
-</button>
+<div class="search-container">
+    {% if new %}
+        <div>{{ selected_name }} (NEW!)</div>
+    {% else %}
+        <div>You've selected {{ selected_name }}</div>
+    {% endif %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}" />
+    <button
+        type="button"
+        class="btn btn-primary"
+        hx-get="/search/{{ name }}"
+        hx-target="closest .search-container"
+        hx-swap="outerHTML"
+    >
+        Cancel
+    </button>
+</div>
