@@ -1,6 +1,20 @@
 {#def
-    form_errors: dict[str, list[str]] = {}
+    form_errors: list[FormError] = [],
 #}
-{% for name, errors in form_errors.items() %}
-    <ErrorHolder :name="name" :message="errors | join(', ')" hx-swap-oob="true" />
+{% for form_error in form_errors %}
+    <ErrorHolder :name="form_error.field_name" hx-swap-oob="true">{{ form_error.errors | join(', ') }}</ErrorHolder>
 {% endfor %}
+<ErrorHolder name="form" hx-swap-oob="true">
+    <div class="flex flex-col gap-2">
+        <p>There were validation errors, please fix:</p>
+        <ul class="list-disc pl-4">
+            {% for form_error in form_errors %}
+                {% if form_error.errors %}
+                    <li class="link" _="on click go to the top of #error-holder-{{ form_error.field_name }} -128px">
+                        {{ form_error.field_title }}: {{ form_error.errors | join(', ') }}
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+</ErrorHolder>

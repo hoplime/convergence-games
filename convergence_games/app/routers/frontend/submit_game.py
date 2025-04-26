@@ -4,7 +4,8 @@ from typing import Annotated, Callable, cast
 from litestar import Controller, Response, get, post
 from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body, RequestEncodingType
-from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter
+from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter, ValidationError, ValidationInfo, field_validator
+from pydantic_core import PydanticCustomError
 from rapidfuzz import fuzz, process, utils
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -66,36 +67,51 @@ SqidOrNewStr = Annotated[SqidOrNew[str], BeforeValidator(make_sqid_or_new_valida
 
 class SubmitGameForm(BaseModel):
     # Stuff that's used for Game
-    title: Annotated[str, Field(min_length=1, max_length=100)]
-    system: SqidOrNewStr
-    tagline: Annotated[str, Field(min_length=10, max_length=140)] = ""
-    description: str = ""
-    genre: Annotated[list[SqidOrNewStr], MaybeListValidator]
-    tone: GameTone
-    content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator] = []
-    crunch: GameCrunch
-    core_activity: Annotated[GameCoreActivity, IntFlagValidator] = GameCoreActivity.NONE
-    player_count_minimum: int
+    title: Annotated[str, Field(min_length=1, max_length=100, title="Title")]
+    system: Annotated[SqidOrNewStr, Field(title="System")]
+    tagline: Annotated[str, Field(min_length=10, max_length=140, title="Tagline")] = ""
+    description: Annotated[str, Field(title="Description")] = ""
+    genre: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Genres")]
+    tone: Annotated[GameTone, Field(title="Tone")]
+    content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Content Warnings")] = []
+    crunch: Annotated[GameCrunch, Field(title="Complexity")]
+    core_activity: Annotated[GameCoreActivity, IntFlagValidator, Field(title="Core Activities")] = GameCoreActivity.NONE
+    player_count_minimum: Annotated[int, Field(ge=1, title="Minimum Players")]
     player_count_minimum_more: int | None = None
-    player_count_optimum: int
+    player_count_optimum: Annotated[int, Field(ge=1, title="Optimum Players")]
     player_count_optimum_more: int | None = None
-    player_count_maximum: int
+    player_count_maximum: Annotated[int, Field(ge=1, title="Maximum Players")]
     player_count_maximum_more: int | None = None
-    classification: GameClassification
-    ksp: Annotated[GameKSP, IntFlagValidator] = GameKSP.NONE
+    classification: Annotated[GameClassification, Field(title="Age Suitability & Classification")]
+    ksp: Annotated[GameKSP, IntFlagValidator, Field(title="Bonuses")] = GameKSP.NONE
 
     # Stuff that's used for GameRequirement
-    times_to_run: int = 1
-    available_time_slot: Annotated[list[SqidOrNewStr], MaybeListValidator]
-    scheduling_notes: str = ""
-    table_size_requirement: Annotated[GameTableSizeRequirement, IntFlagValidator] = GameTableSizeRequirement.NONE
-    table_size_notes: str = ""
-    equipment_requirement: Annotated[GameEquipmentRequirement, IntFlagValidator] = GameEquipmentRequirement.NONE
-    equipment_notes: str = ""
-    activity_requirement: Annotated[GameActivityRequirement, IntFlagValidator] = GameActivityRequirement.NONE
-    activity_notes: str = ""
-    room_requirement: Annotated[GameRoomRequirement, IntFlagValidator] = GameRoomRequirement.NONE
-    room_notes: str = ""
+    times_to_run: Annotated[int, Field(title="Times to Run")] = 1
+    available_time_slot: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Available Time Slots")]
+    scheduling_notes: Annotated[str, Field(title="Scheduling Notes")] = ""
+    table_size_requirement: Annotated[
+        GameTableSizeRequirement, IntFlagValidator, Field(title="Table Size Requirements")
+    ] = GameTableSizeRequirement.NONE
+    table_size_notes: Annotated[str, Field(title="Table Size Notes")] = ""
+    equipment_requirement: Annotated[
+        GameEquipmentRequirement, IntFlagValidator, Field(title="Equipment Requirements")
+    ] = GameEquipmentRequirement.NONE
+    equipment_notes: Annotated[str, Field(title="Equiment Notes")] = ""
+    activity_requirement: Annotated[GameActivityRequirement, IntFlagValidator, Field(title="Activity Requirements")] = (
+        GameActivityRequirement.NONE
+    )
+    activity_notes: Annotated[str, Field(title="Activity Notes")] = ""
+    room_requirement: Annotated[GameRoomRequirement, IntFlagValidator, Field(title="Room Requirements")] = (
+        GameRoomRequirement.NONE
+    )
+    room_notes: Annotated[str, Field(title="Room Notes")] = ""
+
+    @field_validator("available_time_slot", mode="after")
+    @classmethod
+    def validate_enough_time_slots_selected(cls, value: list[SqidOrNewStr], info: ValidationInfo) -> list[SqidOrNewStr]:
+        if len(value) < info.data["times_to_run"]:
+            raise PydanticCustomError("", "You must select at least as many time slots as times to run.")
+        return value
 
 
 type SearchableBase = System | Genre | ContentWarning
@@ -179,16 +195,32 @@ async def search_with_fuzzy_match[T: SearchableBase](
     return top_results
 
 
+@dataclass
+class FormError:
+    field_name: str
+    field_title: str
+    errors: list[str]
+
+
 def handle_submit_game_form_validation_error(request: Request, exc: ValidationException) -> Response:
     print(request)
     print(exc)
-    form_errors: dict[str, list[str]] = {field_name: [] for field_name in SubmitGameForm.model_fields.keys()}
+    error_messages: dict[str, list[str]] = {}
     if exc.extra is not None:
         for extra in exc.extra:
             extra = cast(dict[str, str], extra)
             field_name = extra["key"]
             message = extra["message"]
-            form_errors[field_name].append(message)
+            if field_name not in error_messages:
+                error_messages[field_name] = []
+            error_messages[field_name].append(message)
+
+    form_errors: list[FormError] = [
+        FormError(
+            field_name=field_name, field_title=field_info.title or field_name, errors=error_messages.get(field_name, [])
+        )
+        for field_name, field_info in SubmitGameForm.model_fields.items()
+    ]
 
     template_str = catalog.render("ErrorHolderOobCollection", form_errors=form_errors)
     return HTMXBlockTemplate(re_swap="none", template_str=template_str)
