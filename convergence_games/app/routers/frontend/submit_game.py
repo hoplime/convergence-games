@@ -227,9 +227,10 @@ def handle_submit_game_form_validation_error(request: Request, exc: ValidationEx
 
 
 class SubmitGameController(Controller):
-    @get(path="/submit-game/{event_sqid:str}", guards=[user_guard])
-    async def get_submit_game(self, request: Request, transaction: AsyncSession, event_sqid: Sqid) -> Template:
-        event_id = sink(event_sqid)
+    @get(path="/submit-game", guards=[user_guard])
+    async def get_submit_game(self, request: Request, transaction: AsyncSession) -> Template:
+        # TODO 2026: Variable event ID to submit a game to
+        event_id = 1
         event = (
             await transaction.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
         ).scalar_one_or_none()
@@ -260,7 +261,7 @@ class SubmitGameController(Controller):
         )
 
     @post(
-        path="/submit-game/{event_sqid:str}",
+        path="/submit-game",
         guards=[user_guard],
         exception_handlers={ValidationException: handle_submit_game_form_validation_error},  # type: ignore[assignment]
     )
@@ -268,10 +269,10 @@ class SubmitGameController(Controller):
         self,
         request: Request,
         transaction: AsyncSession,
-        event_sqid: Sqid,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
-        event_id = sink(event_sqid)
+        # TODO 2026: Variable event ID to submit a game to
+        event_id = 1
         event = (
             await transaction.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
         ).scalar_one_or_none()

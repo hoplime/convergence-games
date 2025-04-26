@@ -566,9 +566,7 @@
 
                 {# Submit #}
                 <ErrorHolder name="form" />
-                <button class="btn btn-primary btn-lg" hx-post="/submit-game/{{ swim(event) }}" hx-target="#content">
-                    Submit
-                </button>
+                <button class="btn btn-primary btn-lg" hx-post="/submit-game" hx-target="#content">Submit</button>
             </form>
         </PageContainer>
     {% endblock %}

@@ -18,12 +18,11 @@
                     {% endfor %}
                 </ul>
             {% else %}
-                {% set submit_game_url = "/submit-game/" ~ swim("Event", 1) %}
                 <div class="flex flex-col gap-4">
                     <p>You haven't submitted anything yet.</p>
                     <button
                         class="btn btn-xl btn-primary mx-auto"
-                        hx-get="{{ submit_game_url }}"
+                        hx-get="/submit-game"
                         hx-target="#content"
                         hx-push-url="true"
                     >
