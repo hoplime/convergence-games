@@ -4,7 +4,7 @@
     name: str = "search",
 #}
 <div class="badge badge-outline pr-2">
-    <input type="checkbox" name="{{ name }}" value="{{ value }}" class="hidden" checked />
+    <input type="checkbox" name="{{ name }}" value="{{ value | unquote }}" class="hidden" checked />
     <h1>{{ selected_name }}</h1>
     {# <span class="text-red-500">X</span> #}
     <svg
