@@ -3,13 +3,19 @@
         <title>Sign In or Create an Account - Convergence 2025</title>
 
         <PageContainer>
-            {% if did_invalid_action %}
+            {% if invalid_action_path != "/profile" %}
                 <div class="alert alert-warning">You need to sign in to complete that action</div>
             {% endif %}
             <div class="m-auto grid max-w-96 gap-4">
-                <forms.sign_in_buttons.Email />
-                <forms.sign_in_buttons.Discord />
-                <forms.sign_in_buttons.Google />
+                {% if invalid_action_path != "/profile" %}
+                    <forms.sign_in_buttons.Email :invalid_action_path="invalid_action_path" />
+                    <forms.sign_in_buttons.Discord :invalid_action_path="invalid_action_path" />
+                    <forms.sign_in_buttons.Google :invalid_action_path="invalid_action_path" />
+                {% else %}
+                    <forms.sign_in_buttons.Email />
+                    <forms.sign_in_buttons.Discord />
+                    <forms.sign_in_buttons.Google />
+                {% endif %}
             </div>
         </PageContainer>
     {% endblock %}

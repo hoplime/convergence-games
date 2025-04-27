@@ -36,15 +36,15 @@ class PostProfileEditForm:
 async def render_profile(
     request: Request,
     transaction: AsyncSession,
-    did_invalid_action: bool = False,
+    invalid_action_path: str = "/profile",
 ) -> Template:
-    cookies = [Cookie(key="did-invalid-action", max_age=0)]
+    cookies = [Cookie(key="invalid-action-path", max_age=0)]
 
     if request.user is None:
         return HTMXBlockTemplate(
             template_name="pages/register.html.jinja",
             block_name=request.htmx.target,
-            context={"did_invalid_action": did_invalid_action},
+            context={"invalid_action_path": invalid_action_path},
             cookies=cookies,
         )
 
@@ -105,9 +105,9 @@ class ProfileController(Controller):
         self,
         request: Request,
         transaction: AsyncSession,
-        did_invalid_action: Annotated[bool, Parameter(cookie="did-invalid-action")] = False,
+        invalid_action_path: Annotated[str, Parameter(cookie="invalid-action-path")] = "/profile",
     ) -> Template:
-        return await render_profile(request, transaction, did_invalid_action=did_invalid_action)
+        return await render_profile(request, transaction, invalid_action_path=invalid_action_path)
 
     @post(path="/profile", guards=[user_guard])
     async def post_profile(

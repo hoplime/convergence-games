@@ -22,6 +22,7 @@ from .submit_game import SubmitGameController
 
 async def before_request_handler(request: Request) -> Redirect | None:
     # If we're logged in BUT hasn't set up their profile yet, redirect to the profile setup page
+    # To finish filling out their more info
     if (
         request.method == "GET"
         and request.scope["path"] != "/profile"

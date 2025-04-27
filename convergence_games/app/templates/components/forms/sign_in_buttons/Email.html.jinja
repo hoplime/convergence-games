@@ -1,7 +1,16 @@
 {#def
     linking_account_sqid: str | None = None,
+    invalid_action_path: str | None = None,
 #}
-{% set href="/email_sign_in?linking_account_sqid=" ~ linking_account_sqid if linking_account_sqid is not none else "/email_sign_in" %}
+{# TODO: Proper query building #}
+{% set query = "" %}
+{% if linking_account_sqid is not none %}
+    {% set query = query ~ "?linking_account_sqid=" ~ linking_account_sqid %}
+{% endif %}
+{% if invalid_action_path is not none %}
+    {% set query = query ~ ("&" if query else "?") ~ "redirect_path=" ~ invalid_action_path %}
+{% endif %}
+{% set href = "/email_sign_in" ~ query %}
 <a href="{{ href }}" class="btn btn-ghost">
     <img src="static/icons/logos/email.svg" class="h-8" alt="Email Logo" />
     <span>{{ 'Link' if linking_account_sqid is not none else 'Sign in with' }} Email</span>
