@@ -1,7 +1,6 @@
 import { Editor, generateHTML, mergeAttributes } from "@tiptap/core";
 import BlockQuote from "@tiptap/extension-blockquote";
 import BulletList from "@tiptap/extension-bullet-list";
-import Color from "@tiptap/extension-color";
 import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import ListItem from "@tiptap/extension-list-item";
@@ -13,8 +12,6 @@ import StarterKit from "@tiptap/starter-kit";
 // import FileHandler from "@tiptap-pro/extension-file-handler";
 // import ImageResize from "tiptap-extension-resize-image";
 
-const PRESET_COLORS = ["#000000", "#ff0000", "#00ff00", "#0000ff"];
-
 const get_cached_file_contents = (file_path: string) => {
     return fetch(file_path).then((response) => {
         if (!response.ok) {
@@ -25,43 +22,6 @@ const get_cached_file_contents = (file_path: string) => {
 };
 
 // TipTap Editor setup
-const createColorPicker = (parent_element: Element, icon_path: string, editor: Editor) => {
-    let color_picker_container = document.createElement("div");
-    color_picker_container.className = "rounded-md px-2 py-1 cursor-pointer hover:bg-base-300";
-
-    // Label
-    let color_picker_label = document.createElement("label");
-    color_picker_label.className = "flex items-center [&>svg]:w-6 [&>svg]:h-6";
-    color_picker_container.appendChild(color_picker_label);
-
-    let color_picker_label_image = document.createElement("svg");
-    color_picker_label.appendChild(color_picker_label_image);
-
-    get_cached_file_contents(icon_path).then((resolved_label) => {
-        color_picker_label_image.outerHTML = resolved_label;
-    });
-
-    // Input
-    let color_picker = document.createElement("input");
-    color_picker.type = "color";
-    color_picker.setAttribute("list", "color-list");
-    color_picker.oninput = (event) => {
-        let color = (event.target as HTMLInputElement).value;
-        editor.chain().focus().setColor(color).run();
-    };
-    color_picker_label.appendChild(color_picker);
-
-    // Color list
-    let color_list = document.createElement("datalist");
-    color_list.id = "color-list";
-    color_list.innerHTML = PRESET_COLORS.map((color) => `<option value="${color}">`).join("");
-    color_picker_label.appendChild(color_list);
-
-    parent_element.appendChild(color_picker_container);
-
-    return color_picker_container;
-};
-
 const createEditorButton = (parent_element: Element, icon_path: string, fn: () => void) => {
     let button = document.createElement("button");
     button.className = "rounded-md px-2 py-1 [&>svg]:w-6 [&>svg]:h-6 text-red cursor-pointer hover:bg-base-300";
@@ -78,7 +38,6 @@ const editor_extensions = [
     StarterKit,
     Underline,
     TextStyle,
-    Color,
     Paragraph.configure({
         HTMLAttributes: {
             class: "mb-2",
@@ -251,7 +210,6 @@ const createEditor = (
     });
 
     // Create the control buttons
-    createColorPicker(controls_element, "/static/editor/format-color-text.svg", editor);
     createEditorButton(controls_element, "/static/editor/format-header-1.svg", () =>
         editor.chain().focus().setHeading({ level: 1 }).run(),
     );
