@@ -64,6 +64,7 @@ class Settings(BaseSettings):
     SQIDS_MIN_LENGTH: int = 5
 
     # OAuth
+    SIGNING_KEY: str = ""
     TOKEN_SECRET: str = ""
     BASE_REDIRECT_URI: str | None = "https://tolocalhost.com"
     GOOGLE_CLIENT_ID: str = ""

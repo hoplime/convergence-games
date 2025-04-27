@@ -7,6 +7,7 @@ from typing import Annotated, Any, cast
 
 import httpx
 import jwt
+from cryptography.fernet import Fernet
 from httpx_oauth.clients.discord import DiscordOAuth2
 from httpx_oauth.clients.google import GoogleOAuth2
 from httpx_oauth.oauth2 import BaseOAuth2, OAuth2Token
@@ -14,6 +15,7 @@ from litestar import Controller, get, post
 from litestar.exceptions import HTTPException
 from litestar.params import Parameter
 from litestar.response import Redirect
+from pydantic import AfterValidator, BaseModel, BeforeValidator, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
@@ -22,6 +24,21 @@ from convergence_games.app.request_type import Request
 from convergence_games.db.models import LoginProvider
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.settings import SETTINGS
+
+fernet = Fernet(SETTINGS.SIGNING_KEY)
+
+
+class OAuthRedirectState(BaseModel):
+    linking_account_sqid: Sqid | None = None
+    redirect_path: str | None = None
+
+    def encode(self) -> str:
+        return fernet.encrypt(self.model_dump_json().encode()).decode()
+
+    @classmethod
+    def decode(cls, encoded: str) -> OAuthRedirectState:
+        decoded = fernet.decrypt(encoded).decode()
+        return cls.model_validate_json(decoded)
 
 
 class OAuthProvider(ABC):
@@ -162,6 +179,7 @@ class OAuthController(Controller):
         provider_name: LoginProvider,
         request: Request,
         linking_account_sqid: Sqid | None = None,
+        redirect_path: str | None = None,
     ) -> Redirect:
         linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
         if linking_account_id is not None and (request.user is None or linking_account_id != request.user.id):
@@ -170,7 +188,11 @@ class OAuthController(Controller):
         provider = get_oauth_provider(provider_name)
         redirect_uri = build_redirect_uri(provider_name)
 
-        auth_url = await provider.client.get_authorization_url(redirect_uri=redirect_uri, state=linking_account_sqid)
+        state = OAuthRedirectState(
+            linking_account_sqid=linking_account_sqid,
+            redirect_path=redirect_path,
+        )
+        auth_url = await provider.client.get_authorization_url(redirect_uri=redirect_uri, state=state.encode())
         return Redirect(path=auth_url)
 
     @get(path="/{provider_name:str}/authorize")
@@ -181,9 +203,12 @@ class OAuthController(Controller):
         transaction: AsyncSession,
         state_query: Annotated[str | None, Parameter(query="state")] = None,
     ) -> Redirect:
-        # TODO: Better state handling with a signing key - not just using it to encode the SQID
-        linking_account_sqid = cast(Sqid, state_query) if state_query is not None else None
+        # Handle state query parameter
+        state = OAuthRedirectState.decode(state_query) if state_query is not None else OAuthRedirectState()
+        linking_account_sqid = cast(Sqid, state.linking_account_sqid)
         linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
+        redirect_path = state.redirect_path
+
         provider = get_oauth_provider(provider_name)
         redirect_uri = build_redirect_uri(provider_name)
 
@@ -195,4 +220,5 @@ class OAuthController(Controller):
             provider_name=provider_name,
             profile_info=profile_info,
             linking_account_id=linking_account_id,
+            redirect_path=redirect_path,
         )

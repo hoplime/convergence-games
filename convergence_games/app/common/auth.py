@@ -26,6 +26,7 @@ async def authorize_flow(
     provider_name: LoginProvider,
     profile_info: ProfileInfo,
     linking_account_id: int | None = None,
+    redirect_path: str | None = None,
 ) -> Redirect:
     user_login = (
         await transaction.execute(
@@ -83,4 +84,4 @@ async def authorize_flow(
     await transaction.flush()
     user_id = user.id
     login = jwt_cookie_auth.login(str(user_id))
-    return Redirect(path="/profile", cookies=login.cookies)
+    return Redirect(path=redirect_path if redirect_path is not None else "/profile", cookies=login.cookies)
