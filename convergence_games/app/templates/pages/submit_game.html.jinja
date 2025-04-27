@@ -661,7 +661,8 @@
                     <label class="flex items-center gap-2 font-semibold">
                         <input
                             type="checkbox"
-                            class="checkbox validator"
+                            class="checkbox"
+                            name="agree_to_code_of_conduct"
                             {{ "checked" if editing }}
                             required
                             title="Required"
@@ -672,12 +673,14 @@
                                 Waikato RPG Code of Conduct
                             </a>
                         </span>
-                        <span class="validator-hint mt-0">You must agree to the Waikato RPG Code of Conduct</span>
                     </label>
+                    <ErrorHolder name="agree_to_code_of_conduct" />
+
                     <label class="flex items-center gap-2 font-semibold">
                         <input
                             type="checkbox"
-                            class="checkbox validator"
+                            class="checkbox"
+                            name="agree_to_use_safety_tools"
                             {{ "checked" if editing }}
                             required
                             title="Required"
@@ -688,8 +691,8 @@
                                 the X-Card and Open Table Policy
                             </a>
                         </span>
-                        <span class="validator-hint mt-0">You must agree to use the X-Card and Open Table Policy</span>
                     </label>
+                    <ErrorHolder name="agree_to_use_safety_tools" />
                 </FieldsetBase>
 
                 {# Submit #}

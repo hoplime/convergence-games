@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Annotated, Callable, Self, cast
+from typing import Annotated, Callable, Literal, Self, cast
 
 from litestar import Controller, Response, get, post, put
 from litestar.exceptions import NotFoundException, PermissionDeniedException, ValidationException
@@ -105,6 +105,13 @@ class SubmitGameForm(BaseModel):
     )
     room_notes: Annotated[str, Field(title="Room Notes")] = ""
 
+    agree_to_code_of_conduct: Annotated[
+        Literal["on"] | None, Field(title="Agree to Code of Conduct", validate_default=True)
+    ] = None
+    agree_to_use_safety_tools: Annotated[
+        Literal["on"] | None, Field(title="Agree to Use Safety Tools", validate_default=True)
+    ] = None
+
     @property
     def player_count_minimum_prop(self) -> int:
         return max(self.player_count_minimum, self.player_count_minimum_more or 0)
@@ -140,6 +147,20 @@ class SubmitGameForm(BaseModel):
     def validate_enough_time_slots_selected(cls, value: list[SqidInt], info: ValidationInfo) -> list[SqidInt]:
         if len(value) < info.data["times_to_run"]:
             raise PydanticCustomError("", "You must select at least as many time slots as times to run.")
+        return value
+
+    @field_validator("agree_to_code_of_conduct", mode="after")
+    @classmethod
+    def validate_agree_to_code_of_conduct(cls, value: bool) -> bool:
+        if not value:
+            raise PydanticCustomError("", "You must agree to the Code of Conduct.")
+        return value
+
+    @field_validator("agree_to_use_safety_tools", mode="after")
+    @classmethod
+    def validate_agree_to_use_safety_tools(cls, value: bool) -> bool:
+        if not value:
+            raise PydanticCustomError("", "You must agree to use the X-Card and Open Table Policy.")
         return value
 
 
