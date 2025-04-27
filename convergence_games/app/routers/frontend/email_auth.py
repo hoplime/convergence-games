@@ -11,17 +11,17 @@ from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.common.auth import ProfileInfo, authorize_flow
+from convergence_games.app.common.auth import OAuthRedirectState, ProfileInfo, authorize_flow
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import UserEmailVerificationCode
-from convergence_games.db.ocean import Sqid, sink
+from convergence_games.db.ocean import sink
 
 
 async def login_with_email_and_code(
     email: str,
     code: str,
     transaction: AsyncSession,
-    linking_account_id: int | None = None,
+    state: OAuthRedirectState,
 ) -> Redirect:
     user_email_verification_code = (
         await transaction.execute(
@@ -42,7 +42,8 @@ async def login_with_email_and_code(
             user_id=email,
             user_email=email,
         ),
-        linking_account_id=linking_account_id,
+        linking_account_id=sink(state.linking_account_sqid) if state.linking_account_sqid is not None else None,
+        redirect_path=state.redirect_path,
     )
 
 
@@ -60,26 +61,18 @@ class EmailAuthController(Controller):
         self,
         magic_link_code: Annotated[str, Parameter(query="code")],
         transaction: AsyncSession,
-        linking_account_sqid: Sqid | None = None,
+        state_query: Annotated[str | None, Parameter(query="state")] = None,
     ) -> Redirect:
+        state = OAuthRedirectState.decode(state_query) if state_query is not None else OAuthRedirectState()
         code, email = UserEmailVerificationCode.decode_magic_link_code(magic_link_code)
-        return await login_with_email_and_code(
-            email,
-            code,
-            transaction,
-            linking_account_id=sink(linking_account_sqid) if linking_account_sqid is not None else None,
-        )
+        return await login_with_email_and_code(email, code, transaction, state=state)
 
     @post(path="/verify_code")
     async def post_verify_code(
         self,
         data: Annotated[PostVerifyCodeForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
         transaction: AsyncSession,
-        linking_account_sqid: Sqid | None = None,
+        state_query: Annotated[str | None, Parameter(query="state")] = None,
     ) -> Redirect:
-        return await login_with_email_and_code(
-            data.email,
-            data.code,
-            transaction,
-            linking_account_id=sink(linking_account_sqid) if linking_account_sqid is not None else None,
-        )
+        state = OAuthRedirectState.decode(state_query) if state_query is not None else OAuthRedirectState()
+        return await login_with_email_and_code(data.email, data.code, transaction, state=state)

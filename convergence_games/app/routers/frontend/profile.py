@@ -8,12 +8,13 @@ from litestar.params import Body, Parameter, RequestEncodingType
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from convergence_games.app.common.auth import OAuthRedirectState
 from convergence_games.app.events import EVENT_EMAIL_SIGN_IN
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.models import UserLogin
-from convergence_games.db.ocean import Sqid
+from convergence_games.db.ocean import Sqid, sink
 
 
 @dataclass
@@ -72,6 +73,10 @@ class ProfileController(Controller):
     async def get_email_sign_in(
         self, request: Request, linking_account_sqid: Sqid | None = None, redirect_path: str | None = None
     ) -> Template:
+        linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
+        if linking_account_id is not None and (request.user is None or linking_account_id != request.user.id):
+            raise HTTPException(detail="Invalid linking account ID", status_code=403)
+
         return HTMXBlockTemplate(
             template_name="pages/email_sign_in.html.jinja",
             block_name=request.htmx.target,
@@ -90,18 +95,26 @@ class ProfileController(Controller):
         linking_account_sqid: Sqid | None = None,
         redirect_path: str | None = None,
     ) -> Template:
+        linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
+        if linking_account_id is not None and (request.user is None or linking_account_id != request.user.id):
+            raise HTTPException(detail="Invalid linking account ID", status_code=403)
+
+        state = OAuthRedirectState(
+            linking_account_sqid=linking_account_sqid,
+            redirect_path=redirect_path,
+        )
         request.app.emit(
             EVENT_EMAIL_SIGN_IN,
             email=data.email,
-            linking_account_sqid=linking_account_sqid,
+            state=state,
             transaction=transaction,
         )
         return HTMXBlockTemplate(
             template_name="components/forms/email_sign_in/VerifyCode.html.jinja",
             context={
                 "email": data.email,
-                "linking_account_sqid": linking_account_sqid,
-                "redirect_path": redirect_path,
+                "is_linking": linking_account_sqid is not None,
+                "state": state,
             },
         )
 
