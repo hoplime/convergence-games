@@ -589,10 +589,8 @@
 
                     {# TODO: Why are all these text areas being formatted terribly? #}
                     <label class="fieldset-label">Any extra notes/preferences to help with scheduling?</label>
-                    <textarea class="textarea" name="scheduling_notes">
-{{ game.game_requirement.scheduling_notes if editing else "" }}
-</textarea
-                    >
+                    {% set text_content = game.game_requirement.scheduling_notes if editing else "" %}
+                    <textarea class="textarea" name="scheduling_notes">{{ text_content }}</textarea>
                     <ErrorHolder name="scheduling_notes" />
 
                     {# Table Size Requirements #}
@@ -606,10 +604,8 @@
                     <ErrorHolder name="table_size_requirement" />
 
                     <label class="fieldset-label">Any other notes on table size? </label>
-                    <textarea class="textarea" name="table_size_notes">
-{{ game.game_requirement.table_size_notes if editing else "" }}
-</textarea
-                    >
+                    {% set text_content = game.game_requirement.table_size_notes if editing else "" %}
+                    <textarea class="textarea" name="table_size_notes">{{ text_content }}</textarea>
                     <ErrorHolder name="table_size_notes" />
 
                     {# Equipment Requirements #}
@@ -623,10 +619,8 @@
                     <ErrorHolder name="equipment_requirement" />
 
                     <label class="fieldset-label">Any other notes on equipment?</label>
-                    <textarea class="textarea" name="equipment_notes">
-{{ game.game_requirement.equipment_notes if editing else "" }}
-</textarea
-                    >
+                    {% set text_content = game.game_requirement.equipment_notes if editing else "" %}
+                    <textarea class="textarea" name="equipment_notes">{{ text_content }}</textarea>
                     <ErrorHolder name="equipment_notes" />
 
                     {# Activity Requirements #}
@@ -640,10 +634,8 @@
                     <ErrorHolder name="activity_requirement" />
 
                     <label class="fieldset-label">Any other notes on activities?</label>
-                    <textarea class="textarea" name="activity_notes">
-{{ game.game_requirement.activity_notes if editing else "" }}
-</textarea
-                    >
+                    {% set text_content = game.game_requirement.activity_notes if editing else "" %}
+                    <textarea class="textarea" name="activity_notes">{{ text_content }}</textarea>
                     <ErrorHolder name="activity_notes" />
 
                     {# Room Requirements #}
@@ -657,10 +649,8 @@
                     <ErrorHolder name="room_requirement" />
 
                     <label class="fieldset-label">Any other notes on rooms?</label>
-                    <textarea class="textarea" name="room_notes">
-{{ game.game_requirement.room_notes if editing }}
-</textarea
-                    >
+                    {% set text_content = game.game_requirement.room_notes if editing else "" %}
+                    <textarea class="textarea" name="room_notes">{{ text_content }}</textarea>
 
                     <ErrorHolder name="room_notes" />
                 </FieldsetBase>
