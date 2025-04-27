@@ -6,6 +6,7 @@ from litestar.types.callable_types import BeforeRequestHookHandler
 
 from convergence_games.app.request_type import Request
 
+from .debug import DebugController
 from .editor_test import EditorTestController
 from .email_auth import EmailAuthController
 from .event_profile import EventProfileController
@@ -36,6 +37,7 @@ router = Router(
     include_in_schema=False,
     tags=["frontend"],
     route_handlers=[
+        DebugController,
         EditorTestController,
         EmailAuthController,
         EventProfileController,
