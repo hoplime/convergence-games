@@ -1,1 +1,4 @@
-<div {{ attrs.render(class="mx-auto flex max-w-screen-lg flex-col gap-2") }}>{{ content }}</div>
+{#def
+    size: str = "max-w-screen-lg",
+#}
+<div {{ attrs.render(class="mx-auto flex flex-col gap-2 " ~ size) }}>{{ content }}</div>

@@ -1,13 +1,14 @@
 <Page>
     {% block content %}
         <title>Sign In with Email - Convergence 2025</title>
-        <PageContainer>
-            <form>
-                {% set hx_post = "/email_sign_in?linking_account_sqid=" ~ linking_account_sqid if linking_account_sqid is not none else "/email_sign_in" %}
-                <input type="text" class="form-input" placeholder="Email" name="email" />
-                <button class="btn btn-primary" hx-post="{{ hx_post }}" hx-target="closest form" hx-swap="outerHTML">
-                    Submit
-                </button>
+        <PageContainer size="max-w-screen-sm">
+            <form class="flex flex-col gap-4" hx-post="{{ hx_post }}" hx-swap="outerHTML">
+                <FieldsetBase>
+                    <legend class="fieldset-legend">Sign In with Email</legend>
+                    {% set hx_post = "/email_sign_in?linking_account_sqid=" ~ linking_account_sqid if linking_account_sqid is not none else "/email_sign_in" %}
+                    <input type="email" class="input w-full" placeholder="Email" name="email" required />
+                </FieldsetBase>
+                <button class="btn btn-primary" type="submit">Submit</button>
             </form>
         </PageContainer>
     {% endblock %}

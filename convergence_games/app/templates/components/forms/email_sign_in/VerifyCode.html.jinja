@@ -2,18 +2,22 @@
     email: str,
     linking_account_sqid: str | None = None,
 #}
-<form>
+{% set hx_post = "/email_auth/verify_code?linking_account_sqid=" ~ linking_account_sqid if linking_account_sqid is not none else "/email_auth/verify_code" %}
+<form class="flex flex-col gap-4" hx-post="{{ hx_post }}" hx-target="#content">
     <input type="hidden" name="email" value="{{ email }}" />
-    <div>Please enter the code sent to {{ email }}:</div>
-    <input
-        type="text"
-        class="form-input"
-        placeholder="Code"
-        name="code"
-        pattern="[0-9]{6}"
-        oninput="this.value = this.value.replace(/[^0-9.]/g, '')"
-        maxlength="6"
-    />
-    {% set hx_post = "/email_auth/verify_code?linking_account_sqid=" ~ linking_account_sqid if linking_account_sqid is not none else "/email_auth/verify_code" %}
-    <a class="btn btn-primary" hx-post="{{ hx_post }}" hx-target="#content">Submit</a>
+    <FieldsetBase>
+        <legend class="fieldset-legend">Verify Code</legend>
+        <p>Please enter the code sent to {{ email }}</p>
+        <input
+            type="text"
+            class="input w-full"
+            placeholder="Code"
+            name="code"
+            pattern="[0-9]{6}"
+            oninput="this.value = this.value.replace(/[^0-9.]/g, '')"
+            maxlength="6"
+        />
+        <p class="border-l-base-content border-l-4 pl-4 italic">Make sure to check your spam folder!</p>
+    </FieldsetBase>
+    <button class="btn btn-primary" type="submit">Sign In</button>
 </form>
