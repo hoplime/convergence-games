@@ -188,13 +188,13 @@ class GameTableSizeRequirement(FlagWithNotes):
     }
 
     __form_notes__ = {
-        SMALL: "Small table",
-        LARGE: "Large table",
+        SMALL: "Small circular table",
+        LARGE: "Large square table",
     }
 
     __tooltips__ = {
-        SMALL: "Suitable for up to 4 players with props, or up to 6 players",
-        LARGE: "If you require large battlemaps, or more than 8 players",
+        SMALL: "1.2m diameter circle. Suitable for up to 4 players with smaller battlemaps, or up to 6 players with a character sheet or so",
+        LARGE: "1.6m x 1.7m square. If you require large battlemaps, or more than 6 players",
     }
 
 
@@ -236,9 +236,13 @@ class GameActivityRequirement(FlagWithNotes):
     }
 
     __form_notes__ = {
-        NOISY: "This game may be noisy",
+        NOISY: "This game may be particularly noisy",
         MOVE_BETWEEN_TABLES: "Players will need to move between tables",
         MOVE_AWAY_FROM_VENUE: "Players will need to move away from the venue/to another space",
+    }
+
+    __tooltips__ = {
+        NOISY: "e.g. A Jenga tower might clatter every 15 minutes, or a game with a lot of shouting by design",
     }
 
 

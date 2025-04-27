@@ -13,9 +13,39 @@
                     <legend class="fieldset-legend">Event Information</legend>
                     <p>Thanks for choosing to submit a game to Convergence 2025!</p>
                     <p>
-                        If your game is accepted you'll be eligible for free tickets to Convergence, and goody bags if
-                        you run 3 or more sessions, so don't buy a ticket just yet - look out for an email.
+                        If your game is accepted you'll be eligible for free tickets to Convergence, and goody bags, so
+                        don't buy a ticket just yet - look out for an email.
                     </p>
+                    <Collapse class="collapse-arrow border">
+                        <input type="checkbox" />
+                        <CollapseTitle class="text-lg">What rewards do I get for running sessions?</CollapseTitle>
+                        <CollapseContent class="flex flex-col gap-4">
+                            <p>
+                                There is a scale of rewards based on the total number of sessions you run, across all of
+                                your game submissions.
+                            </p>
+                            <ul class="flex list-disc flex-col gap-2 pl-4">
+                                <li><b>One Session</b> - free day ticket, mini goodie bag</li>
+                                <li><b>Two Sessions</b> - free weekend ticket, mini goodie bag</li>
+                                <li><b>Three Sessions</b> - free weekend ticket, premium goodie bag</li>
+                                <li>
+                                    <b>Four Sessions</b> - free weekend ticket, premium goodie bag, a Convergence 2025
+                                    T-shirt,
+                                    <Tooltip align="top">
+                                        <label>a Golden D20 <TooltipIcon class="inline-block" /></label>
+                                        <TooltipContent
+                                            >A Golden D20 can be spent to boost your chances of getting your highest
+                                            preference game.
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </li>
+                                <li>
+                                    <b>Five Sessions</b> - free weekend ticket, premium goodie bag, a Convergence 2025
+                                    T-shirt, a handshake from the Guild Master
+                                </li>
+                            </ul>
+                        </CollapseContent>
+                    </Collapse>
                     <p>
                         From years past, we've gained some idea of what we think makes a good game submission that will
                         get players excited to come to your table, and give them a clear idea of what they're in for by
@@ -23,7 +53,7 @@
                     </p>
                     <Collapse class="collapse-arrow border">
                         <input type="checkbox" />
-                        <CollapseTitle class="text-lg">What Makes A Great Game Submission?</CollapseTitle>
+                        <CollapseTitle class="text-lg">What makes a great game submission?</CollapseTitle>
                         <CollapseContent class="flex flex-col gap-4">
                             <p>In a sea of submissions, what makes your game stand out? <i>The pitch!</i></p>
                             <p>
@@ -527,12 +557,7 @@
                             <p>These are miscellaneous key selling points for your session or game.</p>
                         </TooltipContent>
                     </Tooltip>
-                    <FlagCheckboxes
-                        :flag_enum="ksps"
-                        name="ksp"
-                        :display_tooltips="false"
-                        :value="{{ editing and game.ksps }}"
-                    />
+                    <FlagCheckboxes :flag_enum="ksps" name="ksp" :value="{{ editing and game.ksps }}" />
                     <ErrorHolder name="ksp" />
                 </FieldsetBase>
 
@@ -594,11 +619,19 @@
                     <ErrorHolder name="scheduling_notes" />
 
                     {# Table Size Requirements #}
-                    <label class="fieldset-label font-semibold">Table Size Requirements</label>
+                    <Tooltip class="w-fit">
+                        <label class="fieldset-label font-semibold">Table Size Requirements <TooltipIcon /></label>
+                        <TooltipContent class="text-left">
+                            <p>There are two table sizes - circular 1.2m diameter or square 1.6m x 1.7m.</p>
+                            <p>
+                                Do you have a table size preference? If both or neither boxes are ticked, you will be
+                                placed based on availabilty.
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
                     <FlagCheckboxes
                         :flag_enum="table_size_requirements"
                         name="table_size_requirement"
-                        :display_tooltips="true"
                         :value="{{ editing and game.game_requirement.table_size_requirement }}"
                     />
                     <ErrorHolder name="table_size_requirement" />
@@ -609,11 +642,18 @@
                     <ErrorHolder name="table_size_notes" />
 
                     {# Equipment Requirements #}
-                    <label class="fieldset-label font-semibold">Equipment Requirements</label>
+                    <Tooltip class="w-fit">
+                        <label class="fieldset-label font-semibold">Equipment Requirements <TooltipIcon /></label>
+                        <TooltipContent class="text-left">
+                            <p>
+                                As a GM, do you need access to any of the following for your game, in addition to what
+                                you'll bring?
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
                     <FlagCheckboxes
                         :flag_enum="equipment_requirements"
                         name="equipment_requirement"
-                        :display_tooltips="false"
                         :value="{{ editing and game.game_requirement.equipment_requirement }}"
                     />
                     <ErrorHolder name="equipment_requirement" />
@@ -624,11 +664,19 @@
                     <ErrorHolder name="equipment_notes" />
 
                     {# Activity Requirements #}
-                    <label class="fieldset-label font-semibold">Activity Requirements</label>
+                    <Tooltip class="w-fit">
+                        <label class="fieldset-label font-semibold">Activity Requirements <TooltipIcon /></label>
+                        <TooltipContent class="text-left">
+                            <p>What things might require us to accomodate other tables and your players?</p>
+                            <p>
+                                If you have players moving away from the table, you should also explicitly note that as
+                                a content warning and in your description, as some players may not be comfortable.
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
                     <FlagCheckboxes
                         :flag_enum="activity_requirements"
                         name="activity_requirement"
-                        :display_tooltips="false"
                         :value="{{ editing and game.game_requirement.activity_requirement }}"
                     />
                     <ErrorHolder name="activity_requirement" />
@@ -643,7 +691,6 @@
                     <FlagCheckboxes
                         :flag_enum="room_requirements"
                         name="room_requirement"
-                        :display_tooltips="true"
                         :value="{{ editing and game.game_requirement.room_requirement }}"
                     />
                     <ErrorHolder name="room_requirement" />
