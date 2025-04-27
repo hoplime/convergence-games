@@ -1,15 +1,19 @@
 <Page>
     {% block content %}
-        <title>Game Submission Confirmed - Convergence 2025</title>
+        <title>Game {{ "Edit" if edited else "Submission" }} Confirmed - Convergence 2025</title>
         <PageContainer>
             <div class="card bg-base-200 border-base-300 rounded-box border">
                 <div class="card-body">
-                    <h1 class="card-title text-xl">Game Submission Confirmation</h1>
-                    <p>Your game <i>{{ game.name }}</i> has been successfully submitted and is pending review!</p>
-                    <p>
-                        Thank you for your submission, we will contact you with extra information and details on ticket
-                        codes and other rewards when your submission is accepted. Don't buy a ticket yet!
-                    </p>
+                    <h1 class="card-title text-xl">Game {{ "Edit" if edited else "Submission" }} Confirmation</h1>
+                    {% if edited %}
+                        <p>Your game <i>{{ game.name }}</i> has been successfully edited.</p>
+                    {% else %}
+                        <p>Your game <i>{{ game.name }}</i> has been successfully submitted and is pending review!</p>
+                        <p>
+                            Thank you for your submission, we will contact you with extra information and details on
+                            ticket codes and other rewards when your submission is accepted. Don't buy a ticket yet!
+                        </p>
+                    {% endif %}
                     <div class="card-actions justify-start">
                         <a
                             class="btn btn-primary"

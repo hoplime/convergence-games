@@ -1,9 +1,20 @@
 <Page>
     {% block content %}
-        <title>Submit Game - Convergence 2025</title>
+        {% set editing = game is defined %}
+
+        <title>{{ "Edit " ~ game.name if editing else "Submit Game" }} - Convergence 2025</title>
         <PageContainer>
-            <h1 class="text-xl font-bold">Submit Game</h1>
-            <form class="flex flex-col gap-4" hx-post="/submit-game" hx-target="#content" hx-disinherit="*">
+            <h1 class="text-xl font-bold">{{ "Edit " ~ game.name if editing else "Submit Game" }}</h1>
+            <form
+                class="flex flex-col gap-4"
+                {% if editing %}
+                    hx-put="/game/{{ swim(game) }}"
+                {% else %}
+                    hx-post="/game"
+                {% endif %}
+                hx-target="#content"
+                hx-disinherit="*"
+            >
                 <button type="submit" disabled class="hidden" aria-hidden="true"></button>
 
                 {# Event Information #}
@@ -133,7 +144,8 @@
                     <legend class="fieldset-legend">Game Information</legend>
                     <span>
                         This information will be publicly visible for players to decide their preferences. You'll be
-                        able to edit this until shortly before the event.
+                        able to edit this until shortly before the
+                        event.{{ " <b>In fact, you're editing it right now!</b>" if editing }}
                     </span>
                     {# Title #}
                     <Tooltip class="w-fit">
@@ -195,7 +207,7 @@
                             name="tagline"
                             minlength="10"
                             maxlength="140"
-                            value="{{ game.tagline if game is defined }}"
+                            value="{{ game.tagline if editing }}"
                             required
                         />
                         <MaxLengthIndicator />
@@ -217,7 +229,7 @@
                     </Tooltip>
                     <utilities.TipTap
                         form_input_name="description"
-                        :initial_content_json="game.description if game is defined else ''"
+                        :initial_content_json="game.description if editing else ''"
                     />
                     <ErrorHolder name="description" />
 
@@ -235,7 +247,7 @@
                         placeholder="Search for genres..."
                         :suggested_on_empty="true"
                     >
-                        {% if game is defined %}
+                        {% if editing %}
                             {% for genre in game.genres %}
                                 <forms.search_checks.SearchCheckChip
                                     :selected_name="genre.name"
@@ -261,7 +273,7 @@
                                 name="tone"
                                 class="radio"
                                 value="{{ tone }}"
-                                {{ "checked" if game is defined and game.tone == tone }}
+                                {{ "checked" if editing and game.tone == tone }}
                                 required
                             />
                             <span>{{ tone }}</span>
@@ -289,7 +301,7 @@
                         placeholder="Search for content warnings..."
                         :suggested_on_empty="true"
                     >
-                        {% if game is defined %}
+                        {% if editing %}
                             {% for content_warning in game.content_warnings %}
                                 <forms.search_checks.SearchCheckChip
                                     :selected_name="content_warning.name"
@@ -379,7 +391,7 @@
                                 name="crunch"
                                 class="radio"
                                 value="{{ crunch }}"
-                                {{ "checked" if game is defined and game.crunch == crunch }}
+                                {{ "checked" if editing and game.crunch == crunch }}
                                 required
                             />
                             <span>{{ crunch }}</span>
@@ -399,7 +411,7 @@
                     <FlagCheckboxes
                         :flag_enum="core_activities"
                         name="core_activity"
-                        :value="{{ game is defined and game.core_activity }}"
+                        :value="{{ editing and game.core_activity }}"
                     />
                     <ErrorHolder name="core_activity" />
 
@@ -421,20 +433,20 @@
                             title="Minimum"
                             input_name="player_count_minimum"
                             constrain_below="player_count_optimum"
-                            :value="game.player_count_minimum if game is defined else 3"
+                            :value="game.player_count_minimum if editing else 3"
                         />
                         <forms.multislider.Multislider
                             title="Optimum"
                             input_name="player_count_optimum"
                             constrain_above="player_count_minimum"
                             constrain_below="player_count_maximum"
-                            :value="game.player_count_optimum if game is defined else 4"
+                            :value="game.player_count_optimum if editing else 4"
                         />
                         <forms.multislider.Multislider
                             title="Maximum"
                             input_name="player_count_maximum"
                             constrain_above="player_count_optimum"
-                            :value="game.player_count_maximum if game is defined else 5"
+                            :value="game.player_count_maximum if editing else 5"
                         />
                     </forms.multislider.MultisliderContainer>
                     <ErrorHolder name="player_count_minimum" />
@@ -461,7 +473,7 @@
                                 name="classification"
                                 class="peer hidden"
                                 value="PG"
-                                {{ "checked" if game is defined and game.classification == "R18" }}
+                                {{ "checked" if editing and game.classification == "R18" }}
                                 required
                             />
                             <div
@@ -484,7 +496,7 @@
                                 name="classification"
                                 class="peer hidden"
                                 value="M"
-                                {{ "checked" if game is defined and game.classification == "R18" }}
+                                {{ "checked" if editing and game.classification == "R18" }}
                                 required
                             />
                             <div
@@ -504,7 +516,7 @@
                                 name="classification"
                                 class="peer hidden"
                                 value="R18"
-                                {{ "checked" if game is defined and game.classification == "R18" }}
+                                {{ "checked" if editing and game.classification == "R18" }}
                                 required
                             />
                             <div
@@ -531,7 +543,7 @@
                         :flag_enum="ksps"
                         name="ksp"
                         :display_tooltips="false"
-                        :value="{{ game is defined and game.ksps }}"
+                        :value="{{ editing and game.ksps }}"
                     />
                     <ErrorHolder name="ksp" />
                 </FieldsetBase>
@@ -565,7 +577,7 @@
                     >
                         <forms.multislider.Multislider
                             title="Times"
-                            :value="game.game_requirement.times_to_run if game is defined else 2"
+                            :value="game.game_requirement.times_to_run if editing else 2"
                             input_name="times_to_run"
                         />
                     </forms.multislider.MultisliderContainer>
@@ -583,14 +595,14 @@
                     <TimeSlotSelector
                         :time_slots="event.time_slots"
                         :break_points="[3,4]"
-                        :values="game.game_requirement.available_time_slots if game is defined else []"
+                        :values="game.game_requirement.available_time_slots if editing else []"
                     />
                     <ErrorHolder name="available_time_slot" />
 
                     {# TODO: Why are all these text areas being formatted terribly? #}
                     <label class="fieldset-label">Any extra notes/preferences to help with scheduling?</label>
                     <textarea class="textarea" name="scheduling_notes">
-{{ game.game_requirement.scheduling_notes if game is defined else "" }}
+{{ game.game_requirement.scheduling_notes if editing else "" }}
 </textarea
                     >
                     <ErrorHolder name="scheduling_notes" />
@@ -601,13 +613,13 @@
                         :flag_enum="table_size_requirements"
                         name="table_size_requirement"
                         :display_tooltips="true"
-                        :value="{{ game is defined and game.game_requirement.table_size_requirement }}"
+                        :value="{{ editing and game.game_requirement.table_size_requirement }}"
                     />
                     <ErrorHolder name="table_size_requirement" />
 
                     <label class="fieldset-label">Any other notes on table size? </label>
                     <textarea class="textarea" name="table_size_notes">
-{{ game.game_requirement.table_size_notes if game is defined else "" }}
+{{ game.game_requirement.table_size_notes if editing else "" }}
 </textarea
                     >
                     <ErrorHolder name="table_size_notes" />
@@ -618,13 +630,13 @@
                         :flag_enum="equipment_requirements"
                         name="equipment_requirement"
                         :display_tooltips="false"
-                        :value="{{ game is defined and game.game_requirement.equipment_requirement }}"
+                        :value="{{ editing and game.game_requirement.equipment_requirement }}"
                     />
                     <ErrorHolder name="equipment_requirement" />
 
                     <label class="fieldset-label">Any other notes on equipment?</label>
                     <textarea class="textarea" name="equipment_notes">
-{{ game.game_requirement.equipment_notes if game is defined else "" }}
+{{ game.game_requirement.equipment_notes if editing else "" }}
 </textarea
                     >
                     <ErrorHolder name="equipment_notes" />
@@ -635,13 +647,13 @@
                         :flag_enum="activity_requirements"
                         name="activity_requirement"
                         :display_tooltips="false"
-                        :value="{{ game is defined and game.game_requirement.activity_requirement }}"
+                        :value="{{ editing and game.game_requirement.activity_requirement }}"
                     />
                     <ErrorHolder name="activity_requirement" />
 
                     <label class="fieldset-label">Any other notes on activities?</label>
                     <textarea class="textarea" name="activity_notes">
-{{ game.game_requirement.activity_notes if game is defined else "" }}
+{{ game.game_requirement.activity_notes if editing else "" }}
 </textarea
                     >
                     <ErrorHolder name="activity_notes" />
@@ -652,13 +664,13 @@
                         :flag_enum="room_requirements"
                         name="room_requirement"
                         :display_tooltips="true"
-                        :value="{{ game is defined and game.game_requirement.room_requirement }}"
+                        :value="{{ editing and game.game_requirement.room_requirement }}"
                     />
                     <ErrorHolder name="room_requirement" />
 
                     <label class="fieldset-label">Any other notes on rooms?</label>
                     <textarea class="textarea" name="room_notes">
-{{ game.game_requirement.room_notes if game is defined }}
+{{ game.game_requirement.room_notes if editing }}
 </textarea
                     >
 
@@ -669,7 +681,13 @@
                 <FieldsetBase>
                     <legend class="fieldset-legend">Housekeeping</legend>
                     <label class="flex items-center gap-2 font-semibold">
-                        <input type="checkbox" class="checkbox validator" required title="Required" />
+                        <input
+                            type="checkbox"
+                            class="checkbox validator"
+                            {{ "checked" if editing }}
+                            required
+                            title="Required"
+                        />
                         <span>
                             I agree to the
                             <a class="link" href="https://www.waikatorpg.co.nz/policies-and-code-of-conduct">
@@ -679,7 +697,13 @@
                         <span class="validator-hint mt-0">You must agree to the Waikato RPG Code of Conduct</span>
                     </label>
                     <label class="flex items-center gap-2 font-semibold">
-                        <input type="checkbox" class="checkbox validator" required title="Required" />
+                        <input
+                            type="checkbox"
+                            class="checkbox validator"
+                            {{ "checked" if editing }}
+                            required
+                            title="Required"
+                        />
                         <span>
                             I agree to the use of
                             <a class="link" href="https://www.waikatorpg.co.nz/safety-tools">
@@ -692,7 +716,9 @@
 
                 {# Submit #}
                 <ErrorHolder name="form" />
-                <button class="btn btn-primary btn-lg" type="submit">Submit</button>
+                <button class="btn btn-primary btn-lg" type="submit">
+                    {{ "Save Edits" if editing else "Submit" }}
+                </button>
             </form>
         </PageContainer>
     {% endblock %}

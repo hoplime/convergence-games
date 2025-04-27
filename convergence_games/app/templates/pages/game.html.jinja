@@ -26,7 +26,7 @@
                             <span class="{{ game.submission_status.color_classes }}">{{ game.submission_status }}</span>
                         </div>
                         <div class="card-actions justify-start">
-                            <a href="#" class="btn btn-primary" disabled>Edit Game Coming Soon</a>
+                            <a href="/game/{{ swim(game) }}/edit" class="btn btn-primary">Edit</a>
                         </div>
                     </div>
                 </div>
