@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import Annotated, Callable, cast
+from typing import Annotated, Callable, Self, cast
 
 from litestar import Controller, Response, get, post, put
 from litestar.exceptions import NotFoundException, PermissionDeniedException, ValidationException
 from litestar.params import Body, RequestEncodingType
-from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter, ValidationInfo, field_validator
+from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter, ValidationInfo, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,12 +75,12 @@ class SubmitGameForm(BaseModel):
     content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Content Warnings")] = []
     crunch: Annotated[GameCrunch, Field(title="Complexity")]
     core_activity: Annotated[GameCoreActivity, IntFlagValidator, Field(title="Core Activities")] = GameCoreActivity.NONE
-    player_count_minimum: Annotated[int, Field(ge=1, title="Minimum Players")]
     player_count_minimum_more: int | None = None
-    player_count_optimum: Annotated[int, Field(ge=1, title="Optimum Players")]
+    player_count_minimum: Annotated[int, Field(ge=1, title="Minimum Players")]
     player_count_optimum_more: int | None = None
-    player_count_maximum: Annotated[int, Field(ge=1, title="Maximum Players")]
+    player_count_optimum: Annotated[int, Field(ge=1, title="Optimum Players")]
     player_count_maximum_more: int | None = None
+    player_count_maximum: Annotated[int, Field(ge=1, title="Maximum Players")]
     classification: Annotated[GameClassification, Field(title="Age Suitability & Classification")]
     ksp: Annotated[GameKSP, IntFlagValidator, Field(title="Bonuses")] = GameKSP.NONE
 
@@ -104,6 +104,36 @@ class SubmitGameForm(BaseModel):
         GameRoomRequirement.NONE
     )
     room_notes: Annotated[str, Field(title="Room Notes")] = ""
+
+    @property
+    def player_count_minimum_prop(self) -> int:
+        return max(self.player_count_minimum, self.player_count_minimum_more or 0)
+
+    @property
+    def player_count_optimum_prop(self) -> int:
+        return max(self.player_count_optimum, self.player_count_optimum_more or 0)
+
+    @property
+    def player_count_maximum_prop(self) -> int:
+        return max(self.player_count_maximum, self.player_count_maximum_more or 0)
+
+    @field_validator("player_count_optimum", mode="after")
+    @classmethod
+    def validate_player_count_optimum(cls, value: int, info: ValidationInfo) -> int:
+        minimum = max(info.data["player_count_minimum"], info.data["player_count_minimum_more"] or 0)
+        optimum = max(value, info.data["player_count_optimum_more"] or 0)
+        if optimum < minimum:
+            raise PydanticCustomError("", "Optimum player count must be greater than or equal to minimum player count.")
+        return value
+
+    @field_validator("player_count_maximum", mode="after")
+    @classmethod
+    def validate_player_count_maximum(cls, value: int, info: ValidationInfo) -> int:
+        optimum = max(info.data["player_count_optimum"], info.data["player_count_optimum_more"] or 0)
+        maximum = max(value, info.data["player_count_maximum_more"] or 0)
+        if maximum < optimum:
+            raise PydanticCustomError("", "Maximum player count must be greater than or equal to optimum player count.")
+        return value
 
     @field_validator("available_time_slot", mode="after")
     @classmethod
@@ -311,9 +341,9 @@ class SubmitGameController(Controller):
             crunch=data.crunch,
             core_activity=data.core_activity,
             tone=data.tone,
-            player_count_minimum=max(data.player_count_minimum, data.player_count_minimum_more or 0),
-            player_count_optimum=max(data.player_count_optimum, data.player_count_optimum_more or 0),
-            player_count_maximum=max(data.player_count_maximum, data.player_count_maximum_more or 0),
+            player_count_minimum=data.player_count_minimum_prop,
+            player_count_optimum=data.player_count_optimum_prop,
+            player_count_maximum=data.player_count_maximum_prop,
             ksps=data.ksp,
             **system_kwarg,
             gamemaster=request.user,
@@ -399,9 +429,9 @@ class SubmitGameController(Controller):
         existing_game.crunch = data.crunch
         existing_game.core_activity = data.core_activity
         existing_game.tone = data.tone
-        existing_game.player_count_minimum = max(data.player_count_minimum, data.player_count_minimum_more or 0)
-        existing_game.player_count_optimum = max(data.player_count_optimum, data.player_count_optimum_more or 0)
-        existing_game.player_count_maximum = max(data.player_count_maximum, data.player_count_maximum_more or 0)
+        existing_game.player_count_minimum = data.player_count_minimum_prop
+        existing_game.player_count_optimum = data.player_count_optimum_prop
+        existing_game.player_count_maximum = data.player_count_maximum_prop
         existing_game.ksps = data.ksp
         if isinstance(data.system, int):
             existing_game.system_id = data.system
