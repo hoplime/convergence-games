@@ -56,7 +56,7 @@
             <FieldsetBase>
                 <legend class="fieldset-legend">Accounts</legend>
                 <div class="grid max-w-96 gap-4">
-                    {% for key in ['email', 'discord', 'google', 'facebook'] %}
+                    {% for key in ['email', 'discord', 'google'] %}
                         {% if key in user_logins %}
                             <button class="btn btn-ghost pointer-events-none">
                                 <img

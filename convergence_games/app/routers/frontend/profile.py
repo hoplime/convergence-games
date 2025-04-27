@@ -69,12 +69,15 @@ async def render_profile(
 
 class ProfileController(Controller):
     @get(path="/email_sign_in")
-    async def get_email_sign_in(self, request: Request, linking_account_sqid: Sqid | None = None) -> Template:
+    async def get_email_sign_in(
+        self, request: Request, linking_account_sqid: Sqid | None = None, redirect_path: str | None = None
+    ) -> Template:
         return HTMXBlockTemplate(
             template_name="pages/email_sign_in.html.jinja",
             block_name=request.htmx.target,
             context={
                 "linking_account_sqid": linking_account_sqid,
+                "redirect_path": redirect_path,
             },
         )
 
@@ -85,6 +88,7 @@ class ProfileController(Controller):
         data: Annotated[PostEmailSignInForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
         transaction: AsyncSession,
         linking_account_sqid: Sqid | None = None,
+        redirect_path: str | None = None,
     ) -> Template:
         request.app.emit(
             EVENT_EMAIL_SIGN_IN,
@@ -97,6 +101,7 @@ class ProfileController(Controller):
             context={
                 "email": data.email,
                 "linking_account_sqid": linking_account_sqid,
+                "redirect_path": redirect_path,
             },
         )
 

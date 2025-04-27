@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
+from cryptography.fernet import Fernet
 from litestar.exceptions import HTTPException
 from litestar.response import Redirect
+from pydantic import BaseModel
 from sqlalchemy import String, select
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +14,8 @@ from sqlalchemy.orm import selectinload
 from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import User, UserLogin
+from convergence_games.db.ocean import Sqid
+from convergence_games.settings import SETTINGS
 
 
 @dataclass
@@ -85,3 +91,19 @@ async def authorize_flow(
     user_id = user.id
     login = jwt_cookie_auth.login(str(user_id))
     return Redirect(path=redirect_path if redirect_path is not None else "/profile", cookies=login.cookies)
+
+
+fernet = Fernet(SETTINGS.SIGNING_KEY)
+
+
+class OAuthRedirectState(BaseModel):
+    linking_account_sqid: Sqid | None = None
+    redirect_path: str | None = None
+
+    def encode(self) -> str:
+        return fernet.encrypt(self.model_dump_json().encode()).decode()
+
+    @classmethod
+    def decode(cls, encoded: str) -> OAuthRedirectState:
+        decoded = fernet.decrypt(encoded).decode()
+        return cls.model_validate_json(decoded)

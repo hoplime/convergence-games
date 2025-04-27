@@ -7,7 +7,6 @@ from typing import Annotated, Any, cast
 
 import httpx
 import jwt
-from cryptography.fernet import Fernet
 from httpx_oauth.clients.discord import DiscordOAuth2
 from httpx_oauth.clients.google import GoogleOAuth2
 from httpx_oauth.oauth2 import BaseOAuth2, OAuth2Token
@@ -15,30 +14,14 @@ from litestar import Controller, get, post
 from litestar.exceptions import HTTPException
 from litestar.params import Parameter
 from litestar.response import Redirect
-from pydantic import AfterValidator, BaseModel, BeforeValidator, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
-from convergence_games.app.common.auth import ProfileInfo, authorize_flow
+from convergence_games.app.common.auth import OAuthRedirectState, ProfileInfo, authorize_flow
 from convergence_games.app.request_type import Request
 from convergence_games.db.models import LoginProvider
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.settings import SETTINGS
-
-fernet = Fernet(SETTINGS.SIGNING_KEY)
-
-
-class OAuthRedirectState(BaseModel):
-    linking_account_sqid: Sqid | None = None
-    redirect_path: str | None = None
-
-    def encode(self) -> str:
-        return fernet.encrypt(self.model_dump_json().encode()).decode()
-
-    @classmethod
-    def decode(cls, encoded: str) -> OAuthRedirectState:
-        decoded = fernet.decrypt(encoded).decode()
-        return cls.model_validate_json(decoded)
 
 
 class OAuthProvider(ABC):
