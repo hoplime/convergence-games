@@ -80,6 +80,7 @@ class ProfileController(Controller):
         return HTMXBlockTemplate(
             template_name="pages/email_sign_in.html.jinja",
             block_name=request.htmx.target,
+            headers={"HX-Replace-Url": "/email_sign_in"},
             context={
                 "linking_account_sqid": linking_account_sqid,
                 "redirect_path": redirect_path,
@@ -113,8 +114,7 @@ class ProfileController(Controller):
             template_name="components/forms/email_sign_in/VerifyCode.html.jinja",
             context={
                 "email": data.email,
-                "is_linking": linking_account_sqid is not None,
-                "state": state,
+                "state": state.encode(),
             },
         )
 

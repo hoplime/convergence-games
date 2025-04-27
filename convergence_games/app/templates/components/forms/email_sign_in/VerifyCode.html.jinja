@@ -1,10 +1,10 @@
 {#def
-    state: str,
     email: str,
+    state: str,
 #}
 {% set query = "?state=" ~ state %}
-{% set hx_post = "/email_auth/verify_code" ~ query %}
-<form class="flex flex-col gap-4" hx-post="{{ hx_post }}" hx-target="#content">
+{% set href = "/email_auth/verify_code" ~ query %}
+<form class="flex flex-col gap-4" action="{{ href }}" method="POST">
     <input type="hidden" name="email" value="{{ email }}" />
     <FieldsetBase>
         <legend class="fieldset-legend">Verify Code</legend>

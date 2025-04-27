@@ -90,7 +90,8 @@ async def authorize_flow(
     await transaction.flush()
     user_id = user.id
     login = jwt_cookie_auth.login(str(user_id))
-    return Redirect(path=redirect_path if redirect_path is not None else "/profile", cookies=login.cookies)
+    redirect_path = redirect_path or "/profile"
+    return Redirect(path=redirect_path, headers={"HX-Push-Url": redirect_path}, cookies=login.cookies)
 
 
 fernet = Fernet(SETTINGS.SIGNING_KEY)
