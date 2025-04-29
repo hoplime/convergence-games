@@ -30,7 +30,7 @@ async def event_email_sign_in(
 
     print(f"event_email_sign_in, email: {email}, new_code: {code}")
     magic_link_code = UserEmailVerificationCode.generate_magic_link_code(code, email)
-    magic_link_url = f"{SETTINGS.BASE_DOMAIN}/email_auth/magic_link?code={magic_link_code}?state={state.encode()}"
+    magic_link_url = f"{SETTINGS.BASE_DOMAIN}/email_auth/magic_link?code={magic_link_code}&state={state.encode()}"
 
     formatted_expires_at = nice_time_format(user_email_verification_code.expires_at, tz=tz)
     html_content = jinja_env.get_template("emails/sign_in_code.html.jinja").render(
