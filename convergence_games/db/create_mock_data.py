@@ -4,32 +4,15 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.db.enums import (
-    GameActivityRequirement,
-    GameClassification,
-    GameCoreActivity,
-    GameCrunch,
-    GameEquipmentRequirement,
-    GameKSP,
-    GameRoomRequirement,
-    GameTableSizeRequirement,
-    GameTone,
     SubmissionStatus,
 )
 from convergence_games.db.models import (
     ContentWarning,
     Event,
-    Game,
-    GameContentWarningLink,
-    GameGenreLink,
-    GameRequirement,
-    GameRequirementTimeSlotLink,
     Genre,
-    Room,
     System,
     SystemAlias,
-    Table,
     TimeSlot,
-    User,
 )
 
 
@@ -37,60 +20,71 @@ async def create_mock_data(transaction: AsyncSession) -> None:
     NZT = ZoneInfo("Pacific/Auckland")  # noqa: N806
 
     event = Event(
-        name="Test Event",
-        description="This is a test event",
+        name="Convergence 2025",
+        description="",
         start_date=dt.datetime(2025, 9, 13, tzinfo=NZT),
         end_date=dt.datetime(2025, 9, 14, tzinfo=NZT),
-        rooms=[
-            Room(name="Room 1", description="This is room 1", tables=[Table(name="Table 1"), Table(name="Table 2")]),
-            Room(name="Room 2", description="This is room 2", tables=[Table(name="Table 3"), Table(name="Table 4")]),
-        ],
+        rooms=[],
         time_slots=[
             TimeSlot(
                 name="Saturday Morning",
-                start_time=dt.datetime(2025, 9, 13, 9, 0, tzinfo=NZT),
-                end_time=dt.datetime(2025, 9, 13, 12, 0, tzinfo=NZT),
+                start_time=dt.datetime(2025, 9, 13, 9, 15, tzinfo=NZT),
+                end_time=dt.datetime(2025, 9, 13, 12, 15, tzinfo=NZT),
             ),
             TimeSlot(
                 name="Saturday Afternoon",
-                start_time=dt.datetime(2025, 9, 13, 13, 0, tzinfo=NZT),
-                end_time=dt.datetime(2025, 9, 13, 17, 0, tzinfo=NZT),
+                start_time=dt.datetime(2025, 9, 13, 13, 30, tzinfo=NZT),
+                end_time=dt.datetime(2025, 9, 13, 16, 30, tzinfo=NZT),
             ),
             TimeSlot(
                 name="Saturday Evening",
-                start_time=dt.datetime(2025, 9, 13, 18, 0, tzinfo=NZT),
-                end_time=dt.datetime(2025, 9, 13, 22, 0, tzinfo=NZT),
+                start_time=dt.datetime(2025, 9, 13, 18, 15, tzinfo=NZT),
+                end_time=dt.datetime(2025, 9, 13, 22, 15, tzinfo=NZT),
             ),
             TimeSlot(
                 name="Sunday Morning",
-                start_time=dt.datetime(2025, 9, 14, 9, 0, tzinfo=NZT),
-                end_time=dt.datetime(2025, 9, 14, 12, 0, tzinfo=NZT),
+                start_time=dt.datetime(2025, 9, 14, 9, 15, tzinfo=NZT),
+                end_time=dt.datetime(2025, 9, 14, 12, 15, tzinfo=NZT),
             ),
             TimeSlot(
                 name="Sunday Afternoon",
-                start_time=dt.datetime(2025, 9, 14, 13, 0, tzinfo=NZT),
-                end_time=dt.datetime(2025, 9, 14, 17, 0, tzinfo=NZT),
+                start_time=dt.datetime(2025, 9, 14, 14, 30, tzinfo=NZT),
+                end_time=dt.datetime(2025, 9, 14, 18, 30, tzinfo=NZT),
             ),
         ],
     )
 
     genres = [
-        Genre(name="Fantasy", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Sci-Fi", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Horror", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Mystery", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Superhero", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Historical", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Post-Apocalyptic", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Cyberpunk", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Steampunk", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Western", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Modern", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Urban Fantasy", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Space Opera", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Pulp", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Sword & Sorcery", submission_status=SubmissionStatus.APPROVED, suggested=True),
-        Genre(name="Grimdark", submission_status=SubmissionStatus.APPROVED, suggested=True),
+        # Suggested genres
+        Genre(name="Comedy", suggested=True),
+        Genre(name="Cyberpunk", suggested=True),
+        Genre(name="Dungeon Crawl", suggested=True),
+        Genre(name="Fantasy", suggested=True),
+        Genre(name="Grimdark", suggested=True),
+        Genre(name="Historical", suggested=True),
+        Genre(name="Horror", suggested=True),
+        Genre(name="Mystery", suggested=True),
+        Genre(name="Sci-Fi", suggested=True),
+        Genre(name="Space Opera", suggested=True),
+        Genre(name="Steampunk", suggested=True),
+        Genre(name="Superhero", suggested=True),
+        Genre(name="Western", suggested=True),
+        # Other genres
+        Genre(name="Action"),
+        Genre(name="Cosmic Horror"),
+        Genre(name="Dark"),
+        Genre(name="Drama"),
+        Genre(name="Heist"),
+        Genre(name="Modern"),
+        Genre(name="Post-Apocalyptic"),
+        Genre(name="Pulp"),
+        Genre(name="Romance"),
+        Genre(name="Slasher"),
+        Genre(name="Slice of Life"),
+        Genre(name="Survival"),
+        Genre(name="Sword & Sorcery"),
+        Genre(name="Urban Fantasy"),
+        Genre(name="Worldbuilding"),
     ]
 
     systems = [
@@ -103,7 +97,16 @@ async def create_mock_data(transaction: AsyncSession) -> None:
                 SystemAlias(name="DND 3.5"),
                 SystemAlias(name="D&D 3.5"),
             ],
-            submission_status=SubmissionStatus.APPROVED,
+        ),
+        System(
+            name="Dungeons & Dragons 4e",
+            aliases=[
+                SystemAlias(name="D&D 4e"),
+                SystemAlias(name="4e"),
+                SystemAlias(name="DND 4e"),
+                SystemAlias(name="DND 4"),
+                SystemAlias(name="D&D 4th Edition"),
+            ],
         ),
         System(
             name="Dungeons & Dragons 5e",
@@ -120,7 +123,6 @@ async def create_mock_data(transaction: AsyncSession) -> None:
                 SystemAlias(name="fivee"),
                 SystemAlias(name="5th Edition"),
             ],
-            submission_status=SubmissionStatus.APPROVED,
         ),
         System(
             name="Pathfinder 1e",
@@ -128,7 +130,6 @@ async def create_mock_data(transaction: AsyncSession) -> None:
                 SystemAlias(name="PF1e"),
                 SystemAlias(name="Pathfinder 1st Edition"),
             ],
-            submission_status=SubmissionStatus.APPROVED,
         ),
         System(
             name="Pathfinder 2e",
@@ -137,225 +138,166 @@ async def create_mock_data(transaction: AsyncSession) -> None:
                 SystemAlias(name="Pathfinder 2nd Edition"),
                 SystemAlias(name="Pathfinder"),
             ],
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Starfinder 1e",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Starfinder 2e",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Shadowrun 5e",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Shadowrun 6e",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Cyberpunk 2020",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Cyberpunk Red",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Call of Cthulhu 7e",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Call of Cthulhu 6e",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Tales from the Loop",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Kids on Bikes",
-            submission_status=SubmissionStatus.APPROVED,
         ),
         System(
             name="Blades in the Dark",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Savage Worlds",
-            submission_status=SubmissionStatus.APPROVED,
+            aliases=[
+                SystemAlias(name="BitD"),
+                SystemAlias(name="Blades"),
+            ],
         ),
         System(
             name="GURPS",
-            submission_status=SubmissionStatus.APPROVED,
+            aliases=[
+                SystemAlias(name="Generic Universal RolePlaying System"),
+            ],
         ),
         System(
-            name="World of Darkness",
-            submission_status=SubmissionStatus.APPROVED,
+            name="MÖRK BORG",
+            aliases=[
+                SystemAlias(name="Mork Borg"),
+            ],
         ),
         System(
-            name="Chronicles of Darkness",
-            submission_status=SubmissionStatus.APPROVED,
+            name="Prismatic",
+            aliases=[
+                SystemAlias(name="Memories of Stone"),
+            ],
+        ),
+        System(name="The One Ring"),
+        System(
+            name="Old School Essentials",
+            aliases=[
+                SystemAlias(name="OSE"),
+            ],
         ),
         System(
-            name="Legend of the Five Rings",
-            submission_status=SubmissionStatus.APPROVED,
+            name="Dungeon Crawl Classics",
+            aliases=[
+                SystemAlias(name="DCC"),
+            ],
         ),
-        System(
-            name="Lancer",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Mutants & Masterminds",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Fiasco",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Dread",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Honey Heist",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Monster of the Week",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Powered by the Apocalypse",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="The Sprawl",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Apocalypse World",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Monsterhearts",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Dungeon World",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Masks",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Urban Shadows",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="The Veil",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="The Quiet Year",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Microscope",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Kingdom",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="For the Queen",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Mork Borg",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Alien RPG",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Vampire the Masquerade 5e",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Paranoia",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Fate Core",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
-        System(
-            name="Warhammer Fantasy Roleplay 4e",
-            submission_status=SubmissionStatus.APPROVED,
-        ),
+        System(name="Alien RPG"),
+        System(name="Apocalypse World"),
+        System(name="Avatar Legends"),
+        System(name="Cairn 2e"),
+        System(name="Call of Cthulhu 6e"),
+        System(name="Call of Cthulhu 7e"),
+        System(name="Chronicles of Darkness"),
+        System(name="Coriolis: The Third Horizon"),
+        System(name="Crash Pandas"),
+        System(name="CY_BORG"),
+        System(name="Cyberpunk 2020"),
+        System(name="Cyberpunk Red"),
+        System(name="Daggerheart"),
+        System(name="Dark Heresy 1e"),
+        System(name="Dark Heresy 2e"),
+        System(name="DC20"),
+        System(name="Delta Green"),
+        System(name="Dread"),
+        System(name="Dungeon World"),
+        System(name="Eat the Reich"),
+        System(name="Electric Bastionland"),
+        System(name="Everyone is John"),
+        System(name="Fate Accelerated"),
+        System(name="Fate Core"),
+        System(name="Fiasco"),
+        System(name="For the Queen"),
+        System(name="Freeform Narrative"),
+        System(name="Genesys"),
+        System(name="Goblin Quest"),
+        System(name="Heart: The City Beneath"),
+        System(name="Honey Heist"),
+        System(name="Into the Odd"),
+        System(name="Kids on Bikes"),
+        System(name="Kids on Brooms"),
+        System(name="Kingdom"),
+        System(name="Lancer"),
+        System(name="Legend of the Five Rings"),
+        System(name="Mage: the Ascension"),
+        System(name="Masks"),
+        System(name="Microscope"),
+        System(name="Monster of the Week"),
+        System(name="Monsterhearts"),
+        System(name="Mothership 1e"),
+        System(name="Mothership 2e"),
+        System(name="Mouse Guard"),
+        System(name="Mutants & Masterminds"),
+        System(name="Night's Black Agents"),
+        System(name="Numenera"),
+        System(name="Ozymandias"),
+        System(name="Paranoia"),
+        System(name="Pendragon"),
+        System(name="Powered by the Apocalypse"),
+        System(name="Public Access"),
+        System(name="Pulp Cthulhu"),
+        System(name="Rogue Trader"),
+        System(name="Rolemaster"),
+        System(name="ROOT RPG"),
+        System(name="Savage Worlds"),
+        System(name="Shadow of the Demon Lord"),
+        System(name="Shadowrun 5e"),
+        System(name="Shadowrun 6e"),
+        System(name="Spire: The City Must Fall"),
+        System(name="Star Wars: Edge of the Empire"),
+        System(name="Starfinder 1e"),
+        System(name="Starfinder 2e"),
+        System(name="Stars Without Number"),
+        System(name="Strange Squad"),
+        System(name="Surrealpunk"),
+        System(name="Tales from the Loop"),
+        System(name="Tales of Steam and Sorcery"),
+        System(name="Ten Candles"),
+        System(name="The Burning Wheel"),
+        System(name="The Dark Eye"),
+        System(name="The Dresden Files RPG"),
+        System(name="The Quiet Year"),
+        System(name="The Sprawl"),
+        System(name="The Veil"),
+        System(name="Things from the Flood"),
+        System(name="Trail of Cthulhu"),
+        System(name="Traveller"),
+        System(name="Triangle Agency"),
+        System(name="Trophy Dark"),
+        System(name="Trophy Gold"),
+        System(name="Unknown Armies"),
+        System(name="Urban Shadows"),
+        System(name="Vaesen"),
+        System(name="Vampire: the Masquerade"),
+        System(name="Wanderhome"),
+        System(name="Warhammer Fantasy Roleplay 4e"),
+        System(name="Wicked Ones"),
+        System(name="World of Darkness"),
+        System(name="Worlds Without Number"),
     ]
+
+    for system in systems:
+        system.submission_status = SubmissionStatus.APPROVED
 
     content_warnings = [
-        ContentWarning(name="Violence", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Sexual Themes", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Drug Use", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Alcohol Use", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Mental Health", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Body Horror", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Bigotry", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Death", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        # Suggested content warnings
         ContentWarning(name="Abuse", suggested=True, submission_status=SubmissionStatus.APPROVED),
-    ]
-
-    game = Game(
-        name="Test Game",
-        tagline="This is a test game",
-        description="This is a test game description",
-        classification=GameClassification.R18,
-        crunch=GameCrunch.MEDIUM,
-        core_activity=GameCoreActivity.ROLEPLAYING | GameCoreActivity.COMBAT,
-        tone=GameTone.LIGHT_HEARTED,
-        player_count_minimum=3,
-        player_count_optimum=4,
-        player_count_maximum=6,
-        ksps=GameKSP.FOR_SALE | GameKSP.DESIGNER_RUN,
-        system=systems[0],
-        gamemaster=User(
-            first_name="John",
-            last_name="Cena",
-            description="",
-        ),
-        event=event,
-        game_requirement=GameRequirement(
-            times_to_run=2,
-            table_size_requirement=GameTableSizeRequirement.LARGE,
-            equipment_requirement=GameEquipmentRequirement.EXTRA_SIDETABLE,
-            activity_requirement=GameActivityRequirement.NONE,
-            room_requirement=GameRoomRequirement.NEAR_ANOTHER_TABLE | GameRoomRequirement.QUIET,
-            room_notes="This game requires a quiet room near another table",
-        ),
-        sessions=[],
-        submission_status=SubmissionStatus.APPROVED,
-    )
-
-    extra_links = [
-        GameGenreLink(game=game, genre=genres[0]),
-        GameGenreLink(game=game, genre=genres[1]),
-        GameContentWarningLink(game=game, content_warning=content_warnings[0]),
-        GameContentWarningLink(game=game, content_warning=content_warnings[1]),
-        GameRequirementTimeSlotLink(game_requirement=game.game_requirement, time_slot=event.time_slots[0]),
-        GameRequirementTimeSlotLink(game_requirement=game.game_requirement, time_slot=event.time_slots[1]),
+        ContentWarning(name="Alcohol Use", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Bigotry or Exclusion", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Body Horror", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Death", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Drug Use", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Loss of Control or Agency", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Mental Health", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Sexual Themes", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Violence", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        # Other content warnings
+        ContentWarning(name="Drowning", submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Grief", submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Manipulation", submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Self-Harm", submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Spiders", submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Suffocation", submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Suicide", submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Religion", submission_status=SubmissionStatus.APPROVED),
     ]
 
     transaction.add(event)
     transaction.add_all(genres)
     transaction.add_all(systems)
     transaction.add_all(content_warnings)
-    transaction.add(game)
-    transaction.add_all(extra_links)
