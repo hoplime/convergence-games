@@ -87,6 +87,9 @@ async def create_mock_data(transaction: AsyncSession) -> None:
         Genre(name="Worldbuilding"),
     ]
 
+    for genre in genres:
+        genre.submission_status = SubmissionStatus.APPROVED
+
     systems = [
         System(
             name="Dungeons & Dragons 3.5e",
@@ -276,26 +279,29 @@ async def create_mock_data(transaction: AsyncSession) -> None:
 
     content_warnings = [
         # Suggested content warnings
-        ContentWarning(name="Abuse", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Alcohol Use", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Bigotry or Exclusion", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Body Horror", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Death", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Drug Use", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Loss of Control or Agency", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Mental Health", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Sexual Themes", suggested=True, submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Violence", suggested=True, submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Abuse", suggested=True),
+        ContentWarning(name="Alcohol Use", suggested=True),
+        ContentWarning(name="Bigotry or Exclusion", suggested=True),
+        ContentWarning(name="Body Horror", suggested=True),
+        ContentWarning(name="Death", suggested=True),
+        ContentWarning(name="Drug Use", suggested=True),
+        ContentWarning(name="Loss of Control or Agency", suggested=True),
+        ContentWarning(name="Mental Health", suggested=True),
+        ContentWarning(name="Sexual Themes", suggested=True),
+        ContentWarning(name="Violence", suggested=True),
         # Other content warnings
-        ContentWarning(name="Drowning", submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Grief", submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Manipulation", submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Self-Harm", submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Spiders", submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Suffocation", submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Suicide", submission_status=SubmissionStatus.APPROVED),
-        ContentWarning(name="Religion", submission_status=SubmissionStatus.APPROVED),
+        ContentWarning(name="Drowning"),
+        ContentWarning(name="Grief"),
+        ContentWarning(name="Manipulation"),
+        ContentWarning(name="Self-Harm"),
+        ContentWarning(name="Spiders"),
+        ContentWarning(name="Suffocation"),
+        ContentWarning(name="Suicide"),
+        ContentWarning(name="Religion"),
     ]
+
+    for content_warning in content_warnings:
+        content_warning.submission_status = SubmissionStatus.APPROVED
 
     transaction.add(event)
     transaction.add_all(genres)
