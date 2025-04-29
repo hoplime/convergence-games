@@ -28,8 +28,8 @@ async def create_mock_data(transaction: AsyncSession) -> None:
         time_slots=[
             TimeSlot(
                 name="Saturday Morning",
-                start_time=dt.datetime(2025, 9, 13, 9, 15, tzinfo=NZT),
-                end_time=dt.datetime(2025, 9, 13, 12, 15, tzinfo=NZT),
+                start_time=dt.datetime(2025, 9, 13, 9, 0, tzinfo=NZT),
+                end_time=dt.datetime(2025, 9, 13, 12, 0, tzinfo=NZT),
             ),
             TimeSlot(
                 name="Saturday Afternoon",
@@ -38,13 +38,13 @@ async def create_mock_data(transaction: AsyncSession) -> None:
             ),
             TimeSlot(
                 name="Saturday Evening",
-                start_time=dt.datetime(2025, 9, 13, 18, 15, tzinfo=NZT),
-                end_time=dt.datetime(2025, 9, 13, 22, 15, tzinfo=NZT),
+                start_time=dt.datetime(2025, 9, 13, 18, 0, tzinfo=NZT),
+                end_time=dt.datetime(2025, 9, 13, 22, 0, tzinfo=NZT),
             ),
             TimeSlot(
                 name="Sunday Morning",
-                start_time=dt.datetime(2025, 9, 14, 9, 15, tzinfo=NZT),
-                end_time=dt.datetime(2025, 9, 14, 12, 15, tzinfo=NZT),
+                start_time=dt.datetime(2025, 9, 14, 9, 0, tzinfo=NZT),
+                end_time=dt.datetime(2025, 9, 14, 12, 0, tzinfo=NZT),
             ),
             TimeSlot(
                 name="Sunday Afternoon",

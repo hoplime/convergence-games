@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     DATABASE_HOST: str = ""
     DATABASE_PORT: int = 5432
     DATABASE_NAME: str = ""
-    DATABASE_ECHO: bool = True
+    DATABASE_ECHO: bool = False
 
     @property
     def DATABASE_URL(self) -> URL:  # noqa: N802
