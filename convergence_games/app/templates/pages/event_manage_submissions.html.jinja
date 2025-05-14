@@ -2,9 +2,12 @@
     {% block content %}
         <title>{{ event.name }} Manage Submissions - Convergence 2025</title>
         <PageContainer>
-            {% for game in event.games %}
-                <div>{{ game.name }} | {{ game.gamemaster.full_name }} | {{ game.system.name }}</div>
-            {% endfor %}
+            <div>Manage Submissions</div>
+            <ul class="list bg-base-200 rounded-box">
+                {% for game in event.games %}
+                    <GameSubmissionRow :game="game" :submission_status="submission_status" />
+                {% endfor %}
+            </ul>
         </PageContainer>
     {% endblock %}
 </Page>

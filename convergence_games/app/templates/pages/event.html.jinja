@@ -2,7 +2,8 @@
     {% block content %}
         <title>{{ event.name }} - Convergence 2025</title>
         <PageContainer>
-            <h1 class="text-2xl">{{ event.name }}</h1>
+            <div>{{ event.name }}</div>
+            <p>This is a TODO page - and will only really be useful when there are multiple events</p>
             {% if request.user | has_permission("game", (event, "all"), "approve") %}
                 <div class="card bg-base-200 border-base-300 rounded-box border">
                     <div class="card-body">

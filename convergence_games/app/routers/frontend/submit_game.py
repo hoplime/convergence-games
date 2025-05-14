@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from convergence_games.app.app_config.template_config import catalog
-from convergence_games.app.guards import user_guard
+from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import (
@@ -24,6 +24,7 @@ from convergence_games.db.enums import (
     GameRoomRequirement,
     GameTableSizeRequirement,
     GameTone,
+    SubmissionStatus,
 )
 from convergence_games.db.models import (
     ContentWarning,
@@ -35,8 +36,10 @@ from convergence_games.db.models import (
     GameRequirementTimeSlotLink,
     Genre,
     System,
+    User,
 )
 from convergence_games.db.ocean import Sqid, sink
+from convergence_games.permissions import user_has_permission
 
 
 # region Submit Game Form
@@ -62,6 +65,10 @@ MaybeListValidator = BeforeValidator(lambda value: [value] if isinstance(value, 
 IntFlagValidator = BeforeValidator(lambda value: sum(map(int, value)) if isinstance(value, list) else int(value))
 SqidOrNewStr = Annotated[SqidOrNew[str], BeforeValidator(make_sqid_or_new_validator(str))]
 SqidInt = Annotated[int, BeforeValidator(sink)]
+
+
+def can_approve(user: User, event: Event) -> bool:
+    return user_has_permission(user, "game", (event, "all"), "approve")
 
 
 class SubmitGameForm(BaseModel):
@@ -162,6 +169,10 @@ class SubmitGameForm(BaseModel):
         if not value:
             raise PydanticCustomError("", "You must agree to use the X-Card and Open Table Policy.")
         return value
+
+
+class SubmissionStatusForm(BaseModel):
+    submission_status: SubmissionStatus
 
 
 # endregion
@@ -552,6 +563,40 @@ class SubmitGameController(Controller):
             template_name="pages/submit_game_confirmation.html.jinja",
             context={"game": existing_game, "edited": True},
         )
+
+    @put(
+        path="/game/{game_sqid:str}/submission-status",
+        guards=[user_guard],
+        dependencies={"permission": permission_check(can_approve)},
+    )
+    async def put_game_submission_status(
+        self,
+        request: Request,
+        transaction: AsyncSession,
+        game_sqid: Sqid,
+        data: Annotated[SubmissionStatusForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+    ) -> HTMXBlockTemplate:
+        assert request.user is not None
+
+        game_id = sink(game_sqid)
+        game = (
+            await transaction.execute(
+                select(Game).options(selectinload(Game.game_requirement)).where(Game.id == game_id)
+            )
+        ).scalar_one_or_none()
+
+        if not game:
+            raise NotFoundException(detail="Game not found")
+
+        game.submission_status = data.submission_status
+        transaction.add(game)
+
+        template_str = catalog.render(
+            "GameSubmissionRow",
+            game=game,
+            submission_status=SubmissionStatus,
+        )
+        return HTMXBlockTemplate(template_str=template_str)
 
 
 # endregion
