@@ -1,6 +1,4 @@
 from collections.abc import Callable
-from dataclasses import dataclass
-from enum import Enum
 from types import UnionType
 from typing import (
     Any,
@@ -8,6 +6,7 @@ from typing import (
     Generic,
     Literal,
     LiteralString,
+    Self,
     TypeAlias,
     TypeVar,
     get_args,
@@ -28,7 +27,12 @@ type ActionPermission[OBJECT_T] = Callable[[User, OBJECT_T | ALL], bool] | bool
 
 
 class BaseActionChecker(BaseModel, Generic[OBJECT_T, ACTION_T]):
-    __valid_actions__: ClassVar[UnionType | None] = None
+    __valid_actions__: ClassVar[LiteralString | UnionType | None] = None
+
+    @classmethod
+    def all(cls) -> Self:
+        model_fields = cls.model_fields
+        return cls(**{action: True for action in model_fields})
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
@@ -54,38 +58,32 @@ class BaseActionChecker(BaseModel, Generic[OBJECT_T, ACTION_T]):
         return p(user, obj_value)
 
 
-USER_ACTIONS: TypeAlias = Literal["create", "read", "update", "delete"]
+USER_ACTIONS: TypeAlias = Literal["update", "delete"]
 
 
 class UserActionChecker(BaseActionChecker[User, USER_ACTIONS]):
     __valid_actions__ = USER_ACTIONS
 
-    create: ActionPermission[User] = False
-    read: ActionPermission[User] = False
     update: ActionPermission[User] = False
     delete: ActionPermission[User] = False
 
 
-GAME_ACTIONS: TypeAlias = Literal["create", "read", "update", "delete"]
+GAME_ACTIONS: TypeAlias = Literal["update", "approve"]
 
 
 class GameActionChecker(BaseActionChecker[Game, GAME_ACTIONS]):
     __valid_actions__ = GAME_ACTIONS
 
-    create: ActionPermission[Game] = False
-    read: ActionPermission[Game] = False
     update: ActionPermission[Game] = False
-    delete: ActionPermission[Game] = False
+    approve: ActionPermission[Game] = False
 
 
-EVENT_ACTIONS: TypeAlias = Literal["create", "read", "update", "delete"]
+EVENT_ACTIONS: TypeAlias = Literal["update", "delete"]
 
 
 class EventActionChecker(BaseActionChecker[Event, EVENT_ACTIONS]):
     __valid_actions__ = EVENT_ACTIONS
 
-    create: ActionPermission[Event] = False
-    read: ActionPermission[Event] = False
     update: ActionPermission[Event] = False
     delete: ActionPermission[Event] = False
 
@@ -98,14 +96,38 @@ class RolePermissionSet(BaseModel):
 
 ROLE_PERMISSIONS: dict[Role | None, RolePermissionSet] = {
     Role.OWNER: RolePermissionSet(
+        user=UserActionChecker.all(),
+        game=GameActionChecker.all(),
+        event=EventActionChecker.all(),
+    ),
+    Role.MODERATOR: RolePermissionSet(
         user=UserActionChecker(
-            create=True,
-            read=True,
+            update=False,
+            delete=False,
+        ),
+        game=GameActionChecker(
             update=True,
-            delete=True,
+            approve=True,
+        ),
+        event=EventActionChecker(
+            update=False,
+            delete=False,
         ),
     ),
-    None: RolePermissionSet(),  # Default permissions is no permissions
+    None: RolePermissionSet(
+        user=UserActionChecker(
+            update=lambda u, user: user != "all" and u.id == user.id,
+            delete=False,
+        ),
+        game=GameActionChecker(
+            update=lambda u, game: game != "all" and u.id == game.gamemaster_id,
+            approve=False,
+        ),
+        event=EventActionChecker(
+            update=False,
+            delete=False,
+        ),
+    ),
 }
 
 
@@ -123,14 +145,15 @@ def user_has_permission(user: User, obj_type: Literal["event"], scope: Scope[Eve
 
 def user_has_permission(user: User, obj_type: LiteralString, scope: Scope, action: LiteralString) -> bool:
     event, obj_value = scope
-    user_event_roles = [
-        role
-        for role in user.event_roles
-        if (event == "all" and role.event_id is None) or (event != "all" and role.event_id == event.id)
-    ]
+    roles = [
+        user_event_role.role
+        for user_event_role in user.event_roles
+        if (event == "all" and user_event_role.event_id is None)
+        or (event != "all" and user_event_role.event_id == event.id)
+    ] + [None]
 
-    for user_event_role in user_event_roles:
-        role_permissions = ROLE_PERMISSIONS.get(user_event_role.role)
+    for role in roles:
+        role_permissions = ROLE_PERMISSIONS.get(role)
         if role_permissions is None:
             continue
         action_checker: BaseActionChecker | None = getattr(role_permissions, obj_type)

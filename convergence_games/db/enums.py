@@ -271,8 +271,8 @@ class GameRoomRequirement(FlagWithNotes):
 
 
 class Role(enum.StrEnum):
-    OWNER = "Owner"  # Can do anything a Manager can do, and assign roles to other users
-    MANAGER = "Manager"  # Can manage everything in an event
+    OWNER = "Owner"  # Can do anything a Moderator can do, and assign roles to other users
+    MODERATOR = "Moderator"  # Can moderate everything in an event, e.g. approve games
     READER = "Reader"  # Can read everything in an event
     PLAYER = "Player"  # Is participating in an event - can read and update their own data - the lowest permission
 

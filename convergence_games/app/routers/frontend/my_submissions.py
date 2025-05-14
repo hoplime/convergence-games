@@ -1,35 +1,12 @@
-from litestar import Controller, Response, get
+from litestar import Controller, get
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.db.enums import (
-    GameActivityRequirement,
-    GameClassification,
-    GameCoreActivity,
-    GameCrunch,
-    GameEquipmentRequirement,
-    GameKSP,
-    GameRoomRequirement,
-    GameTableSizeRequirement,
-    GameTone,
-    SubmissionStatus,
-)
-from convergence_games.db.models import (
-    ContentWarning,
-    Event,
-    Game,
-    GameContentWarningLink,
-    GameGenreLink,
-    GameRequirement,
-    GameRequirementTimeSlotLink,
-    Genre,
-    System,
-)
-from convergence_games.db.ocean import Sqid, sink
+from convergence_games.app.response_type import HTMXBlockTemplate
+from convergence_games.db.models import Game
 
 
 class MySubmissionsController(Controller):

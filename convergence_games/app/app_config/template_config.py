@@ -18,6 +18,7 @@ from convergence_games.db.enums import (
     GameTableSizeRequirement,
 )
 from convergence_games.db.ocean import swim
+from convergence_games.permissions.permissions import user_has_permission
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.time_utils import nice_time_format, time_range_format
 
@@ -76,6 +77,8 @@ jinja_env.filters["GameEquipmentRequirement"] = GameEquipmentRequirement
 jinja_env.filters["GameKSP"] = GameKSP
 jinja_env.filters["GameRoomRequirement"] = GameRoomRequirement
 jinja_env.filters["GameTableSizeRequirement"] = GameTableSizeRequirement
+
+jinja_env.filters["has_permission"] = user_has_permission
 
 jinja_env.globals["swim"] = swim
 jinja_env.globals["random_id"] = lambda: str(uuid.uuid4())

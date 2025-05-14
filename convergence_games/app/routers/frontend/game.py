@@ -11,7 +11,9 @@ from convergence_games.db.ocean import Sqid, sink
 
 
 class GameController(Controller):
-    @get(path="/game/{game_sqid:str}")
+    path = "/game"
+
+    @get(path="/{game_sqid:str}")
     async def get_game(
         self,
         request: Request,

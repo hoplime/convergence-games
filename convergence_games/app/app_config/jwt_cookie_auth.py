@@ -7,6 +7,7 @@ from litestar.middleware.authentication import AuthenticationResult
 from litestar.security.jwt import JWTCookieAuth, JWTCookieAuthenticationMiddleware
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import selectinload
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.app.request_type import CustomToken
@@ -22,7 +23,7 @@ async def retrieve_user_handler(token: CustomToken, connection: ASGIConnection) 
     engine = cast(AsyncEngine, connection.app.state.db_engine)
     async with AsyncSession(engine) as async_session:
         async with async_session.begin():
-            stmt = select(User).where(User.id == user_id)
+            stmt = select(User).options(selectinload(User.event_roles)).where(User.id == user_id)
             user = (await async_session.execute(stmt)).scalar_one_or_none()
             async_session.expunge_all()
 

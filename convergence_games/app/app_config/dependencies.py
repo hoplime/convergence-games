@@ -5,6 +5,10 @@ from litestar.status_codes import HTTP_409_CONFLICT
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from convergence_games.app.exceptions import UserNotLoggedInError
+from convergence_games.app.request_type import Request
+from convergence_games.db.models import User
+
 
 async def provide_transaction(db_session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
     try:
@@ -17,6 +21,15 @@ async def provide_transaction(db_session: AsyncSession) -> AsyncGenerator[AsyncS
         ) from exc
 
 
+async def provide_user(
+    request: Request,
+) -> User:
+    if request.user is None:
+        raise UserNotLoggedInError("User must be logged in to perform this action.")
+    return request.user
+
+
 dependencies = {
     "transaction": provide_transaction,
+    "user": provide_user,
 }
