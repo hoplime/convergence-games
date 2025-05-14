@@ -25,6 +25,7 @@ async def get_event(event_sqid: Sqid, transaction: AsyncSession) -> Event:
                     selectinload(Game.gamemaster),
                     selectinload(Game.game_requirement),
                     selectinload(Game.genres),
+                    selectinload(Game.event),
                 ),
             )
             .where(Event.id == event_id)
