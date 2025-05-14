@@ -1,28 +1,34 @@
 {#def
     game: Game,
     submission_status: type[SubmissionStatus],
+    user: User
 #}
 <li {{ attrs.render(class="list-row items-center") }}>
     <div><b>{{ game.name }}</b> by {{ game.gamemaster.full_name }}</div>
     <div></div>
-    <form
-        hx-trigger="change"
-        hx-put="/game/{{ swim(game) }}/submission-status"
-        hx-target="closest li"
-        hx-swap="outerHTML"
-    >
-        <select class="select {{ game.submission_status.color_classes }}" name="submission_status">
-            {% for status in submission_status %}
-                <option
-                    value="{{ status }}"
-                    class="{{ status.color_classes }}"
-                    {% if game.submission_status == status %}selected{% endif %}
-                >
-                    {{ status }}
-                </option>
-            {% endfor %}
-        </select>
-    </form>
+    {% if user | has_permission("game", (game.event, game), "approve") %}
+        <form
+            hx-trigger="change"
+            hx-put="/game/{{ swim(game) }}/submission-status"
+            hx-target="closest li"
+            hx-swap="outerHTML"
+        >
+            <select class="select {{ game.submission_status.color_classes }}" name="submission_status">
+                {% for status in submission_status %}
+                    <option
+                        value="{{ status }}"
+                        class="{{ status.color_classes }}"
+                        {% if game.submission_status == status %}selected{% endif %}
+                    >
+                        {{ status }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    {% endif %}
     <div>({{ game.game_requirement.times_to_run }}<span class="hidden md:inline-block"> &nbsp;sessions</span>)</div>
     <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral btn-outline">View</a>
+    {% if user | has_permission("game", (game.event, game), "update") %}
+        <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral btn-outline">Edit</a>
+    {% endif %}
 </li>

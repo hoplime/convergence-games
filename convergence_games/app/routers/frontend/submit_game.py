@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Annotated, Callable, Literal, Self, cast
 
 from litestar import Controller, Response, get, post, put
+from litestar.di import Provide
 from litestar.exceptions import NotFoundException, PermissionDeniedException, ValidationException
 from litestar.params import Body, RequestEncodingType
 from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter, ValidationInfo, field_validator, model_validator
@@ -9,6 +10,7 @@ from pydantic_core import PydanticCustomError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import permission_check, user_guard
@@ -67,8 +69,12 @@ SqidOrNewStr = Annotated[SqidOrNew[str], BeforeValidator(make_sqid_or_new_valida
 SqidInt = Annotated[int, BeforeValidator(sink)]
 
 
-def can_approve(user: User, event: Event) -> bool:
-    return user_has_permission(user, "game", (event, "all"), "approve")
+def user_can_approve_game(user: User, game: Game) -> bool:
+    return user_has_permission(user, "game", (game.event, game), "approve")
+
+
+def user_can_edit_game(user: User, game: Game) -> bool:
+    return user_has_permission(user, "game", (game.event, game), "update")
 
 
 class SubmitGameForm(BaseModel):
@@ -257,6 +263,24 @@ async def create_new_links(
     return genre_links, content_warning_links, time_slot_links
 
 
+def game_with(*options: ExecutableOption):
+    async def wrapper(
+        transaction: AsyncSession,
+        game_sqid: Sqid,
+    ) -> Game:
+        game_id = sink(game_sqid)
+        game = (
+            await transaction.execute(select(Game).options(*options).where(Game.id == game_id))
+        ).scalar_one_or_none()
+
+        if not game:
+            raise NotFoundException(detail="Game not found")
+
+        return game
+
+    return Provide(wrapper)
+
+
 # endregion
 
 
@@ -289,36 +313,27 @@ class SubmitGameController(Controller):
             },
         )
 
-    @get(path="/game/{game_sqid:str}/edit", guards=[user_guard])
+    @get(
+        path="/game/{game_sqid:str}/edit",
+        guards=[user_guard],
+        dependencies={
+            "game": game_with(
+                selectinload(Game.system),
+                selectinload(Game.gamemaster),
+                selectinload(Game.event).selectinload(Event.time_slots),
+                selectinload(Game.game_requirement).selectinload(GameRequirement.available_time_slots),
+                selectinload(Game.genres),
+                selectinload(Game.content_warnings),
+            ),
+            "permission": permission_check(user_can_edit_game),
+        },
+    )
     async def get_edit_game(
         self,
         request: Request,
-        transaction: AsyncSession,
-        game_sqid: Sqid,
+        game: Game,
     ) -> Template:
         assert request.user is not None
-
-        game_id = sink(game_sqid)
-        game = (
-            await transaction.execute(
-                select(Game)
-                .options(
-                    selectinload(Game.system),
-                    selectinload(Game.gamemaster),
-                    selectinload(Game.event).selectinload(Event.time_slots),
-                    selectinload(Game.game_requirement).selectinload(GameRequirement.available_time_slots),
-                    selectinload(Game.genres),
-                    selectinload(Game.content_warnings),
-                )
-                .where(Game.id == game_id)
-            )
-        ).scalar_one_or_none()
-
-        if not game:
-            raise NotFoundException(detail="Game not found")
-
-        if game.gamemaster_id != request.user.id:
-            raise PermissionDeniedException(detail="You are not the gamemaster of this game")
 
         return HTMXBlockTemplate(
             template_name="pages/submit_game.html.jinja",
@@ -419,69 +434,57 @@ class SubmitGameController(Controller):
         path="/game/{game_sqid:str}",
         guards=[user_guard],
         exception_handlers={ValidationException: handle_submit_game_form_validation_error},  # type: ignore[assignment]
+        dependencies={
+            "game": game_with(
+                selectinload(Game.system),
+                selectinload(Game.gamemaster),
+                selectinload(Game.event).selectinload(Event.time_slots),
+                selectinload(Game.game_requirement).selectinload(GameRequirement.time_slot_links),
+                selectinload(Game.genre_links),
+                selectinload(Game.content_warning_links),
+            ),
+            "permission": permission_check(user_can_edit_game),
+        },
     )
     async def put_game(
         self,
         request: Request,
         transaction: AsyncSession,
-        game_sqid: Sqid,
+        game: Game,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
         assert request.user is not None
 
-        game_id = sink(game_sqid)
-
-        existing_game = (
-            await transaction.execute(
-                select(Game)
-                .options(
-                    selectinload(Game.system),
-                    selectinload(Game.gamemaster),
-                    selectinload(Game.event).selectinload(Event.time_slots),
-                    selectinload(Game.game_requirement).selectinload(GameRequirement.time_slot_links),
-                    selectinload(Game.genre_links),
-                    selectinload(Game.content_warning_links),
-                )
-                .where(Game.id == game_id)
-            )
-        ).scalar_one_or_none()
-
-        if not existing_game:
-            raise NotFoundException(detail="Game not found")
-
-        if existing_game.gamemaster_id != request.user.id:
-            raise PermissionDeniedException(detail="You are not the gamemaster of this game")
-
         # Update all the properties
         # This is kept in the same order as the POST method to make it easier to compare
-        existing_game.name = data.title
-        existing_game.tagline = data.tagline
-        existing_game.description = data.description
-        existing_game.classification = data.classification
-        existing_game.crunch = data.crunch
-        existing_game.core_activity = data.core_activity
-        existing_game.tone = data.tone
-        existing_game.player_count_minimum = data.player_count_minimum_prop
-        existing_game.player_count_optimum = data.player_count_optimum_prop
-        existing_game.player_count_maximum = data.player_count_maximum_prop
-        existing_game.ksps = data.ksp
+        game.name = data.title
+        game.tagline = data.tagline
+        game.description = data.description
+        game.classification = data.classification
+        game.crunch = data.crunch
+        game.core_activity = data.core_activity
+        game.tone = data.tone
+        game.player_count_minimum = data.player_count_minimum_prop
+        game.player_count_optimum = data.player_count_optimum_prop
+        game.player_count_maximum = data.player_count_maximum_prop
+        game.ksps = data.ksp
         if isinstance(data.system, int):
-            existing_game.system_id = data.system
+            game.system_id = data.system
         else:
-            existing_game.system = await create_if_not_exists(System, data.system.value, transaction)
+            game.system = await create_if_not_exists(System, data.system.value, transaction)
         # existing_game.gamemaster=request.user  - Not updated!
         # existing_game.event_id=event_id  - Not updated!
 
-        existing_game.game_requirement.times_to_run = data.times_to_run
-        existing_game.game_requirement.scheduling_notes = data.scheduling_notes
-        existing_game.game_requirement.table_size_requirement = data.table_size_requirement
-        existing_game.game_requirement.table_size_notes = data.table_size_notes
-        existing_game.game_requirement.equipment_requirement = data.equipment_requirement
-        existing_game.game_requirement.equipment_notes = data.equipment_notes
-        existing_game.game_requirement.activity_requirement = data.activity_requirement
-        existing_game.game_requirement.activity_notes = data.activity_notes
-        existing_game.game_requirement.room_requirement = data.room_requirement
-        existing_game.game_requirement.room_notes = data.room_notes
+        game.game_requirement.times_to_run = data.times_to_run
+        game.game_requirement.scheduling_notes = data.scheduling_notes
+        game.game_requirement.table_size_requirement = data.table_size_requirement
+        game.game_requirement.table_size_notes = data.table_size_notes
+        game.game_requirement.equipment_requirement = data.equipment_requirement
+        game.game_requirement.equipment_notes = data.equipment_notes
+        game.game_requirement.activity_requirement = data.activity_requirement
+        game.game_requirement.activity_notes = data.activity_notes
+        game.game_requirement.room_requirement = data.room_requirement
+        game.game_requirement.room_notes = data.room_notes
 
         # Reassign the links
         # TODO - This is a bit of a hack because we can't just automatically update the game requirement
@@ -493,18 +496,18 @@ class SubmitGameController(Controller):
             for genre in data.genre
         ]
         # Remove any genre links that are not in the desired list
-        for genre_link in existing_game.genre_links:
+        for genre_link in game.genre_links:
             if genre_link.genre_id not in desired_genre_ids_or_new_genres:
                 await transaction.delete(genre_link)
         # Add any new genre links that are not already in the existing list
         for genre_id_or_new_genre in desired_genre_ids_or_new_genres:
             if isinstance(genre_id_or_new_genre, int):
-                if genre_id_or_new_genre in [link.genre_id for link in existing_game.genre_links]:
+                if genre_id_or_new_genre in [link.genre_id for link in game.genre_links]:
                     # This genre link already exists, so skip it
                     continue
-                genre_link = GameGenreLink(game_id=existing_game.id, genre_id=genre_id_or_new_genre)
+                genre_link = GameGenreLink(game_id=game.id, genre_id=genre_id_or_new_genre)
             else:
-                genre_link = GameGenreLink(game_id=existing_game.id, genre=genre_id_or_new_genre)
+                genre_link = GameGenreLink(game_id=game.id, genre=genre_id_or_new_genre)
 
             # Actually add it
             transaction.add(genre_link)
@@ -517,23 +520,23 @@ class SubmitGameController(Controller):
             for content_warning in data.content_warning
         ]
         # Remove any content warning links that are not in the desired list
-        for content_warning_link in existing_game.content_warning_links:
+        for content_warning_link in game.content_warning_links:
             if content_warning_link.content_warning_id not in desired_content_warning_ids_or_content_warnings:
                 await transaction.delete(content_warning_link)
         # Add any new content warning links that are not already in the existing list
         for content_warning_id_or_new_content_warning in desired_content_warning_ids_or_content_warnings:
             if isinstance(content_warning_id_or_new_content_warning, int):
                 if content_warning_id_or_new_content_warning in [
-                    link.content_warning_id for link in existing_game.content_warning_links
+                    link.content_warning_id for link in game.content_warning_links
                 ]:
                     # This content warning link already exists, so skip it
                     continue
                 content_warning_link = GameContentWarningLink(
-                    game_id=existing_game.id, content_warning_id=content_warning_id_or_new_content_warning
+                    game_id=game.id, content_warning_id=content_warning_id_or_new_content_warning
                 )
             else:
                 content_warning_link = GameContentWarningLink(
-                    game_id=existing_game.id, content_warning=content_warning_id_or_new_content_warning
+                    game_id=game.id, content_warning=content_warning_id_or_new_content_warning
                 )
 
             # Actually add it
@@ -542,51 +545,48 @@ class SubmitGameController(Controller):
         # Time slots
         desired_time_slot_ids = data.available_time_slot
         # Remove any time slot links that are not in the desired list
-        for time_slot_link in existing_game.game_requirement.time_slot_links:
+        for time_slot_link in game.game_requirement.time_slot_links:
             if time_slot_link.time_slot_id not in desired_time_slot_ids:
                 await transaction.delete(time_slot_link)
         # Add any new time slot links that are not already in the existing list
         for time_slot_id in desired_time_slot_ids:
-            if time_slot_id in [link.time_slot_id for link in existing_game.game_requirement.time_slot_links]:
+            if time_slot_id in [link.time_slot_id for link in game.game_requirement.time_slot_links]:
                 # This time slot link already exists, so skip it
                 continue
             time_slot_link = GameRequirementTimeSlotLink(
-                game_requirement=existing_game.game_requirement, time_slot_id=time_slot_id
+                game_requirement=game.game_requirement, time_slot_id=time_slot_id
             )
             transaction.add(time_slot_link)
 
-        transaction.add(existing_game)
+        transaction.add(game)
 
         return HTMXBlockTemplate(
             re_target="#content",
             block_name="content",
             template_name="pages/submit_game_confirmation.html.jinja",
-            context={"game": existing_game, "edited": True},
+            context={"game": game, "edited": True},
         )
 
     @put(
         path="/game/{game_sqid:str}/submission-status",
         guards=[user_guard],
-        dependencies={"permission": permission_check(can_approve)},
+        dependencies={
+            "game": game_with(
+                selectinload(Game.game_requirement),
+                selectinload(Game.gamemaster),
+                selectinload(Game.event),
+            ),
+            "permission": permission_check(user_can_approve_game),
+        },
     )
     async def put_game_submission_status(
         self,
         request: Request,
         transaction: AsyncSession,
-        game_sqid: Sqid,
+        game: Game,
         data: Annotated[SubmissionStatusForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
         assert request.user is not None
-
-        game_id = sink(game_sqid)
-        game = (
-            await transaction.execute(
-                select(Game).options(selectinload(Game.game_requirement)).where(Game.id == game_id)
-            )
-        ).scalar_one_or_none()
-
-        if not game:
-            raise NotFoundException(detail="Game not found")
 
         game.submission_status = data.submission_status
         transaction.add(game)
@@ -595,6 +595,7 @@ class SubmitGameController(Controller):
             "GameSubmissionRow",
             game=game,
             submission_status=SubmissionStatus,
+            user=request.user,
         )
         return HTMXBlockTemplate(template_str=template_str)
 

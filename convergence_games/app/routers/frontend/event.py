@@ -35,7 +35,7 @@ async def get_event(event_sqid: Sqid, transaction: AsyncSession) -> Event:
     return event
 
 
-def can_approve(user: User, event: Event) -> bool:
+def user_can_approve_all_games(user: User, event: Event) -> bool:
     return user_has_permission(user, "game", (event, "all"), "approve")
 
 
@@ -58,7 +58,7 @@ class EventController(Controller):
     @get(
         path="/{event_sqid:str}/manage-submissions",
         guards=[user_guard],
-        dependencies={"permission": permission_check(can_approve)},
+        dependencies={"permission": permission_check(user_can_approve_all_games)},
     )
     async def get_event_manage_submissions(
         self,
