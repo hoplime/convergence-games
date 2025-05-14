@@ -8,14 +8,25 @@ from sqlalchemy.orm import selectinload
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.db.models import Event, User
+from convergence_games.db.models import Event, Game, User
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.permissions import user_has_permission
 
 
 async def get_event(event_sqid: Sqid, transaction: AsyncSession) -> Event:
     event_id: int = sink(event_sqid)
-    event = (await transaction.execute(select(Event).where(Event.id == event_id))).scalar_one_or_none()
+    event = (
+        await transaction.execute(
+            select(Event)
+            .options(
+                selectinload(Event.games).options(
+                    selectinload(Game.system),
+                    selectinload(Game.gamemaster),
+                ),
+            )
+            .where(Event.id == event_id)
+        )
+    ).scalar_one_or_none()
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     return event
@@ -53,7 +64,7 @@ class EventController(Controller):
         permission: bool,
     ) -> Template:
         return HTMXBlockTemplate(
-            template_name="pages/event/manage_submissions.html.jinja",
+            template_name="pages/event_manage_submissions.html.jinja",
             block_name=request.htmx.target,
             context={"event": event},
         )

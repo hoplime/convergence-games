@@ -1,0 +1,10 @@
+<Page>
+    {% block content %}
+        <title>{{ event.name }} Manage Submissions - Convergence 2025</title>
+        <PageContainer>
+            {% for game in event.games %}
+                <div>{{ game.name }} | {{ game.gamemaster.full_name }} | {{ game.system.name }}</div>
+            {% endfor %}
+        </PageContainer>
+    {% endblock %}
+</Page>

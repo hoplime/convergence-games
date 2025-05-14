@@ -1,6 +1,21 @@
 <Page>
     {% block content %}
         <title>{{ event.name }} - Convergence 2025</title>
-        <PageContainer> </PageContainer>
+        <PageContainer>
+            <h1 class="text-2xl">{{ event.name }}</h1>
+            {% if request.user | has_permission("game", (event, "all"), "approve") %}
+                <div class="card bg-base-200 border-base-300 rounded-box border">
+                    <div class="card-body">
+                        <h2 class="card-title text-xl">Admin Section</h2>
+                        <p>You are an admin for this event.</p>
+                        <div class="card-actions justify-start">
+                            <a href="/event/{{ swim(event) }}/manage-submissions" class="btn btn-primary">
+                                Manage Submissions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </PageContainer>
     {% endblock %}
 </Page>

@@ -100,7 +100,7 @@ ROLE_PERMISSIONS: dict[Role | None, RolePermissionSet] = {
         game=GameActionChecker.all(),
         event=EventActionChecker.all(),
     ),
-    Role.MODERATOR: RolePermissionSet(
+    Role.MANAGER: RolePermissionSet(
         user=UserActionChecker(
             update=False,
             delete=False,
@@ -148,8 +148,7 @@ def user_has_permission(user: User, obj_type: LiteralString, scope: Scope, actio
     roles = [
         user_event_role.role
         for user_event_role in user.event_roles
-        if (event == "all" and user_event_role.event_id is None)
-        or (event != "all" and user_event_role.event_id == event.id)
+        if (user_event_role.event_id is None) or (event != "all" and user_event_role.event_id == event.id)
     ] + [None]
 
     for role in roles:
