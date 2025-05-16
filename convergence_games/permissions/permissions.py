@@ -78,7 +78,7 @@ class GameActionChecker(BaseActionChecker[Game, GAME_ACTIONS]):
     approve: ActionPermission[Game] = False
 
 
-EVENT_ACTIONS: TypeAlias = Literal["update", "delete"]
+EVENT_ACTIONS: TypeAlias = Literal["update", "delete", "manage_submissions"]
 
 
 class EventActionChecker(BaseActionChecker[Event, EVENT_ACTIONS]):
@@ -86,6 +86,7 @@ class EventActionChecker(BaseActionChecker[Event, EVENT_ACTIONS]):
 
     update: ActionPermission[Event] = False
     delete: ActionPermission[Event] = False
+    manage_submissions: ActionPermission[Event] = False
 
 
 class RolePermissionSet(BaseModel):
@@ -112,6 +113,7 @@ ROLE_PERMISSIONS: dict[Role | None, RolePermissionSet] = {
         event=EventActionChecker(
             update=False,
             delete=False,
+            manage_submissions=True,
         ),
     ),
     None: RolePermissionSet(

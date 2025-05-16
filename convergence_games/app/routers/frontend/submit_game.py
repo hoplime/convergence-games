@@ -332,6 +332,7 @@ class SubmitGameController(Controller):
         self,
         request: Request,
         game: Game,
+        permission: bool,
     ) -> Template:
         assert request.user is not None
 
@@ -451,6 +452,7 @@ class SubmitGameController(Controller):
         request: Request,
         transaction: AsyncSession,
         game: Game,
+        permission: bool,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
         assert request.user is not None

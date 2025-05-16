@@ -61,7 +61,7 @@ async def get_event_games_dep(
     if query_order_by is None:
         post_order_by: Callable[[Game], Any] = {
             "system": lambda g: g.system.name.lower(),
-            "gamemaster": lambda g: g.gamemaster.name.lower(),
+            "gamemaster": lambda g: g.gamemaster.last_name.lower(),
             "sessions": lambda g: g.game_requirement.times_to_run,
         }.get(sort)  # type: ignore
 
@@ -70,8 +70,8 @@ async def get_event_games_dep(
     return games
 
 
-def user_can_approve_all_games(user: User, event: Event) -> bool:
-    return user_has_permission(user, "game", (event, "all"), "approve")
+def user_can_manage_submissions(user: User, event: Event) -> bool:
+    return user_has_permission(user, "event", (event, event), "manage_submissions")
 
 
 class EventController(Controller):
@@ -99,7 +99,7 @@ class EventController(Controller):
         path="/{event_sqid:str}/manage-submissions",
         guards=[user_guard],
         dependencies={
-            "permission": permission_check(user_can_approve_all_games),
+            "permission": permission_check(user_can_manage_submissions),
             "games": Provide(get_event_games_dep),
         },
     )
@@ -108,6 +108,7 @@ class EventController(Controller):
         request: Request,
         event: Event,
         games: Sequence[Game],
+        permission: bool,
         sort: Literal["title", "system", "gamemaster", "submitted", "status", "sessions"] = "submitted",
         desc: bool = False,
     ) -> Template:
