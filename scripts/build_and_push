@@ -1,0 +1,6 @@
+#!/bin/bash
+docker buildx bake
+TIMESTAMP=$(date +%Y%m%d%H%M)
+docker tag jcheatley/waikato-rpg-convergence-games:latest jcheatley/waikato-rpg-convergence-games:$TIMESTAMP
+docker push jcheatley/waikato-rpg-convergence-games:$TIMESTAMP
+echo "jcheatley/waikato-rpg-convergence-games:$TIMESTAMP"

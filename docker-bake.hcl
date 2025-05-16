@@ -1,9 +1,9 @@
 variable "DOCKER_STAGE" {
-    default = "default"
+    default = "azure"
 }
 
 variable "DOCKER_TAG" {
-    default = "dev"
+    default = "latest"
 }
 
 target "default" {
