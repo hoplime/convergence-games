@@ -1,13 +1,37 @@
 <Page>
     {% block content %}
         <title>{{ event.name }} Manage Submissions - Convergence 2025</title>
-        <PageContainer>
+        <PageContainer size="max-w-screen-2xl">
             <div>Manage Submissions</div>
-            <ul class="list bg-base-200 rounded-box">
-                {% for game in games %}
-                    <GameSubmissionRow :game="game" :submission_status="submission_status" :user="request.user" />
-                {% endfor %}
-            </ul>
+            <form class="flex flex-row"></form>
+            <table class="bg-base-200 table-sm table">
+                <thead>
+                    <tr>
+                        <TableSortHeader sort="title" :active="sort == 'title'" :desc="desc">Title</TableSortHeader>
+                        <TableSortHeader sort="system" :active="sort == 'system'" :desc="desc">
+                            System
+                        </TableSortHeader>
+                        <TableSortHeader sort="gamemaster" :active="sort == 'gamemaster'" :desc="desc">
+                            GM
+                        </TableSortHeader>
+                        <TableSortHeader sort="submitted" :active="sort == 'submitted'" :desc="desc">
+                            Submitted
+                        </TableSortHeader>
+                        <TableSortHeader sort="status" :active="sort == 'status'" :desc="desc">
+                            Status
+                        </TableSortHeader>
+                        <TableSortHeader sort="sessions" :active="sort == 'sessions'" :desc="desc">
+                            Sessions
+                        </TableSortHeader>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for game in games %}
+                        <GameSubmissionRow :game="game" :submission_status="submission_status" :user="request.user" />
+                    {% endfor %}
+                </tbody>
+            </table>
         </PageContainer>
     {% endblock %}
 </Page>

@@ -1,0 +1,18 @@
+{#def
+    sort: str,
+    active: bool = False,
+    desc: bool = False,
+#}
+<th
+    class="{{ 'bg-base-300' if active }}"
+    hx-get="manage-submissions?sort={{ sort }}&desc={{ not desc if active else False }}"
+    hx-target="#content"
+    hx-push-url="true"
+>
+    {{ content }}
+    {% if active %}
+        <span class="text-xs">
+            <span class="icon-[mdi--triangle] {{ 'rotate-180' if desc }}"></span>
+        </span>
+    {% endif %}
+</th>

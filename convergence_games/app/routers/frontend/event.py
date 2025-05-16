@@ -5,7 +5,7 @@ from litestar.di import Provide
 from litestar.exceptions import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import InstrumentedAttribute, selectinload
 
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
@@ -31,10 +31,21 @@ async def get_event_dep(
 async def get_event_games_dep(
     event: Event,  # This forces the dependencies to be in a chain, meaning the transaction isn't closed yet
     transaction: AsyncSession,
-    sort: Literal["name", "created_at", "submission_status"] = "created_at",
-    order: Literal["asc", "desc"] = "asc",
+    sort: Literal["title", "system", "gamemaster", "submitted", "status", "sessions"] = "submitted",
+    desc: bool = False,
 ) -> Sequence[Game]:
     event_id: int = event.id
+    order_by: InstrumentedAttribute = {
+        "title": Game.name,
+        "system": Game.system,
+        "gamemaster": Game.gamemaster,
+        "submitted": Game.created_at,
+        "status": Game.submission_status,
+        "sessions": Game.game_requirement,
+    }[sort]
+    if desc:
+        order_by = order_by.desc()  # type: ignore
+
     stmt = (
         select(Game)
         .options(
@@ -44,7 +55,7 @@ async def get_event_games_dep(
             selectinload(Game.genres),
             selectinload(Game.event),
         )
-        .order_by(getattr(Game, sort).asc() if order == "asc" else getattr(Game, sort).desc())
+        .order_by(order_by)
         .where(Game.event_id == event_id)
     )
     games = (await transaction.execute(stmt)).scalars().all()
@@ -89,7 +100,8 @@ class EventController(Controller):
         request: Request,
         event: Event,
         games: Sequence[Game],
-        permission: bool,
+        sort: Literal["title", "system", "gamemaster", "submitted", "status", "sessions"] = "submitted",
+        desc: bool = False,
     ) -> Template:
         return HTMXBlockTemplate(
             template_name="pages/event_manage_submissions.html.jinja",
@@ -97,6 +109,8 @@ class EventController(Controller):
             context={
                 "event": event,
                 "games": games,
+                "sort": sort,
+                "desc": desc,
                 "submission_status": SubmissionStatus,
             },
         )

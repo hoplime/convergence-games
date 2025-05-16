@@ -28,6 +28,8 @@
     "tiptap-extension-resize-image": "^1.2.1"
   },
   "devDependencies": {
+    "@iconify/json": "^2.2.338",
+    "@iconify/tailwind4": "^1.0.6",
     "pm2": "^5.4.2",
     "prettier": "^3.4.2",
     "prettier-plugin-jinja-template": "^2.0.0",
