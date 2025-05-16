@@ -27,8 +27,8 @@
         </form>
     {% endif %}
     <div>({{ game.game_requirement.times_to_run }}<span class="hidden md:inline-block"> &nbsp;sessions</span>)</div>
-    <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral btn-outline">View</a>
+    <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral">View</a>
     {% if user | has_permission("game", (game.event, game), "update") %}
-        <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral btn-outline">Edit</a>
+        <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral">Edit</a>
     {% endif %}
 </li>

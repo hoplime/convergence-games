@@ -4,7 +4,7 @@
         <PageContainer>
             <div>Manage Submissions</div>
             <ul class="list bg-base-200 rounded-box">
-                {% for game in event.games %}
+                {% for game in games %}
                     <GameSubmissionRow :game="game" :submission_status="submission_status" :user="request.user" />
                 {% endfor %}
             </ul>

@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 
+from litestar.di import Provide
 from litestar.exceptions import ClientException
 from litestar.status_codes import HTTP_409_CONFLICT
 from sqlalchemy.exc import IntegrityError
@@ -30,6 +31,6 @@ async def provide_user(
 
 
 dependencies = {
-    "transaction": provide_transaction,
-    "user": provide_user,
+    "transaction": Provide(provide_transaction),
+    "user": Provide(provide_user),
 }
