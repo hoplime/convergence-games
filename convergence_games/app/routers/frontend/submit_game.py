@@ -575,6 +575,7 @@ class SubmitGameController(Controller):
                 selectinload(Game.game_requirement),
                 selectinload(Game.gamemaster),
                 selectinload(Game.event),
+                selectinload(Game.system),
             ),
             "permission": permission_check(user_can_approve_game),
         },

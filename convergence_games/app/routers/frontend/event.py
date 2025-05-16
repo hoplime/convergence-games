@@ -1,4 +1,5 @@
-from typing import Literal, Sequence
+from collections.abc import Callable
+from typing import Any, Literal, Sequence
 
 from litestar import Controller, get
 from litestar.di import Provide
@@ -35,16 +36,13 @@ async def get_event_games_dep(
     desc: bool = False,
 ) -> Sequence[Game]:
     event_id: int = event.id
-    order_by: InstrumentedAttribute = {
+    query_order_by: InstrumentedAttribute | None = {
         "title": Game.name,
-        "system": Game.system,
-        "gamemaster": Game.gamemaster,
         "submitted": Game.created_at,
         "status": Game.submission_status,
-        "sessions": Game.game_requirement,
-    }[sort]
-    if desc:
-        order_by = order_by.desc()  # type: ignore
+    }.get(sort)
+    if query_order_by is not None and desc:
+        query_order_by = query_order_by.desc()  # type: ignore
 
     stmt = (
         select(Game)
@@ -55,10 +53,20 @@ async def get_event_games_dep(
             selectinload(Game.genres),
             selectinload(Game.event),
         )
-        .order_by(order_by)
+        .order_by(query_order_by)
         .where(Game.event_id == event_id)
     )
     games = (await transaction.execute(stmt)).scalars().all()
+
+    if query_order_by is None:
+        post_order_by: Callable[[Game], Any] = {
+            "system": lambda g: g.system.name.lower(),
+            "gamemaster": lambda g: g.gamemaster.name.lower(),
+            "sessions": lambda g: g.game_requirement.times_to_run,
+        }.get(sort)  # type: ignore
+
+        games = sorted(games, key=post_order_by, reverse=desc)
+
     return games
 
 
