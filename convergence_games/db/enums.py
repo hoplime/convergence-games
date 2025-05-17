@@ -77,6 +77,7 @@ class FlagWithNotes(enum.IntFlag):
     __notes__: ClassVar[dict[int, str]] = {}
     __form_notes__: ClassVar[dict[int, str]] = {}
     __tooltips__: ClassVar[dict[int, str]] = {}
+    __icons__: ClassVar[dict[int, str]] = {}
 
     @classmethod
     def all_notes_and_values(cls) -> list[tuple[int, str]]:
@@ -113,6 +114,18 @@ class FlagWithNotes(enum.IntFlag):
     @property
     def tooltips(self) -> list[str]:
         return [self.tooltip_for(value) for value in self]
+
+    @classmethod
+    def all_icons_and_values(cls) -> list[tuple[int, str]]:
+        return [(member.value, cls.icon_for(member.value)) for member in cls]
+
+    @classmethod
+    def icon_for(cls, value: int) -> str:
+        return cls.__icons__.get(value, "")
+
+    @property
+    def icons(self) -> list[str]:
+        return [self.icon_for(value) for value in self]
 
 
 class GameCoreActivity(FlagWithNotes):
@@ -189,6 +202,20 @@ class GameKSP(FlagWithNotes):
         NZ_MADE: "This system was designed in New Zealand",
         IN_PLAYTEST: "This system is in playtest",
         FOR_SALE: "This system or scenario will be for sale at the event",
+    }
+
+    __tooltips__ = {
+        DESIGNER_RUN: "The designer of this system will be running the game",
+        NZ_MADE: "This system is made in New Zealand",
+        IN_PLAYTEST: "This system is in playtest, and you have the opportunity to help shape it",
+        FOR_SALE: "This system or scenario will be for sale at the event",
+    }
+
+    __icons__ = {
+        DESIGNER_RUN: "icon-[game-icons--meeple]",
+        NZ_MADE: "icon-[game-icons--kiwi-bird]",
+        IN_PLAYTEST: "icon-[mdi--cog]",
+        FOR_SALE: "icon-[raphael--dollar]",
     }
 
 

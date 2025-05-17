@@ -84,6 +84,7 @@ jinja_env.globals["swim"] = swim
 jinja_env.globals["random_id"] = lambda: str(uuid.uuid4())
 jinja_env.globals["bitwise_and"] = lambda a, b: a & b
 jinja_env.globals["SETTINGS"] = SETTINGS
+jinja_env.globals["zip"] = zip
 
 catalog = jinjax.Catalog(jinja_env=jinja_env)
 catalog.add_folder(COMPONENTS_DIR_PATH)

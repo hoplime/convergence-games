@@ -60,6 +60,21 @@
                             </div>
                         </div>
                     {% endif %}
+                    {% set game_ksps = game.ksps | GameKSP %}
+                    {% if game_ksps %}
+                        <div class="flex flex-row flex-wrap gap-4">
+                            {% for note, tooltip, icon in zip(game_ksps.notes, game_ksps.tooltips, game_ksps.icons) %}
+                                <div class="badge">
+                                    <Tooltip class="w-fit" align="bottom" fallback="false">
+                                        <div class="inline-flex gap-2">
+                                            <span class="{{ icon }} my-auto"></span> <span>{{ note }}</span>
+                                        </div>
+                                        <TooltipContent>{{ tooltip }}</TooltipContent>
+                                    </Tooltip>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             <utilities.TipTapRender :initial_content_json="game.description" />
