@@ -18,10 +18,10 @@ from convergence_games.permissions import user_has_permission
 
 
 async def get_event_dep(
-    event_sqid: Sqid,
     transaction: AsyncSession,
+    event_sqid: Sqid | None = None,
 ) -> Event:
-    event_id: int = sink(event_sqid)
+    event_id: int = sink(event_sqid) if event_sqid is not None else 1
     stmt = select(Event).where(Event.id == event_id)
     event = (await transaction.execute(stmt)).scalar_one_or_none()
     if event is None:
@@ -50,7 +50,6 @@ async def get_event_games_dep(
             selectinload(Game.system),
             selectinload(Game.gamemaster),
             selectinload(Game.game_requirement),
-            selectinload(Game.genres),
             selectinload(Game.event),
         )
         .order_by(query_order_by)
@@ -70,12 +69,36 @@ async def get_event_games_dep(
     return games
 
 
+async def get_event_approved_games_dep(
+    event: Event,
+    transaction: AsyncSession,
+) -> Sequence[Game]:
+    event_id: int = event.id
+    stmt = (
+        select(Game)
+        .options(
+            selectinload(Game.system),
+            selectinload(Game.gamemaster),
+            selectinload(Game.game_requirement),
+            selectinload(Game.genres),
+            selectinload(Game.content_warnings),
+            selectinload(Game.event),
+        )
+        .order_by(Game.name)
+        .where(
+            Game.event_id == event_id,
+            Game.submission_status == SubmissionStatus.APPROVED,
+        )
+    )
+    games = (await transaction.execute(stmt)).scalars().all()
+    return games
+
+
 def user_can_manage_submissions(user: User, event: Event) -> bool:
     return user_has_permission(user, "event", (event, event), "manage_submissions")
 
 
 class EventController(Controller):
-    path = "/event"
     dependencies = {
         "event": Provide(get_event_dep),
     }
@@ -96,9 +119,9 @@ class EventController(Controller):
     #     )
 
     @get(
-        ["/{event_sqid:str}", "/{event_sqid:str}/games"],
+        ["/event/{event_sqid:str}", "/event/{event_sqid:str}/games", "/games"],
         dependencies={
-            "games": Provide(get_event_games_dep),
+            "games": Provide(get_event_approved_games_dep),
         },
     )
     async def get_event_games(
@@ -118,7 +141,7 @@ class EventController(Controller):
         )
 
     @get(
-        path="/{event_sqid:str}/manage-submissions",
+        path="/event/{event_sqid:str}/manage-submissions",
         guards=[user_guard],
         dependencies={
             "permission": permission_check(user_can_manage_submissions),

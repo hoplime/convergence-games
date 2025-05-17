@@ -1,12 +1,63 @@
 <Page>
     {% block content %}
-        <title>Games - Convergence 2025</title>
-        <PageContainer>
-            <utilities.Card>
-                {% for i in range(19, 9, -1) %}
-                    <div class="bg-accent">Test {{ i }}</div>
+        <title>{{ event.name }} Games - Convergence 2025</title>
+        <PageContainer size="max-w-screen-2xl">
+            <h2 class="text-xl">{{ event.name }} Games</h2>
+            <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {% for game in games %}
+                    <div class="card bg-base-200 border-base-300 rounded-box border">
+                        <a href="/game/{{ swim(game) }}">
+                            <div class="card-body">
+                                <h2 class="card-title">{{ game.name }}</h2>
+                                <div class="italic">{{ game.tagline }}</div>
+                                <span>{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</span>
+                                <div class="flex flex-row flex-wrap gap-2">
+                                    <div class="badge">
+                                        <span class="font-semibold">{{ game.tone }}</span>
+                                    </div>
+                                    <div class="badge">
+                                        <span class="font-semibold">{{ game.classification }}</span>
+                                    </div>
+                                    <div class="badge">
+                                        <span class="font-semibold">{{ game.crunch }}</span>
+                                        <span>complexity</span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-row gap-2">
+                                    <div class="font-semibold">Genres</div>
+                                    <div class="flex flex-row flex-wrap gap-2">
+                                        {% for genre in game.genres %}
+                                            <div class="badge">{{ genre.name }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% if game.content_warnings %}
+                                    <div class="flex flex-row gap-2">
+                                        <div class="font-semibold">Content</div>
+                                        <div class="flex flex-row flex-wrap gap-2">
+                                            {% for tag in game.content_warnings %}
+                                                <div class="badge badge-warning">{{ tag.name }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </a>
+                    </div>
                 {% endfor %}
-            </utilities.Card>
+            </div>
+            <div class="my-4 flex flex-col gap-2 text-center">
+                <p>Searching and filtering coming soon - for now, check out all of the awesome submissions above!</p>
+                <p>More to come soon - maybe one of yours?</p>
+                <button
+                    class="btn btn-xl btn-primary mx-auto"
+                    hx-get="/submit-game"
+                    hx-target="#content"
+                    hx-push-url="true"
+                >
+                    Submit a Game to Convergence 2025
+                </button>
+            </div>
             {% if request.user | has_permission("event", (event, event), "manage_submissions") %}
                 <div class="card bg-base-200 border-base-300 rounded-box border">
                     <div class="card-body">
