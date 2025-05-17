@@ -10,29 +10,22 @@
                     <h2 class="card-title">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</h2>
                     <div class="mb-2 grid grid-cols-2 gap-2 md:grid-cols-4">
                         <div>
-                            <div class="font-semibold">{{ game.tone }}</div>
-                            <div class="text-sm">Tone</div>
+                            <div class="font-semibold">Tone</div>
+                            <div>{{ game.tone }}</div>
                         </div>
                         <div>
-                            <div class="font-semibold">
-                                {{ game.player_count_minimum }} - {{ game.player_count_maximum }}
-                            </div>
-                            <div class="text-sm">Players</div>
-                        </div>
-                        <div>
-                            <div class="font-semibold">{{ game.classification }}</div>
-                            <div class="text-sm">
-                                Classification
+                            <div>
+                                <span class="font-semibold">Classification</span>
                                 <Tooltip align="bottom" fallback="false">
                                     <TooltipIcon />
                                     <TooltipContent>The age rating if this were a movie.</TooltipContent>
                                 </Tooltip>
                             </div>
+                            <div>{{ game.classification }}</div>
                         </div>
                         <div>
-                            <ComplexityStars :game_crunch="game.crunch" />
-                            <div class="text-sm">
-                                'Complexity' Rating
+                            <div>
+                                <span class="font-semibold">'Complexity' Rating</span>
                                 <Tooltip align="bottom" fallback="false">
                                     <TooltipIcon />
                                     <TooltipContent>
@@ -40,6 +33,11 @@
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
+                            <ComplexityStars :game_crunch="game.crunch" />
+                        </div>
+                        <div>
+                            <div class="font-semibold">Players</div>
+                            <div>{{ game.player_count_minimum }} - {{ game.player_count_maximum }}</div>
                         </div>
                     </div>
                     <div class="flex flex-row gap-2">
@@ -80,7 +78,7 @@
                     {% endif %}
                     {% set game_ksps = game.ksps | GameKSP %}
                     {% if game_ksps %}
-                        <div class="flex flex-row flex-wrap gap-4">
+                        <div class="flex flex-row flex-wrap gap-2">
                             {% for note, tooltip, icon in zip(game_ksps.notes, game_ksps.tooltips, game_ksps.icons) %}
                                 <div class="badge">
                                     <Tooltip class="w-fit" align="bottom" fallback="false">

@@ -41,6 +41,18 @@
                                         </div>
                                     </div>
                                 {% endif %}
+                                {% set game_ksps = game.ksps | GameKSP %}
+                                {% if game_ksps %}
+                                    <div class="flex flex-row flex-wrap gap-2">
+                                        {% for note, tooltip, icon in zip(game_ksps.notes, game_ksps.tooltips, game_ksps.icons) %}
+                                            <div class="badge">
+                                                <div class="inline-flex gap-2">
+                                                    <span class="{{ icon }} my-auto"></span> <span>{{ note }}</span>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </a>
                     </div>
@@ -49,14 +61,7 @@
             <div class="my-4 flex flex-col gap-2 text-center">
                 <p>Searching and filtering coming soon - for now, check out all of the awesome submissions above!</p>
                 <p>More to come soon - maybe one of yours?</p>
-                <button
-                    class="btn btn-xl btn-primary mx-auto"
-                    hx-get="/submit-game"
-                    hx-target="#content"
-                    hx-push-url="true"
-                >
-                    Submit a Game to Convergence 2025
-                </button>
+                <a class="btn btn-xl btn-primary mx-auto" href="/submit-game"> Submit a Game to Convergence 2025 </a>
             </div>
             {% if request.user | has_permission("event", (event, event), "manage_submissions") %}
                 <div class="card bg-base-200 border-base-300 rounded-box border">

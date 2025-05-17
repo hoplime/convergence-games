@@ -33,14 +33,9 @@
                     </button>
                 {% else %}
                     <p>You haven't submitted anything yet.</p>
-                    <button
-                        class="btn btn-xl btn-primary mx-auto"
-                        hx-get="/submit-game"
-                        hx-target="#content"
-                        hx-push-url="true"
-                    >
+                    <a class="btn btn-xl btn-primary mx-auto" href="/submit-game">
                         Submit a Game to Convergence 2025
-                    </button>
+                    </a>
                 {% endif %}
             </div>
         </PageContainer>
