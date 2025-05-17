@@ -80,19 +80,41 @@ class EventController(Controller):
         "event": Provide(get_event_dep),
     }
 
+    # @get(
+    #     path="/{event_sqid:str}",
+    #     guards=[user_guard],
+    # )
+    # async def get_event(
+    #     self,
+    #     request: Request,
+    #     event: Event,
+    # ) -> Template:
+    #     return HTMXBlockTemplate(
+    #         template_name="pages/event.html.jinja",
+    #         block_name=request.htmx.target,
+    #         context={"event": event},
+    #     )
+
     @get(
-        path="/{event_sqid:str}",
-        guards=[user_guard],
+        ["/{event_sqid:str}", "/{event_sqid:str}/games"],
+        dependencies={
+            "games": Provide(get_event_games_dep),
+        },
     )
-    async def get_event(
+    async def get_event_games(
         self,
         request: Request,
         event: Event,
+        games: Sequence[Game],
     ) -> Template:
         return HTMXBlockTemplate(
-            template_name="pages/event.html.jinja",
+            template_name="pages/event_games.html.jinja",
             block_name=request.htmx.target,
-            context={"event": event},
+            context={
+                "event": event,
+                "games": games,
+                "submission_status": SubmissionStatus,
+            },
         )
 
     @get(

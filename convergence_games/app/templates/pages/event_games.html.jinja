@@ -1,0 +1,25 @@
+<Page>
+    {% block content %}
+        <title>Games - Convergence 2025</title>
+        <PageContainer>
+            <utilities.Card>
+                {% for i in range(19, 9, -1) %}
+                    <div class="bg-accent">Test {{ i }}</div>
+                {% endfor %}
+            </utilities.Card>
+            {% if request.user | has_permission("event", (event, event), "manage_submissions") %}
+                <div class="card bg-base-200 border-base-300 rounded-box border">
+                    <div class="card-body">
+                        <h2 class="card-title text-xl">Admin Section</h2>
+                        <p>You are an admin for this event.</p>
+                        <div class="card-actions justify-start">
+                            <a href="/event/{{ swim(event) }}/manage-submissions" class="btn btn-primary">
+                                Manage Submissions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </PageContainer>
+    {% endblock %}
+</Page>

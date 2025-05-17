@@ -8,7 +8,7 @@
             <div class="bg-base-200 rounded-box border-base-300 card border">
                 <div class="card-body">
                     <h2 class="card-title">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</h2>
-                    <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
+                    <div class="mb-2 grid grid-cols-2 gap-2 md:grid-cols-4">
                         <div>
                             <div class="font-semibold">{{ game.tone }}</div>
                             <div class="text-sm">Tone</div>
@@ -35,8 +35,8 @@
                                 'Complexity' Rating
                                 <Tooltip align="bottom" fallback="false">
                                     <TooltipIcon />
-                                    <TooltipContent
-                                        >This game's complexity is {{ game.crunch }} - {{ game.crunch.number }}/5
+                                    <TooltipContent>
+                                        This game's complexity is {{ game.crunch }} - {{ game.crunch.number }}/5
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
