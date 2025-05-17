@@ -3,18 +3,66 @@
         <title>{{ game.name }} - Convergence 2025</title>
         <PageContainer>
             {# Header content #}
-            <h1 class="text-2xl">{{ game.name }}</h1>
-            <h2 class="text-xl">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</h2>
-            <ul class="flex flex-row flex-wrap gap-4 gap-y-2 text-xs">
-                <li>{{ game.tone }}</li>
-                <li>{{ game.crunch }}</li>
-                {% for genre in game.genres %}
-                    <li>{{ genre.name }}</li>
-                {% endfor %}
-                {% for ksp in (game.ksps | GameKSP).notes %}
-                    <li>{{ ksp }}</li>
-                {% endfor %}
-            </ul>
+            <h1 class="text-3xl">{{ game.name }}</h1>
+            <div class="italic">{{ game.tagline }}</div>
+            <div class="bg-base-200 rounded-box border-base-300 flex flex-col gap-2 border p-4">
+                <h2 class="text-xl">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</h2>
+                <div class="flex flex-row flex-wrap gap-y-2">
+                    <div>
+                        <div class="font-semibold">{{ game.tone }}</div>
+                        <div class="text-sm">Tone</div>
+                    </div>
+                    <div class="divider divider-horizontal"></div>
+                    <div>
+                        <div class="font-semibold">
+                            {{ game.player_count_minimum }} - {{ game.player_count_maximum }}
+                        </div>
+                        <div class="text-sm">Players</div>
+                    </div>
+                    <div class="divider divider-horizontal"></div>
+                    <div>
+                        <div class="font-semibold">{{ game.classification }}</div>
+                        <div class="text-sm">
+                            Classification
+                            <Tooltip align="bottom" fallback="false">
+                                <TooltipIcon />
+                                <TooltipContent>The age rating if this were a movie.</TooltipContent>
+                            </Tooltip>
+                        </div>
+                    </div>
+                    <div class="divider divider-horizontal"></div>
+                    <div>
+                        <ComplexityStars :game_crunch="game.crunch" />
+                        <div class="text-sm">
+                            'Complexity' Rating
+                            <Tooltip align="bottom" fallback="false">
+                                <TooltipIcon />
+                                <TooltipContent
+                                    >This game's complexity is {{ game.crunch }} - {{ game.crunch.number }}/5
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-row gap-2">
+                    <div class="font-semibold">Genres</div>
+                    <div class="flex flex-row flex-wrap gap-2">
+                        {% for genre in game.genres %}
+                            <div class="badge badge-outline">{{ genre.name }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if game.content_warnings %}
+                    <div class="flex flex-row gap-2">
+                        <div class="font-semibold">Content Warnings</div>
+                        <div class="flex flex-row flex-wrap gap-2">
+                            {% for tag in game.content_warnings %}
+                                <div class="badge badge-outline">{{ tag.name }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
             <utilities.TipTapRender :initial_content_json="game.description" />
             {% if game.gamemaster_id == request.user.id %}
                 <div class="card bg-base-200 border-base-300 rounded-box border">

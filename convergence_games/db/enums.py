@@ -9,6 +9,21 @@ class GameCrunch(enum.StrEnum):
     HEAVY = "Heavy"
     EXTRA_HEAVY = "Extra heavy"
 
+    @property
+    def number(self) -> int:
+        if self == GameCrunch.NEARLY_NOTHING:
+            return 1
+        if self == GameCrunch.LIGHT:
+            return 2
+        if self == GameCrunch.MEDIUM:
+            return 3
+        if self == GameCrunch.HEAVY:
+            return 4
+        if self == GameCrunch.EXTRA_HEAVY:
+            return 5
+
+        return 0
+
 
 class GameTone(enum.StrEnum):
     GOOFY = "Goofy"
