@@ -8,19 +8,17 @@
             <div class="bg-base-200 rounded-box border-base-300 card border">
                 <div class="card-body">
                     <h2 class="card-title">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</h2>
-                    <div class="flex flex-row flex-wrap gap-y-2">
+                    <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
                         <div>
                             <div class="font-semibold">{{ game.tone }}</div>
                             <div class="text-sm">Tone</div>
                         </div>
-                        <div class="divider divider-horizontal"></div>
                         <div>
                             <div class="font-semibold">
                                 {{ game.player_count_minimum }} - {{ game.player_count_maximum }}
                             </div>
                             <div class="text-sm">Players</div>
                         </div>
-                        <div class="divider divider-horizontal"></div>
                         <div>
                             <div class="font-semibold">{{ game.classification }}</div>
                             <div class="text-sm">
@@ -31,7 +29,6 @@
                                 </Tooltip>
                             </div>
                         </div>
-                        <div class="divider divider-horizontal"></div>
                         <div>
                             <ComplexityStars :game_crunch="game.crunch" />
                             <div class="text-sm">
