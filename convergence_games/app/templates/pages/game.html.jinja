@@ -46,8 +46,26 @@
                         <div class="font-semibold">Genres</div>
                         <div class="flex flex-row flex-wrap gap-2">
                             {% for genre in game.genres %}
-                                <div class="badge badge-outline">{{ genre.name }}</div>
+                                <div class="badge">{{ genre.name }}</div>
                             {% endfor %}
+                        </div>
+                    </div>
+                    <div>
+                        {% set game_core_activity = game.core_activity | GameCoreActivity %}
+                        <div class="flex flex-row gap-2">
+                            <div class="font-semibold">Core Activities</div>
+                            <div class="flex flex-row flex-wrap gap-2">
+                                {% for note, tooltip in zip(game_core_activity.notes, game_core_activity.tooltips) %}
+                                    <div class="badge">
+                                        <Tooltip class="w-fit" align="bottom" fallback="false">
+                                            <div class="inline-flex gap-2">
+                                                <span>{{ note }}</span>
+                                            </div>
+                                            <TooltipContent>{{ tooltip }}</TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
                     {% if game.content_warnings %}
@@ -55,7 +73,7 @@
                             <div class="font-semibold">Content Warnings</div>
                             <div class="flex flex-row flex-wrap gap-2">
                                 {% for tag in game.content_warnings %}
-                                    <div class="badge badge-outline">{{ tag.name }}</div>
+                                    <div class="badge">{{ tag.name }}</div>
                                 {% endfor %}
                             </div>
                         </div>
