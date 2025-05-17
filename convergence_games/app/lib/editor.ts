@@ -12,22 +12,11 @@ import StarterKit from "@tiptap/starter-kit";
 // import FileHandler from "@tiptap-pro/extension-file-handler";
 // import ImageResize from "tiptap-extension-resize-image";
 
-const get_cached_file_contents = (file_path: string) => {
-    return fetch(file_path).then((response) => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.text();
-    });
-};
-
 // TipTap Editor setup
-const createEditorButton = (parent_element: Element, icon_path: string, fn: () => void) => {
+const createEditorButton = (parent_element: Element, icon_class: string, fn: () => void) => {
     let button = document.createElement("button");
-    button.className = "rounded-md px-2 py-1 [&>svg]:w-6 [&>svg]:h-6 text-red cursor-pointer hover:bg-base-300";
-    get_cached_file_contents(icon_path).then((resolved_label) => {
-        button.innerHTML = resolved_label;
-    });
+    button.className = "rounded-md px-2 py-1 cursor-pointer hover:bg-base-300";
+    button.innerHTML = `<span class="${icon_class} w-6 h-6">image</span>`;
     button.onclick = fn;
     button.type = "button";
     parent_element.appendChild(button);
@@ -210,37 +199,35 @@ const createEditor = (
     });
 
     // Create the control buttons
-    createEditorButton(controls_element, "/static/editor/format-header-1.svg", () =>
+    createEditorButton(controls_element, "icon-[mdi--format-header-1]", () =>
         editor.chain().focus().setHeading({ level: 1 }).run(),
     );
-    createEditorButton(controls_element, "/static/editor/format-header-2.svg", () =>
+    createEditorButton(controls_element, "icon-[mdi--format-header-2]", () =>
         editor.chain().focus().setHeading({ level: 2 }).run(),
     );
-    createEditorButton(controls_element, "/static/editor/format-paragraph.svg", () =>
+    createEditorButton(controls_element, "icon-[mdi--format-paragraph]", () =>
         editor.chain().focus().setParagraph().run(),
     );
-    createEditorButton(controls_element, "/static/editor/format-bold.svg", () =>
-        editor.chain().focus().toggleBold().run(),
-    );
-    createEditorButton(controls_element, "/static/editor/format-italic.svg", () =>
+    createEditorButton(controls_element, "icon-[mdi--format-bold]", () => editor.chain().focus().toggleBold().run());
+    createEditorButton(controls_element, "icon-[mdi--format-italic]", () =>
         editor.chain().focus().toggleItalic().run(),
     );
-    createEditorButton(controls_element, "/static/editor/format-underline.svg", () =>
+    createEditorButton(controls_element, "icon-[mdi--format-underline]", () =>
         editor.chain().focus().toggleUnderline().run(),
     );
-    createEditorButton(controls_element, "/static/editor/format-strikethrough-variant.svg", () =>
+    createEditorButton(controls_element, "icon-[mdi--format-strikethrough-variant]", () =>
         editor.chain().focus().toggleStrike().run(),
     );
-    createEditorButton(controls_element, "/static/editor/format-list-bulleted.svg", () =>
+    createEditorButton(controls_element, "icon-[mdi--format-list-bulleted]", () =>
         editor.chain().focus().toggleBulletList().run(),
     );
-    createEditorButton(controls_element, "/static/editor/format-list-numbered.svg", () =>
+    createEditorButton(controls_element, "icon-[mdi--format-list-numbered]", () =>
         editor.chain().focus().toggleOrderedList().run(),
     );
-    createEditorButton(controls_element, "/static/editor/format-quote-open.svg", () =>
+    createEditorButton(controls_element, "icon-[mdi--format-quote-open]", () =>
         editor.chain().focus().toggleBlockquote().run(),
     );
-    createEditorButton(controls_element, "/static/editor/format-link.svg", () => {
+    createEditorButton(controls_element, "icon-[mdi--link-variant]", () => {
         const previousUrl = editor.getAttributes("link").href;
         const url = window.prompt("Enter a URL to link:", previousUrl);
 
