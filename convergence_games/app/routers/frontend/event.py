@@ -150,6 +150,8 @@ async def get_form_data(
                 .join(GameGenreLink, GameGenreLink.genre_id == Genre.id)
                 .join(Game, Game.id == GameGenreLink.game_id)
                 .where(Game.event_id == event.id)
+                .where(Game.submission_status == SubmissionStatus.APPROVED)
+                .order_by(Genre.name)
                 .distinct()
             )
         )
@@ -159,7 +161,12 @@ async def get_form_data(
     all_present_systems = (
         (
             await transaction.execute(
-                select(System).join(Game, Game.system_id == System.id).where(Game.event_id == event.id).distinct()
+                select(System)
+                .join(Game, Game.system_id == System.id)
+                .where(Game.event_id == event.id)
+                .where(Game.submission_status == SubmissionStatus.APPROVED)
+                .order_by(System.name)
+                .distinct()
             )
         )
         .scalars()
@@ -172,6 +179,8 @@ async def get_form_data(
                 .join(GameContentWarningLink, GameContentWarningLink.content_warning_id == ContentWarning.id)
                 .join(Game, Game.id == GameContentWarningLink.game_id)
                 .where(Game.event_id == event.id)
+                .where(Game.submission_status == SubmissionStatus.APPROVED)
+                .order_by(ContentWarning.name)
                 .distinct()
             )
         )
