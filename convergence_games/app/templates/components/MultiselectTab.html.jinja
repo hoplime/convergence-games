@@ -1,0 +1,14 @@
+{#def
+    form_data: MultiselectFormData
+#}
+<input type="radio" name="filter_tab" class="tab" aria-label="{{ form_data.label }}" />
+<div class="tab-content bg-base-200 border-base-300 rounded-box border p-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        {% for option in form_data.options %}
+            <label class="flex items-center gap-2">
+                <input type="checkbox" class="checkbox" name="{{ form_data.name }}" value="{{ option.value }}" />
+                <span>{{ option.label }}</span>
+            </label>
+        {% endfor %}
+    </div>
+</div>
