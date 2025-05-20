@@ -8,7 +8,7 @@
     id="filter_tab_{{ form_data.name }}"
     aria-label="{{ form_data.label }}"
     _="
-    on change from the next <div/>
+    on load or change from the next <div/>
     if <input[name={{ form_data.name }}]:checked/> exists
         set my @aria-label to '{{ form_data.label }}*'
     else
@@ -28,7 +28,15 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
             {% for option in form_data.options %}
                 <label class="flex items-center gap-2">
-                    <input type="checkbox" class="checkbox" name="{{ form_data.name }}" value="{{ option.value }}" />
+                    <input
+                        type="checkbox"
+                        class="checkbox"
+                        name="{{ form_data.name }}"
+                        value="{{ option.value }}"
+                        {% if option.selected %}
+                            _="on load set my.checked to true then trigger change"
+                        {% endif %}
+                    />
                     <span>{{ option.label }}</span>
                 </label>
             {% endfor %}

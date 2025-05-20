@@ -206,9 +206,7 @@ async def get_form_data(
             label="Genre",
             name="genre",
             options=[
-                MultiselectFormDataOption(
-                    label=genre.name, value=swim(genre), selected=swim(genre) in query_params.genre
-                )
+                MultiselectFormDataOption(label=genre.name, value=swim(genre), selected=genre.id in query_params.genre)
                 for genre in all_present_genres
             ],
             description="Find games tagged with any of these genres:",
@@ -218,7 +216,7 @@ async def get_form_data(
             name="system",
             options=[
                 MultiselectFormDataOption(
-                    label=system.name, value=swim(system), selected=swim(system) in query_params.system
+                    label=system.name, value=swim(system), selected=system.id in query_params.system
                 )
                 for system in all_present_systems
             ],
@@ -245,13 +243,13 @@ async def get_form_data(
             description="Find games with any of these bonus features:",
         ),
         "content": MultiselectFormData(
-            label="Content Warning",
+            label="Exclude Content",
             name="content",
             options=[
                 MultiselectFormDataOption(
                     label=content_warning.name,
                     value=swim(content_warning),
-                    selected=swim(content_warning) in query_params.content,
+                    selected=content_warning.id in query_params.content,
                 )
                 for content_warning in all_present_content_warnings
             ],
