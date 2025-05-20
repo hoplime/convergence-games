@@ -75,6 +75,15 @@
                             </a>
                         </div>
                     {% endfor %}
+                    {% if not games %}
+                        <div class="card bg-base-200 border-base-300 rounded-box col-span-full border">
+                            <div class="card-body">
+                                <h2 class="card-title text-xl">No Games Found</h2>
+                                <p>There are no games that match your search criteria.</p>
+                                <p>Try changing your filters or check back later!</p>
+                            </div>
+                        </div>
+                    {% endif %}
                 {% endblock %}
             </div>
             <div class="my-4 flex flex-col gap-2 text-center">

@@ -88,15 +88,15 @@ SqidInt = Annotated[int, BeforeValidator(sink)]
 class EventGamesQuery(BaseModel):
     genre: list[SqidInt] = []
     system: list[SqidInt] = []
-    tone: list[SqidInt] = []
-    bonus: list[SqidInt] = []
+    tone: list[str] = []
+    bonus: list[int] = []
     content: list[SqidInt] = []
 
 
 async def get_event_approved_games_dep(
     event: Event,
     transaction: AsyncSession,
-    query_params: EventGamesQuery | None = None,
+    query_params: EventGamesQuery,
 ) -> Sequence[Game]:
     print(query_params)
     event_id: int = event.id
@@ -116,17 +116,28 @@ async def get_event_approved_games_dep(
             Game.submission_status == SubmissionStatus.APPROVED,
         )
     )
+    if query_params.genre:
+        stmt = stmt.where(Game.genres.any(Genre.id.in_(query_params.genre)))
+    if query_params.system:
+        stmt = stmt.where(Game.system_id.in_(query_params.system))
+    if query_params.tone:
+        stmt = stmt.where(Game.tone.in_(query_params.tone))
+    if query_params.bonus:
+        stmt = stmt.where(Game.ksps.bitwise_and(sum(query_params.bonus)) > 0)
+    if query_params.content:
+        stmt = stmt.where(~Game.content_warnings.any(ContentWarning.id.in_(query_params.content)))
     games = (await transaction.execute(stmt)).scalars().all()
     return games
 
 
 async def build_event_games_query(
-    genre: list[Sqid] | Sqid | None = None,
-    system: list[Sqid] | Sqid | None = None,
-    tone: list[int] | int | None = None,
-    bonus: list[int] | int | None = None,
-    content: list[Sqid] | Sqid | None = None,
+    genre: list[Sqid] | None = None,
+    system: list[Sqid] | None = None,
+    tone: list[str] | None = None,
+    bonus: list[int] | None = None,
+    content: list[Sqid] | None = None,
 ) -> EventGamesQuery:
+    print(genre)
     return EventGamesQuery.model_validate(
         {
             "genre": [] if genre is None else (genre if isinstance(genre, list) else [genre]),
@@ -221,7 +232,7 @@ async def get_form_data(
         ),
         "bonus": MultiselectFormData(
             label="Bonus Features",
-            name="bonus_features",
+            name="bonus",
             options=[
                 MultiselectFormDataOption(
                     label=bonus.notes[0], value=str(bonus.value), selected=bonus.value in query_params.bonus
@@ -231,7 +242,7 @@ async def get_form_data(
         ),
         "content": MultiselectFormData(
             label="Content Warning",
-            name="content_warning",
+            name="content",
             options=[
                 MultiselectFormDataOption(
                     label=content_warning.name,
