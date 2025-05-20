@@ -1,7 +1,25 @@
 {#def
     form_data: MultiselectFormData
 #}
-<input type="radio" name="filter_tab" class="tab" aria-label="{{ form_data.label }}" />
+<input
+    type="radio"
+    name="filter_tab"
+    class="tab"
+    id="filter_tab_{{ form_data.name }}"
+    aria-label="{{ form_data.label }}"
+    _="
+    on change from the next <div/>
+    if <input[name={{ form_data.name }}]:checked/> exists
+        set my @aria-label to '{{ form_data.label }}*'
+    else
+        set my @aria-label to '{{ form_data.label }}'
+    end
+
+    on reset from the parentElement of me
+        set my @aria-label to '{{ form_data.label }}'
+    end
+    "
+/>
 <div class="tab-content bg-base-200 border-base-300 rounded-box border p-4">
     <div class="flex flex-col gap-4">
         {% if form_data.description %}
@@ -14,6 +32,29 @@
                     <span>{{ option.label }}</span>
                 </label>
             {% endfor %}
+        </div>
+        <div class="flex flex-row gap-2">
+            <button
+                type="button"
+                class="btn btn-sm btn-secondary btn-outline"
+                _="on click set <input[name={{ form_data.name }}]/>'s checked to true then trigger change on <input[name={{ form_data.name }}]/>"
+            >
+                Select All
+            </button>
+            <button
+                type="button"
+                class="btn btn-sm btn-secondary btn-outline"
+                _="on click set <input[name={{ form_data.name }}]/>'s checked to false then trigger change on <input[name={{ form_data.name }}]/>"
+            >
+                Deselect All
+            </button>
+            <button
+                type="button"
+                class="btn btn-sm btn-secondary btn-outline"
+                _="on click set #filter_tab_{{ form_data.name }}'s checked to false"
+            >
+                Hide
+            </button>
         </div>
     </div>
 </div>
