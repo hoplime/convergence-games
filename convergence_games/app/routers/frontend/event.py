@@ -211,6 +211,7 @@ async def get_form_data(
                 )
                 for genre in all_present_genres
             ],
+            description="Find games tagged with any of these genres:",
         ),
         "system": MultiselectFormData(
             label="System",
@@ -221,6 +222,7 @@ async def get_form_data(
                 )
                 for system in all_present_systems
             ],
+            description="Find games using any of these systems:",
         ),
         "tone": MultiselectFormData(
             label="Tone",
@@ -229,6 +231,7 @@ async def get_form_data(
                 MultiselectFormDataOption(label=tone.value, value=tone.value, selected=tone.value in query_params.tone)
                 for tone in all_tones
             ],
+            description="Find games with any of these tones:",
         ),
         "bonus": MultiselectFormData(
             label="Bonus Features",
@@ -239,6 +242,7 @@ async def get_form_data(
                 )
                 for bonus in all_bonus
             ],
+            description="Find games with any of these bonus features:",
         ),
         "content": MultiselectFormData(
             label="Content Warning",
@@ -251,6 +255,7 @@ async def get_form_data(
                 )
                 for content_warning in all_present_content_warnings
             ],
+            description='Find games <span class="text-warning font-semibold">EXCLUDING</span> any of these content warnings:',
         ),
     }
 
@@ -271,6 +276,7 @@ class MultiselectFormData:
     label: str
     name: str
     options: list[MultiselectFormDataOption]
+    description: str | None = None
 
 
 class EventController(Controller):
