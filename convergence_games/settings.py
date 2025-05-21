@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     # Image storage
     IMAGE_STORAGE_MODE: Literal["filesystem", "blob"] = "filesystem"
     IMAGE_STORAGE_PATH: Path | None = None
-    IMAGE_PRE_CACHE_SIZES: Json[list[int]] = []
+    IMAGE_PRE_CACHE_SIZES: Json[list[int]] | list[int] = []
 
     @model_validator(mode="after")
     def image_storage_path_set_if_mode_filesystem(self) -> Self:
