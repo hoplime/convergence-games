@@ -1,7 +1,8 @@
 from functools import cached_property
+from pathlib import Path
 from typing import Literal, Self
 
-from pydantic import AwareDatetime, model_validator
+from pydantic import AwareDatetime, Json, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
 
@@ -58,6 +59,18 @@ class Settings(BaseSettings):
             port=self.DATABASE_PORT,
             database=self.DATABASE_NAME,
         )
+
+    # Image storage
+    IMAGE_STORAGE_MODE: Literal["filesystem", "blob"] = "filesystem"
+    IMAGE_STORAGE_PATH: Path | None = None
+    IMAGE_PRE_CACHE_SIZES: Json[list[int]] = []
+
+    @model_validator(mode="after")
+    def image_storage_path_set_if_mode_filesystem(self) -> Self:
+        """Set the image storage path if the mode is filesystem."""
+        if self.IMAGE_STORAGE_MODE == "filesystem" and not self.IMAGE_STORAGE_PATH:
+            raise ValueError("IMAGE_STORAGE_PATH must be set if IMAGE_STORAGE_MODE is 'filesystem'.")
+        return self
 
     # Sqids
     SQIDS_ALPHABET: str | None = None

@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from convergence_games.app.exceptions import UserNotLoggedInError
 from convergence_games.app.request_type import Request
 from convergence_games.db.models import User
+from convergence_games.services import FilesystemImageLoader, ImageLoader
+from convergence_games.settings import SETTINGS
 
 
 async def provide_transaction(db_session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
@@ -30,7 +32,23 @@ async def provide_user(
     return request.user
 
 
+async def provide_image_loader() -> ImageLoader:
+    """Provides an instance of the image loader."""
+    if SETTINGS.IMAGE_STORAGE_MODE == "blob":
+        # TODO: Blob storage
+        raise NotImplementedError("Blob storage is not yet implemented.")
+    else:
+        assert SETTINGS.IMAGE_STORAGE_PATH is not None, (
+            "IMAGE_STORAGE_PATH must be set if IMAGE_STORAGE_MODE is 'filesystem'."
+        )
+        return FilesystemImageLoader(
+            base_path=SETTINGS.IMAGE_STORAGE_PATH,
+            pre_cache_sizes=SETTINGS.IMAGE_PRE_CACHE_SIZES,
+        )
+
+
 dependencies = {
     "transaction": Provide(provide_transaction),
     "user": Provide(provide_user),
+    "image_loader": Provide(provide_image_loader),
 }
