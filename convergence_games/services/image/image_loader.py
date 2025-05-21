@@ -4,10 +4,10 @@ from uuid import UUID
 
 class ImageLoader(ABC):
     @abstractmethod
-    def save_image(self, image_data: bytes, lookup: UUID) -> None:
+    async def save_image(self, image_data: bytes, lookup: UUID) -> None:
         """Saves the image to the storage."""
         pass
 
     @abstractmethod
-    def get_image_path(self, lookup: UUID, size: int | None = None) -> str:
+    async def get_image_path(self, lookup: UUID, size: int | None = None) -> str:
         pass
