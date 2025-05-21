@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 from base64 import urlsafe_b64decode, urlsafe_b64encode
+from uuid import UUID
 
 from advanced_alchemy.base import BigIntAuditBase
 from advanced_alchemy.types import DateTimeUTC
@@ -59,6 +60,30 @@ class GameContentWarningLink(Base):
 
     game: Mapped[Game] = relationship(back_populates="content_warning_links", lazy="noload")
     content_warning: Mapped[ContentWarning] = relationship(back_populates="game_links", lazy="noload")
+
+
+class ImageGameLink(Base):
+    image_id: Mapped[int] = mapped_column(ForeignKey("image.id"), primary_key=True)
+    game_id: Mapped[int] = mapped_column(ForeignKey("game.id"), primary_key=True)
+    sort_order: Mapped[int] = mapped_column(default=0)
+
+    image: Mapped[Image] = relationship(back_populates="game_links", lazy="noload")
+    game: Mapped[Game] = relationship(back_populates="image_links", lazy="noload")
+
+
+class Image(Base):
+    lookup_key: Mapped[UUID] = mapped_column(index=True, unique=True)
+
+    # Relationships
+    games: Mapped[list[Game]] = relationship(
+        back_populates="images",
+        secondary=ImageGameLink.__table__,
+        viewonly=True,
+        lazy="noload",
+    )
+
+    # Assocation Proxy Relationships
+    game_links: Mapped[list[ImageGameLink]] = relationship(back_populates="image", lazy="noload")
 
 
 # Game Information Models
@@ -195,10 +220,17 @@ class Game(Base):
         viewonly=True,
         lazy="noload",
     )
+    images: Mapped[list[Image]] = relationship(
+        back_populates="games",
+        secondary=ImageGameLink.__table__,
+        viewonly=True,
+        lazy="noload",
+    )
 
     # Assocation Proxy Relationships
     genre_links: Mapped[list[GameGenreLink]] = relationship(back_populates="game", lazy="noload")
     content_warning_links: Mapped[list[GameContentWarningLink]] = relationship(back_populates="game", lazy="noload")
+    image_links: Mapped[list[ImageGameLink]] = relationship(back_populates="game", lazy="noload")
 
     __table_args__ = (
         # This redundant constraint is necessary for the foreign key constraint in Session
