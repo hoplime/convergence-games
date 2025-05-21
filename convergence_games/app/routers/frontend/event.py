@@ -333,5 +333,44 @@ class EventController(Controller):
                 "sort": sort,
                 "desc": desc,
                 "submission_status": SubmissionStatus,
+                "total_games": len(games),
+                "total_systems": len({game.system.id for game in games}),
+                "total_gamemasters": len({game.gamemaster.id for game in games}),
+                "total_sessions": sum([game.game_requirement.times_to_run for game in games]),
+                "total_approved_sessions": sum(
+                    [
+                        game.game_requirement.times_to_run
+                        for game in games
+                        if game.submission_status == SubmissionStatus.APPROVED
+                    ]
+                ),
+                "total_draft_sessions": sum(
+                    [
+                        game.game_requirement.times_to_run
+                        for game in games
+                        if game.submission_status == SubmissionStatus.DRAFT
+                    ]
+                ),
+                "total_submitted_sessions": sum(
+                    [
+                        game.game_requirement.times_to_run
+                        for game in games
+                        if game.submission_status == SubmissionStatus.SUBMITTED
+                    ]
+                ),
+                "total_rejected_sessions": sum(
+                    [
+                        game.game_requirement.times_to_run
+                        for game in games
+                        if game.submission_status == SubmissionStatus.REJECTED
+                    ]
+                ),
+                "total_cancelled_sessions": sum(
+                    [
+                        game.game_requirement.times_to_run
+                        for game in games
+                        if game.submission_status == SubmissionStatus.CANCELLED
+                    ]
+                ),
             },
         )

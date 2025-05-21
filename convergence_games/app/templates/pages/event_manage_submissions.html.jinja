@@ -30,6 +30,21 @@
                     {% for game in games %}
                         <GameSubmissionRow :game="game" :submission_status="submission_status" :user="request.user" />
                     {% endfor %}
+                    <tr>
+                        <td class="font-semibold">{{ total_games }} games</td>
+                        <td class="font-semibold">{{ total_systems }} systems</td>
+                        <td class="font-semibold">{{ total_gamemasters }} GMs</td>
+                        <td></td>
+                        <td>
+                            <p class="font-semibold">{{ total_sessions }} total</p>
+                            <p class="text-neutral">{{ total_draft_sessions }} draft</p>
+                            <p class="text-warning">{{ total_submitted_sessions }} submitted</p>
+                            <p class="text-success">{{ total_approved_sessions }} approved</p>
+                            <p class="text-error">{{ total_rejected_sessions }} rejected</p>
+                            <p class="text-error">{{ total_cancelled_sessions }} cancelled</p>
+                        </td>
+                        <td class="font-semibold">{{ total_sessions - total_cancelled_sessions }}</td>
+                    </tr>
                 </tbody>
             </table>
         </PageContainer>
