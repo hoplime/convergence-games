@@ -26,6 +26,8 @@ dependencies = [
     "humanize>=4.12.2",
     "pillow>=11.2.1",
     "aiofiles>=24.1.0",
+    "azure-identity>=1.23.0",
+    "azure-storage-blob[aio]>=12.25.1",
 ]
 
 [project.urls]

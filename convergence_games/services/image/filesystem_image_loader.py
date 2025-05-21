@@ -1,18 +1,13 @@
-import asyncio
 from io import BytesIO
 from pathlib import Path
-from typing import Sequence, override
-from uuid import UUID, uuid4
+from typing import override
+from uuid import UUID
 
 from aiofiles import open as aio_open
 from PIL import Image as PILImage
 
+from .common import subfolder_names_for_guid
 from .image_loader import ImageLoader
-
-
-def create_subfolder_for_guid(lookup: UUID) -> Sequence[str]:
-    lookup_str = str(lookup)
-    return lookup_str[:2], lookup_str[2:4], lookup_str[4:6]
 
 
 class FilesystemImageLoader(ImageLoader):
@@ -21,25 +16,17 @@ class FilesystemImageLoader(ImageLoader):
         self._pre_cache_sizes = pre_cache_sizes or []
 
     async def _write_image(self, image: PILImage.Image, path: Path, thumbnail_size: int | None = None) -> None:
-        output = BytesIO()
-
-        if thumbnail_size is not None:
-            image = image.copy()
-            image.thumbnail((thumbnail_size, thumbnail_size))
-
-        image.save(output, format="JPEG")
+        b = self._dump_to_bytes(image, thumbnail_size=thumbnail_size)
 
         async with aio_open(path, "wb") as f:
-            await f.write(output.getvalue())
+            await f.write(b)
 
     @override
     async def save_image(self, image_data: bytes, lookup: UUID) -> None:
-        """Saves the image to the storage."""
-        path = self._base_path.joinpath(*create_subfolder_for_guid(lookup))
+        path = self._base_path.joinpath(*subfolder_names_for_guid(lookup))
         path.mkdir(parents=True, exist_ok=True)
 
         # Save the image to the original path
-        # This is technically synchronous, but it is writing to memory
         image = PILImage.open(BytesIO(image_data))
         await self._write_image(image, path / f"{lookup}_full.jpg")
 
@@ -50,7 +37,7 @@ class FilesystemImageLoader(ImageLoader):
 
     @override
     async def get_image_path(self, lookup: UUID, size: int | None = None) -> str:
-        path = self._base_path.joinpath(*create_subfolder_for_guid(lookup))
+        path = self._base_path.joinpath(*subfolder_names_for_guid(lookup))
 
         if size is None:
             return str(path / f"{lookup}_full.jpg")
@@ -66,6 +53,8 @@ class FilesystemImageLoader(ImageLoader):
 
 if __name__ == "__main__":
     import argparse
+    import asyncio
+    from uuid import uuid4
 
     parser = argparse.ArgumentParser(description="Filesystem Image Loader")
     parser.add_argument("base_path", type=Path, help="Base path for image storage")
