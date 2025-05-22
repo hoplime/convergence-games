@@ -766,6 +766,7 @@
                         hx-post="/game"
                     {% endif %}
                     hx-target="#content"
+                    hx-encoding="multipart/form-data"
                 >
                     {{ "Save Edits" if editing else "Submit" }}
                 </button>

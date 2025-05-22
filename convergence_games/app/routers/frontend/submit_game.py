@@ -1,11 +1,20 @@
 from dataclasses import dataclass
-from typing import Annotated, Callable, Literal, Self, cast
+from typing import Annotated, Callable, Literal, cast
 
 from litestar import Controller, Response, get, post, put
+from litestar.datastructures import UploadFile
 from litestar.di import Provide
-from litestar.exceptions import NotFoundException, PermissionDeniedException, ValidationException
+from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body, RequestEncodingType
-from pydantic import BaseModel, BeforeValidator, Field, TypeAdapter, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationInfo,
+    field_validator,
+)
 from pydantic_core import PydanticCustomError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -63,7 +72,8 @@ def make_sqid_or_new_validator[T](new_value_type: type[T]) -> Callable[[str], Sq
     return sqid_or_new_validator
 
 
-MaybeListValidator = BeforeValidator(lambda value: [value] if isinstance(value, str) else value)
+NoneToEmpty = BeforeValidator(lambda value: "" if value is None else value)
+MaybeListValidator = BeforeValidator(lambda value: value if isinstance(value, list) else [value])
 IntFlagValidator = BeforeValidator(lambda value: sum(map(int, value)) if isinstance(value, list) else int(value))
 SqidOrNewStr = Annotated[SqidOrNew[str], BeforeValidator(make_sqid_or_new_validator(str))]
 SqidInt = Annotated[int, BeforeValidator(sink)]
@@ -78,11 +88,16 @@ def user_can_edit_game(user: User, game: Game) -> bool:
 
 
 class SubmitGameForm(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # Required for UploadFile
+
     # Stuff that's used for Game
     title: Annotated[str, Field(min_length=1, max_length=100, title="Title")]
     system: Annotated[SqidOrNewStr, Field(title="System")]
-    tagline: Annotated[str, Field(min_length=10, max_length=140, title="Tagline")] = ""
-    description: Annotated[str, Field(title="Description")] = ""
+    tagline: Annotated[str, Field(min_length=10, max_length=140, title="Tagline"), NoneToEmpty] = ""
+    description: Annotated[str, Field(title="Description"), NoneToEmpty] = ""
+
+    image: Annotated[list[UploadFile], MaybeListValidator] = []  # TODO: Or typeof existing image in the database
+
     genre: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Genres")]
     tone: Annotated[GameTone, Field(title="Tone")]
     content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Content Warnings")] = []
@@ -100,23 +115,23 @@ class SubmitGameForm(BaseModel):
     # Stuff that's used for GameRequirement
     times_to_run: Annotated[int, Field(title="Times to Run")] = 1
     available_time_slot: Annotated[list[SqidInt], MaybeListValidator, Field(title="Available Time Slots")]
-    scheduling_notes: Annotated[str, Field(title="Scheduling Notes")] = ""
+    scheduling_notes: Annotated[str, Field(title="Scheduling Notes"), NoneToEmpty] = ""
     table_size_requirement: Annotated[
         GameTableSizeRequirement, IntFlagValidator, Field(title="Table Size Requirements")
     ] = GameTableSizeRequirement.NONE
-    table_size_notes: Annotated[str, Field(title="Table Size Notes")] = ""
+    table_size_notes: Annotated[str, Field(title="Table Size Notes"), NoneToEmpty] = ""
     equipment_requirement: Annotated[
         GameEquipmentRequirement, IntFlagValidator, Field(title="Equipment Requirements")
     ] = GameEquipmentRequirement.NONE
-    equipment_notes: Annotated[str, Field(title="Equiment Notes")] = ""
+    equipment_notes: Annotated[str, Field(title="Equiment Notes"), NoneToEmpty] = ""
     activity_requirement: Annotated[GameActivityRequirement, IntFlagValidator, Field(title="Activity Requirements")] = (
         GameActivityRequirement.NONE
     )
-    activity_notes: Annotated[str, Field(title="Activity Notes")] = ""
+    activity_notes: Annotated[str, Field(title="Activity Notes"), NoneToEmpty] = ""
     room_requirement: Annotated[GameRoomRequirement, IntFlagValidator, Field(title="Room Requirements")] = (
         GameRoomRequirement.NONE
     )
-    room_notes: Annotated[str, Field(title="Room Notes")] = ""
+    room_notes: Annotated[str, Field(title="Room Notes"), NoneToEmpty] = ""
 
     agree_to_code_of_conduct: Annotated[
         Literal["on"] | None, Field(title="Agree to Code of Conduct", validate_default=True)
@@ -453,7 +468,7 @@ class SubmitGameController(Controller):
         transaction: AsyncSession,
         game: Game,
         permission: bool,
-        data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> HTMXBlockTemplate:
         assert request.user is not None
 
