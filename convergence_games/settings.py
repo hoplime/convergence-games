@@ -63,13 +63,29 @@ class Settings(BaseSettings):
     # Image storage
     IMAGE_STORAGE_MODE: Literal["filesystem", "blob"] = "filesystem"
     IMAGE_STORAGE_PATH: Path | None = None
+    IMAGE_STORAGE_ACCOUNT_NAME: str | None = None
+    IMAGE_STORAGE_CONTAINER_NAME: str | None = None
     IMAGE_PRE_CACHE_SIZES: Json[list[int]] | list[int] = []
 
     @model_validator(mode="after")
     def image_storage_path_set_if_mode_filesystem(self) -> Self:
         """Set the image storage path if the mode is filesystem."""
-        if self.IMAGE_STORAGE_MODE == "filesystem" and not self.IMAGE_STORAGE_PATH:
+        if self.IMAGE_STORAGE_MODE == "filesystem" and self.IMAGE_STORAGE_PATH is None:
             raise ValueError("IMAGE_STORAGE_PATH must be set if IMAGE_STORAGE_MODE is 'filesystem'.")
+        return self
+
+    @model_validator(mode="after")
+    def image_storage_account_name_set_if_mode_blob(self) -> Self:
+        """Set the image storage account name if the mode is blob."""
+        if self.IMAGE_STORAGE_MODE == "blob" and self.IMAGE_STORAGE_ACCOUNT_NAME is None:
+            raise ValueError("IMAGE_STORAGE_ACCOUNT_NAME must be set if IMAGE_STORAGE_MODE is 'blob'.")
+        return self
+
+    @model_validator(mode="after")
+    def image_storage_container_name_set_if_mode_blob(self) -> Self:
+        """Set the image storage container name if the mode is blob."""
+        if self.IMAGE_STORAGE_MODE == "blob" and not self.IMAGE_STORAGE_CONTAINER_NAME:
+            raise ValueError("IMAGE_STORAGE_CONTAINER_NAME must be set if IMAGE_STORAGE_MODE is 'blob'.")
         return self
 
     # Sqids

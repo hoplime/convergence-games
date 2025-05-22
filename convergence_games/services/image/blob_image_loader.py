@@ -97,9 +97,3 @@ if __name__ == "__main__":
 
     asyncio.run(loader.save_image(image_data, lookup))
     print(f"Image saved with lookup: {lookup}")
-    full_image_path = asyncio.run(loader.get_image_path(lookup))
-    print(f"Full image path: {full_image_path}")
-    thumbnail_image_path = asyncio.run(loader.get_image_path(lookup, size=150))
-    print(f"Thumbnail image path: {thumbnail_image_path}")
-    thumbnail_image_path = asyncio.run(loader.get_image_path(lookup, size=400))
-    print(f"Thumbnail image path: {thumbnail_image_path}")
