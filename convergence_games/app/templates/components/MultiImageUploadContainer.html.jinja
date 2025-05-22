@@ -1,0 +1,36 @@
+{#def
+#}
+{% set id = random_id() %}
+<div {{ attrs.render(class="flex flex-col gap-2") }}>
+    <ul id="multi-image-{{ id }}" class="flex flex-col gap-2">
+        {{ content }}
+    </ul>
+    <button
+        type="button"
+        class="btn btn-sm"
+        hx-get="/components/image-upload"
+        hx-target="#multi-image-{{ id }}"
+        hx-swap="beforeend"
+    >
+        Add Image <span class="icon-[mdi--plus-circle-outline] size-6"></span>
+    </button>
+</div>
+<script>
+    (() => {
+        const Sortable = convergence.Sortable;
+        const multiElementContainer = document.getElementById("multi-image-{{ id }}");
+        const sortable = Sortable.create(multiElementContainer, {
+            handle: ".sortable-drag-handle",
+            filter: ".sortable-remove",
+            onFilter: (evt) => {
+                if (Sortable.utils.is(evt.target, ".sortable-remove")) {
+                    const item = evt.item;
+                    const parent = item.parentNode;
+                    if (parent) {
+                        parent.removeChild(item);
+                    }
+                }
+            },
+        });
+    })();
+</script>

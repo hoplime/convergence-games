@@ -254,6 +254,20 @@
                     />
                     <ErrorHolder name="description" />
 
+                    {# Images #}
+                    <Tooltip class="w-fit">
+                        <label class="fieldset-label font-semibold">Images <TooltipIcon /></label>
+                        <TooltipContent class="text-left">
+                            <p>Images to show off your game.</p>
+                            <p>e.g. cover art, character art, maps, etc.</p>
+                            <p>These will be shown on the game page.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <MultiImageUploadContainer>
+                        <ImageUpload />
+                    </MultiImageUploadContainer>
+                    <ErrorHolder name="image" />
+
                     {# Genre #}
                     <Tooltip class="w-fit">
                         <label class="fieldset-label font-semibold">Genres <TooltipIcon /></label>

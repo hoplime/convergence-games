@@ -12,6 +12,7 @@ from .email_auth import EmailAuthController
 from .event import EventController
 from .game import GameController
 from .home import HomeController
+from .misc_components import MiscComponentsController
 from .my_submissions import MySubmissionsController
 from .oauth import OAuthController
 from .profile import ProfileController
@@ -44,6 +45,7 @@ router = Router(
         EventController,
         GameController,
         HomeController,
+        MiscComponentsController,
         MySubmissionsController,
         OAuthController,
         ProfileController,
