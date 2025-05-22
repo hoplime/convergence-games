@@ -1,25 +1,49 @@
 {#def
+    max_images: int = 5,
 #}
 {% set id = random_id() %}
 <div {{ attrs.render(class="flex flex-col gap-2") }}>
     <ul id="multi-image-{{ id }}" class="flex flex-col gap-2">
         {{ content }}
     </ul>
-    <button
-        type="button"
-        class="btn btn-sm"
-        hx-get="/components/image-upload"
-        hx-target="#multi-image-{{ id }}"
-        hx-swap="beforeend"
-    >
-        Add Image <span class="icon-[mdi--plus-circle-outline] size-6"></span>
-    </button>
+    <div class="flex flex-row items-center gap-2 pl-10">
+        <button
+            type="button"
+            id="add-image-{{ id }}"
+            class="btn btn-md"
+            hx-get="/components/image-upload"
+            hx-target="#multi-image-{{ id }}"
+            hx-swap="beforeend"
+        >
+            <span class="icon-[mdi--plus-circle-outline]"></span> Add Image
+        </button>
+        <span id="image-count-{{ id }}">X/{{ max_images }}</span>
+    </div>
 </div>
+{# Closure #}
 <script>
     (() => {
         const Sortable = convergence.Sortable;
-        const multiElementContainer = document.getElementById("multi-image-{{ id }}");
-        const sortable = Sortable.create(multiElementContainer, {
+        const multiImageListElement = document.getElementById("multi-image-{{ id }}");
+        const addImageButtonElement = document.getElementById("add-image-{{ id }}");
+        const imageCountElement = document.getElementById("image-count-{{ id }}");
+        const maxImages = +"{{ max_images }}";
+
+        const numberImagesChanged = (evt) => {
+            const imageCount = multiImageListElement.childElementCount;
+            if (imageCount >= maxImages) {
+                addImageButtonElement.disabled = true;
+                imageCountElement.classList.add("text-warning", "font-semibold");
+            } else {
+                addImageButtonElement.disabled = false;
+                imageCountElement.classList.remove("text-warning", "font-semibold");
+            }
+            imageCountElement.innerText = `${imageCount}/${maxImages}`;
+        };
+
+        numberImagesChanged();
+
+        const sortable = Sortable.create(multiImageListElement, {
             handle: ".sortable-drag-handle",
             filter: ".sortable-remove",
             onFilter: (evt) => {
@@ -29,8 +53,11 @@
                     if (parent) {
                         parent.removeChild(item);
                     }
+                    numberImagesChanged();
                 }
             },
         });
+
+        multiImageListElement.addEventListener("htmx:load", numberImagesChanged);
     })();
 </script>
