@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Annotated, Callable, Literal, cast
+from uuid import uuid4
 
 from litestar import Controller, Response, get, post, put
 from litestar.datastructures import UploadFile
@@ -43,14 +44,17 @@ from convergence_games.db.models import (
     Game,
     GameContentWarningLink,
     GameGenreLink,
+    GameImageLink,
     GameRequirement,
     GameRequirementTimeSlotLink,
     Genre,
+    Image,
     System,
     User,
 )
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.permissions import user_has_permission
+from convergence_games.services import ImageLoader
 
 
 # region Submit Game Form
@@ -96,7 +100,7 @@ class SubmitGameForm(BaseModel):
     tagline: Annotated[str, Field(min_length=10, max_length=140, title="Tagline"), NoneToEmpty] = ""
     description: Annotated[str, Field(title="Description"), NoneToEmpty] = ""
 
-    image: Annotated[list[UploadFile], MaybeListValidator] = []  # TODO: Or typeof existing image in the database
+    image: Annotated[list[UploadFile | str], MaybeListValidator] = []  # TODO: Or typeof existing image in the database
 
     genre: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Genres")]
     tone: Annotated[GameTone, Field(title="Tone")]
@@ -278,6 +282,31 @@ async def create_new_links(
     return genre_links, content_warning_links, time_slot_links
 
 
+async def create_image(
+    upload_file: UploadFile,
+    image_loader: ImageLoader,
+) -> Image:
+    lookup = uuid4()
+    await image_loader.save_image(await upload_file.read(), lookup)
+    return Image(lookup_key=lookup)
+
+
+async def create_image_links(
+    data: SubmitGameForm,
+    game: Game,
+    image_loader: ImageLoader,
+) -> list[GameImageLink]:
+    return [
+        GameImageLink(
+            game=game,
+            image=await create_image(image, image_loader),
+            sort_order=i,
+        )
+        for i, image in enumerate(data.image)
+        if isinstance(image, UploadFile)
+    ]
+
+
 def game_with(*options: ExecutableOption):
     async def wrapper(
         transaction: AsyncSession,
@@ -377,6 +406,7 @@ class SubmitGameController(Controller):
         self,
         request: Request,
         transaction: AsyncSession,
+        image_loader: ImageLoader,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
         # TODO 2026: Variable event ID to submit a game to
@@ -384,8 +414,6 @@ class SubmitGameController(Controller):
         event = (
             await transaction.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
         ).scalar_one_or_none()
-
-        print(data)
 
         if not event:
             raise NotFoundException(detail="Event not found")
@@ -431,10 +459,17 @@ class SubmitGameController(Controller):
             transaction=transaction,
             game=new_game,
         )
-        new_links = genre_links + content_warning_links + time_slot_links
+        image_links = await create_image_links(
+            data=data,
+            game=new_game,
+            image_loader=image_loader,
+        )
 
         transaction.add(new_game)
-        transaction.add_all(new_links)
+        transaction.add_all(genre_links)
+        transaction.add_all(content_warning_links)
+        transaction.add_all(time_slot_links)
+        transaction.add_all(image_links)
 
         await transaction.flush()
         await transaction.refresh(new_game)

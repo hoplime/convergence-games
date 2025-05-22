@@ -62,7 +62,7 @@ class GameContentWarningLink(Base):
     content_warning: Mapped[ContentWarning] = relationship(back_populates="game_links", lazy="noload")
 
 
-class ImageGameLink(Base):
+class GameImageLink(Base):
     image_id: Mapped[int] = mapped_column(ForeignKey("image.id"), primary_key=True)
     game_id: Mapped[int] = mapped_column(ForeignKey("game.id"), primary_key=True)
     sort_order: Mapped[int] = mapped_column(default=0)
@@ -77,13 +77,13 @@ class Image(Base):
     # Relationships
     games: Mapped[list[Game]] = relationship(
         back_populates="images",
-        secondary=ImageGameLink.__table__,
+        secondary=GameImageLink.__table__,
         viewonly=True,
         lazy="noload",
     )
 
     # Assocation Proxy Relationships
-    game_links: Mapped[list[ImageGameLink]] = relationship(back_populates="image", lazy="noload")
+    game_links: Mapped[list[GameImageLink]] = relationship(back_populates="image", lazy="noload")
 
 
 # Game Information Models
@@ -222,15 +222,16 @@ class Game(Base):
     )
     images: Mapped[list[Image]] = relationship(
         back_populates="games",
-        secondary=ImageGameLink.__table__,
+        secondary=GameImageLink.__table__,
         viewonly=True,
         lazy="noload",
+        order_by=GameImageLink.sort_order,
     )
 
     # Assocation Proxy Relationships
     genre_links: Mapped[list[GameGenreLink]] = relationship(back_populates="game", lazy="noload")
     content_warning_links: Mapped[list[GameContentWarningLink]] = relationship(back_populates="game", lazy="noload")
-    image_links: Mapped[list[ImageGameLink]] = relationship(back_populates="game", lazy="noload")
+    image_links: Mapped[list[GameImageLink]] = relationship(back_populates="game", lazy="noload")
 
     __table_args__ = (
         # This redundant constraint is necessary for the foreign key constraint in Session

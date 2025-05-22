@@ -8,6 +8,7 @@ from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.models import Game
 from convergence_games.db.ocean import Sqid, sink
+from convergence_games.services import ImageLoader
 
 
 class GameController(Controller):
@@ -19,6 +20,7 @@ class GameController(Controller):
         request: Request,
         game_sqid: Sqid,
         transaction: AsyncSession,
+        image_loader: ImageLoader,
     ) -> Template:
         game_id: int = sink(game_sqid)
         game = (
@@ -31,6 +33,7 @@ class GameController(Controller):
                     selectinload(Game.game_requirement),
                     selectinload(Game.genres),
                     selectinload(Game.content_warnings),
+                    selectinload(Game.images),
                 )
                 .where(Game.id == game_id)
             )
@@ -39,8 +42,10 @@ class GameController(Controller):
         if game is None:
             raise HTTPException(status_code=404, detail="Game not found")
 
+        game_image_urls = [await image_loader.get_image_path(image.lookup_key) for image in game.images]
+
         return HTMXBlockTemplate(
             template_name="pages/game.html.jinja",
             block_name=request.htmx.target,
-            context={"game": game},
+            context={"game": game, "game_image_urls": game_image_urls},
         )
