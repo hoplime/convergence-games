@@ -100,7 +100,9 @@ class SubmitGameForm(BaseModel):
     tagline: Annotated[str, Field(min_length=10, max_length=140, title="Tagline"), NoneToEmpty] = ""
     description: Annotated[str, Field(title="Description"), NoneToEmpty] = ""
 
-    image: Annotated[list[UploadFile | str], MaybeListValidator] = []  # TODO: Or typeof existing image in the database
+    image: Annotated[
+        list[UploadFile | SqidInt], MaybeListValidator
+    ] = []  # TODO: Or typeof existing image in the database
 
     genre: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Genres")]
     tone: Annotated[GameTone, Field(title="Tone")]
@@ -511,6 +513,7 @@ class SubmitGameController(Controller):
         transaction: AsyncSession,
         game: Game,
         permission: bool,
+        image_loader: ImageLoader,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> HTMXBlockTemplate:
         assert request.user is not None
@@ -617,6 +620,32 @@ class SubmitGameController(Controller):
                 game_requirement=game.game_requirement, time_slot_id=time_slot_id
             )
             transaction.add(time_slot_link)
+
+        # Images
+        desired_image_ids_or_images = [
+            image if isinstance(image, int) else await create_image(image, image_loader) for image in data.image
+        ]
+        # Remove any image links that are not in the desired list
+        for image_link in game.image_links:
+            if image_link.image_id not in desired_image_ids_or_images:
+                await transaction.delete(image_link)
+            else:
+                # This image link is staying, so just update the sort order
+                image_link.sort_order = desired_image_ids_or_images.index(image_link.image_id)
+        # Add any new image links that are not already in the existing list
+        for i, image_id_or_image in enumerate(desired_image_ids_or_images):
+            if isinstance(image_id_or_image, int):
+                # Technically since you won't share the same image ID across multiple games, this is a bit redundant
+                # But maybe in future we will be sharing images across games/systems/etc
+                if image_id_or_image in [link.image_id for link in game.image_links]:
+                    # This image link already exists, so skip it
+                    continue
+                image_link = GameImageLink(game_id=game.id, image_id=image_id_or_image, sort_order=i)
+            else:
+                image_link = GameImageLink(game=game, image=image_id_or_image, sort_order=i)
+
+            # Actually add it
+            transaction.add(image_link)
 
         transaction.add(game)
 
