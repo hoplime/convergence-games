@@ -1,32 +1,43 @@
 {#def
+    existing_image: Image | None = None
 #}
 <li {{ attrs.render(class="flex flex-row items-center not-last:border-b p-2") }}>
     <span class="icon-[lsicon--drag-filled] sortable-drag-handle size-8 cursor-move"></span>
     <div class="flex flex-col items-center">
-        <input type="file" class="file-input" name="image" accept="image/png, image/jpeg, image/gif" />
-        <div class="hidden pt-2 has-[.block]:block">
+        {% if existing_image is not none %}
+            <input type="hidden" name="image" value="{{ swim(existing_image) }}" />
+            <p>Uploaded Image</p>
             <img
-                src=""
+                src="{{ existing_image.baked_url }}"
                 alt="Your image preview"
-                class="hidden max-h-48 max-w-72 object-contain"
-                _="
-                on change from previous <input/> js(me, it)
-                    var file = it.files[0];
-                    if (file) {
-                        me.src = URL.createObjectURL(file);
-                        me.classList.remove('hidden');
-                        me.classList.add('block');
-                        me.onload = function() {
-                            URL.revokeObjectURL(me.src);
-                        }
-                    } else {
-                        me.classList.remove('block');
-                        me.classList.add('hidden');
-                    }
-                end
-                "
+                class="max-h-48 max-w-72 object-contain"
             />
-        </div>
+        {% else %}
+            <input type="file" class="file-input" name="image" accept="image/png, image/jpeg, image/gif" />
+            <div class="hidden pt-2 has-[.block]:block">
+                <img
+                    src=""
+                    alt="Your image preview"
+                    class="hidden max-h-48 max-w-72 object-contain"
+                    _="
+                    on change from previous <input/> js(me, it)
+                        var file = it.files[0];
+                        if (file) {
+                            me.src = URL.createObjectURL(file);
+                            me.classList.remove('hidden');
+                            me.classList.add('block');
+                            me.onload = function() {
+                                URL.revokeObjectURL(me.src);
+                            }
+                        } else {
+                            me.classList.remove('block');
+                            me.classList.add('hidden');
+                        }
+                    end
+                    "
+                />
+            </div>
+        {% endif %}
     </div>
     <span class="icon-[material-symbols-light--delete-outline] sortable-remove size-8 cursor-pointer"></span>
 </li>

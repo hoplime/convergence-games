@@ -264,7 +264,13 @@
                         </TooltipContent>
                     </Tooltip>
                     <MultiImageUploadContainer>
-                        <ImageUpload />
+                        {% if game %}
+                            {% for image in game.images %}
+                                <ImageUpload :existing_image="image" />
+                            {% endfor %}
+                        {% else %}
+                            <ImageUpload />
+                        {% endif %}
                     </MultiImageUploadContainer>
                     <ErrorHolder name="image" />
 

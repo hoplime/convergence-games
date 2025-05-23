@@ -48,7 +48,10 @@
             filter: ".sortable-remove",
             onFilter: (evt) => {
                 if (Sortable.utils.is(evt.target, ".sortable-remove")) {
-                    const hasUploadedImage = evt.item.querySelector("input[type='file']").files.length > 0;
+                    const eventInputElement = evt.item.querySelector("input");
+                    const hasUploadedImage =
+                        eventInputElement.type == "hidden" ||
+                        (eventInputElement.type == "file" && eventInputElement.files.length > 0);
                     console.log(hasUploadedImage);
                     if (hasUploadedImage && !confirm("Are you sure you want to remove this image?")) {
                         return;

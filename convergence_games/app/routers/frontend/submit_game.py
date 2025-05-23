@@ -368,6 +368,7 @@ class SubmitGameController(Controller):
                 selectinload(Game.game_requirement).selectinload(GameRequirement.available_time_slots),
                 selectinload(Game.genres),
                 selectinload(Game.content_warnings),
+                selectinload(Game.images),
             ),
             "permission": permission_check(user_can_edit_game),
         },
@@ -377,8 +378,13 @@ class SubmitGameController(Controller):
         request: Request,
         game: Game,
         permission: bool,
+        image_loader: ImageLoader,
     ) -> Template:
         assert request.user is not None
+
+        for image in game.images:
+            # TODO: This is a gross hack to get around the fact that we can't use the image loader in the template because of async
+            image.baked_url = await image_loader.get_image_path(image.lookup_key)  # type: ignore
 
         return HTMXBlockTemplate(
             template_name="pages/submit_game.html.jinja",
@@ -386,6 +392,7 @@ class SubmitGameController(Controller):
             context={
                 "event": game.event,
                 "game": game,
+                # TODO: Move these to globals
                 "tones": GameTone,
                 "crunches": GameCrunch,
                 "core_activities": GameCoreActivity,
@@ -493,6 +500,7 @@ class SubmitGameController(Controller):
                 selectinload(Game.game_requirement).selectinload(GameRequirement.time_slot_links),
                 selectinload(Game.genre_links),
                 selectinload(Game.content_warning_links),
+                selectinload(Game.image_links),
             ),
             "permission": permission_check(user_can_edit_game),
         },
