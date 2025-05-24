@@ -29,6 +29,7 @@ dependencies = [
     "azure-identity>=1.23.0",
     "azure-storage-blob[aio]>=12.25.1",
     "advanced-alchemy>=1.4.3",
+    "alembic>=1.15,<1.16",  # Currently required by advanced-alchemy, 1.16 has breaking changes in the TOML support
 ]
 
 [project.urls]
