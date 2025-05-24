@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     IMAGE_STORAGE_PATH: Path | None = None
     IMAGE_STORAGE_ACCOUNT_NAME: str | None = None
     IMAGE_STORAGE_CONTAINER_NAME: str | None = None
-    IMAGE_PRE_CACHE_SIZES: Json[list[int]] | list[int] = []
+    IMAGE_STORAGE_PRE_CACHE_SIZES: Json[list[int]] | list[int] = []
 
     @model_validator(mode="after")
     def image_storage_path_set_if_mode_filesystem(self) -> Self:

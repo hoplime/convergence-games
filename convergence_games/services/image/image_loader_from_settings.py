@@ -16,7 +16,7 @@ def _image_loader_from_settings() -> ImageLoader:
         image_loader = BlobImageLoader(
             storage_account_name=SETTINGS.IMAGE_STORAGE_ACCOUNT_NAME,
             container_name=SETTINGS.IMAGE_STORAGE_CONTAINER_NAME,
-            pre_cache_sizes=SETTINGS.IMAGE_PRE_CACHE_SIZES,
+            pre_cache_sizes=SETTINGS.IMAGE_STORAGE_PRE_CACHE_SIZES,
         )
     else:
         assert SETTINGS.IMAGE_STORAGE_PATH is not None, (
@@ -24,7 +24,7 @@ def _image_loader_from_settings() -> ImageLoader:
         )
         image_loader = FilesystemImageLoader(
             base_path=SETTINGS.IMAGE_STORAGE_PATH,
-            pre_cache_sizes=SETTINGS.IMAGE_PRE_CACHE_SIZES,
+            pre_cache_sizes=SETTINGS.IMAGE_STORAGE_PRE_CACHE_SIZES,
         )
 
     return image_loader
