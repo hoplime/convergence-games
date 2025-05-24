@@ -1,4 +1,4 @@
-from litestar.plugins.sqlalchemy import EngineConfig, SQLAlchemyAsyncConfig, SQLAlchemyPlugin
+from litestar.plugins.sqlalchemy import AlembicAsyncConfig, EngineConfig, SQLAlchemyAsyncConfig, SQLAlchemyPlugin
 
 from convergence_games.db.models import Base
 from convergence_games.settings import SETTINGS
@@ -10,6 +10,9 @@ config = SQLAlchemyAsyncConfig(
     before_send_handler="autocommit",
     engine_config=EngineConfig(
         echo=SETTINGS.DATABASE_ECHO,
+    ),
+    alembic_config=AlembicAsyncConfig(
+        script_location="convergence_games/migrations",
     ),
 )
 sqlalchemy_plugin = SQLAlchemyPlugin(config)
