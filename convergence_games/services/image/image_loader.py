@@ -13,7 +13,7 @@ class ImageLoader(ABC):
             image = image.copy()
             image.thumbnail((thumbnail_size, thumbnail_size))
 
-        image.save(output, format="JPEG")
+        image.convert("RGB").save(output, format="JPEG")
         return output.getvalue()
 
     @abstractmethod

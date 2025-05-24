@@ -94,11 +94,20 @@
                 </div>
             </div>
             <utilities.TipTapRender :initial_content_json="game.description" />
-            {% for image_url in game_image_urls %}
-                <a href="{{ image_url.full }}" target="_blank">
-                    <img src="{{ image_url.thumbnail }}" class="rounded-box border-base-300 border" />
-                </a>
-            {% endfor %}
+            {% if game_image_urls %}
+                <h1 class="text-3xl">Images</h1>
+                <div class="flex flex-row flex-wrap gap-2">
+                    {% for image_url in game_image_urls %}
+                        <a
+                            href="{{ image_url.full }}"
+                            target="_blank"
+                            class="align-items-center size-50 rounded-box flex cursor-zoom-in overflow-clip border"
+                        >
+                            <img src="{{ image_url.thumbnail }}" class="object-cover" />
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
             {% if game.gamemaster_id == request.user.id %}
                 <div class="card bg-base-200 border-base-300 rounded-box border">
                     <div class="card-body">
