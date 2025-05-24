@@ -44,6 +44,7 @@
         numberImagesChanged();
 
         const sortable = Sortable.create(multiImageListElement, {
+            handle: ".sortable-drag-handle",
             filter: ".sortable-remove, .sortable-move-up, .sortable-move-down",
             animation: 150,
             onFilter: (evt) => {

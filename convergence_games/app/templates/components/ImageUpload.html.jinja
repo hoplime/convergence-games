@@ -1,20 +1,20 @@
 {#def
     existing_image: Image | None = None
 #}
-<li {{ attrs.render(class="flex flex-row items-center not-last:border-b p-2") }}>
+<li {{ attrs.render(class="flex flex-row items-center not-last:border-b p-2 w-fit") }}>
     <div class="flex flex-col gap-2">
         <span class="icon-[mdi--arrow-up] sortable-move-up size-8 cursor-pointer"></span>
         <span class="icon-[lsicon--drag-filled] sortable-drag-handle size-8 cursor-move"></span>
         <span class="icon-[mdi--arrow-down] sortable-move-down size-8 cursor-pointer"></span>
     </div>
-    <div class="flex flex-col items-center">
+    <div class="flex flex-col">
         {% if existing_image is not none %}
             <input type="hidden" name="image" value="{{ swim(existing_image) }}" />
             <p>Uploaded Image</p>
             <img
                 src="{{ existing_image.baked_url }}"
                 alt="Your image preview"
-                class="max-h-48 max-w-72 object-contain"
+                class="sortable-drag-handle max-h-48 max-w-64 object-contain"
             />
         {% else %}
             <input type="file" class="file-input" name="image" accept="image/png, image/jpeg, image/gif" />
@@ -22,7 +22,7 @@
                 <img
                     src=""
                     alt="Your image preview"
-                    class="hidden max-h-48 max-w-72 object-contain"
+                    class="sortable-drag-handle hidden max-h-48 max-w-64 object-contain"
                     _="
                     on change from previous <input/> js(me, it)
                         var file = it.files[0];
