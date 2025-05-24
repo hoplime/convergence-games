@@ -214,8 +214,6 @@ class FormError:
 
 
 def handle_submit_game_form_validation_error(request: Request, exc: ValidationException) -> Response:
-    print(request)
-    print(exc)
     error_messages: dict[str, list[str]] = {}
     if exc.extra is not None:
         for extra in exc.extra:

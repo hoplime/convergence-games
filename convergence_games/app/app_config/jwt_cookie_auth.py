@@ -16,8 +16,6 @@ from convergence_games.settings import SETTINGS
 
 
 async def retrieve_user_handler(token: CustomToken, connection: ASGIConnection) -> User | None:
-    print(f"Token: {token}")
-
     user_id = int(token.sub)
 
     engine = cast(AsyncEngine, connection.app.state.db_engine)
@@ -26,8 +24,6 @@ async def retrieve_user_handler(token: CustomToken, connection: ASGIConnection) 
             stmt = select(User).options(selectinload(User.event_roles)).where(User.id == user_id)
             user = (await async_session.execute(stmt)).scalar_one_or_none()
             async_session.expunge_all()
-
-    print(f"User: {user}")
 
     user_id_ctx.set(user_id)
     return user

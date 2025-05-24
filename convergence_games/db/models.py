@@ -337,7 +337,6 @@ class GameRequirementTimeSlotLink(Base):
 def game_requirement_time_slot_link_before_insert(
     mapper: Mapper, connection: Connection, target: GameRequirementTimeSlotLink
 ):
-    print("game_requirement_time_slot_link_before_insert")
     if target.event_id is None:
         if target.time_slot is not None:
             target.event_id = target.time_slot.event_id
