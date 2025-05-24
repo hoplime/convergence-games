@@ -96,13 +96,9 @@
             <utilities.TipTapRender :initial_content_json="game.description" />
             {% if game_image_urls %}
                 <h1 class="text-3xl">Images</h1>
-                <div class="flex flex-row flex-wrap gap-2">
+                <div class="flex flex-row flex-wrap gap-4">
                     {% for image_url in game_image_urls %}
-                        <a
-                            href="{{ image_url.full }}"
-                            target="_blank"
-                            class="align-items-center size-50 rounded-box flex cursor-zoom-in overflow-clip border"
-                        >
+                        <a href="{{ image_url.full }}" class="h-50 rounded-box flex cursor-zoom-in overflow-clip">
                             <img src="{{ image_url.thumbnail }}" class="object-cover" />
                         </a>
                     {% endfor %}
