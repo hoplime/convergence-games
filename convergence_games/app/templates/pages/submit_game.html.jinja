@@ -260,7 +260,7 @@
                         <TooltipContent class="text-left">
                             <p>Images to show off your game.</p>
                             <p>e.g. cover art, character art, maps, etc.</p>
-                            <p>These will be shown on the game page.</p>
+                            <p>These will be shown on the game page in the order listed below.</p>
                         </TooltipContent>
                     </Tooltip>
                     <MultiImageUploadContainer>
@@ -773,8 +773,16 @@
                     {% endif %}
                     hx-target="#content"
                     hx-encoding="multipart/form-data"
+                    hx-indicator="#submit-label"
+                    hx-disabled-elt="this"
                 >
-                    {{ "Save Edits" if editing else "Submit" }}
+                    <div id="submit-label" class="group">
+                        <span class="group-[.htmx-request]:hidden">{{ "Save Edits" if editing else "Submit" }}</span>
+                        <span class="hidden group-[.htmx-request]:inline">
+                            <span>Submitting</span>
+                            <span class="icon-[gg--spinner] animate-spin"></span>
+                        </span>
+                    </div>
                 </button>
             </form>
         </PageContainer>
