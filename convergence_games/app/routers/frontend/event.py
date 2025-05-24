@@ -98,7 +98,6 @@ async def get_event_approved_games_dep(
     transaction: AsyncSession,
     query_params: EventGamesQuery,
 ) -> Sequence[Game]:
-    print(query_params)
     event_id: int = event.id
     stmt = (
         select(Game)
@@ -137,7 +136,6 @@ async def build_event_games_query(
     bonus: list[int] | None = None,
     content: list[Sqid] | None = None,
 ) -> EventGamesQuery:
-    print(genre)
     return EventGamesQuery.model_validate(
         {
             "genre": [] if genre is None else (genre if isinstance(genre, list) else [genre]),
