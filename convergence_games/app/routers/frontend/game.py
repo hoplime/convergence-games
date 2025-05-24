@@ -42,10 +42,19 @@ class GameController(Controller):
         if game is None:
             raise HTTPException(status_code=404, detail="Game not found")
 
-        game_image_urls = [await image_loader.get_image_path(image.lookup_key) for image in game.images]
+        game_image_urls = [
+            {
+                "full": await image_loader.get_image_path(image.lookup_key),
+                "thumbnail": await image_loader.get_image_path(image.lookup_key, size=300),
+            }
+            for image in game.images
+        ]
 
         return HTMXBlockTemplate(
             template_name="pages/game.html.jinja",
             block_name=request.htmx.target,
-            context={"game": game, "game_image_urls": game_image_urls},
+            context={
+                "game": game,
+                "game_image_urls": game_image_urls,
+            },
         )

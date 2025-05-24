@@ -4,7 +4,8 @@ from uuid import UUID
 
 import PIL.Image as PILImage
 from azure.identity.aio import DefaultAzureCredential
-from azure.storage.blob.aio import BlobServiceClient
+from azure.storage.blob import ContentSettings
+from azure.storage.blob.aio import BlobClient, BlobServiceClient
 
 from .common import subfolder_names_for_guid
 from .image_loader import ImageLoader
@@ -28,6 +29,14 @@ class BlobImageLoader(ImageLoader):
             credential=DefaultAzureCredential(),
         )
 
+    async def _upload(self, blob_client: BlobClient, image_data: bytes) -> None:
+        await blob_client.upload_blob(
+            image_data,
+            blob_type="BlockBlob",
+            content_settings=ContentSettings(content_type="image/jpeg", cache_control="max-age=31536000"),
+            overwrite=True,
+        )
+
     @override
     async def save_image(self, image_data: bytes, lookup: UUID) -> None:
         image = PILImage.open(BytesIO(image_data))
@@ -37,12 +46,12 @@ class BlobImageLoader(ImageLoader):
 
             # Save the image to the original path
             blob_client = service_client.get_blob_client(self._container_name, f"{blob_path}/{lookup}_full.jpg")
-            await blob_client.upload_blob(self._dump_to_bytes(image), overwrite=True)
+            await self._upload(blob_client, self._dump_to_bytes(image))
 
             # Save the image in different sizes
             for size in self._pre_cache_sizes:
                 blob_client = service_client.get_blob_client(self._container_name, f"{blob_path}/{lookup}_{size}.jpg")
-                await blob_client.upload_blob(self._dump_to_bytes(image, thumbnail_size=size), overwrite=True)
+                await self._upload(blob_client, self._dump_to_bytes(image, thumbnail_size=size))
 
     @override
     async def get_image_path(self, lookup: UUID, size: int | None = None) -> str:
@@ -63,7 +72,7 @@ class BlobImageLoader(ImageLoader):
                     full_size_image = await full_size_blob_client.download_blob()
                     image_data = await full_size_image.readall()
                     image = PILImage.open(BytesIO(image_data))
-                    await blob_client.upload_blob(self._dump_to_bytes(image, thumbnail_size=size), overwrite=True)
+                    await self._upload(blob_client, self._dump_to_bytes(image, thumbnail_size=size))
 
                 # If the full size image doesn't exist, we can't create the thumbnail, we just silently return the expected path
 

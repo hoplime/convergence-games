@@ -94,8 +94,10 @@
                 </div>
             </div>
             <utilities.TipTapRender :initial_content_json="game.description" />
-            {% for game_image_url in game_image_urls %}
-                <img src="{{ game_image_url }}" class="rounded-box border-base-300 border" />
+            {% for image_url in game_image_urls %}
+                <a href="{{ image_url.full }}" target="_blank">
+                    <img src="{{ image_url.thumbnail }}" class="rounded-box border-base-300 border" />
+                </a>
             {% endfor %}
             {% if game.gamemaster_id == request.user.id %}
                 <div class="card bg-base-200 border-base-300 rounded-box border">
