@@ -1,5 +1,5 @@
 {#def
-    max_images: int = 5,
+    max_images: int = 10,
 #}
 {% set id = random_id() %}
 <div {{ attrs.render(class="flex flex-col gap-2") }}>
@@ -44,9 +44,11 @@
         numberImagesChanged();
 
         const sortable = Sortable.create(multiImageListElement, {
-            handle: ".sortable-drag-handle",
-            filter: ".sortable-remove",
+            filter: ".sortable-remove, .sortable-move-up, .sortable-move-down",
+            animation: 150,
             onFilter: (evt) => {
+                const item = evt.item;
+                const parent = item.parentNode;
                 if (Sortable.utils.is(evt.target, ".sortable-remove")) {
                     const eventInputElement = evt.item.querySelector("input");
                     const hasUploadedImage =
@@ -56,12 +58,22 @@
                     if (hasUploadedImage && !confirm("Are you sure you want to remove this image?")) {
                         return;
                     }
-                    const item = evt.item;
-                    const parent = item.parentNode;
                     if (parent) {
                         parent.removeChild(item);
                     }
                     numberImagesChanged();
+                } else if (Sortable.utils.is(evt.target, ".sortable-move-up")) {
+                    const item = evt.item;
+                    const prevItem = item.previousElementSibling;
+                    if (prevItem) {
+                        parent.insertBefore(item, prevItem);
+                    }
+                } else if (Sortable.utils.is(evt.target, ".sortable-move-down")) {
+                    const item = evt.item;
+                    const nextItem = item.nextElementSibling;
+                    if (nextItem) {
+                        parent.insertBefore(nextItem, item);
+                    }
                 }
             },
         });
