@@ -18,8 +18,6 @@ from .app_config import (
 from .events import all_listeners
 from .routers import routers
 
-init_sentry()
-
 app = Litestar(
     route_handlers=routers,
     dependencies=dependencies,
@@ -30,5 +28,6 @@ app = Litestar(
     compression_config=compression_config,
     exception_handlers=exception_handlers,  # type: ignore[assignment]
     listeners=all_listeners,
+    on_startup=[init_sentry],
     debug=SETTINGS.DEBUG,
 )
