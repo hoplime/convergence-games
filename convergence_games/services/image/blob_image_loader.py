@@ -62,19 +62,20 @@ class BlobImageLoader(ImageLoader):
 
         thumbnail_blob_path = f"{blob_path}/{lookup}_{size}.jpg"
 
-        async with self._blob_service_client as service_client:
-            blob_client = service_client.get_blob_client(self._container_name, thumbnail_blob_path)
-            if not await blob_client.exists():
-                full_size_blob_client = service_client.get_blob_client(
-                    self._container_name, f"{blob_path}/{lookup}_full.jpg"
-                )
-                if await full_size_blob_client.exists():
-                    full_size_image = await full_size_blob_client.download_blob()
-                    image_data = await full_size_image.readall()
-                    image = PILImage.open(BytesIO(image_data))
-                    await self._upload(blob_client, self._dump_to_bytes(image, thumbnail_size=size))
+        # TODO: It's too slow to check if the blob exists, so we don't check or create it here.
+        # async with self._blob_service_client as service_client:
+        #     blob_client = service_client.get_blob_client(self._container_name, thumbnail_blob_path)
+        #     if not await blob_client.exists():
+        #         full_size_blob_client = service_client.get_blob_client(
+        #             self._container_name, f"{blob_path}/{lookup}_full.jpg"
+        #         )
+        #         if await full_size_blob_client.exists():
+        #             full_size_image = await full_size_blob_client.download_blob()
+        #             image_data = await full_size_image.readall()
+        #             image = PILImage.open(BytesIO(image_data))
+        #             await self._upload(blob_client, self._dump_to_bytes(image, thumbnail_size=size))
 
-                # If the full size image doesn't exist, we can't create the thumbnail, we just silently return the expected path
+        #         # If the full size image doesn't exist, we can't create the thumbnail, we just silently return the expected path
 
         return f"{self._blob_account_url}/{self._container_name}/{thumbnail_blob_path}"
 
