@@ -8,3 +8,11 @@ class HomeController(Controller):
     @get(path="/")
     async def get_home(self, request: Request) -> Template:
         return HTMXBlockTemplate(template_name="pages/home.html.jinja", block_name=request.htmx.target)
+
+    @get(path="/info")
+    async def get_info(self, request: Request) -> Template:
+        return HTMXBlockTemplate(template_name="pages/info.html.jinja", block_name=request.htmx.target)
+
+    @get(path="/faq")
+    async def get_faq(self, request: Request) -> Template:
+        return HTMXBlockTemplate(template_name="pages/faq.html.jinja", block_name=request.htmx.target)

@@ -1,0 +1,87 @@
+<Page>
+    {% block content %}
+        <title>FAQ - Convergence 2025</title>
+
+        <PageContainer>
+            <h1>Key Info</h1>
+            <p>
+                The biggest annual event from the Waikato Role-Playing Guild is returning this September: Convergence!
+                We will be bringing you an epic weekend of role-playing, giveaways, and banter, capped off with a social
+                function on Sunday evening. Check back for more announcements including ticket sales, game submissions
+                and more!
+            </p>
+            <h2>When</h2>
+            <p>13th and 14th September 2025</p>
+            <p>Doors open at 8am</p>
+            <h2>Key Dates</h2>
+            <ul>
+                <li>6th June - Initial round of GM submissions close</li>
+                <li>
+                    13th - 27th June - Pre-sales for weekend tickets (only for WRPG society members and previous
+                    attendees)
+                </li>
+                <li>11th July - General ticket sales open</li>
+            </ul>
+            <h2>Ticket Prices</h2>
+            <h3>General Admission</h3>
+            <ul>
+                <li>Weekend Ticket: $50</li>
+                <li>Saturday Day Ticket: $30</li>
+                <li>Sunday Day Ticket: $25</li>
+            </ul>
+            <h3>Concession (Under 18, Student, Community Services Card Holder)</h3>
+            <ul>
+                <li>Weekend Ticket: $40</li>
+                <li>Saturday Day Ticket: $25</li>
+                <li>Sunday Day Ticket: $20</li>
+            </ul>
+            <h2>Timetable</h2>
+            <div class="flex flex-row flex-wrap gap-8">
+                <div class="flex flex-col gap-2">
+                    <h3>Saturday</h3>
+                    <table>
+                        {%
+                            for time, info in [
+                                ("8:00am", "Doors Open"),
+                                ("8:45am", "Welcome"),
+                                ("9:00am", "Session 1"),
+                                ("12:00pm", "Lunch"),
+                                ("1:30pm", "Session 2"),
+                                ("4:30pm", "Dinner"),
+                                ("6:00pm", "Session 3"),
+                                ("10:00pm", "End of Day")
+                            ]
+                        %}
+                            <tr>
+                                <td>{{ time }}</td>
+                                <td>{{ info }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <h3>Sunday</h3>
+                    <table>
+                        {%
+                            for time, info in [
+                                ("8:00am", "Doors Open"),
+                                ("8:45am", "Welcome"),
+                                ("9:00am", "Session 4"),
+                                ("12:00pm", "Lunch"),
+                                ("1:15pm", "Seminars"),
+                                ("2:30pm", "Session 5"),
+                                ("6:30pm", "End of Gaming"),
+                                ("7:00pm", "Social")
+                            ]
+                        %}
+                            <tr>
+                                <td>{{ time }}</td>
+                                <td>{{ info }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </PageContainer>
+    {% endblock %}
+</Page>
