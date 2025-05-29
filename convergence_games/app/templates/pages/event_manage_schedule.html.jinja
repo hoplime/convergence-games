@@ -1,0 +1,160 @@
+<Page>
+    {% block content %}
+        <title>{{ event.name }} Manage Schedule - Convergence 2025</title>
+        <PageContainer size="max-w-screen-2xl">
+            <div>Manage Submissions</div>
+            {%
+                set time_slots = [
+                    {"id": 0, "name": "Saturday Morning"},
+                    {"id": 1, "name": "Saturday Afternoon"},
+                    {"id": 2, "name": "Saturday Evening"},
+                    {"id": 3, "name": "Sunday Morning"},
+                    {"id": 4, "name": "Sunday Afternoon"},
+                ]
+            %}
+            {%
+                set rooms = [
+                    {"name": "Room 1", "tables": [
+                        {"id": 0, "name": "Table 1"},
+                        {"id": 1, "name": "Table 2"},
+                        {"id": 2, "name": "Table 3"},
+                    ]},
+                    {"name": "Room 2", "tables": [
+                        {"id": 3, "name": "Table 4"},
+                        {"id": 4, "name": "Table 5"},
+                        {"id": 5, "name": "Table 6"},
+                    ]},
+                    {"name": "Room 3", "tables": [
+                        {"id": 6, "name": "Table 7"},
+                        {"id": 7, "name": "Table 8"},
+                        {"id": 8, "name": "Table 9"},
+                    ]},
+                ]
+            %}
+            {%
+                set games = [
+                    {
+                        "title": "Game 1",
+                        "gamemaster": "GM 1",
+                        "copies": 2,
+                        "available": [0, 1, 2],
+                    },
+                    {
+                        "title": "Game 2",
+                        "gamemaster": "GM 2",
+                        "copies": 1,
+                        "available": [2, 3],
+                    },
+                    {
+                        "title": "Game 3",
+                        "gamemaster": "GM 3",
+                        "copies": 3,
+                        "available": [0, 2, 3],
+                    },
+                ]
+            %}
+            <table class="table" id="schedule-table">
+                <thead>
+                    <tr>
+                        <th class="w-fit">Table</th>
+                        {% for time_slot in time_slots %}
+                            <th>{{ time_slot.name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in rooms %}
+                        {% for table in room.tables %}
+                            <tr>
+                                <td class="py-6">{{ table.name }}</td>
+                                {% for time_slot in time_slots %}
+                                    <td
+                                        class="schedule-table-slot border"
+                                        data-time-slot-id="{{ time_slot.id }}"
+                                        data-table-id="{{ table.id }}"
+                                    ></td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div>Unsorted Games</div>
+            <div class="flex flex-row flex-wrap gap-2" id="unscheduled-games">
+                {% for game in games %}
+                    {% for copy in range(game.copies) %}
+                        <div class="bg-base-200 rounded-box border-base-300 relative w-fit cursor-move border p-1">
+                            <h2 class="font-semibold">{{ game.title }} | {{ game.gamemaster }}</h2>
+                            <p class="text-sm">{{ copy + 1 }}/{{ game.copies }}</p>
+                            <div class="absolute bottom-1 right-1 flex flex-row gap-[1px]">
+                                {% for time_slot in time_slots %}
+                                    {% if time_slot.id in game.available %}
+                                        <div
+                                            class="bg-primary h-2 w-2"
+                                            data-time-slot-id="{{ time_slot.id }}"
+                                            data-available
+                                        ></div>
+                                    {% else %}
+                                        <div
+                                            class="border-primary h-2 w-2 border"
+                                            data-time-slot-id="{{ time_slot.id }}"
+                                        ></div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            <script>
+                (() => {
+                    const Sortable = convergence.Sortable;
+                    const scheduleTableElement = document.getElementById("schedule-table");
+                    const unscheduledGamesElement = document.getElementById("unscheduled-games");
+                    const scheduleTableSlotElements = document.querySelectorAll(".schedule-table-slot");
+
+                    const options = {
+                        group: "schedule-shared",
+                        animation: 150,
+                        onStart: (evt) => {
+                            console.log("Drag started", evt);
+                            evt.item.classList.add("bg-base-300");
+                            const availableTimeslotIds = [...evt.item.querySelectorAll("[data-available]")].map(
+                                (el) => el.dataset.timeSlotId,
+                            );
+                            console.log("Available timeslots:", availableTimeslotIds);
+                            const availableTimeslotElements = scheduleTableElement.querySelectorAll(
+                                `[data-time-slot-id="${availableTimeslotIds.join('"], [data-time-slot-id="')}"]`,
+                            );
+                            console.log("Available timeslot elements:", availableTimeslotElements);
+                            for (const el of availableTimeslotElements) {
+                                el.classList.remove("bg-base-300");
+                            }
+                            const unavailableTimeslotElements = scheduleTableElement.querySelectorAll(
+                                `[data-time-slot-id]:not([data-time-slot-id="${availableTimeslotIds.join('"], [data-time-slot-id="')}"])`,
+                            );
+                            console.log("Unavailable timeslot elements:", unavailableTimeslotElements);
+                            for (const el of unavailableTimeslotElements) {
+                                el.classList.add("bg-base-300");
+                            }
+                        },
+                        onEnd: (evt) => {
+                            console.log("Drag ended", evt);
+                            evt.item.classList.remove("bg-base-300");
+                            const allTimeslotElements = scheduleTableElement.querySelectorAll("[data-time-slot-id]");
+                            for (const el of allTimeslotElements) {
+                                el.classList.remove("bg-base-300");
+                            }
+                        },
+                    };
+
+                    for (const slot of scheduleTableSlotElements) {
+                        Sortable.create(slot, options);
+                    }
+
+                    Sortable.create(unscheduledGamesElement, options);
+                })();
+            </script>
+        </PageContainer>
+    {% endblock %}
+</Page>
