@@ -2,10 +2,9 @@
     {% block content %}
         <title>Convergence 2025</title>
         <PageContainer>
-            <h2 class="mt-4 text-xl">What is Convergence?</h2>
             <p>
-                The biggest annual event from the Waikato Role-Playing Guild is returning this September 13th and 14th:
-                Convergence!
+                The biggest annual event from the Waikato Role-Playing Guild is returning for the 13th and 14th of
+                September: <span class="font-semibold">Convergence!</span>
             </p>
             <p>
                 We will be bringing you an epic weekend of role-playing, giveaways, and banter, capped off with a social
@@ -60,7 +59,28 @@
                 </tr>
             </table>
             <h2 class="mt-4 text-xl">Timetable</h2>
+            <p>
+                Saturday will have 3 sessions and Sunday will have 2 sessions, with a mix of 3 and 4 hour slots based on
+                the GM submissions. Below is a rough timetable, based on what has happened in previous years. The start
+                and end times of sessions may end up changing by September, please check back closer to the time. Always
+                aim to be 15 minutes early to sessions as the raffle draws and announcements will come beforehand.
+            </p>
             <div class="flex flex-row flex-wrap gap-8">
+                <div class="flex flex-col gap-2">
+                    <h3 class="text-lg">Friday 12th</h3>
+                    <table>
+                        {%
+                            for time, info, style in [
+                                ("6:30pm", "Social & Setup", ""),
+                            ]
+                        %}
+                            <tr>
+                                <td class="border-r pr-2 text-right align-top">{{ time }}</td>
+                                <td class="{{ style }} pl-2 text-left align-top">{{ info }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
                 <div class="flex flex-col gap-2">
                     <h3 class="text-lg">Saturday 13th</h3>
                     <table>
@@ -111,21 +131,76 @@
             <div class="collapse-plus bg-base-100 border-base-300 collapse border">
                 <input type="checkbox" />
                 <div class="collapse-title font-semibold">
-                    <h3 id="photographs">What is Convergence?</h3>
+                    <h3 id="ttrpg">What is a TTRPG?</h3>
                 </div>
                 <div class="collapse-content flex flex-col gap-2">
                     <p>
-                        Convergence is a 2 day games convention, organised by The Waikato Role-Playing Guild. The aim is
-                        to give new and experienced players a chance to meet like minded people, make new friends, try
-                        new games and have a blast doing so. At Convergence there will be games running, seminars,
-                        socialising, and merchants providing a range of gaming related equipment. The games will run in
-                        3 and 4 hour slots, depending on the game itself.
+                        Table top role-playing games are mostly played with friends, and usually require pen, paper and
+                        dice to play. You have probably heard of Dungeons & Dragons, but thousands of different systems
+                        exist. From simple romps to complex campaigns games can cover topics such as drag racing
+                        raccoons, eldritch horrors, sci-fi, fantasy, dystopias, TV shows, and even Carly Rae Jepson.
+                        They all need the players to use their imagination to drive the story and make the game come
+                        alive.
+                    </p>
+                </div>
+            </div>
+            <div class="collapse-plus bg-base-100 border-base-300 collapse border">
+                <input type="checkbox" />
+                <div class="collapse-title font-semibold">
+                    <h3 id="ttrpg">What's on at Convergence?</h3>
+                </div>
+                <div class="collapse-content flex flex-col gap-2">
+                    <p>
+                        Convergence is a 2 day games convention based in Kirikiriroa, Hamilton. The aim is to give new
+                        and experienced players a chance to meet like-minded people, make new friends, try new games and
+                        have a blast doing so. The name comes from the idea of all the different game systems coming
+                        together in one space. There will be 5 gaming sessions over the weekend, so plenty of chances
+                        for you to try new systems, or the same systems with new people.
+                    </p>
+                    <h4 class="font-semibold">TTRPG One-shots</h4>
+                    <p>
+                        The games will run in 3 and 4-hour sessions. All the games will be run as "one-shots" meaning it
+                        will be a self-contained adventure within the time slot, with pre-generated characters provided
+                        where needed. There will be games for newbies and experienced players alike. We'll make sure you
+                        have everything you need to hit the ground running and have a fantastic weekend. All you need to
+                        bring is yourself and some enthusiasm. You can bring your own favourite dice to show off if you
+                        wish, but if you don't have your own dice we have you covered.
+                    </p>
+                    <h4 class="font-semibold">Merchants and Artists</h4>
+                    <p>
+                        Our merchants can also help you out, as we will have a market area for you to peruse. Go
+                        straight from your table to buy your new favourite game, collect dice or adore the artists
+                        alley.
+                    </p>
+                    <h4 class="font-semibold">Mini Painting, Cosplay, Board Games & More</h4>
+                    <p>
+                        If you want to try something other than TTRPGs during the weekend we will have a miniature
+                        painting area, a cosplay parade, board games corner and crowdsourced megadungeon you can
+                        contribute a room to.
+                    </p>
+                    <h4 class="font-semibold">Seminars</h4>
+                    <p>
+                        On Sunday we'll be hosting a variety of entertaining and educational seminars with guest
+                        speakers from the wider community on a variety of topics - to be announced! These will be a
+                        great opportunity to learn more about what's going on in the TTRPG community, hear from experts,
+                        and have a chance to ask questions.
+                    </p>
+                    <h4 class="font-semibold">Socials</h4>
+                    <p>
+                        If that isn't enough we also have socials on Friday and Sunday night. Join us in the bar area of
+                        The Distinction before and after the weekend to chill and chat about gaming.
+                    </p>
+                    <h4 class="font-semibold">Help make it happen!</h4>
+                    <p>
+                        We need you! To be game masters who run games, or volunteers who help out in a variety of ways.
+                        Check out the links lower down on the page for all the information about these roles. We also
+                        love players - all you need to do is buy your ticket and turn up on the day, bringing dice if
+                        you have them.
                     </p>
                     <p>
-                        All the games will be run as “one-shots” meaning it will be a self-contained adventure within
-                        the time slot. There will be games for newbies and experienced players alike. Pre-generated
-                        characters will be provided where needed. We'll make sure you have everything you need to hit
-                        the ground running and have a fantastic weekend!
+                        If you aren't that sure about TTRPGs or want to check things out but not play then you can come
+                        and spend time in the merchant area without a ticket, and can also come to the Sunday seminars
+                        for free.
                     </p>
                 </div>
             </div>
