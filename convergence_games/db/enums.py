@@ -54,6 +54,21 @@ class SubmissionStatus(enum.StrEnum):
 
         return ""
 
+    @property
+    def gm_explanation(self) -> str:
+        if self == SubmissionStatus.DRAFT:
+            return "Moderators have marked your game as needing more info the last time it was checked. Commonly this is a placeholder description, or missing information which we think might be important for your game e.g. content warnings if the description implies them. You should receive an email with more details soon."
+        if self == SubmissionStatus.SUBMITTED:
+            return "This game has been submitted and is awaiting moderator review."
+        if self == SubmissionStatus.APPROVED:
+            return "This game has been approved and will run at the event. If you haven't got one already, you should receive an email with more details soon."
+        if self == SubmissionStatus.REJECTED:
+            return "Moderators have rejected your game based on its content. This is usually because it does not fit the event's content guidelines, or is not suitable for the event. You should receive an email with more details soon."
+        if self == SubmissionStatus.CANCELLED:
+            return "This game has been marked as cancelled (at your request) and will not be run at the event."
+
+        return ""
+
 
 class GameClassification(enum.StrEnum):
     # G = "G"

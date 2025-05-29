@@ -113,6 +113,12 @@
                             Submission Status:
                             <span class="{{ game.submission_status.color_classes }}">{{ game.submission_status }}</span>
                         </div>
+                        <p>{{ game.submission_status.gm_explanation }}</p>
+                        <p>
+                            If you have further questions about the event and being a GM, check the
+                            <a href="/faq" class="link">FAQ</a> or ask in the
+                            <L href="https://discord.gg/4wBtAG2rjt">Discord</L>.
+                        </p>
                         <div class="card-actions justify-start">
                             <a href="/game/{{ swim(game) }}/edit" class="btn btn-primary">Edit</a>
                         </div>
