@@ -306,6 +306,27 @@ class EventController(Controller):
         )
 
     @get(
+        path="/event/{event_sqid:str}/manage-schedule",
+        guards=[user_guard],
+        dependencies={
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def get_event_manage_schedule(
+        self,
+        request: Request,
+        event: Event,
+        permission: bool,
+    ) -> Template:
+        return HTMXBlockTemplate(
+            template_name="pages/event_manage_schedule.html.jinja",
+            block_name=request.htmx.target,
+            context={
+                "event": event,
+            },
+        )
+
+    @get(
         path="/event/{event_sqid:str}/manage-submissions",
         guards=[user_guard],
         dependencies={
