@@ -43,7 +43,7 @@
                         "title": "Game 2",
                         "gamemaster": "GM 2",
                         "copies": 1,
-                        "available": [2, 3],
+                        "available": [2],
                     },
                     {
                         "title": "Game 3",
@@ -53,108 +53,61 @@
                     },
                 ]
             %}
-            <table class="table" id="schedule-table">
-                <thead>
-                    <tr>
-                        <th class="w-fit">Table</th>
-                        {% for time_slot in time_slots %}
-                            <th>{{ time_slot.name }}</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for room in rooms %}
-                        {% for table in room.tables %}
-                            <tr>
-                                <td class="py-6">{{ table.name }}</td>
-                                {% for time_slot in time_slots %}
-                                    <td
-                                        class="schedule-table-slot border"
-                                        data-time-slot-id="{{ time_slot.id }}"
-                                        data-table-id="{{ table.id }}"
-                                    ></td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                    {% endfor %}
-                </tbody>
-            </table>
-            <div>Unsorted Games</div>
-            <div class="flex flex-row flex-wrap gap-2" id="unscheduled-games">
-                {% for game in games %}
-                    {% for copy in range(game.copies) %}
-                        <div class="bg-base-200 rounded-box border-base-300 relative w-fit cursor-move border p-1">
-                            <h2 class="font-semibold">{{ game.title }} | {{ game.gamemaster }}</h2>
-                            <p class="text-sm">{{ copy + 1 }}/{{ game.copies }}</p>
-                            <div class="absolute bottom-1 right-1 flex flex-row gap-[1px]">
-                                {% for time_slot in time_slots %}
-                                    {% if time_slot.id in game.available %}
-                                        <div
-                                            class="bg-primary h-2 w-2"
+            <Component name="event_manage_schedule">
+                <table class="schedule-table table">
+                    <thead>
+                        <tr>
+                            <th class="w-fit">Table</th>
+                            {% for time_slot in time_slots %}
+                                <th>{{ time_slot.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for room in rooms %}
+                            {% for table in room.tables %}
+                                <tr>
+                                    <td class="py-6">{{ table.name }}</td>
+                                    {% for time_slot in time_slots %}
+                                        <td
+                                            class="schedule-table-slot duration-250 border transition-colors"
                                             data-time-slot-id="{{ time_slot.id }}"
-                                            data-available
-                                        ></div>
-                                    {% else %}
-                                        <div
-                                            class="border-primary h-2 w-2 border"
-                                            data-time-slot-id="{{ time_slot.id }}"
-                                        ></div>
-                                    {% endif %}
-                                {% endfor %}
+                                            data-table-id="{{ table.id }}"
+                                        ></td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div>Unsorted Games</div>
+                <div class="unscheduled-games flex flex-row flex-wrap gap-2">
+                    {% for game in games %}
+                        {% for copy in range(game.copies) %}
+                            <div class="bg-base-200 rounded-box border-base-300 relative w-fit cursor-move border p-1">
+                                <h2 class="font-semibold">{{ game.title }} | {{ game.gamemaster }}</h2>
+                                <p class="text-sm">{{ copy + 1 }}/{{ game.copies }}</p>
+                                <div class="absolute bottom-1 right-1 flex flex-row gap-[1px]">
+                                    {% for time_slot in time_slots %}
+                                        {% if time_slot.id in game.available %}
+                                            <div
+                                                class="bg-primary h-2 w-2"
+                                                data-available-time-slot-id="{{ time_slot.id }}"
+                                                data-available
+                                            ></div>
+                                        {% else %}
+                                            <div
+                                                class="border-primary h-2 w-2 border"
+                                                data-available-time-slot-id="{{ time_slot.id }}"
+                                            ></div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
                             </div>
-                        </div>
+                        {% endfor %}
                     {% endfor %}
-                {% endfor %}
-            </div>
-            <script>
-                (() => {
-                    const Sortable = convergence.Sortable;
-                    const scheduleTableElement = document.getElementById("schedule-table");
-                    const unscheduledGamesElement = document.getElementById("unscheduled-games");
-                    const scheduleTableSlotElements = document.querySelectorAll(".schedule-table-slot");
-
-                    const options = {
-                        group: "schedule-shared",
-                        animation: 150,
-                        onStart: (evt) => {
-                            console.log("Drag started", evt);
-                            evt.item.classList.add("bg-base-300");
-                            const availableTimeslotIds = [...evt.item.querySelectorAll("[data-available]")].map(
-                                (el) => el.dataset.timeSlotId,
-                            );
-                            console.log("Available timeslots:", availableTimeslotIds);
-                            const availableTimeslotElements = scheduleTableElement.querySelectorAll(
-                                `[data-time-slot-id="${availableTimeslotIds.join('"], [data-time-slot-id="')}"]`,
-                            );
-                            console.log("Available timeslot elements:", availableTimeslotElements);
-                            for (const el of availableTimeslotElements) {
-                                el.classList.remove("bg-base-300");
-                            }
-                            const unavailableTimeslotElements = scheduleTableElement.querySelectorAll(
-                                `[data-time-slot-id]:not([data-time-slot-id="${availableTimeslotIds.join('"], [data-time-slot-id="')}"])`,
-                            );
-                            console.log("Unavailable timeslot elements:", unavailableTimeslotElements);
-                            for (const el of unavailableTimeslotElements) {
-                                el.classList.add("bg-base-300");
-                            }
-                        },
-                        onEnd: (evt) => {
-                            console.log("Drag ended", evt);
-                            evt.item.classList.remove("bg-base-300");
-                            const allTimeslotElements = scheduleTableElement.querySelectorAll("[data-time-slot-id]");
-                            for (const el of allTimeslotElements) {
-                                el.classList.remove("bg-base-300");
-                            }
-                        },
-                    };
-
-                    for (const slot of scheduleTableSlotElements) {
-                        Sortable.create(slot, options);
-                    }
-
-                    Sortable.create(unscheduledGamesElement, options);
-                })();
-            </script>
+                </div>
+            </Component>
         </PageContainer>
     {% endblock %}
 </Page>
