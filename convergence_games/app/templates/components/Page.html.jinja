@@ -44,7 +44,7 @@
     </head>
     <body hx-ext="preload">
         <div id="wrapper" class="flex min-h-[100vh] w-full flex-col gap-4">
-            <layout.NavBar />
+            <NavBar />
             <main id="content" class="px-4">{{ content }}</main>
             {% if SETTINGS.ENVIRONMENT == "development" %}
                 <div class="alert alert-warning alert-soft text-xs fixed bottom-0 right-0 flex flex-col font-bold">
@@ -56,7 +56,7 @@
                     </p>
                 </div>
             {% endif %}
-            <layout.Footer />
+            <PageFooter />
         </div>
     </body>
     <script>

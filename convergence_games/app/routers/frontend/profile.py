@@ -111,7 +111,7 @@ class ProfileController(Controller):
             transaction=transaction,
         )
         return HTMXBlockTemplate(
-            template_name="components/forms/email_sign_in/VerifyCode.html.jinja",
+            template_name="components/VerifyCode.html.jinja",
             context={
                 "email": data.email,
                 "state": state.encode(),

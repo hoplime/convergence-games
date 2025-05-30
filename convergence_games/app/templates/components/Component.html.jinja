@@ -1,0 +1,8 @@
+{#def
+    name: str
+#}
+{% set id = random_id() %}
+<div id="{{ id }}">{{ content }}</div>
+<script>
+    convergence.{{ name }}("{{ id }}");
+</script>

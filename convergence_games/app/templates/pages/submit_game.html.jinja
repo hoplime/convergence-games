@@ -248,10 +248,7 @@
                             </p>
                         </TooltipContent>
                     </Tooltip>
-                    <utilities.TipTap
-                        form_input_name="description"
-                        :initial_content_json="game.description if editing else ''"
-                    />
+                    <TipTap form_input_name="description" :initial_content_json="game.description if editing else ''" />
                     <ErrorHolder name="description" />
 
                     {# Images #}
