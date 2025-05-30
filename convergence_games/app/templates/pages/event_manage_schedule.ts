@@ -1,13 +1,11 @@
 import Sortable from "sortablejs";
 
 const event_manage_schedule = (scope_id: string) => {
-    console.log("Event Manage Schedule component initialized");
     const scope = document.getElementById(scope_id);
     if (!scope) {
         console.error(`Scope with id ${scope_id} not found`);
         return;
     }
-    console.log(`Scope: ${scope}`);
     const scheduleTableElement = scope.querySelector(".schedule-table") as HTMLElement;
     const unscheduledGamesElement = scope.querySelector(".unscheduled-games") as HTMLElement;
     const scheduleTableSlotElements = scope.querySelectorAll(".schedule-table-slot") as NodeListOf<HTMLElement>;
