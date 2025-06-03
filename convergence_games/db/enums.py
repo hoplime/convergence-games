@@ -327,6 +327,19 @@ class GameRoomRequirement(FlagWithNotes):
     }
 
 
+class RoomFacility(FlagWithNotes):
+    NONE = 0
+    QUIET = 1
+    PRIVATE = 2
+
+
+class TableFacility(FlagWithNotes):
+    NONE = 0
+    POWER_OUTLET = 1
+    WHITEBOARD = 2
+    EXTRA_SIDETABLE = 4
+
+
 class Role(enum.StrEnum):
     OWNER = "Owner"  # Can do anything a Manager can do, and assign roles to other users
     MANAGER = "Manager"  # Can manage everything in an event, e.g. approve games
