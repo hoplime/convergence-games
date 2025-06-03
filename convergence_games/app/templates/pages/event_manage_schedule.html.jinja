@@ -15,19 +15,19 @@
             {%
                 set rooms = [
                     {"name": "Room 1", "tables": [
-                        {"id": 0, "name": "Table 1"},
-                        {"id": 1, "name": "Table 2"},
-                        {"id": 2, "name": "Table 3"},
+                        {"id": 0, "name": "Table 1", "size": "small"},
+                        {"id": 1, "name": "Table 2", "size": "small"},
+                        {"id": 2, "name": "Table 3", "size": "large"},
                     ]},
                     {"name": "Room 2", "tables": [
-                        {"id": 3, "name": "Table 4"},
-                        {"id": 4, "name": "Table 5"},
-                        {"id": 5, "name": "Table 6"},
+                        {"id": 3, "name": "Table 4", "size": "small"},
+                        {"id": 4, "name": "Table 5", "size": "small"},
+                        {"id": 5, "name": "Table 6", "size": "large"},
                     ]},
                     {"name": "Room 3", "tables": [
-                        {"id": 6, "name": "Table 7"},
-                        {"id": 7, "name": "Table 8"},
-                        {"id": 8, "name": "Table 9"},
+                        {"id": 6, "name": "Table 7", "size": "small"},
+                        {"id": 7, "name": "Table 8", "size": "small"},
+                        {"id": 8, "name": "Table 9", "size": "large"},
                     ]},
                 ]
             %}
@@ -38,18 +38,21 @@
                         "gamemaster": "GM 1",
                         "copies": 2,
                         "available": [0, 1, 2],
+                        "requires_table": ["small", "large"],
                     },
                     {
                         "title": "Game 2",
                         "gamemaster": "GM 2",
                         "copies": 1,
                         "available": [2],
+                        "requires_table": ["large"],
                     },
                     {
                         "title": "Game 3",
                         "gamemaster": "GM 3",
                         "copies": 3,
                         "available": [0, 2, 3],
+                        "requires_table": ["small"],
                     },
                 ]
             %}

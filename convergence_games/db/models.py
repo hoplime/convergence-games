@@ -23,7 +23,9 @@ from convergence_games.db.enums import (
     GameTone,
     LoginProvider,
     Role,
+    RoomFacility,
     SubmissionStatus,
+    TableFacility,
 )
 
 
@@ -387,6 +389,7 @@ class TimeSlot(Base):
 class Room(Base):
     name: Mapped[str]
     description: Mapped[str]
+    facilities: Mapped[RoomFacility] = mapped_column(Integer, default=RoomFacility.NONE)
 
     # Foreign Keys
     event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
@@ -403,6 +406,7 @@ class Room(Base):
 
 class Table(Base):
     name: Mapped[str]
+    facilities: Mapped[TableFacility] = mapped_column(Integer, default=TableFacility.NONE)
 
     # Foreign Keys
     room_id: Mapped[int] = mapped_column(ForeignKey("room.id"), index=True)
