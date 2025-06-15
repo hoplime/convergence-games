@@ -12,6 +12,15 @@
                 <FieldsetBase>
                     <legend class="fieldset-legend">Event Information</legend>
                     <p>Thanks for choosing to submit a game to Convergence 2025!</p>
+                    {# TODO RESUBMISSIONS #}
+                    {% if not game %}
+                        <p class="alert alert-warning italic">
+                            Note that submissions have been closed since the 6th of June, but this form remains open. We
+                            cannot guarantee that a game submitted after this date will be accepted, though we may
+                            reopen submissions closer to the event depending on ticket sales and GM numbers. You can
+                            still freely edit your existing game submissions.
+                        </p>
+                    {% endif %}
                     <p>
                         If your game is accepted you'll be eligible for free tickets to Convergence, and goodie bags, so
                         don't buy a ticket just yet - look out for an email.
@@ -759,6 +768,15 @@
                     <ErrorHolder name="agree_to_use_safety_tools" />
                 </FieldsetBase>
 
+                {# TODO RESUBMISSIONS #}
+                {% if not game %}
+                    <p class="alert alert-warning italic">
+                        Note that submissions have been closed since the 6th of June, but this form remains open. We
+                        cannot guarantee that a game submitted after this date will be accepted, though we may reopen
+                        submissions closer to the event depending on ticket sales and GM numbers. You can still freely
+                        edit your existing game submissions.
+                    </p>
+                {% endif %}
                 {# Submit #}
                 <ErrorHolder name="form" />
                 <button
