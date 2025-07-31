@@ -505,7 +505,7 @@ class SubmitGameController(Controller):
             "permission": permission_check(user_can_edit_game),
         },
     )
-    async def put_game(
+    async def put_game(  # noqa: C901 - We know this is too complex, but it's tricky to change at the moment
         self,
         request: Request,
         transaction: AsyncSession,
