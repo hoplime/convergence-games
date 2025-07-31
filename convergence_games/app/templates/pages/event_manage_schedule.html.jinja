@@ -3,7 +3,7 @@
         <title>{{ event.name }} Manage Schedule - Convergence 2025</title>
         <PageContainer size="max-w-screen-2xl">
             <div>Manage Submissions</div>
-            {%
+            {# {%
                 set time_slots = [
                     {"id": 0, "name": "Saturday Morning"},
                     {"id": 1, "name": "Saturday Afternoon"},
@@ -55,23 +55,23 @@
                         "requires_table": ["small"],
                     },
                 ]
-            %}
+            %} #}
             <Component name="event_manage_schedule">
                 <table class="schedule-table table">
                     <thead>
                         <tr>
                             <th class="w-fit">Table</th>
-                            {% for time_slot in time_slots %}
+                            {% for time_slot in event.time_slots %}
                                 <th>{{ time_slot.name }}</th>
                             {% endfor %}
                         </tr>
                     </thead>
                     <tbody>
-                        {% for room in rooms %}
+                        {% for room in event.rooms %}
                             {% for table in room.tables %}
                                 <tr>
                                     <td class="py-6">{{ table.name }}</td>
-                                    {% for time_slot in time_slots %}
+                                    {% for time_slot in event.time_slots %}
                                         <td
                                             class="schedule-table-slot duration-250 border transition-colors"
                                             data-time-slot-id="{{ time_slot.id }}"
@@ -85,14 +85,14 @@
                 </table>
                 <div>Unsorted Games</div>
                 <div class="unscheduled-games flex flex-row flex-wrap gap-2">
-                    {% for game in games %}
-                        {% for copy in range(game.copies) %}
+                    {% for game in event.games %}
+                        {% for copy in range(game.game_requirement.times_to_run) %}
                             <div class="bg-base-200 rounded-box border-base-300 relative w-fit cursor-move border p-1">
-                                <h2 class="font-semibold">{{ game.title }} | {{ game.gamemaster }}</h2>
-                                <p class="text-sm">{{ copy + 1 }}/{{ game.copies }}</p>
+                                <h2 class="font-semibold">{{ game.title }} | {{ game.gamemaster.full_name }}</h2>
+                                <p class="text-sm">{{ copy + 1 }}/{{ game.game_requirement.times_to_run }}</p>
                                 <div class="absolute bottom-1 right-1 flex flex-row gap-[1px]">
-                                    {% for time_slot in time_slots %}
-                                        {% if time_slot.id in game.available %}
+                                    {% for time_slot in event.time_slots %}
+                                        {% if time_slot in game.game_requirement.available_time_slots %}
                                             <div
                                                 class="bg-primary h-2 w-2"
                                                 data-available-time-slot-id="{{ time_slot.id }}"
