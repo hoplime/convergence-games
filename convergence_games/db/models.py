@@ -26,6 +26,7 @@ from convergence_games.db.enums import (
     RoomFacility,
     SubmissionStatus,
     TableFacility,
+    TableSize,
 )
 
 
@@ -407,6 +408,9 @@ class Room(Base):
 class Table(Base):
     name: Mapped[str]
     facilities: Mapped[TableFacility] = mapped_column(Integer, default=TableFacility.NONE, server_default="0")
+    size: Mapped[TableSize] = mapped_column(
+        Enum(TableSize), default=TableSize.SMALL, server_default="SMALL", index=True
+    )
 
     # Foreign Keys
     room_id: Mapped[int] = mapped_column(ForeignKey("room.id"), index=True)
