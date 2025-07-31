@@ -22,7 +22,9 @@ from convergence_games.db.models import (
     Game,
     GameContentWarningLink,
     GameGenreLink,
+    GameRequirement,
     Genre,
+    Room,
     System,
     User,
 )
@@ -36,6 +38,30 @@ async def get_event_dep(
 ) -> Event:
     event_id: int = sink(event_sqid) if event_sqid is not None else 1
     stmt = select(Event).where(Event.id == event_id)
+    event = (await transaction.execute(stmt)).scalar_one_or_none()
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event
+
+
+async def get_full_event_schedule_dep(
+    transaction: AsyncSession,
+    event_sqid: Sqid | None = None,
+) -> Event:
+    event_id: int = sink(event_sqid) if event_sqid is not None else 1
+    stmt = (
+        select(Event)
+        .options(
+            selectinload(Event.games).options(
+                selectinload(Game.game_requirement).selectinload(GameRequirement.available_time_slots),
+                selectinload(Game.gamemaster),
+            ),
+            selectinload(Event.rooms).selectinload(Room.tables),
+            selectinload(Event.time_slots),
+            selectinload(Event.sessions),
+        )
+        .where(Event.id == event_id)
+    )
     event = (await transaction.execute(stmt)).scalar_one_or_none()
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -323,6 +349,7 @@ class EventController(Controller):
         path="/event/{event_sqid:str}/manage-schedule",
         guards=[user_guard],
         dependencies={
+            "event": Provide(get_full_event_schedule_dep),
             "permission": permission_check(user_can_manage_submissions),
         },
     )

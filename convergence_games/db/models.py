@@ -410,7 +410,9 @@ class Table(Base):
 
     # Foreign Keys
     room_id: Mapped[int] = mapped_column(ForeignKey("room.id"), index=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("event.id"), index=True
+    )  # Logically redundant, but necessary for constraints
 
     # Relationships
     room: Mapped[Room] = relationship(back_populates="tables", foreign_keys=room_id, lazy="noload")
