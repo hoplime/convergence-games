@@ -3,59 +3,6 @@
         <title>{{ event.name }} Manage Schedule - Convergence 2025</title>
         <PageContainer size="max-w-screen-2xl">
             <div>Manage Submissions</div>
-            {# {%
-                set time_slots = [
-                    {"id": 0, "name": "Saturday Morning"},
-                    {"id": 1, "name": "Saturday Afternoon"},
-                    {"id": 2, "name": "Saturday Evening"},
-                    {"id": 3, "name": "Sunday Morning"},
-                    {"id": 4, "name": "Sunday Afternoon"},
-                ]
-            %}
-            {%
-                set rooms = [
-                    {"name": "Room 1", "tables": [
-                        {"id": 0, "name": "Table 1", "size": "small"},
-                        {"id": 1, "name": "Table 2", "size": "small"},
-                        {"id": 2, "name": "Table 3", "size": "large"},
-                    ]},
-                    {"name": "Room 2", "tables": [
-                        {"id": 3, "name": "Table 4", "size": "small"},
-                        {"id": 4, "name": "Table 5", "size": "small"},
-                        {"id": 5, "name": "Table 6", "size": "large"},
-                    ]},
-                    {"name": "Room 3", "tables": [
-                        {"id": 6, "name": "Table 7", "size": "small"},
-                        {"id": 7, "name": "Table 8", "size": "small"},
-                        {"id": 8, "name": "Table 9", "size": "large"},
-                    ]},
-                ]
-            %}
-            {%
-                set games = [
-                    {
-                        "title": "Game 1",
-                        "gamemaster": "GM 1",
-                        "copies": 2,
-                        "available": [0, 1, 2],
-                        "requires_table": ["small", "large"],
-                    },
-                    {
-                        "title": "Game 2",
-                        "gamemaster": "GM 2",
-                        "copies": 1,
-                        "available": [2],
-                        "requires_table": ["large"],
-                    },
-                    {
-                        "title": "Game 3",
-                        "gamemaster": "GM 3",
-                        "copies": 3,
-                        "available": [0, 2, 3],
-                        "requires_table": ["small"],
-                    },
-                ]
-            %} #}
             <Component name="event_manage_schedule">
                 <table class="schedule-table table">
                     <thead>
@@ -88,8 +35,9 @@
                     {% for game in event.games %}
                         {% for copy in range(game.game_requirement.times_to_run) %}
                             <div class="bg-base-200 rounded-box border-base-300 relative w-fit cursor-move border p-1">
-                                <h2 class="font-semibold">{{ game.title }} | {{ game.gamemaster.full_name }}</h2>
-                                <p class="text-sm">{{ copy + 1 }}/{{ game.game_requirement.times_to_run }}</p>
+                                <h2 class="font-semibold">{{ game.name }}</h2>
+                                <h3 class="text-xs">{{ game.gamemaster.full_name }}</h3>
+                                <p class="text-xs">{{ copy + 1 }}/{{ game.game_requirement.times_to_run }}</p>
                                 <div class="absolute bottom-1 right-1 flex flex-row gap-[1px]">
                                     {% for time_slot in event.time_slots %}
                                         {% if time_slot in game.game_requirement.available_time_slots %}

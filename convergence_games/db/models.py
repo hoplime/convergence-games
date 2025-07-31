@@ -389,7 +389,7 @@ class TimeSlot(Base):
 class Room(Base):
     name: Mapped[str]
     description: Mapped[str]
-    facilities: Mapped[RoomFacility] = mapped_column(Integer, default=RoomFacility.NONE)
+    facilities: Mapped[RoomFacility] = mapped_column(Integer, default=RoomFacility.NONE, server_default="0")
 
     # Foreign Keys
     event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
@@ -406,7 +406,7 @@ class Room(Base):
 
 class Table(Base):
     name: Mapped[str]
-    facilities: Mapped[TableFacility] = mapped_column(Integer, default=TableFacility.NONE)
+    facilities: Mapped[TableFacility] = mapped_column(Integer, default=TableFacility.NONE, server_default="0")
 
     # Foreign Keys
     room_id: Mapped[int] = mapped_column(ForeignKey("room.id"), index=True)
