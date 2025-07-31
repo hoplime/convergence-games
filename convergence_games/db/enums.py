@@ -340,6 +340,20 @@ class TableFacility(FlagWithNotes):
     EXTRA_SIDETABLE = 4
 
 
+class TableSize(enum.StrEnum):
+    SMALL = "Small"
+    LARGE = "Large"
+
+    @property
+    def description(self) -> str:
+        if self == TableSize.SMALL:
+            return "Round 1200mm diameter."
+        if self == TableSize.LARGE:
+            return "Square 1600mm x 1800mm."
+
+        return ""
+
+
 class Role(enum.StrEnum):
     OWNER = "Owner"  # Can do anything a Manager can do, and assign roles to other users
     MANAGER = "Manager"  # Can manage everything in an event, e.g. approve games
