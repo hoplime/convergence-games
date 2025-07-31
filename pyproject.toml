@@ -29,43 +29,23 @@ dependencies = [
     "azure-identity>=1.23.0",
     "azure-storage-blob[aio]>=12.25.1",
     "advanced-alchemy>=1.4.3",
-    "alembic>=1.15,<1.16",  # Currently required by advanced-alchemy, 1.16 has breaking changes in the TOML support
+    "alembic>=1.15,<1.16",
 ]
 
 [project.urls]
 homepage = "https://convergence.waikatorpg.co.nz"
 
-[tool.uv]
-dev-dependencies = [
-    "pyright>=1.1.391",
+[dependency-groups]
+dev = [
+    "basedpyright>=1.31.0",
     "pytest>=8.3.4",
-    "ruff>=0.9.1",
+    "ruff>=0.12.7",
 ]
 
 [tool.ruff]
 line-length = 120
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "venv",
-    "ignore",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
+extend-exclude = [
+    ".venv"
 ]
 
 [tool.ruff.lint]
