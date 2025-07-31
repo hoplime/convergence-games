@@ -32,7 +32,7 @@ class BaseActionChecker(BaseModel, Generic[OBJECT_T, ACTION_T]):
     @classmethod
     def all(cls) -> Self:
         model_fields = cls.model_fields
-        return cls(**{action: True for action in model_fields})
+        return cls(**dict.fromkeys(model_fields, True))
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
