@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Annotated, Any, Literal, Sequence
+from typing import Annotated, Literal
 
 from litestar import Controller, get
 from litestar.di import Provide
@@ -10,7 +10,7 @@ from litestar.exceptions import HTTPException
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import InstrumentedAttribute, selectinload
+from sqlalchemy.orm import selectinload
 
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
@@ -49,7 +49,8 @@ async def get_event_games_dep(
     desc: bool = False,
 ) -> Sequence[Game]:
     event_id: int = event.id
-    query_order_by: InstrumentedAttribute | None = {
+    # TODO: Technical typing TODO - an eliminator or TypeIs check for the sort
+    query_order_by = {
         "title": Game.name,
         "submitted": Game.created_at,
         "status": Game.submission_status,
@@ -71,11 +72,23 @@ async def get_event_games_dep(
     games = (await transaction.execute(stmt)).scalars().all()
 
     if query_order_by is None:
-        post_order_by: Callable[[Game], Any] = {
-            "system": lambda g: g.system.name.lower(),
-            "gamemaster": lambda g: g.gamemaster.last_name.lower(),
-            "sessions": lambda g: g.game_requirement.times_to_run,
-        }.get(sort)  # type: ignore
+
+        def by_system(g: Game) -> str:
+            return g.system.name.lower()
+
+        def by_gamemaster(g: Game) -> str:
+            return g.gamemaster.last_name.lower()
+
+        def by_sessions(g: Game) -> int:
+            return g.game_requirement.times_to_run
+
+        post_order_by = {
+            "system": by_system,
+            "gamemaster": by_gamemaster,
+            "sessions": by_sessions,
+        }.get(sort)
+
+        assert post_order_by is not None, "Invalid sort option"
 
         games = sorted(games, key=post_order_by, reverse=desc)
 
@@ -130,11 +143,11 @@ async def get_event_approved_games_dep(
 
 
 async def build_event_games_query(
-    genre: list[Sqid] | None = None,
-    system: list[Sqid] | None = None,
-    tone: list[str] | None = None,
-    bonus: list[int] | None = None,
-    content: list[Sqid] | None = None,
+    genre: list[Sqid] | Sqid | None = None,
+    system: list[Sqid] | Sqid | None = None,
+    tone: list[str] | str | None = None,
+    bonus: list[int] | int | None = None,
+    content: list[Sqid] | Sqid | None = None,
 ) -> EventGamesQuery:
     return EventGamesQuery.model_validate(
         {
