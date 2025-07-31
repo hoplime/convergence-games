@@ -15,6 +15,11 @@
                     </thead>
                     <tbody>
                         {% for room in event.rooms %}
+                            <tr>
+                                <td colspan="{{ event.time_slots|length + 1 }}" class="text-center font-semibold">
+                                    {{ room.name }} - {{ room.description }}
+                                </td>
+                            </tr>
                             {% for table in room.tables %}
                                 <tr>
                                     <td class="py-6">{{ table.name }}</td>
