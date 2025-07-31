@@ -1,15 +1,14 @@
 <Page>
     {% block content %}
         <title>{{ event.name }} Manage Schedule - Convergence 2025</title>
-        <PageContainer size="max-w-screen-2xl">
-            <div>Manage Submissions</div>
+        <PageContainer size="max-w-full">
             <Component name="event_manage_schedule">
-                <table class="schedule-table table">
+                <table class="schedule-table table table-fixed">
                     <thead>
                         <tr>
-                            <th class="w-fit">Table</th>
+                            <th class="sticky top-0 w-10 text-center">Table</th>
                             {% for time_slot in event.time_slots %}
-                                <th>{{ time_slot.name }}</th>
+                                <th class="sticky top-0 text-center">{{ time_slot.name }}</th>
                             {% endfor %}
                         </tr>
                     </thead>
@@ -22,10 +21,10 @@
                             </tr>
                             {% for table in room.tables %}
                                 <tr>
-                                    <td class="py-6">{{ table.name }}</td>
+                                    <td class="w-10 px-0 py-6">{{ table.name }}</td>
                                     {% for time_slot in event.time_slots %}
                                         <td
-                                            class="schedule-table-slot duration-250 border transition-colors"
+                                            class="schedule-table-slot duration-250 border p-0 transition-colors [&>.game-card]:w-full"
                                             data-time-slot-id="{{ time_slot.id }}"
                                             data-table-id="{{ table.id }}"
                                         ></td>
@@ -39,7 +38,9 @@
                 <div class="unscheduled-games flex flex-row flex-wrap gap-2">
                     {% for game in event.games %}
                         {% for copy in range(game.game_requirement.times_to_run) %}
-                            <div class="bg-base-200 rounded-box border-base-300 relative w-fit cursor-move border p-1">
+                            <div
+                                class="game-card bg-base-200 rounded-box border-base-300 relative w-fit cursor-move border p-1"
+                            >
                                 <h2 class="font-semibold">{{ game.name }}</h2>
                                 <h3 class="text-xs">{{ game.gamemaster.full_name }}</h3>
                                 <p class="text-xs">{{ copy + 1 }}/{{ game.game_requirement.times_to_run }}</p>
