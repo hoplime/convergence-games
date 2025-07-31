@@ -49,6 +49,7 @@ async def get_event_games_dep(
     desc: bool = False,
 ) -> Sequence[Game]:
     event_id: int = event.id
+
     # TODO: Technical typing TODO - an eliminator or TypeIs check for the sort
     query_order_by = {
         "title": Game.name,
