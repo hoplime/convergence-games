@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import re
-from typing import ClassVar
+from typing import ClassVar, override
 
 camel_case_pattern = re.compile(r"(?<!^)(?=[A-Z])")
 
