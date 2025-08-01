@@ -1,5 +1,10 @@
+from __future__ import annotations
+
 import enum
+import re
 from typing import ClassVar
+
+camel_case_pattern = re.compile(r"(?<!^)(?=[A-Z])")
 
 
 class GameCrunch(enum.StrEnum):
@@ -143,6 +148,42 @@ class FlagWithNotes(enum.IntFlag):
         return [self.icon_for(value) for value in self]
 
 
+class Requirement(FlagWithNotes):
+    __criteria__: ClassVar[dict[int, str]] = {}
+
+    @classmethod
+    def all_criteria_and_values(cls) -> list[tuple[int, str]]:
+        return [(member.value, cls.criteria_for(member.value)) for member in cls]
+
+    @classmethod
+    def criteria_for(cls, value: int) -> str:
+        return cls.__criteria__.get(value, "")
+
+    @property
+    def criteria(self) -> list[str]:
+        result = [self.criteria_for(value) for value in self]
+        return [criterion for criterion in result if criterion]  # Filter out empty criteria
+
+
+class Facility(FlagWithNotes):
+    @classmethod
+    def all_provides_and_values(cls) -> list[tuple[int, str]]:
+        return [(member.value, cls.provide_for(member.value)) for member in cls]
+
+    @classmethod
+    def provide_for(cls, value: int) -> str:
+        instance = cls(value)
+        assert instance is not None
+        assert instance.name is not None
+        kebab_case_class_name = camel_case_pattern.sub("-", cls.__name__.replace("Facility", "")).lower()
+        kebab_case_value_name = instance.name.replace("_", "-").lower()
+        return f"{kebab_case_class_name}-{kebab_case_value_name}"
+
+    @property
+    def provides(self) -> list[str]:
+        return [self.provide_for(value) for value in self]
+
+
 class GameCoreActivity(FlagWithNotes):
     # Core activities
     NONE = 0
@@ -234,7 +275,7 @@ class GameKSP(FlagWithNotes):
     }
 
 
-class GameTableSizeRequirement(FlagWithNotes):
+class GameTableSizeRequirement(Requirement):
     NONE = 0
     SMALL = 1
     LARGE = 2
@@ -259,8 +300,13 @@ class GameTableSizeRequirement(FlagWithNotes):
         LARGE: "icon-[material-symbols--square]",
     }
 
+    __criteria__ = {
+        SMALL: "table-size-small",
+        LARGE: "table-size-large",
+    }
 
-class GameEquipmentRequirement(FlagWithNotes):
+
+class GameEquipmentRequirement(Requirement):
     NONE = 0
     POWER_OUTLET = 1
     WHITEBOARD = 2
@@ -292,8 +338,14 @@ class GameEquipmentRequirement(FlagWithNotes):
         WIFI_OR_CELL_SERVICE: "icon-[material-symbols--wifi]",
     }
 
+    __criteria__ = {
+        POWER_OUTLET: "table-power-outlet",
+        WHITEBOARD: "table-whiteboard",
+        EXTRA_SIDETABLE: "table-extra-sidetable",
+    }
 
-class GameActivityRequirement(FlagWithNotes):
+
+class GameActivityRequirement(Requirement):
     NONE = 0
     NOISY = 1
     MOVE_BETWEEN_TABLES = 2
@@ -322,7 +374,7 @@ class GameActivityRequirement(FlagWithNotes):
     }
 
 
-class GameRoomRequirement(FlagWithNotes):
+class GameRoomRequirement(Requirement):
     NONE = 0
     QUIET = 1
     PRIVATE = 2
@@ -351,8 +403,13 @@ class GameRoomRequirement(FlagWithNotes):
         NEAR_ANOTHER_TABLE: "icon-[material-symbols--near-me]",
     }
 
+    __criteria__ = {
+        QUIET: "room-quiet",
+        PRIVATE: "room-private",
+    }
 
-class RoomFacility(FlagWithNotes):
+
+class RoomFacility(Facility):
     NONE = 0
     QUIET = 1
     PRIVATE = 2
@@ -368,7 +425,7 @@ class RoomFacility(FlagWithNotes):
     }
 
 
-class TableFacility(FlagWithNotes):
+class TableFacility(Facility):
     NONE = 0
     POWER_OUTLET = 1
     WHITEBOARD = 2
@@ -406,6 +463,15 @@ class TableSize(enum.StrEnum):
             return "icon-[material-symbols--circle]"
         if self == TableSize.LARGE:
             return "icon-[material-symbols--square]"
+
+        return ""
+
+    @property
+    def provides(self) -> str:
+        if self == TableSize.SMALL:
+            return "table-size-small"
+        if self == TableSize.LARGE:
+            return "table-size-large"
 
         return ""
 
