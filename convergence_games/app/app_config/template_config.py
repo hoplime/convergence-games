@@ -16,6 +16,8 @@ from convergence_games.db.enums import (
     GameKSP,
     GameRoomRequirement,
     GameTableSizeRequirement,
+    RoomFacility,
+    TableFacility,
 )
 from convergence_games.db.ocean import swim
 from convergence_games.permissions.permissions import user_has_permission
@@ -77,6 +79,8 @@ jinja_env.filters["GameEquipmentRequirement"] = GameEquipmentRequirement
 jinja_env.filters["GameKSP"] = GameKSP
 jinja_env.filters["GameRoomRequirement"] = GameRoomRequirement
 jinja_env.filters["GameTableSizeRequirement"] = GameTableSizeRequirement
+jinja_env.filters["RoomFacility"] = RoomFacility
+jinja_env.filters["TableFacility"] = TableFacility
 
 jinja_env.filters["has_permission"] = user_has_permission
 

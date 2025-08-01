@@ -254,6 +254,11 @@ class GameTableSizeRequirement(FlagWithNotes):
         LARGE: "1.6m x 1.7m square. If you require large battlemaps, or more than 6 players",
     }
 
+    __icons__ = {
+        SMALL: "icon-[material-symbols--circle]",
+        LARGE: "icon-[material-symbols--square]",
+    }
+
 
 class GameEquipmentRequirement(FlagWithNotes):
     NONE = 0
@@ -332,12 +337,34 @@ class RoomFacility(FlagWithNotes):
     QUIET = 1
     PRIVATE = 2
 
+    __icons__ = {
+        QUIET: "icon-[ix--sound-quiet]",
+        PRIVATE: "icon-[material-symbols--lock]",
+    }
+
+    __notes__ = {
+        QUIET: "Quiet",
+        PRIVATE: "Private",
+    }
+
 
 class TableFacility(FlagWithNotes):
     NONE = 0
     POWER_OUTLET = 1
     WHITEBOARD = 2
     EXTRA_SIDETABLE = 4
+
+    __icons__ = {
+        POWER_OUTLET: "icon-[ic--baseline-power]",
+        WHITEBOARD: "icon-[fluent--whiteboard-24-filled]",
+        EXTRA_SIDETABLE: "icon-[ic--baseline-table-bar]",
+    }
+
+    __notes__ = {
+        POWER_OUTLET: "Has a power outlet",
+        WHITEBOARD: "Has a whiteboard",
+        EXTRA_SIDETABLE: "Has an extra side table",
+    }
 
 
 class TableSize(enum.StrEnum):
@@ -350,6 +377,15 @@ class TableSize(enum.StrEnum):
             return "Round 1200mm diameter."
         if self == TableSize.LARGE:
             return "Square 1600mm x 1800mm."
+
+        return ""
+
+    @property
+    def icon(self) -> str:
+        if self == TableSize.SMALL:
+            return "icon-[material-symbols--circle]"
+        if self == TableSize.LARGE:
+            return "icon-[material-symbols--square]"
 
         return ""
 
