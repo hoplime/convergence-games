@@ -3,10 +3,10 @@
         <title>{{ event.name }} Manage Schedule - Convergence 2025</title>
         <PageContainer size="max-w-full">
             <Component name="event_manage_schedule">
-                <table class="schedule-table table table-fixed">
+                <table class="schedule-table table table-fixed px-0">
                     <thead>
                         <tr>
-                            <th class="sticky top-0 w-10 text-center">Table</th>
+                            <th class="sticky top-0 w-16 text-center">Table</th>
                             {% for time_slot in event.time_slots %}
                                 <th class="sticky top-0 text-center">{{ time_slot.name }}</th>
                             {% endfor %}
@@ -14,19 +14,49 @@
                     </thead>
                     <tbody>
                         {% for room in event.rooms %}
+                            {% set room_facilities = room.facilities | RoomFacility %}
                             <tr>
                                 <td colspan="{{ event.time_slots|length + 1 }}" class="text-center font-semibold">
                                     {{ room.name }} - {{ room.description }}
+                                    {% for icon in room_facilities.icons %}
+                                        <span class="{{ icon }}"></span>
+                                    {% endfor %}
                                 </td>
                             </tr>
                             {% for table in room.tables %}
+                                {% set table_facilities = table.facilities | TableFacility %}
                                 <tr>
-                                    <td class="w-10 px-0 py-6">{{ table.name }}</td>
+                                    <td class="h-20 p-0">
+                                        <Tooltip>
+                                            <div>
+                                                <p>{{ table.name }}</p>
+                                                <p class="text-xs">
+                                                    <span class="{{ table.size.icon }}"></span> {{ table.size }}
+                                                </p>
+                                                <div class="flex flex-row">
+                                                    {% for icon in table_facilities.icons %}
+                                                        <span class="{{ icon }}"></span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <TooltipContent>
+                                                <p>{{ room.name }} - {{ room.description }} | {{ table.name }}</p>
+                                                {% for icon, note in zip(room_facilities.icons, room_facilities.notes) %}
+                                                    <p><span class="{{ icon }}"></span> {{ note }} room</p>
+                                                {% endfor %}
+                                                <p><span class="{{ table.size.icon }}"></span> {{ table.size }}</p>
+                                                {% for icon, note in zip(table_facilities.icons, table_facilities.notes) %}
+                                                    <p><span class="{{ icon }}"></span> {{ note }}</p>
+                                                {% endfor %}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </td>
                                     {% for time_slot in event.time_slots %}
                                         <td
                                             class="schedule-table-slot duration-250 border p-0 transition-colors [&>.game-card]:w-full"
                                             data-time-slot-id="{{ time_slot.id }}"
                                             data-table-id="{{ table.id }}"
+                                            data-size="{{ table.size }}"
                                         ></td>
                                     {% endfor %}
                                 </tr>
@@ -34,6 +64,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+
                 <div>Unsorted Games</div>
                 <div class="unscheduled-games flex flex-row flex-wrap gap-2">
                     {% for game in event.games %}
