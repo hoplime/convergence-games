@@ -284,6 +284,14 @@ class GameEquipmentRequirement(FlagWithNotes):
         WIFI_OR_CELL_SERVICE: "WiFi or cell service",
     }
 
+    __icons__ = {
+        POWER_OUTLET: "icon-[ic--baseline-power]",
+        WHITEBOARD: "icon-[fluent--whiteboard-24-filled]",
+        EXTRA_SIDETABLE: "icon-[ic--baseline-table-bar]",
+        BULKY_EQUIPMENT: "icon-[mdi--fridge]",
+        WIFI_OR_CELL_SERVICE: "icon-[material-symbols--wifi]",
+    }
+
 
 class GameActivityRequirement(FlagWithNotes):
     NONE = 0
@@ -305,6 +313,12 @@ class GameActivityRequirement(FlagWithNotes):
 
     __tooltips__ = {
         NOISY: "e.g. A Jenga tower might clatter every 15 minutes, or a game with a lot of shouting by design",
+    }
+
+    __icons__ = {
+        NOISY: "icon-[material-symbols--volume-up]",
+        MOVE_BETWEEN_TABLES: "icon-[material-symbols--directions-walk]",
+        MOVE_AWAY_FROM_VENUE: "icon-[heroicons--map-pin-16-solid]",
     }
 
 
@@ -331,6 +345,12 @@ class GameRoomRequirement(FlagWithNotes):
         PRIVATE: "Note that we have limited private/quiet rooms available, so be mindful this may require some flexibility",
     }
 
+    __icons__ = {
+        QUIET: "icon-[healthicons--deaf-outline-24px]",
+        PRIVATE: "icon-[material-symbols--lock]",
+        NEAR_ANOTHER_TABLE: "icon-[material-symbols--near-me]",
+    }
+
 
 class RoomFacility(FlagWithNotes):
     NONE = 0
@@ -338,7 +358,7 @@ class RoomFacility(FlagWithNotes):
     PRIVATE = 2
 
     __icons__ = {
-        QUIET: "icon-[ix--sound-quiet]",
+        QUIET: "icon-[healthicons--deaf-outline-24px]",
         PRIVATE: "icon-[material-symbols--lock]",
     }
 

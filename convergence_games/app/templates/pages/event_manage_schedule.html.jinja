@@ -68,28 +68,100 @@
                 <div>Unsorted Games</div>
                 <div class="unscheduled-games flex flex-row flex-wrap gap-2">
                     {% for game in event.games %}
+                        {% set game_requirement = game.game_requirement %}
+                        {% set table_size_requirement = game_requirement.table_size_requirement | GameTableSizeRequirement %}
+                        {% set table_size_notes = game_requirement.table_size_notes %}
+                        {% set equipment_requirement = game_requirement.equipment_requirement | GameEquipmentRequirement %}
+                        {% set equipment_notes = game_requirement.table_size_notes %}
+                        {% set activity_requirement = game_requirement.activity_requirement | GameActivityRequirement %}
+                        {% set activity_notes = game_requirement.activity_notes %}
+                        {% set room_requirement = game_requirement.room_requirement | GameRoomRequirement %}
+                        {% set room_notes = game_requirement.room_notes %}
                         {% for copy in range(game.game_requirement.times_to_run) %}
                             <div
-                                class="game-card bg-base-200 rounded-box border-base-300 relative w-fit cursor-move border p-1"
+                                class="game-card bg-base-200 rounded-box border-base-300 relative w-fit min-w-32 cursor-move border p-1"
                             >
                                 <h2 class="font-semibold">{{ game.name }}</h2>
-                                <h3 class="text-xs">{{ game.gamemaster.full_name }}</h3>
-                                <p class="text-xs">{{ copy + 1 }}/{{ game.game_requirement.times_to_run }}</p>
-                                <div class="absolute bottom-1 right-1 flex flex-row gap-[1px]">
-                                    {% for time_slot in event.time_slots %}
-                                        {% if time_slot in game.game_requirement.available_time_slots %}
-                                            <div
-                                                class="bg-primary h-2 w-2"
-                                                data-available-time-slot-id="{{ time_slot.id }}"
-                                                data-available
-                                            ></div>
-                                        {% else %}
-                                            <div
-                                                class="border-primary h-2 w-2 border"
-                                                data-available-time-slot-id="{{ time_slot.id }}"
-                                            ></div>
-                                        {% endif %}
-                                    {% endfor %}
+                                <div class="flex flex-row justify-between gap-2 text-xs">
+                                    <div>{{ game.gamemaster.full_name }}</div>
+                                    <div>{{ game.player_count_minimum }}-{{ game.player_count_maximum }}</div>
+                                </div>
+                                <div class="flex flex-row justify-between gap-2">
+                                    {%
+                                        if
+                                        table_size_requirement or
+                                        table_size_notes or
+                                        equipment_requirement or
+                                        equipment_notes or
+                                        activity_requirement or
+                                        activity_notes or
+                                        room_requirement or
+                                        room_notes
+                                    %}
+                                        <Tooltip align="bottom" class="w-full">
+                                            <div class="flex w-full flex-row">
+                                                {% for req in [table_size_requirement, equipment_requirement, activity_requirement, room_requirement] %}
+                                                    {% for icon in req.icons %}
+                                                        <span class="{{ icon }}"></span>
+                                                    {% endfor %}
+                                                {% endfor %}
+                                                {% if table_size_notes or equipment_notes or activity_notes or room_notes %}
+                                                    <span class="text-xs italic">Notes</span>
+                                                {% endif %}
+                                            </div>
+                                            <TooltipContent class="text-left">
+                                                {% if table_size_requirement or table_size_notes %}
+                                                    <p class="underline">Table Size</p>
+                                                    {% for icon, note in zip(table_size_requirement.icons, table_size_requirement.notes) %}
+                                                        <p><span class="{{ icon }}"></span> {{ note }}</p>
+                                                    {% endfor %}
+                                                    <p class="italic">{{ table_size_notes }}</p>
+                                                {% endif %}
+                                                {% if equipment_requirement or equipment_notes %}
+                                                    <p class="underline">Equipment</p>
+                                                    {% for icon, note in zip(equipment_requirement.icons, equipment_requirement.notes) %}
+                                                        <p><span class="{{ icon }}"></span> {{ note }}</p>
+                                                    {% endfor %}
+                                                    <p class="italic">{{ equipment_notes }}</p>
+                                                {% endif %}
+                                                {% if activity_requirement or activity_notes %}
+                                                    <p class="underline">Activity</p>
+                                                    {% for icon, note in zip(activity_requirement.icons, activity_requirement.notes) %}
+                                                        <p><span class="{{ icon }}"></span> {{ note }}</p>
+                                                    {% endfor %}
+                                                    <p class="italic">{{ activity_notes }}</p>
+                                                {% endif %}
+                                                {% if room_requirement or room_notes %}
+                                                    <p class="underline">Room</p>
+                                                    {% for icon, note in zip(room_requirement.icons, room_requirement.notes) %}
+                                                        <p><span class="{{ icon }}"></span> {{ note }}</p>
+                                                    {% endfor %}
+                                                    <p class="italic">{{ room_notes }}</p>
+                                                {% endif %}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    {% else %}
+                                        <div>-</div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex flex-row justify-between gap-2 text-xs">
+                                    <div>{{ copy + 1 }}/{{ game.game_requirement.times_to_run }}</div>
+                                    <div class="flex flex-row gap-[1px] self-end">
+                                        {% for time_slot in event.time_slots %}
+                                            {% if time_slot in game.game_requirement.available_time_slots %}
+                                                <div
+                                                    class="bg-primary h-2 w-2"
+                                                    data-available-time-slot-id="{{ time_slot.id }}"
+                                                    data-available
+                                                ></div>
+                                            {% else %}
+                                                <div
+                                                    class="border-primary h-2 w-2 border"
+                                                    data-available-time-slot-id="{{ time_slot.id }}"
+                                                ></div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </div>
                         {% endfor %}
