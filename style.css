@@ -111,3 +111,7 @@
   }
   scrollbar-width: none;
 }
+
+.sortable-chosen {
+    cursor: grabbing;
+}
