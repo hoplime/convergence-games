@@ -2,7 +2,7 @@
     name: str
 #}
 {% set id = random_id() %}
-<div id="{{ id }}">{{ content }}</div>
+<div id="{{ id }}" {{ attrs.render() }}>{{ content }}</div>
 <script>
     convergence.{{ name }}("{{ id }}");
 </script>

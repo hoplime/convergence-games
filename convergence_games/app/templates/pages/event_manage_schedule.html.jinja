@@ -2,20 +2,20 @@
     {% block content %}
         <title>{{ event.name }} Manage Schedule - Convergence 2025</title>
         <PageContainer size="max-w-full">
-            <Component name="event_manage_schedule">
+            <Component name="event_manage_schedule" class="group">
                 <table class="schedule-table table table-fixed px-0">
                     <thead>
                         <tr>
-                            <th class="sticky top-0 w-16 text-center">Table</th>
+                            <th class="w-16 text-center">Table</th>
                             {% for time_slot in event.time_slots %}
-                                <th class="sticky top-0 text-center">{{ time_slot.name }}</th>
+                                <th class="text-center">{{ time_slot.name }}</th>
                             {% endfor %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for room in event.rooms if room.tables %}
                             {% set room_facilities = room.facilities | RoomFacility %}
-                            <tr>
+                            <tr class="group-not-has-[#show-rooms:checked]:hidden">
                                 <td colspan="{{ event.time_slots|length + 1 }}" class="text-center font-semibold">
                                     {{ room.name }} - {{ room.description }}
                                     {% for icon in room_facilities.icons %}
@@ -27,14 +27,14 @@
                                 {% set table_facilities = table.facilities | TableFacility %}
                                 {% set provides = room_facilities.provides + table_facilities.provides + [table.size.provides] %}
                                 <tr>
-                                    <td class="h-20 p-0">
+                                    <td class="group-has-[#minimal-view:checked]:h-8.5 h-24 p-0">
                                         <Tooltip>
                                             <div>
                                                 <p>{{ table.name }}</p>
-                                                <p class="text-xs">
+                                                <p class="text-xs group-has-[#minimal-view:checked]:hidden">
                                                     <span class="{{ table.size.icon }}"></span> {{ table.size }}
                                                 </p>
-                                                <div class="flex flex-row">
+                                                <div class="flex flex-row group-has-[#minimal-view:checked]:hidden">
                                                     {% for icon in table_facilities.icons %}
                                                         <span class="{{ icon }}"></span>
                                                     {% endfor %}
@@ -56,7 +56,7 @@
                                         {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ time_slot.id]) | join('","')) ~ '"]' %}
                                         {# fmt: off #}
                                         <td
-                                            class="schedule-table-slot duration-250 border p-0 transition-colors [&>.game-card]:size-full"
+                                            class="schedule-table-slot border p-0 [&>.game-card]:w-full"
                                             data-time-slot-id="{{ time_slot.id }}"
                                             data-table-id="{{ table.id }}"
                                             {{ "data-provides='" ~ provide_string ~ "'" }}
@@ -134,7 +134,7 @@
                         {% set criteria_string = '["' ~ ((criteria + [criteria_time_slot_ids, criteria_gm_id]) | join('","')) ~ '"]' %}
                         {% for copy in range(game.game_requirement.times_to_run) %}
                             <div
-                                class="game-card bg-base-200 rounded-box border-base-300 relative w-fit min-w-32 cursor-move border p-1"
+                                class="game-card bg-base-200 rounded-box border-base-300 relative min-w-32 cursor-move border p-1"
                                 {{ "data-criteria='" ~ criteria_string ~ "'" }}
                                 data-game-id="{{ game.id }}"
                                 data-game-copy="{{ copy }}"
@@ -143,14 +143,23 @@
                                 data-player-count-optimum="{{ game.player_count_optimum }}"
                                 data-player-count-maximum="{{ game.player_count_maximum }}"
                             >
-                                <h2 class="font-semibold">{{ game.name }}</h2>
-                                <div class="flex flex-row justify-between gap-2 text-xs">
+                                <h2 class="font-semibold">
+                                    {{ game.name }}
+                                    <span class="hidden font-light group-has-[#minimal-view:checked]:inline"
+                                        >- {{ game.gamemaster.initials }}</span
+                                    >
+                                </h2>
+                                <div
+                                    class="flex flex-row justify-between gap-2 text-xs group-has-[#minimal-view:checked]:hidden"
+                                >
                                     <div data-criteria-match="{{ criteria_gm_id }}">
                                         {{ game.gamemaster.full_name }}
                                     </div>
                                     <div>{{ game.player_count_minimum }}-{{ game.player_count_maximum }}</div>
                                 </div>
-                                <div class="flex flex-row justify-between gap-2">
+                                <div
+                                    class="flex flex-row justify-between gap-2 group-has-[#minimal-view:checked]:hidden"
+                                >
                                     {%
                                         if
                                         table_size_requirement or
@@ -203,7 +212,9 @@
                                         <div>-</div>
                                     {% endif %}
                                 </div>
-                                <div class="flex flex-row justify-between gap-2 text-xs">
+                                <div
+                                    class="flex flex-row justify-between gap-2 text-xs group-has-[#minimal-view:checked]:hidden"
+                                >
                                     <div>{{ copy + 1 }}/{{ game.game_requirement.times_to_run }}</div>
                                     <div
                                         data-criteria-match="{{ criteria_time_slot_ids }}"
@@ -224,6 +235,18 @@
                         {% endfor %}
                     {% endfor %}
                 </div>
+
+                <FieldsetBase>
+                    <legend class="fieldset-legend">Display Settings</legend>
+                    <label class="label">
+                        <input type="checkbox" class="toggle toggle-primary" id="show-rooms" />
+                        <span class="label-text">Show Rooms</span>
+                    </label>
+                    <label class="label">
+                        <input type="checkbox" class="toggle toggle-primary" id="minimal-view" />
+                        <span class="label-text">Minimal View</span>
+                    </label>
+                </FieldsetBase>
             </Component>
         </PageContainer>
     {% endblock %}
