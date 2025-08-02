@@ -7,7 +7,7 @@
     "build": "npm run build:tsc && npm run build:css"
   },
   "dependencies": {
-    "@tailwindcss/cli": "^4.0.0",
+    "@tailwindcss/cli": "^4.1.11",
     "@tiptap-pro/extension-file-handler": "^2.17.2",
     "@tiptap/core": "^2.11.2",
     "@tiptap/extension-blockquote": "^2.11.2",
@@ -23,9 +23,9 @@
     "@tiptap/extension-underline": "^2.11.2",
     "@tiptap/pm": "^2.11.2",
     "@tiptap/starter-kit": "^2.11.2",
-    "daisyui": "^5.0.18",
+    "daisyui": "^5.0.50",
     "sortablejs": "^1.15.6",
-    "tailwindcss": "^4.0.0",
+    "tailwindcss": "^4.1.11",
     "tiptap-extension-resize-image": "^1.2.1"
   },
   "devDependencies": {
