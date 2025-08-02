@@ -33,7 +33,7 @@
                                             {% set table_facilities = table.facilities | TableFacility %}
                                             {% set provides = room_facilities.provides + table_facilities.provides + [table.size.provides] %}
                                             <tr>
-                                                <td class="group-has-[#minimal-view:checked]:h-8.5 h-24 p-0">
+                                                <td class="h-24 p-0 group-has-[#minimal-view:checked]:h-8.5">
                                                     <Tooltip>
                                                         <div>
                                                             <p>{{ table.name }}</p>
@@ -71,7 +71,7 @@
                                                     {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ time_slot.id]) | join('","')) ~ '"]' %}
                                                     {# fmt: off #}
                                                     <td
-                                                        class="schedule-table-slot border-base-content/5 border p-0 [&>.game-card]:w-full"
+                                                        class="schedule-table-slot border border-base-content/5 p-0 [&>.game-card]:w-full"
                                                         data-time-slot-id="{{ time_slot.id }}"
                                                         data-table-id="{{ table.id }}"
                                                         {{ "data-provides='" ~ provide_string ~ "'" }}
@@ -91,7 +91,7 @@
                                             <td class="p-0">
                                                 <table
                                                     data-time-slot-id="{{ time_slot.id }}"
-                                                    class="time-slot-summary table-xs table p-0"
+                                                    class="time-slot-summary table p-0 table-xs"
                                                 >
                                                     <thead>
                                                         <tr>
@@ -129,7 +129,7 @@
                             </table>
                         </div>
 
-                        <div class="unscheduled-games flex flex-col gap-2 overflow-y-scroll">
+                        <div class="flex h-full flex-col gap-2 overflow-hidden">
                             <FieldsetBase>
                                 <legend class="fieldset-legend">Display Settings</legend>
                                 <label class="label">
@@ -142,11 +142,15 @@
                                 </label>
                             </FieldsetBase>
                             <h2 class="text-lg font-semibold">Unscheduled Games</h2>
-                            {% for game in event.games %}
-                                {% for copy in range(game.game_requirement.times_to_run) %}
-                                    <ScheduleGameCard :game="game" :event="event" />
+                            <div
+                                class="unscheduled-games mask-b-from-75% mask-b-to-100% flex scrollbar-hidden grow flex-col gap-2 overflow-y-scroll"
+                            >
+                                {% for game in event.games %}
+                                    {% for copy in range(game.game_requirement.times_to_run) %}
+                                        <ScheduleGameCard :game="game" :event="event" />
+                                    {% endfor %}
                                 {% endfor %}
-                            {% endfor %}
+                            </div>
                         </div>
                     </div>
                 </div>
