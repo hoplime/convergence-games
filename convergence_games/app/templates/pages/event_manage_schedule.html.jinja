@@ -2,137 +2,155 @@
     {% block content %}
         <title>{{ event.name }} Manage Schedule - Convergence 2025</title>
         <PageContainer size="max-w-full">
-            <Component name="event_manage_schedule" class="group">
-                <table class="schedule-table table table-fixed px-0">
-                    <thead>
-                        <tr>
-                            <th class="w-16 text-center">Table</th>
-                            {% for time_slot in event.time_slots %}
-                                <th class="text-center">{{ time_slot.name }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for room in event.rooms if room.tables %}
-                            {% set room_facilities = room.facilities | RoomFacility %}
-                            <tr class="group-not-has-[#show-rooms:checked]:hidden">
-                                <td colspan="{{ event.time_slots|length + 1 }}" class="text-center font-semibold">
-                                    {{ room.name }} - {{ room.description }}
-                                    {% for icon in room_facilities.icons %}
-                                        <span class="{{ icon }}"></span>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            {% for table in room.tables %}
-                                {% set table_facilities = table.facilities | TableFacility %}
-                                {% set provides = room_facilities.provides + table_facilities.provides + [table.size.provides] %}
-                                <tr>
-                                    <td class="group-has-[#minimal-view:checked]:h-8.5 h-24 p-0">
-                                        <Tooltip>
-                                            <div>
-                                                <p>{{ table.name }}</p>
-                                                <p class="text-xs group-has-[#minimal-view:checked]:hidden">
-                                                    <span class="{{ table.size.icon }}"></span> {{ table.size }}
-                                                </p>
-                                                <div class="flex flex-row group-has-[#minimal-view:checked]:hidden">
-                                                    {% for icon in table_facilities.icons %}
-                                                        <span class="{{ icon }}"></span>
-                                                    {% endfor %}
-                                                </div>
-                                            </div>
-                                            <TooltipContent>
-                                                <p>{{ room.name }} - {{ room.description }} | {{ table.name }}</p>
-                                                {% for icon, note in zip(room_facilities.icons, room_facilities.notes) %}
-                                                    <p><span class="{{ icon }}"></span> {{ note }} room</p>
+            <Component name="event_manage_schedule">
+                <div class="group">
+                    <div class="full-screen grid h-screen grid-cols-[auto_max-content] gap-4">
+                        <div class="overflow-y-scroll">
+                            <table class="schedule-table table table-fixed px-0">
+                                <thead>
+                                    <tr>
+                                        <th class="w-16 text-center">Table</th>
+                                        {% for time_slot in event.time_slots %}
+                                            <th class="text-center">{{ time_slot.name }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for room in event.rooms if room.tables %}
+                                        {% set room_facilities = room.facilities | RoomFacility %}
+                                        <tr class="group-not-has-[#show-rooms:checked]:hidden">
+                                            <td
+                                                colspan="{{ event.time_slots|length + 1 }}"
+                                                class="text-center font-semibold"
+                                            >
+                                                {{ room.name }} - {{ room.description }}
+                                                {% for icon in room_facilities.icons %}
+                                                    <span class="{{ icon }}"></span>
                                                 {% endfor %}
-                                                <p><span class="{{ table.size.icon }}"></span> {{ table.size }}</p>
-                                                {% for icon, note in zip(table_facilities.icons, table_facilities.notes) %}
-                                                    <p><span class="{{ icon }}"></span> {{ note }}</p>
+                                            </td>
+                                        </tr>
+                                        {% for table in room.tables %}
+                                            {% set table_facilities = table.facilities | TableFacility %}
+                                            {% set provides = room_facilities.provides + table_facilities.provides + [table.size.provides] %}
+                                            <tr>
+                                                <td class="group-has-[#minimal-view:checked]:h-8.5 h-24 p-0">
+                                                    <Tooltip>
+                                                        <div>
+                                                            <p>{{ table.name }}</p>
+                                                            <p class="text-xs group-has-[#minimal-view:checked]:hidden">
+                                                                <span class="{{ table.size.icon }}"></span>
+                                                                {{ table.size }}
+                                                            </p>
+                                                            <div
+                                                                class="flex flex-row group-has-[#minimal-view:checked]:hidden"
+                                                            >
+                                                                {% for icon in table_facilities.icons %}
+                                                                    <span class="{{ icon }}"></span>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                        <TooltipContent>
+                                                            <p>
+                                                                {{ room.name }} - {{ room.description }} |
+                                                                {{ table.name }}
+                                                            </p>
+                                                            {% for icon, note in zip(room_facilities.icons, room_facilities.notes) %}
+                                                                <p><span class="{{ icon }}"></span> {{ note }} room</p>
+                                                            {% endfor %}
+                                                            <p>
+                                                                <span class="{{ table.size.icon }}"></span>
+                                                                {{ table.size }}
+                                                            </p>
+                                                            {% for icon, note in zip(table_facilities.icons, table_facilities.notes) %}
+                                                                <p><span class="{{ icon }}"></span> {{ note }}</p>
+                                                            {% endfor %}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </td>
+                                                {% for time_slot in event.time_slots %}
+                                                    {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ time_slot.id]) | join('","')) ~ '"]' %}
+                                                    {# fmt: off #}
+                                                    <td
+                                                        class="schedule-table-slot border p-0 [&>.game-card]:w-full"
+                                                        data-time-slot-id="{{ time_slot.id }}"
+                                                        data-table-id="{{ table.id }}"
+                                                        {{ "data-provides='" ~ provide_string ~ "'" }}
+                                                    ></td>
+                                                    {# fmt: on #}
                                                 {% endfor %}
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </td>
-                                    {% for time_slot in event.time_slots %}
-                                        {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ time_slot.id]) | join('","')) ~ '"]' %}
-                                        {# fmt: off #}
-                                        <td
-                                            class="schedule-table-slot border p-0 [&>.game-card]:w-full"
-                                            data-time-slot-id="{{ time_slot.id }}"
-                                            data-table-id="{{ table.id }}"
-                                            {{ "data-provides='" ~ provide_string ~ "'" }}
-                                        ></td>
-                                        {# fmt: on #}
+                                            </tr>
+                                        {% endfor %}
                                     {% endfor %}
-                                </tr>
-                            {% endfor %}
-                        {% endfor %}
-                    </tbody>
-                    <tfoot>
-                        {# Display the summary information counts under each time slot #}
-                        <tr>
-                            <td class="p-0"><p>Σ</p></td>
-                            {# One per time slot #}
-                            {% for time_slot in event.time_slots %}
-                                <td class="border p-0">
-                                    <table
-                                        data-time-slot-id="{{ time_slot.id }}"
-                                        class="time-slot-summary table-xs table p-0"
-                                    >
-                                        <thead>
-                                            <tr>
-                                                <th>.</th>
-                                                <th>Min</th>
-                                                <th>Opt</th>
-                                                <th>Max</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <th>GMs</th>
-                                                <td class="summary-gm-count font-light">0</td>
-                                                <td class="summary-gm-count font-light">0</td>
-                                                <td class="summary-gm-count font-light">0</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Players</th>
-                                                <td class="summary-player-minimum font-light">0</td>
-                                                <td class="summary-player-optimum font-light">0</td>
-                                                <td class="summary-player-maximum font-light">0</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Total</th>
-                                                <td class="summary-total-minimum">0</td>
-                                                <td class="summary-total-optimum">0</td>
-                                                <td class="summary-total-maximum">0</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </td>
-                            {% endfor %}
-                        </tr>
-                    </tfoot>
-                </table>
+                                </tbody>
+                                <tfoot>
+                                    {# Display the summary information counts under each time slot #}
+                                    <tr>
+                                        <td class="p-0"><p>Σ</p></td>
+                                        {# One per time slot #}
+                                        {% for time_slot in event.time_slots %}
+                                            <td class="border p-0">
+                                                <table
+                                                    data-time-slot-id="{{ time_slot.id }}"
+                                                    class="time-slot-summary table-xs table p-0"
+                                                >
+                                                    <thead>
+                                                        <tr>
+                                                            <th>.</th>
+                                                            <th>Min</th>
+                                                            <th>Opt</th>
+                                                            <th>Max</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <th>GMs</th>
+                                                            <td class="summary-gm-count font-light">0</td>
+                                                            <td class="summary-gm-count font-light">0</td>
+                                                            <td class="summary-gm-count font-light">0</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Players</th>
+                                                            <td class="summary-player-minimum font-light">0</td>
+                                                            <td class="summary-player-optimum font-light">0</td>
+                                                            <td class="summary-player-maximum font-light">0</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Total</th>
+                                                            <td class="summary-total-minimum">0</td>
+                                                            <td class="summary-total-optimum">0</td>
+                                                            <td class="summary-total-maximum">0</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                </tfoot>
+                            </table>
 
-                <div>Unsorted Games</div>
-                <div class="unscheduled-games flex flex-row flex-wrap gap-2">
-                    {% for game in event.games %}
-                        {% for copy in range(game.game_requirement.times_to_run) %}
-                            <ScheduleGameCard :game="game" :event="event" />
-                        {% endfor %}
-                    {% endfor %}
+                            <FieldsetBase>
+                                <legend class="fieldset-legend">Display Settings</legend>
+                                <label class="label">
+                                    <input type="checkbox" class="toggle toggle-primary" id="show-rooms" />
+                                    <span class="label-text">Show Rooms</span>
+                                </label>
+                                <label class="label">
+                                    <input type="checkbox" class="toggle toggle-primary" id="minimal-view" />
+                                    <span class="label-text">Minimal View</span>
+                                </label>
+                            </FieldsetBase>
+                        </div>
+
+                        <div class="unscheduled-games flex flex-col gap-2 overflow-y-scroll">
+                            <h2 class="text-lg font-semibold">Unscheduled Games</h2>
+                            {% for game in event.games %}
+                                {% for copy in range(game.game_requirement.times_to_run) %}
+                                    <ScheduleGameCard :game="game" :event="event" />
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
-
-                <FieldsetBase>
-                    <legend class="fieldset-legend">Display Settings</legend>
-                    <label class="label">
-                        <input type="checkbox" class="toggle toggle-primary" id="show-rooms" />
-                        <span class="label-text">Show Rooms</span>
-                    </label>
-                    <label class="label">
-                        <input type="checkbox" class="toggle toggle-primary" id="minimal-view" />
-                        <span class="label-text">Minimal View</span>
-                    </label>
-                </FieldsetBase>
             </Component>
         </PageContainer>
     {% endblock %}

@@ -1,5 +1,7 @@
+{#def
+#}
 {% set blur_on_click = '_="on click js document.activeElement.blur()"' %}
-<nav class="navbar">
+<nav {{ attrs.render(class="navbar") }}>
     <div class="flex flex-1 flex-row">
         <a class="btn btn-ghost text-xl normal-case" href="/">
             <svg
