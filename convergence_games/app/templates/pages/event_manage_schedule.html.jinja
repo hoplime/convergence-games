@@ -86,15 +86,21 @@
                         {% set room_notes = game_requirement.room_notes %}
                         {% set criteria = table_size_requirement.criteria + equipment_requirement.criteria + activity_requirement.criteria + room_requirement.criteria %}
                         {% set criteria_time_slot_ids = "time-slot-" ~ (game.game_requirement.available_time_slots | map(attribute="id") | join("|time-slot-")) %}
-                        {% set criteria_string = '["' ~ ((criteria + [criteria_time_slot_ids]) | join('","')) ~ '"]' %}
+                        {% set criteria_gm_id = "!gm-" ~ game.gamemaster_id %}
+                        {% set criteria_string = '["' ~ ((criteria + [criteria_time_slot_ids, criteria_gm_id]) | join('","')) ~ '"]' %}
                         {% for copy in range(game.game_requirement.times_to_run) %}
                             <div
                                 class="game-card bg-base-200 rounded-box border-base-300 relative w-fit min-w-32 cursor-move border p-1"
                                 {{ "data-criteria='" ~ criteria_string ~ "'" }}
+                                data-game-id="{{ game.id }}"
+                                data-game-copy="{{ copy }}"
+                                data-gm-id="{{ game.gamemaster_id }}"
                             >
                                 <h2 class="font-semibold">{{ game.name }}</h2>
                                 <div class="flex flex-row justify-between gap-2 text-xs">
-                                    <div>{{ game.gamemaster.full_name }}</div>
+                                    <div data-criteria-match="{{ criteria_gm_id }}">
+                                        {{ game.gamemaster.full_name }}
+                                    </div>
                                     <div>{{ game.player_count_minimum }}-{{ game.player_count_maximum }}</div>
                                 </div>
                                 <div class="flex flex-row justify-between gap-2">
@@ -121,7 +127,7 @@
                                                 {% endfor %}
                                                 {% if table_size_notes or equipment_notes or activity_notes or room_notes %}
                                                     <span class="text-xs italic">Notes</span>
-                                                {% endif %}
+                                                {% endif %}`
                                             </div>
                                             <TooltipContent class="text-left">
                                                 {%
