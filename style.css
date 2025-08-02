@@ -104,3 +104,10 @@
     --depth: 1;
     --noise: 0;
 }
+
+@utility scrollbar-hidden {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+}
