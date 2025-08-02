@@ -13,7 +13,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for room in event.rooms %}
+                        {% for room in event.rooms if room.tables %}
                             {% set room_facilities = room.facilities | RoomFacility %}
                             <tr>
                                 <td colspan="{{ event.time_slots|length + 1 }}" class="text-center font-semibold">
@@ -67,6 +67,50 @@
                             {% endfor %}
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        {# Display the summary information counts under each time slot #}
+                        <tr>
+                            <td class="p-0"><p>Σ</p></td>
+                            {# One per time slot #}
+                            {% for time_slot in event.time_slots %}
+                                <td class="border p-0">
+                                    <table
+                                        data-time-slot-id="{{ time_slot.id }}"
+                                        class="time-slot-summary table-xs table p-0"
+                                    >
+                                        <thead>
+                                            <tr>
+                                                <th>.</th>
+                                                <th>Min</th>
+                                                <th>Opt</th>
+                                                <th>Max</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <th>GMs</th>
+                                                <td class="summary-gm-count font-light">0</td>
+                                                <td class="summary-gm-count font-light">0</td>
+                                                <td class="summary-gm-count font-light">0</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Players</th>
+                                                <td class="summary-player-minimum font-light">0</td>
+                                                <td class="summary-player-optimum font-light">0</td>
+                                                <td class="summary-player-maximum font-light">0</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Total</th>
+                                                <td class="summary-total-minimum">0</td>
+                                                <td class="summary-total-optimum">0</td>
+                                                <td class="summary-total-maximum">0</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    </tfoot>
                 </table>
 
                 <div>Unsorted Games</div>
@@ -95,6 +139,9 @@
                                 data-game-id="{{ game.id }}"
                                 data-game-copy="{{ copy }}"
                                 data-gm-id="{{ game.gamemaster_id }}"
+                                data-player-count-minimum="{{ game.player_count_minimum }}"
+                                data-player-count-optimum="{{ game.player_count_optimum }}"
+                                data-player-count-maximum="{{ game.player_count_maximum }}"
                             >
                                 <h2 class="font-semibold">{{ game.name }}</h2>
                                 <div class="flex flex-row justify-between gap-2 text-xs">
