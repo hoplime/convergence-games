@@ -92,19 +92,40 @@ const event_manage_schedule = (scope_id: string) => {
 
             // Highlight available time slots based on the dragged item's criteria
             for (const slot of scheduleTableSlotElements) {
-                const provides = slot.provides;
+                // Take a copy of the provides array to avoid modifying the original
+                const provides = slot.provides ? [...slot.provides] : [];
                 if (!provides) {
                     console.warn("No provides found for schedule table slot:", slot);
                     continue;
                 }
+
+                // Edge case - moving to the same time slot and already has a single instance of the gm-id
+                // We can remove this provided gm-id - as it's created by THIS game card, so it might be valid to move it there (different table, same time slot)
+                const gmId = (evt.item as GameCard).dataset.gmId;
+                if (provides.includes(`gm-${gmId}`) && slot.dataset.timeSlotId === evt.from.dataset.timeSlotId) {
+                    console.log(
+                        "Removing gm-id from provides for slot:",
+                        slot,
+                        "with gmId:",
+                        gmId,
+                        "evt.from:",
+                        evt.from,
+                    );
+                    // Remove the gm-id from the provides
+                    const index = provides.indexOf(`gm-${gmId}`);
+                    if (index !== -1) {
+                        provides.splice(index, 1);
+                    }
+                }
+
                 // Check if the slot provides ALL of the criteria
                 // If the criteria includes a "|", split it and check if any of the provides match
                 const unmatched = unmatchedCriteria(criteria, provides);
 
                 if (unmatched.length === 0) {
                     slot.classList.add("bg-success/25");
-                    console.log("Slot matches criteria:", slot, "with provides:", provides);
                 }
+
                 if (
                     unmatched.length === 1 &&
                     !unmatched[0].startsWith("time-slot") &&
@@ -112,7 +133,6 @@ const event_manage_schedule = (scope_id: string) => {
                 ) {
                     // If there is only one unmatched criterion (excluding the time slot, and gm, which must be valid), highlight the slot
                     slot.classList.add("bg-warning/25");
-                    console.log("Slot partially matches criteria:", slot, "with unmatched:", unmatched);
                 }
             }
         },
@@ -169,10 +189,12 @@ const event_manage_schedule = (scope_id: string) => {
                     if (slot.provides) {
                         const index = slot.provides.indexOf(`gm-${gmId}`);
                         if (index !== -1) {
+                            console.log("Removing gm-id from slot provides:", slot, "with gmId:", gmId);
                             slot.provides.splice(index, 1);
                             // If this slot contains a GameCard, update its display - as it may now be valid
                             const gameCardInSlot = slot.querySelector(".game-card") as GameCard | null;
                             if (gameCardInSlot) {
+                                console.log("Updating game card display for slot:", slot, "because gm-id was removed");
                                 updateGameCardDisplay(gameCardInSlot, slot);
                             }
                         }
