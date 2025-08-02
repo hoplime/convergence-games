@@ -10,7 +10,7 @@
                 hx-push-url="true"
                 hx-trigger="change from:input:not([name=filter_tab]) delay:100ms, reset delay:10ms"
                 hx-params="not filter_tab"
-                class="tabs tabs-border"
+                class="tabs-border tabs"
             >
                 <div class="inline-flex h-10 items-center justify-center text-sm">Filters:</div>
                 <MultiselectTab :form_data="form_data.genre" />
@@ -19,7 +19,7 @@
                 <MultiselectTab :form_data="form_data.bonus" />
                 <MultiselectTab :form_data="form_data.content" />
                 <div class="inline-flex h-10 items-center justify-center">
-                    <button type="reset" class="btn btn-sm btn-secondary btn-outline">
+                    <button type="reset" class="btn btn-outline btn-sm btn-secondary">
                         <span>Clear Filters</span>
                     </button>
                 </div>
@@ -28,7 +28,7 @@
             <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" id="game_list">
                 {% block game_list %}
                     {% for game in games %}
-                        <div class="card bg-base-200 border-base-300 rounded-box border">
+                        <div class="card rounded-box border border-base-300 bg-base-200">
                             <a href="/game/{{ swim(game) }}">
                                 <div class="card-body">
                                     <h2 class="card-title">{{ game.name }}</h2>
@@ -82,7 +82,7 @@
                         </div>
                     {% endfor %}
                     {% if not games %}
-                        <div class="card bg-base-200 border-base-300 rounded-box col-span-full border">
+                        <div class="card col-span-full rounded-box border border-base-300 bg-base-200">
                             <div class="card-body">
                                 <h2 class="card-title text-xl">No Games Found</h2>
                                 <p>There are no games that match your search criteria.</p>
@@ -94,13 +94,16 @@
             </div>
             {% if request.user is not none %}
                 {% if request.user | has_permission("event", (event, event), "manage_submissions") %}
-                    <div class="card bg-base-200 border-base-300 rounded-box border">
+                    <div class="card rounded-box border border-base-300 bg-base-200">
                         <div class="card-body">
                             <h2 class="card-title text-xl">Admin Section</h2>
                             <p>You are an admin for this event.</p>
                             <div class="card-actions justify-start">
                                 <a href="/event/{{ swim(event) }}/manage-submissions" class="btn btn-primary">
                                     Manage Submissions
+                                </a>
+                                <a href="/event/{{ swim(event) }}/manage-schedule" class="btn btn-primary">
+                                    Manage Schedule
                                 </a>
                             </div>
                         </div>

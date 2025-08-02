@@ -3,7 +3,7 @@
         <title>{{ event.name }} Manage Submissions - Convergence 2025</title>
         <PageContainer size="max-w-screen-2xl">
             <div>Manage Submissions</div>
-            <table class="bg-base-200 table-sm table">
+            <table class="table bg-base-200 table-sm">
                 <thead>
                     <tr>
                         <TableSortHeader sort="title" :active="sort == 'title'" :desc="desc">Title</TableSortHeader>
@@ -46,6 +46,7 @@
                     </tr>
                 </tbody>
             </table>
+            <a href="/event/{{ swim(event) }}/manage-schedule" class="btn btn-primary">Manage Schedule</a>
         </PageContainer>
     {% endblock %}
 </Page>
