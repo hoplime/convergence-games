@@ -112,8 +112,11 @@
                                         <Tooltip align="bottom" class="w-full">
                                             <div class="flex w-full flex-row">
                                                 {% for req in [table_size_requirement, equipment_requirement, activity_requirement, room_requirement] %}
-                                                    {% for icon in req.icons %}
-                                                        <span class="{{ icon }}"></span>
+                                                    {% for r in req %}
+                                                        <span
+                                                            data-criteria-match="{{ r.criteria[0] }}"
+                                                            class="{{ r.icons[0] }}"
+                                                        ></span>
                                                     {% endfor %}
                                                 {% endfor %}
                                                 {% if table_size_notes or equipment_notes or activity_notes or room_notes %}
@@ -121,34 +124,26 @@
                                                 {% endif %}
                                             </div>
                                             <TooltipContent class="text-left">
-                                                {% if table_size_requirement or table_size_notes %}
-                                                    <p class="underline">Table Size</p>
-                                                    {% for icon, note in zip(table_size_requirement.icons, table_size_requirement.notes) %}
-                                                        <p><span class="{{ icon }}"></span> {{ note }}</p>
-                                                    {% endfor %}
-                                                    <p class="italic">{{ table_size_notes }}</p>
-                                                {% endif %}
-                                                {% if equipment_requirement or equipment_notes %}
-                                                    <p class="underline">Equipment</p>
-                                                    {% for icon, note in zip(equipment_requirement.icons, equipment_requirement.notes) %}
-                                                        <p><span class="{{ icon }}"></span> {{ note }}</p>
-                                                    {% endfor %}
-                                                    <p class="italic">{{ equipment_notes }}</p>
-                                                {% endif %}
-                                                {% if activity_requirement or activity_notes %}
-                                                    <p class="underline">Activity</p>
-                                                    {% for icon, note in zip(activity_requirement.icons, activity_requirement.notes) %}
-                                                        <p><span class="{{ icon }}"></span> {{ note }}</p>
-                                                    {% endfor %}
-                                                    <p class="italic">{{ activity_notes }}</p>
-                                                {% endif %}
-                                                {% if room_requirement or room_notes %}
-                                                    <p class="underline">Room</p>
-                                                    {% for icon, note in zip(room_requirement.icons, room_requirement.notes) %}
-                                                        <p><span class="{{ icon }}"></span> {{ note }}</p>
-                                                    {% endfor %}
-                                                    <p class="italic">{{ room_notes }}</p>
-                                                {% endif %}
+                                                {%
+                                                    for req_title, req, req_notes in [
+                                                        ("Table Size", table_size_requirement, table_size_notes),
+                                                        ("Equipment", equipment_requirement, equipment_notes),
+                                                        ("Activity", activity_requirement, activity_notes),
+                                                        ("Room", room_requirement, room_notes),
+                                                    ]
+                                                %}
+                                                    {% if req or req_notes %}
+                                                        <p class="underline">{{ req_title }}</p>
+                                                        {% for r in req %}
+                                                            <p data-criteria-match="{{ r.criteria[0] }}">
+                                                                <span class="{{ r.icons[0] }}"></span> {{ r.notes[0] }}
+                                                            </p>
+                                                        {% endfor %}
+                                                        {% if req_notes %}
+                                                            <p class="italic">{{ req_notes }}</p>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
                                             </TooltipContent>
                                         </Tooltip>
                                     {% else %}
@@ -157,12 +152,17 @@
                                 </div>
                                 <div class="flex flex-row justify-between gap-2 text-xs">
                                     <div>{{ copy + 1 }}/{{ game.game_requirement.times_to_run }}</div>
-                                    <div class="flex flex-row gap-[1px] self-end">
+                                    <div
+                                        data-criteria-match="{{ criteria_time_slot_ids }}"
+                                        class="flex flex-row gap-[1px] self-end"
+                                    >
                                         {% for time_slot in event.time_slots %}
                                             {% if time_slot in game.game_requirement.available_time_slots %}
-                                                <div class="bg-primary h-2 w-2"></div>
+                                                <div class="in-[.text-error]:bg-error bg-primary h-2 w-2"></div>
                                             {% else %}
-                                                <div class="border-primary h-2 w-2 border"></div>
+                                                <div
+                                                    class="in-[.text-error]:border-error border-primary h-2 w-2 border"
+                                                ></div>
                                             {% endif %}
                                         {% endfor %}
                                     </div>
