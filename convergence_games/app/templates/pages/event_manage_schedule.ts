@@ -87,7 +87,9 @@ const event_manage_schedule = (scope_id: string) => {
 
     const options: Sortable.Options = {
         group: "schedule-shared",
-        animation: 150,
+        animation: 0,
+        emptyInsertThreshold: 0,
+        delay: 0,
         onStart: (evt) => {
             // Check if the dragged item has a criteria property
             const criteria = (evt.item as GameCard).criteria;
