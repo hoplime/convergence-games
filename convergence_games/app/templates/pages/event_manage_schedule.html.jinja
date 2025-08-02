@@ -6,7 +6,7 @@
                 <div class="group">
                     <div class="full-screen grid h-screen grid-cols-[auto_max-content] gap-4">
                         <div class="overflow-y-scroll">
-                            <table class="schedule-table table table-fixed px-0">
+                            <table class="schedule-table table-pin-rows table h-screen table-fixed px-0">
                                 <thead>
                                     <tr>
                                         <th class="w-16 text-center">Table</th>
@@ -71,7 +71,7 @@
                                                     {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ time_slot.id]) | join('","')) ~ '"]' %}
                                                     {# fmt: off #}
                                                     <td
-                                                        class="schedule-table-slot border p-0 [&>.game-card]:w-full"
+                                                        class="schedule-table-slot border-base-content/5 border p-0 [&>.game-card]:w-full"
                                                         data-time-slot-id="{{ time_slot.id }}"
                                                         data-table-id="{{ table.id }}"
                                                         {{ "data-provides='" ~ provide_string ~ "'" }}
@@ -88,7 +88,7 @@
                                         <td class="p-0"><p>Σ</p></td>
                                         {# One per time slot #}
                                         {% for time_slot in event.time_slots %}
-                                            <td class="border p-0">
+                                            <td class="p-0">
                                                 <table
                                                     data-time-slot-id="{{ time_slot.id }}"
                                                     class="time-slot-summary table-xs table p-0"
@@ -127,7 +127,9 @@
                                     </tr>
                                 </tfoot>
                             </table>
+                        </div>
 
+                        <div class="unscheduled-games flex flex-col gap-2 overflow-y-scroll">
                             <FieldsetBase>
                                 <legend class="fieldset-legend">Display Settings</legend>
                                 <label class="label">
@@ -139,9 +141,6 @@
                                     <span class="label-text">Minimal View</span>
                                 </label>
                             </FieldsetBase>
-                        </div>
-
-                        <div class="unscheduled-games flex flex-col gap-2 overflow-y-scroll">
                             <h2 class="text-lg font-semibold">Unscheduled Games</h2>
                             {% for game in event.games %}
                                 {% for copy in range(game.game_requirement.times_to_run) %}
