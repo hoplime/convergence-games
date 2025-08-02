@@ -11,26 +11,33 @@ type ScheduleTableSlot = HTMLElement & {
 const errorBgStyle = "bg-error/25";
 const errorTextStyle = "text-error";
 
+const criterionMatches = (criterion: string, provides: string[]): boolean => {
+    if (criterion.includes("|")) {
+        // Split the criterion by "|" and check if any of the provides match
+        const subCriteria = criterion.split("|");
+        return subCriteria.some((subCriterion) => criterionMatches(subCriterion, provides));
+    }
+    // If the criterion starts with "!", it means it should not match
+    let negated = criterion.startsWith("!");
+    if (negated) {
+        criterion = criterion.slice(1); // Remove the "!" for matching
+        return !provides.includes(criterion);
+    }
+    return provides.includes(criterion);
+};
+
 const unmatchedCriteria = (criteria: string[], provides: string[]) => {
     // Check for the criteria that are not met by the provides
     // And return them as a string array
-    return criteria.filter((criterion) => {
-        if (criterion.includes("|")) {
-            // Split the criterion by "|" and check if any of the provides match
-            const subCriteria = criterion.split("|");
-            return !subCriteria.some((subCriterion) => provides.includes(subCriterion));
-        }
-        // Otherwise, check if the single criterion matches
-        return !provides.includes(criterion);
-    });
+    return criteria.filter((criterion) => !criterionMatches(criterion, provides));
 };
 
-const updateGameCardDisplay = (gameCard: GameCard, scheduleTableSlot: ScheduleTableSlot) => {
-    // Update the game card's display based on where it was dropped
-    const provides = scheduleTableSlot.provides || [];
-    // If we have no provides, then this is not a scheduleTableSlot
+const updateGameCardDisplay = (gameCard: GameCard, scheduleTableSlot: ScheduleTableSlot | HTMLElement) => {
+    // If the scheduleTableSlot has undefined provides, it is the unscheduled games element - so nothing is unmatched
     const unmatched =
-        provides.length === 0 ? [] : unmatchedCriteria(gameCard.criteria || [], scheduleTableSlot.provides || []);
+        !("provides" in scheduleTableSlot) || scheduleTableSlot.provides === undefined
+            ? []
+            : unmatchedCriteria(gameCard.criteria || [], scheduleTableSlot.provides || []);
 
     clearGameCardDisplay(gameCard);
 
@@ -93,11 +100,19 @@ const event_manage_schedule = (scope_id: string) => {
                 // Check if the slot provides ALL of the criteria
                 // If the criteria includes a "|", split it and check if any of the provides match
                 const unmatched = unmatchedCriteria(criteria, provides);
-                const matches = unmatched.length === 0;
 
-                if (matches) {
+                if (unmatched.length === 0) {
                     slot.classList.add("bg-success/25");
                     console.log("Slot matches criteria:", slot, "with provides:", provides);
+                }
+                if (
+                    unmatched.length === 1 &&
+                    !unmatched[0].startsWith("time-slot") &&
+                    !unmatched[0].startsWith("!gm-")
+                ) {
+                    // If there is only one unmatched criterion (excluding the time slot, and gm, which must be valid), highlight the slot
+                    slot.classList.add("bg-warning/25");
+                    console.log("Slot partially matches criteria:", slot, "with unmatched:", unmatched);
                 }
             }
         },
@@ -105,18 +120,68 @@ const event_manage_schedule = (scope_id: string) => {
             console.log("Drag ended", evt);
             for (const el of scheduleTableSlotElements) {
                 el.classList.remove("bg-success/25");
+                el.classList.remove("bg-warning/25");
             }
 
-            // Update the game card's display based on where it was dropped
-            const targetElement = evt.to;
-            if (targetElement == unscheduledGamesElement) {
-                // If dropped back to unscheduled games, clear the display
-                clearGameCardDisplay(evt.item as GameCard);
-                return;
+            const gameCard = evt.item as GameCard;
+            const gmId = gameCard.dataset.gmId as string;
+
+            const fromElement = evt.from as ScheduleTableSlot | HTMLElement;
+            const toElement = evt.to as ScheduleTableSlot | HTMLElement;
+
+            // Add the gm-id to the provides of every schedule table slot in the column (with the same time slot) as the to element
+            // EXCEPT the toElement itself
+            if ("provides" in toElement) {
+                // Now we know toElement is a ScheduleTableSlot
+                const timeSlotId = toElement.dataset.timeSlotId;
+                // Find all the schedule table slots with the same time slot id
+                const matchingSlots = Array.from(scheduleTableSlotElements).filter(
+                    (slot) => slot.dataset.timeSlotId === timeSlotId && slot !== toElement,
+                ) as ScheduleTableSlot[];
+                // Add the gm-id to the provides of each matching slot
+                for (const slot of matchingSlots) {
+                    if (!slot.provides) {
+                        // If provides is undefined, initialize it
+                        slot.provides = [];
+                    }
+                    slot.provides.push(`gm-${gmId}`);
+                    // If this slot contains a GameCard, update its display - as it may now be invalid
+                    const gameCardInSlot = slot.querySelector(".game-card") as GameCard | null;
+                    if (gameCardInSlot) {
+                        updateGameCardDisplay(gameCardInSlot, slot);
+                    }
+                }
             }
+
+            // Remove the gm-id from the provides of every schedule table slot in the column (with the same time slot) as the from element
+            // EXCEPT the fromElement itself
+            if ("provides" in fromElement) {
+                // Now we know fromElement is a ScheduleTableSlot
+                const timeSlotId = fromElement.dataset.timeSlotId;
+                // Find all the schedule table slots with the same time slot id
+                const matchingSlots = Array.from(scheduleTableSlotElements).filter(
+                    (slot) => slot.dataset.timeSlotId === timeSlotId && slot !== fromElement,
+                ) as ScheduleTableSlot[];
+                // Remove the gm-id from the provides of each matching slot
+                // Just remove one instance of the gm-id
+                // This is to ensure that if the gm-id was added multiple times, it only gets removed once
+                for (const slot of matchingSlots) {
+                    if (slot.provides) {
+                        const index = slot.provides.indexOf(`gm-${gmId}`);
+                        if (index !== -1) {
+                            slot.provides.splice(index, 1);
+                            // If this slot contains a GameCard, update its display - as it may now be valid
+                            const gameCardInSlot = slot.querySelector(".game-card") as GameCard | null;
+                            if (gameCardInSlot) {
+                                updateGameCardDisplay(gameCardInSlot, slot);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Update the game card's display based on the target slot
-            const targetSlot = targetElement as ScheduleTableSlot;
-            updateGameCardDisplay(evt.item as GameCard, targetSlot);
+            updateGameCardDisplay(gameCard, toElement);
         },
     };
 
