@@ -19,7 +19,7 @@
 {% set criteria_gm_id = "!gm-" ~ game.gamemaster_id %}
 {% set criteria_string = '["' ~ ((criteria + [criteria_time_slot_ids, criteria_gm_id]) | join('","')) ~ '"]' %}
 <div
-    class="game-card bg-base-200 rounded-box border-base-300 relative min-w-32 cursor-grab border p-1"
+    class="game-card relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
     {{ "data-criteria='" ~ criteria_string ~ "'" }}
     data-game-id="{{ game.id }}"
     data-gm-id="{{ game.gamemaster_id }}"
@@ -36,7 +36,7 @@
         </h2>
         <span
             class="icon-[tabler--external-link] cursor-pointer"
-            _="on click[ctrlKey] go to url /game/{{ swim(game) }}"
+            _="on click[ctrlKey] go to url /game/{{ swim(game) }} in new window"
         ></span>
     </div>
     <div class="flex flex-row justify-between gap-2 text-xs group-has-[#minimal-view:checked]:hidden">
@@ -101,9 +101,9 @@
         <div data-criteria-match="{{ criteria_time_slot_ids }}" class="flex flex-row gap-[1px] self-end">
             {% for time_slot in event.time_slots %}
                 {% if time_slot in game.game_requirement.available_time_slots %}
-                    <div class="in-[.text-error]:bg-error bg-primary h-2 w-2"></div>
+                    <div class="h-2 w-2 bg-primary in-[.text-error]:bg-error"></div>
                 {% else %}
-                    <div class="in-[.text-error]:border-error border-primary h-2 w-2 border"></div>
+                    <div class="h-2 w-2 border border-primary in-[.text-error]:border-error"></div>
                 {% endif %}
             {% endfor %}
         </div>
