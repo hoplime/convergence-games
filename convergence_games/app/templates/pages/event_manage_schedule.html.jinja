@@ -56,7 +56,7 @@
                                         {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ time_slot.id]) | join('","')) ~ '"]' %}
                                         {# fmt: off #}
                                         <td
-                                            class="schedule-table-slot duration-250 border p-0 transition-colors [&>.game-card]:w-full"
+                                            class="schedule-table-slot duration-250 border p-0 transition-colors [&>.game-card]:size-full"
                                             data-time-slot-id="{{ time_slot.id }}"
                                             data-table-id="{{ table.id }}"
                                             {{ "data-provides='" ~ provide_string ~ "'" }}

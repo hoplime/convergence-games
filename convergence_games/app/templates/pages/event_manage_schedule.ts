@@ -10,6 +10,7 @@ type ScheduleTableSlot = HTMLElement & {
 
 const errorBgStyle = "bg-error/25";
 const errorTextStyle = "text-error";
+const warningBgStyle = "bg-warning/25";
 
 const criterionMatches = (criterion: string, provides: string[]): boolean => {
     if (criterion.includes("|")) {
@@ -42,8 +43,12 @@ const updateGameCardDisplay = (gameCard: GameCard, scheduleTableSlot: ScheduleTa
     clearGameCardDisplay(gameCard);
 
     if (unmatched.length !== 0) {
-        // If not all criteria are met, show the game card with a warning style
-        gameCard.classList.add(errorBgStyle);
+        // If not all criteria are met, show the game card with a warning or error style
+        // If the unmatched criteria include a time slot or gm-id, use an error style
+        const isError = unmatched.some(
+            (criterion) => criterion.startsWith("time-slot-") || criterion.startsWith("!gm-"),
+        );
+        gameCard.classList.add(isError ? errorBgStyle : warningBgStyle);
 
         // And find the elements with unmatched data-criteria attributes
         Array.from(gameCard.querySelectorAll("[data-criteria-match]"))
@@ -60,6 +65,7 @@ const updateGameCardDisplay = (gameCard: GameCard, scheduleTableSlot: ScheduleTa
 const clearGameCardDisplay = (gameCard: GameCard) => {
     // Clear the game card's display styles
     gameCard.classList.remove(errorBgStyle);
+    gameCard.classList.remove(warningBgStyle);
 
     // Clear each element's criteria warnings
     Array.from(gameCard.querySelectorAll("[data-criteria-match]")).forEach((el) => {
