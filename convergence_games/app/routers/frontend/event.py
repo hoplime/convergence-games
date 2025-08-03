@@ -26,6 +26,7 @@ from convergence_games.db.models import (
     GameRequirement,
     Genre,
     Room,
+    Session,
     System,
     User,
 )
@@ -60,7 +61,8 @@ async def get_full_event_schedule_dep(
             ),
             selectinload(Event.rooms).selectinload(Room.tables),
             selectinload(Event.time_slots),
-            selectinload(Event.sessions),
+            selectinload(Event.tables),
+            selectinload(Event.sessions).selectinload(Session.game),
         )
         .where(Event.id == event_id)
     )
@@ -385,7 +387,13 @@ class EventController(Controller):
                 "event": event,
                 "unscheduled_games": unscheduled_games,
                 "sessions_by_table_and_time_slot": {
-                    (session.table_id, session.time_slot_id): session for session in event.sessions
+                    (table.id, time_slot.id): [
+                        session
+                        for session in event.sessions
+                        if session.table_id == table.id and session.time_slot_id == time_slot.id
+                    ]
+                    for table in event.tables
+                    for time_slot in event.time_slots
                 },
             },
         )
