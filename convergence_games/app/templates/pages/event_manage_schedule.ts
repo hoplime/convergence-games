@@ -93,6 +93,7 @@ const event_manage_schedule = (scope_id: string) => {
     const summaryElements = scope.querySelectorAll(".time-slot-summary") as NodeListOf<HTMLElement>;
     const saveButton = scope.querySelector(".save-button") as HTMLButtonElement;
     const commitButton = scope.querySelector(".commit-button") as HTMLButtonElement;
+    const lastSavedInput = scope.querySelector("input[name='last-saved']") as HTMLInputElement;
 
     // Global state requiring functions
     const emplaceCard = (
@@ -381,6 +382,11 @@ const event_manage_schedule = (scope_id: string) => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(bodyJson),
+        }).then((response) => {
+            if (!response.ok) {
+                console.error("Failed to save schedule:", response.statusText);
+            }
+            lastSavedInput.value = new Date().toISOString(); // Update the last saved time
         });
     };
 
