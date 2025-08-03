@@ -75,7 +75,13 @@
                                                         data-time-slot-id="{{ time_slot.id }}"
                                                         data-table-id="{{ table.id }}"
                                                         {{ "data-provides='" ~ provide_string ~ "'" }}
-                                                    ></td>
+                                                    >
+                                                        {% if (table.id, time_slot.id) in sessions_by_table_and_time_slot %}
+                                                            {% for session in sessions_by_table_and_time_slot[(table.id, time_slot.id)] %}
+                                                                <ScheduleGameCard :game="session.game" :event="event" />
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                    </td>
                                                     {# fmt: on #}
                                                 {% endfor %}
                                             </tr>
@@ -95,7 +101,7 @@
                                                 >
                                                     <thead>
                                                         <tr>
-                                                            <th>.</th>
+                                                            <th></th>
                                                             <th>Min</th>
                                                             <th>Opt</th>
                                                             <th>Max</th>

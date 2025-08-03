@@ -74,6 +74,7 @@ const clearGameCardDisplay = (gameCard: GameCard) => {
 };
 
 const event_manage_schedule = (scope_id: string) => {
+    // Elements
     const scope = document.getElementById(scope_id);
     if (!scope) {
         console.error(`Scope with id ${scope_id} not found`);
@@ -85,6 +86,139 @@ const event_manage_schedule = (scope_id: string) => {
     const gameCardElements = scope.querySelectorAll(".game-card") as NodeListOf<GameCard>;
     const summaryElements = scope.querySelectorAll(".time-slot-summary") as NodeListOf<HTMLElement>;
 
+    // Global state requiring functions
+    const emplaceCard = (
+        gameCard: GameCard,
+        fromElement: ScheduleTableSlot | HTMLElement,
+        toElement: ScheduleTableSlot | HTMLElement,
+    ) => {
+        // Triggered on drag end OR on initialization if the game card is already in a slot (in which case fromElement is the unscheduledGamesElement and toElement is the slot)
+        const gmId = gameCard.dataset.gmId as string;
+        const playerCountMinimum = gameCard.dataset.playerCountMinimum
+            ? parseInt(gameCard.dataset.playerCountMinimum, 10)
+            : 0;
+        const playerCountOptimum = gameCard.dataset.playerCountOptimum
+            ? parseInt(gameCard.dataset.playerCountOptimum, 10)
+            : 0;
+        const playerCountMaximum = gameCard.dataset.playerCountMaximum
+            ? parseInt(gameCard.dataset.playerCountMaximum, 10)
+            : 0;
+
+        const fromTimeSlotId = fromElement.dataset.timeSlotId;
+        const toTimeSlotId = toElement.dataset.timeSlotId;
+
+        // Add the gm-id to the provides of every schedule table slot in the column (with the same time slot) as the to element
+        // EXCEPT the toElement itself
+        if ("provides" in toElement) {
+            // Find all the schedule table slots with the same time slot id
+            const matchingSlots = Array.from(scheduleTableSlotElements).filter(
+                (slot) => slot.dataset.timeSlotId === toTimeSlotId && slot !== toElement,
+            ) as ScheduleTableSlot[];
+            // Add the gm-id to the provides of each matching slot
+            for (const slot of matchingSlots) {
+                if (!slot.provides) {
+                    // If provides is undefined, initialize it
+                    slot.provides = [];
+                }
+                slot.provides.push(`gm-${gmId}`);
+                // If this slot contains a GameCard, update its display - as it may now be invalid
+                const gameCardInSlot = slot.querySelector(".game-card") as GameCard | null;
+                if (gameCardInSlot) {
+                    updateGameCardDisplay(gameCardInSlot, slot);
+                }
+            }
+        }
+
+        // Remove the gm-id from the provides of every schedule table slot in the column (with the same time slot) as the from element
+        // EXCEPT the fromElement itself
+        if ("provides" in fromElement) {
+            // Find all the schedule table slots with the same time slot id
+            const matchingSlots = Array.from(scheduleTableSlotElements).filter(
+                (slot) => slot.dataset.timeSlotId === fromTimeSlotId && slot !== fromElement,
+            ) as ScheduleTableSlot[];
+            // Remove the gm-id from the provides of each matching slot
+            // Just remove one instance of the gm-id
+            // This is to ensure that if the gm-id was added multiple times, it only gets removed once
+            for (const slot of matchingSlots) {
+                if (slot.provides) {
+                    const index = slot.provides.indexOf(`gm-${gmId}`);
+                    if (index !== -1) {
+                        console.log("Removing gm-id from slot provides:", slot, "with gmId:", gmId);
+                        slot.provides.splice(index, 1);
+                        // If this slot contains a GameCard, update its display - as it may now be valid
+                        const gameCardInSlot = slot.querySelector(".game-card") as GameCard | null;
+                        if (gameCardInSlot) {
+                            console.log("Updating game card display for slot:", slot, "because gm-id was removed");
+                            updateGameCardDisplay(gameCardInSlot, slot);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add the counts to the summary information with the same time slot id as the to element
+        const toSummaryElement = Array.from(summaryElements).find((el) => el.dataset.timeSlotId === toTimeSlotId) as
+            | HTMLElement
+            | undefined;
+        if (toSummaryElement) {
+            // Update the summary spans within the summary element
+            toSummaryElement.querySelectorAll(".summary-gm-count").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) + 1).toString();
+            });
+            toSummaryElement.querySelectorAll(".summary-player-minimum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMinimum).toString();
+            });
+            toSummaryElement.querySelectorAll(".summary-player-optimum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountOptimum).toString();
+            });
+            toSummaryElement.querySelectorAll(".summary-player-maximum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMaximum).toString();
+            });
+            toSummaryElement.querySelectorAll(".summary-total-minimum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMinimum).toString();
+            });
+            toSummaryElement.querySelectorAll(".summary-total-optimum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountOptimum).toString();
+            });
+            toSummaryElement.querySelectorAll(".summary-total-maximum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMaximum).toString();
+            });
+        }
+
+        // Subtract the counts from the summary information with the same time slot id as the from element
+        const fromSummaryElement = Array.from(summaryElements).find(
+            (el) => el.dataset.timeSlotId === fromTimeSlotId,
+        ) as HTMLElement | undefined;
+        if (fromSummaryElement) {
+            // Update the summary spans within the summary element
+            fromSummaryElement.querySelectorAll(".summary-gm-count").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) - 1).toString();
+            });
+            fromSummaryElement.querySelectorAll(".summary-player-minimum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMinimum).toString();
+            });
+            fromSummaryElement.querySelectorAll(".summary-player-optimum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountOptimum).toString();
+            });
+            fromSummaryElement.querySelectorAll(".summary-player-maximum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMaximum).toString();
+            });
+            fromSummaryElement.querySelectorAll(".summary-total-minimum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMinimum).toString();
+            });
+            fromSummaryElement.querySelectorAll(".summary-total-optimum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountOptimum).toString();
+            });
+            fromSummaryElement.querySelectorAll(".summary-total-maximum").forEach((el) => {
+                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMaximum).toString();
+            });
+        }
+
+        // Update the game card's display based on the target slot
+        updateGameCardDisplay(gameCard, toElement);
+    };
+
+    // Sortable
     const options: Sortable.Options = {
         group: "schedule-shared",
         animation: 150,
@@ -147,135 +281,12 @@ const event_manage_schedule = (scope_id: string) => {
             }
 
             const gameCard = evt.item as GameCard;
-            const gmId = gameCard.dataset.gmId as string;
-            const playerCountMinimum = gameCard.dataset.playerCountMinimum
-                ? parseInt(gameCard.dataset.playerCountMinimum, 10)
-                : 0;
-            const playerCountOptimum = gameCard.dataset.playerCountOptimum
-                ? parseInt(gameCard.dataset.playerCountOptimum, 10)
-                : 0;
-            const playerCountMaximum = gameCard.dataset.playerCountMaximum
-                ? parseInt(gameCard.dataset.playerCountMaximum, 10)
-                : 0;
-
             const fromElement = evt.from as ScheduleTableSlot | HTMLElement;
-            const fromTimeSlotId = fromElement.dataset.timeSlotId;
             const toElement = evt.to as ScheduleTableSlot | HTMLElement;
-            const toTimeSlotId = toElement.dataset.timeSlotId;
-
-            // Add the gm-id to the provides of every schedule table slot in the column (with the same time slot) as the to element
-            // EXCEPT the toElement itself
-            if ("provides" in toElement) {
-                // Find all the schedule table slots with the same time slot id
-                const matchingSlots = Array.from(scheduleTableSlotElements).filter(
-                    (slot) => slot.dataset.timeSlotId === toTimeSlotId && slot !== toElement,
-                ) as ScheduleTableSlot[];
-                // Add the gm-id to the provides of each matching slot
-                for (const slot of matchingSlots) {
-                    if (!slot.provides) {
-                        // If provides is undefined, initialize it
-                        slot.provides = [];
-                    }
-                    slot.provides.push(`gm-${gmId}`);
-                    // If this slot contains a GameCard, update its display - as it may now be invalid
-                    const gameCardInSlot = slot.querySelector(".game-card") as GameCard | null;
-                    if (gameCardInSlot) {
-                        updateGameCardDisplay(gameCardInSlot, slot);
-                    }
-                }
-            }
-
-            // Remove the gm-id from the provides of every schedule table slot in the column (with the same time slot) as the from element
-            // EXCEPT the fromElement itself
-            if ("provides" in fromElement) {
-                // Find all the schedule table slots with the same time slot id
-                const matchingSlots = Array.from(scheduleTableSlotElements).filter(
-                    (slot) => slot.dataset.timeSlotId === fromTimeSlotId && slot !== fromElement,
-                ) as ScheduleTableSlot[];
-                // Remove the gm-id from the provides of each matching slot
-                // Just remove one instance of the gm-id
-                // This is to ensure that if the gm-id was added multiple times, it only gets removed once
-                for (const slot of matchingSlots) {
-                    if (slot.provides) {
-                        const index = slot.provides.indexOf(`gm-${gmId}`);
-                        if (index !== -1) {
-                            console.log("Removing gm-id from slot provides:", slot, "with gmId:", gmId);
-                            slot.provides.splice(index, 1);
-                            // If this slot contains a GameCard, update its display - as it may now be valid
-                            const gameCardInSlot = slot.querySelector(".game-card") as GameCard | null;
-                            if (gameCardInSlot) {
-                                console.log("Updating game card display for slot:", slot, "because gm-id was removed");
-                                updateGameCardDisplay(gameCardInSlot, slot);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Add the counts to the summary information with the same time slot id as the to element
-            const toSummaryElement = Array.from(summaryElements).find(
-                (el) => el.dataset.timeSlotId === toTimeSlotId,
-            ) as HTMLElement | undefined;
-            if (toSummaryElement) {
-                // Update the summary spans within the summary element
-                toSummaryElement.querySelectorAll(".summary-gm-count").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) + 1).toString();
-                });
-                toSummaryElement.querySelectorAll(".summary-player-minimum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMinimum).toString();
-                });
-                toSummaryElement.querySelectorAll(".summary-player-optimum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) + playerCountOptimum).toString();
-                });
-                toSummaryElement.querySelectorAll(".summary-player-maximum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMaximum).toString();
-                });
-                toSummaryElement.querySelectorAll(".summary-total-minimum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMinimum).toString();
-                });
-                toSummaryElement.querySelectorAll(".summary-total-optimum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) + playerCountOptimum).toString();
-                });
-                toSummaryElement.querySelectorAll(".summary-total-maximum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMaximum).toString();
-                });
-            }
-
-            // Subtract the counts from the summary information with the same time slot id as the from element
-            const fromSummaryElement = Array.from(summaryElements).find(
-                (el) => el.dataset.timeSlotId === fromTimeSlotId,
-            ) as HTMLElement | undefined;
-            if (fromSummaryElement) {
-                // Update the summary spans within the summary element
-                fromSummaryElement.querySelectorAll(".summary-gm-count").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) - 1).toString();
-                });
-                fromSummaryElement.querySelectorAll(".summary-player-minimum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMinimum).toString();
-                });
-                fromSummaryElement.querySelectorAll(".summary-player-optimum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) - playerCountOptimum).toString();
-                });
-                fromSummaryElement.querySelectorAll(".summary-player-maximum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMaximum).toString();
-                });
-                fromSummaryElement.querySelectorAll(".summary-total-minimum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMinimum).toString();
-                });
-                fromSummaryElement.querySelectorAll(".summary-total-optimum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) - playerCountOptimum).toString();
-                });
-                fromSummaryElement.querySelectorAll(".summary-total-maximum").forEach((el) => {
-                    el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMaximum).toString();
-                });
-            }
-
-            // Update the game card's display based on the target slot
-            updateGameCardDisplay(gameCard, toElement);
+            emplaceCard(gameCard, fromElement, toElement);
         },
     };
 
-    // Initialize Sortable
     for (const slot of scheduleTableSlotElements) {
         Sortable.create(slot, options);
     }
@@ -309,6 +320,16 @@ const event_manage_schedule = (scope_id: string) => {
             }
         } else {
             console.warn("No provides found for schedule table slot:", slot);
+        }
+    }
+
+    // Emplace all game cards that started in their respective slots
+    // Find all the game cards that are already in a slot (not in the unscheduled games element)
+    for (const gameCard of gameCardElements) {
+        const parentSlot = gameCard.closest(".schedule-table-slot") as ScheduleTableSlot | null;
+        if (parentSlot) {
+            // Emplace the card in the slot
+            emplaceCard(gameCard, unscheduledGamesElement, parentSlot);
         }
     }
 };
