@@ -439,6 +439,8 @@ def table_before_insert(mapper: Mapper, connection: Connection, target: Table):
 
 
 class Session(Base):
+    committed: Mapped[bool] = mapped_column(default=False, server_default="0")
+
     # Foreign Keys
     game_id: Mapped[int] = mapped_column(ForeignKey("game.id"), index=True)
     table_id: Mapped[int] = mapped_column(ForeignKey("table.id"), index=True)

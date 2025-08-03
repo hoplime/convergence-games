@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Annotated, Literal
@@ -55,6 +56,7 @@ async def get_full_event_schedule_dep(
             selectinload(Event.games).options(
                 selectinload(Game.game_requirement).selectinload(GameRequirement.available_time_slots),
                 selectinload(Game.gamemaster),
+                selectinload(Game.sessions),
             ),
             selectinload(Event.rooms).selectinload(Room.tables),
             selectinload(Event.time_slots),
@@ -359,11 +361,32 @@ class EventController(Controller):
         event: Event,
         permission: bool,
     ) -> Template:
+        # Games duplicated by the number of times to run
+        unscheduled_games = list(
+            itertools.chain.from_iterable([game] * game.game_requirement.times_to_run for game in event.games)
+        )
+
+        # Remove games that have sessions already scheduled
+        for session in event.sessions:
+            # Only look for uncommitted sessions, since that's what we display to admins editing the current save
+            if session.committed:
+                continue
+            # Remove one instance of the game from unscheduled games
+            if session.game in unscheduled_games:
+                unscheduled_games.remove(session.game)
+            else:
+                print("!!!! WARNING: Session game not found in unscheduled games - count mismatch", session.game.name)
+                print("TODO - FIX THIS TO MAKE SURE THINGS ALIGN WHEN TIMES TO RUN IS EDITED")
+
         return HTMXBlockTemplate(
             template_name="pages/event_manage_schedule.html.jinja",
             block_name=request.htmx.target,
             context={
                 "event": event,
+                "unscheduled_games": unscheduled_games,
+                "sessions_by_table_and_time_slot": {
+                    (session.table_id, session.time_slot_id): session for session in event.sessions
+                },
             },
         )
 
