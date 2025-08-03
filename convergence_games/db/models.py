@@ -8,7 +8,7 @@ from advanced_alchemy.base import BigIntAuditBase
 from advanced_alchemy.types import DateTimeUTC
 from sqlalchemy import Connection, Enum, ForeignKey, ForeignKeyConstraint, Integer, UniqueConstraint
 from sqlalchemy import event as sqla_event
-from sqlalchemy.orm import Mapped, Mapper, mapped_column, relationship, validates
+from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, validates
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
@@ -42,6 +42,24 @@ class UserAuditColumns:
         default=user_id_ctx.get,
         onupdate=user_id_ctx.get,
     )
+
+    @declared_attr
+    def created_by_user(self) -> Mapped[User | None]:
+        return relationship(
+            "User",
+            foreign_keys=[self.created_by],  # pyright: ignore[reportArgumentType]
+            lazy="noload",
+            viewonly=True,
+        )
+
+    @declared_attr
+    def updated_by_user(self) -> Mapped[User | None]:
+        return relationship(
+            "User",
+            foreign_keys=[self.updated_by],  # pyright: ignore[reportArgumentType]
+            lazy="noload",
+            viewonly=True,
+        )
 
 
 class Base(BigIntAuditBase, UserAuditColumns):

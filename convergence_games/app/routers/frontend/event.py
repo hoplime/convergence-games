@@ -3,17 +3,20 @@ from __future__ import annotations
 import itertools
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Annotated, Literal
 
+import humanize
 from litestar import Controller, Response, get, put
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
-from litestar.params import Body, RequestEncodingType
-from litestar.status_codes import HTTP_204_NO_CONTENT
+from litestar.params import Body, Parameter, RequestEncodingType
+from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
@@ -36,42 +39,19 @@ from convergence_games.db.ocean import Sqid, sink, swim
 from convergence_games.permissions import user_has_permission
 
 
-async def get_event_dep(
-    transaction: AsyncSession,
-    event_sqid: Sqid | None = None,
-) -> Event:
-    event_id: int = sink(event_sqid) if event_sqid is not None else 1
-    stmt = select(Event).where(Event.id == event_id)
-    event = (await transaction.execute(stmt)).scalar_one_or_none()
-    if event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return event
+def event_with(*options: ExecutableOption):
+    async def wrapper(
+        transaction: AsyncSession,
+        event_sqid: Sqid | None = None,
+    ) -> Event:
+        event_id: int = sink(event_sqid) if event_sqid is not None else 1
+        stmt = select(Event).options(*options).where(Event.id == event_id)
+        event = (await transaction.execute(stmt)).scalar_one_or_none()
+        if event is None:
+            raise HTTPException(status_code=404, detail="Event not found")
+        return event
 
-
-async def get_full_event_schedule_dep(
-    transaction: AsyncSession,
-    event_sqid: Sqid | None = None,
-) -> Event:
-    event_id: int = sink(event_sqid) if event_sqid is not None else 1
-    stmt = (
-        select(Event)
-        .options(
-            selectinload(Event.games).options(
-                selectinload(Game.game_requirement).selectinload(GameRequirement.available_time_slots),
-                selectinload(Game.gamemaster),
-                selectinload(Game.sessions),
-            ),
-            selectinload(Event.rooms).selectinload(Room.tables),
-            selectinload(Event.time_slots),
-            selectinload(Event.tables),
-            selectinload(Event.sessions).selectinload(Session.game),
-        )
-        .where(Event.id == event_id)
-    )
-    event = (await transaction.execute(stmt)).scalar_one_or_none()
-    if event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return event
+    return Provide(wrapper)
 
 
 async def get_event_games_dep(
@@ -332,9 +312,15 @@ class PutEventManageScheduleForm(BaseModel):
     commit: bool = False
 
 
+@dataclass
+class EventScheduleEditState:
+    last_saved: str | None = None
+    last_saved_by: str | None = None
+
+
 class EventController(Controller):
     dependencies = {
-        "event": Provide(get_event_dep),
+        "event": event_with(),
     }
 
     @get(
@@ -366,7 +352,17 @@ class EventController(Controller):
         path="/event/{event_sqid:str}/manage-schedule",
         guards=[user_guard],
         dependencies={
-            "event": Provide(get_full_event_schedule_dep),
+            "event": event_with(
+                selectinload(Event.games).options(
+                    selectinload(Game.game_requirement).selectinload(GameRequirement.available_time_slots),
+                    selectinload(Game.gamemaster),
+                    selectinload(Game.sessions),
+                ),
+                selectinload(Event.rooms).selectinload(Room.tables),
+                selectinload(Event.time_slots),
+                selectinload(Event.tables),
+                selectinload(Event.sessions).selectinload(Session.game),
+            ),
             "permission": permission_check(user_can_manage_submissions),
         },
     )
@@ -417,7 +413,9 @@ class EventController(Controller):
         path="/event/{event_sqid:str}/manage-schedule",
         guards=[user_guard],
         dependencies={
-            "event": Provide(get_full_event_schedule_dep),
+            "event": event_with(
+                selectinload(Event.sessions),
+            ),
             "permission": permission_check(user_can_manage_submissions),
         },
     )
@@ -464,6 +462,40 @@ class EventController(Controller):
         transaction.add(event)
 
         return Response(content="", status_code=HTTP_204_NO_CONTENT)
+
+    @get(
+        path="/event/{event_sqid:str}/manage-schedule/last-updated-by",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(
+                selectinload(Event.sessions).selectinload(Session.updated_by_user),
+            ),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def get_event_manage_schedule_last_updated(
+        self, event: Event, user: User, last_saved: Annotated[datetime | None, Parameter(query="last-saved")] = None
+    ) -> Response[str]:
+        if not event.sessions:
+            return Response(content="", status_code=HTTP_200_OK)
+
+        last_session = max(event.sessions, key=lambda s: s.updated_at)
+        last_session_updater = last_session.updated_by_user
+        last_update_time = last_session.updated_at
+
+        if last_session_updater is None:
+            return Response(content="", status_code=HTTP_200_OK)
+
+        time_since_last_update = datetime.now(tz=timezone.utc) - last_update_time
+        content = f"<span>Updated: {last_session_updater.full_name if user.id != last_session_updater.id else 'you'} {humanize.naturaltime(time_since_last_update)}.</span>"
+
+        if last_saved is not None and last_update_time > last_saved:
+            content += "<br><span class='text-warning'>WARNING: This schedule has been updated since you last saved on this page, please review before saving or committing.</span>"
+
+        return Response(
+            content=content,
+            status_code=HTTP_200_OK,
+        )
 
     @get(
         path="/event/{event_sqid:str}/manage-submissions",

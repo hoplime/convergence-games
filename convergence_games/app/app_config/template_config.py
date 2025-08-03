@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import quote, unquote
 
@@ -72,6 +73,7 @@ jinja_env.filters["time_range_format"] = time_range_format
 jinja_env.filters["humanize"] = naturaldelta
 jinja_env.filters["quote"] = quote
 jinja_env.filters["unquote"] = unquote
+jinja_env.filters["isoformat"] = lambda dt: dt.isoformat() if isinstance(dt, datetime) else None
 
 jinja_env.filters["GameActivityRequirement"] = GameActivityRequirement
 jinja_env.filters["GameCoreActivity"] = GameCoreActivity
@@ -90,6 +92,8 @@ jinja_env.globals["random_id"] = lambda: str(uuid.uuid4())
 jinja_env.globals["bitwise_and"] = lambda a, b: a & b
 jinja_env.globals["SETTINGS"] = SETTINGS
 jinja_env.globals["zip"] = zip
+jinja_env.globals["utcnow"] = lambda: datetime.now(tz=timezone.utc)
+jinja_env.globals["now"] = datetime.now
 
 catalog = jinjax.Catalog(jinja_env=jinja_env)
 catalog.add_folder(COMPONENTS_DIR_PATH)
