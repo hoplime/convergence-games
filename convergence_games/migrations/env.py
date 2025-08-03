@@ -1,6 +1,7 @@
 import asyncio
 from typing import TYPE_CHECKING, cast
 
+import alembic_postgresql_enum
 from advanced_alchemy.base import metadata_registry
 from alembic import context
 from alembic.autogenerate import rewriter
@@ -13,10 +14,11 @@ if TYPE_CHECKING:
 
 __all__ = ("do_run_migrations", "run_migrations_offline", "run_migrations_online")
 
+alembic_postgresql_enum.set_configuration(alembic_postgresql_enum.Config())
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-config: "AlembicCommandConfig" = context.config  # type: ignore
+config: "AlembicCommandConfig" = context.config  # pyright: ignore[reportAssignmentType]
 writer = rewriter.Rewriter()
 
 
