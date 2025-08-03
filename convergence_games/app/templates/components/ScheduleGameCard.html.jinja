@@ -15,14 +15,14 @@
 {% set room_requirement = game_requirement.room_requirement | GameRoomRequirement %}
 {% set room_notes = game_requirement.room_notes %}
 {% set criteria = table_size_requirement.criteria + equipment_requirement.criteria + activity_requirement.criteria + room_requirement.criteria %}
-{% set criteria_time_slot_ids = "time-slot-" ~ (game.game_requirement.available_time_slots | map(attribute="id") | join("|time-slot-")) %}
-{% set criteria_gm_id = "!gm-" ~ game.gamemaster_id %}
-{% set criteria_string = '["' ~ ((criteria + [criteria_time_slot_ids, criteria_gm_id]) | join('","')) ~ '"]' %}
+{% set criteria_time_slots = "time-slot-" ~ (game.game_requirement.available_time_slots | map("swim") | join("|time-slot-")) %}
+{% set criteria_gm = "!gm-" ~ swim(game.gamemaster) %}
+{% set criteria_string = '["' ~ ((criteria + [criteria_time_slots, criteria_gm]) | join('","')) ~ '"]' %}
 <div
     class="game-card relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
     {{ "data-criteria='" ~ criteria_string ~ "'" }}
-    data-game-id="{{ game.id }}"
-    data-gm-id="{{ game.gamemaster_id }}"
+    data-game="{{ swim(game) }}"
+    data-gm="{{ swim(game.gamemaster) }}"
     data-player-count-minimum="{{ game.player_count_minimum }}"
     data-player-count-optimum="{{ game.player_count_optimum }}"
     data-player-count-maximum="{{ game.player_count_maximum }}"
@@ -40,7 +40,7 @@
         ></span>
     </div>
     <div class="flex flex-row justify-between gap-2 text-xs group-has-[#minimal-view:checked]:hidden">
-        <div data-criteria-match="{{ criteria_gm_id }}">{{ game.gamemaster.full_name }}</div>
+        <div data-criteria-match="{{ criteria_gm }}">{{ game.gamemaster.full_name }}</div>
         <div>{{ game.player_count_minimum }}-{{ game.player_count_maximum }}</div>
     </div>
     <div class="flex flex-row justify-between gap-2 group-has-[#minimal-view:checked]:hidden">
@@ -101,7 +101,7 @@
         {% if game.submission_status != "Approved" %}
             <span class="{{ game.submission_status.color_classes }} badge-xs">{{ game.submission_status }}</span>
         {% endif %}
-        <div data-criteria-match="{{ criteria_time_slot_ids }}" class="flex flex-row gap-[1px] self-end">
+        <div data-criteria-match="{{ criteria_time_slots }}" class="flex flex-row gap-[1px] self-end">
             {% for time_slot in event.time_slots %}
                 {% if time_slot in game.game_requirement.available_time_slots %}
                     <div class="h-2 w-2 bg-primary in-[.text-error]:bg-error"></div>
