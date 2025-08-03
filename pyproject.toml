@@ -30,6 +30,7 @@ dependencies = [
     "azure-storage-blob[aio]>=12.25.1",
     "advanced-alchemy>=1.4.3",
     "alembic>=1.15,<1.16",
+    "alembic-postgresql-enum>=1.8.0",
 ]
 
 [project.urls]

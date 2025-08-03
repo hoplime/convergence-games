@@ -94,6 +94,19 @@ wheels = [
 ]
 
 [[package]]
+name = "alembic-postgresql-enum"
+version = "1.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "alembic" },
+    { name = "sqlalchemy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/58/04/e465cb5c051fb056b7fadda7667b3e1fb4d32d7f19533e3bbff071c73788/alembic_postgresql_enum-1.8.0.tar.gz", hash = "sha256:132cd5fdc4a2a0b6498f3d89ea1c7b2a5ddc3281ddd84edae7259ec4c0a215a0", size = 15858 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/80/4e6e841f9a0403b520b8f28650c2cdf5905e25bd4ff403b43daec580fed3/alembic_postgresql_enum-1.8.0-py3-none-any.whl", hash = "sha256:0e62833f8d1aca2c58fa09cae1d4a52472fb32d2dde32b68c84515fffcf401d5", size = 23697 },
+]
+
+[[package]]
 name = "annotated-types"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -309,6 +322,7 @@ dependencies = [
     { name = "advanced-alchemy" },
     { name = "aiofiles" },
     { name = "alembic" },
+    { name = "alembic-postgresql-enum" },
     { name = "asyncpg" },
     { name = "azure-identity" },
     { name = "azure-storage-blob", extra = ["aio"] },
@@ -341,6 +355,7 @@ requires-dist = [
     { name = "advanced-alchemy", specifier = ">=1.4.3" },
     { name = "aiofiles", specifier = ">=24.1.0" },
     { name = "alembic", specifier = ">=1.15,<1.16" },
+    { name = "alembic-postgresql-enum", specifier = ">=1.8.0" },
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "azure-identity", specifier = ">=1.23.0" },
     { name = "azure-storage-blob", extras = ["aio"], specifier = ">=12.25.1" },
