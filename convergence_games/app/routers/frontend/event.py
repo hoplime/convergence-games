@@ -476,20 +476,39 @@ class EventController(Controller):
     async def get_event_manage_schedule_last_updated(
         self, event: Event, user: User, last_saved: Annotated[datetime | None, Parameter(query="last-saved")] = None
     ) -> Response[str]:
-        if not event.sessions:
-            return Response(content="", status_code=HTTP_200_OK)
+        current_time = datetime.now(tz=timezone.utc)
 
-        last_session = max(event.sessions, key=lambda s: s.updated_at)
-        last_session_updater = last_session.updated_by_user
-        last_update_time = last_session.updated_at
+        last_saved_session = max(
+            [s for s in event.sessions if not s.committed], key=lambda s: s.updated_at, default=None
+        )
+        last_save_updater = last_saved_session.updated_by_user if last_saved_session else None
+        last_save_time = last_saved_session.updated_at if last_saved_session else None
+        last_save_name_string = (
+            "never"
+            if last_save_updater is None
+            else last_save_updater.full_name
+            if user.id != last_save_updater.id
+            else "you"
+        )
+        last_save_delta_string = "" if last_save_time is None else humanize.naturaltime(current_time - last_save_time)
 
-        if last_session_updater is None:
-            return Response(content="", status_code=HTTP_200_OK)
+        last_commit_session = max([s for s in event.sessions if s.committed], key=lambda s: s.updated_at, default=None)
+        last_commit_updater = last_commit_session.updated_by_user if last_commit_session else None
+        last_commit_time = last_commit_session.updated_at if last_commit_session else None
+        last_commit_name_string = (
+            "never"
+            if last_commit_updater is None
+            else last_commit_updater.full_name
+            if user.id != last_commit_updater.id
+            else "you"
+        )
+        last_commit_delta_string = (
+            "" if last_commit_time is None else humanize.naturaltime(current_time - last_commit_time)
+        )
 
-        time_since_last_update = datetime.now(tz=timezone.utc) - last_update_time
-        content = f"<span>Updated: {last_session_updater.full_name if user.id != last_session_updater.id else 'you'} {humanize.naturaltime(time_since_last_update)}.</span>"
+        content = f"<span>Saved by {last_save_name_string} {last_save_delta_string}.</span><br><span>Committed by {last_commit_name_string} {last_commit_delta_string}.</span>"
 
-        if last_saved is not None and last_update_time > last_saved:
+        if last_saved is not None and last_save_time is not None and last_save_time > last_saved:
             content += "<br><span class='text-warning'>WARNING: This schedule has been updated since you last saved on this page, please review before saving or committing.</span>"
 
         return Response(
