@@ -141,9 +141,14 @@
                                     <span class="label-text">Minimal View</span>
                                 </label>
                             </FieldsetBase>
+                            <FieldsetBase>
+                                <legend class="fieldset-legend">Controls</legend>
+                                <button class="btn btn-primary">Save (Admin Draft)</button>
+                                <button class="btn btn-primary" disabled>Commit (Public)</button>
+                            </FieldsetBase>
                             <h2 class="text-lg font-semibold">Unscheduled Games</h2>
                             <div
-                                class="unscheduled-games mask-b-from-75% mask-b-to-100% flex scrollbar-hidden grow flex-col gap-2 overflow-y-scroll"
+                                class="unscheduled-games scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
                             >
                                 {% for game in event.games %}
                                     {% for copy in range(game.game_requirement.times_to_run) %}
