@@ -11,6 +11,7 @@ type ScheduleTableSlot = HTMLElement & {
 const errorBgStyle = "bg-error/25";
 const errorTextStyle = "text-error";
 const warningBgStyle = "bg-warning/25";
+const successBgStyle = "bg-success/25";
 
 const criterionMatches = (criterion: string, provides: string[]): boolean => {
     if (criterion.includes("|")) {
@@ -262,23 +263,35 @@ const event_manage_schedule = (scope_id: string) => {
                 const unmatched = unmatchedCriteria(criteria, provides);
 
                 if (unmatched.length === 0) {
-                    slot.classList.add("bg-success/25");
-                }
-
-                if (
-                    unmatched.length === 1 &&
-                    !unmatched[0].startsWith("time-slot") &&
-                    !unmatched[0].startsWith("!gm-")
-                ) {
-                    // If there is only one unmatched criterion (excluding the time slot, and gm, which must be valid), highlight the slot
-                    slot.classList.add("bg-warning/25");
+                    // No issues - success
+                    slot.classList.add(successBgStyle);
+                } else if (unmatched.some((criterion) => criterion.startsWith("time-slot-"))) {
+                    // Issues in time-slot - error
+                    slot.classList.add(errorBgStyle);
+                    slot.dataset.issuesInfo = `${unmatched.length}: Time slot ${unmatched
+                        .sort()
+                        .filter((criterion) => !criterion.startsWith("time-slot-"))
+                        .join(", ")}`;
+                } else if (unmatched.some((criterion) => criterion.startsWith("!gm-"))) {
+                    // Issues in gm - error
+                    slot.classList.add(errorBgStyle);
+                    slot.dataset.issuesInfo = `${unmatched.length}: GM Clash ${unmatched
+                        .sort()
+                        .filter((criterion) => !criterion.startsWith("!gm-"))
+                        .join(", ")}`;
+                } else {
+                    // Other unmatched criteria - warning
+                    slot.classList.add(warningBgStyle);
+                    slot.dataset.issuesInfo = `${unmatched.length}: ${unmatched.sort().join(", ")}`;
                 }
             }
         },
         onEnd: (evt) => {
             for (const el of scheduleTableSlotElements) {
-                el.classList.remove("bg-success/25");
-                el.classList.remove("bg-warning/25");
+                el.classList.remove(errorBgStyle);
+                el.classList.remove(successBgStyle);
+                el.classList.remove(warningBgStyle);
+                delete el.dataset.issuesInfo; // Clear issues info
             }
 
             const gameCard = evt.item as GameCard;
@@ -374,12 +387,14 @@ const event_manage_schedule = (scope_id: string) => {
     // Add event listeners for save and commit buttons
     saveButton.addEventListener("click", () => {
         console.log("Save button clicked");
-        saveState(false);
+        if (confirm("Are you sure you want to save the currently displayed schedule?")) {
+            saveState(false);
+        }
     });
 
     commitButton.addEventListener("click", () => {
         console.log("Commit button clicked");
-        if (confirm("Are you sure you want to commit the currently displayed schedule?")) {
+        if (confirm("Are you sure you want to COMMIT the currently displayed schedule?")) {
             saveState(true);
         }
     });

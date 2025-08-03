@@ -71,7 +71,7 @@
                                                     {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ swim(time_slot)]) | join('","')) ~ '"]' %}
                                                     {# fmt: off #}
                                                     <td
-                                                        class="schedule-table-slot border border-base-content/5 p-0 [&>.game-card]:w-full"
+                                                        class="schedule-table-slot relative border border-base-content/5 p-0 after:absolute after:bottom-1 after:left-1 after:text-warning after:content-[attr(data-issues-info)] [&>.game-card]:w-full"
                                                         data-time-slot="{{ swim(time_slot) }}"
                                                         data-table="{{ swim(table) }}"
                                                         {{ "data-provides='" ~ provide_string ~ "'" }}
@@ -135,7 +135,7 @@
                             </table>
                         </div>
 
-                        <div class="flex h-full flex-col gap-2 overflow-hidden">
+                        <div class="flex h-full max-w-80 flex-col gap-2 overflow-hidden">
                             <FieldsetBase>
                                 <legend class="fieldset-legend">Display Settings</legend>
                                 <label class="label">
@@ -151,6 +151,14 @@
                                 <legend class="fieldset-legend">Controls</legend>
                                 <button class="save-button btn btn-primary">Save (Admin Draft)</button>
                                 <button class="commit-button btn btn-primary">Commit (Public)</button>
+                                <p
+                                    class="edit-warning empty:hidden"
+                                    hx-get="/event/{{ swim(event) }}/manage-schedule/last-updated-by"
+                                    hx-trigger="load, every 5s [document.visibilityState=='visible']"
+                                    hx-swap="innerHTML"
+                                    hx-include="next [name='last-saved']"
+                                ></p>
+                                <input type="hidden" name="last-saved" value="{{ utcnow() | isoformat }}" />
                             </FieldsetBase>
                             <h2 class="text-lg font-semibold">Unscheduled Games</h2>
                             <div
