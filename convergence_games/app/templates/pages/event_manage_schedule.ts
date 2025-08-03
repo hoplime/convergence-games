@@ -44,7 +44,7 @@ const updateGameCardDisplay = (gameCard: GameCard, scheduleTableSlot: ScheduleTa
 
     if (unmatched.length !== 0) {
         // If not all criteria are met, show the game card with a warning or error style
-        // If the unmatched criteria include a time slot or gm-id, use an error style
+        // If the unmatched criteria include a time slot or gm, use an error style
         const isError = unmatched.some(
             (criterion) => criterion.startsWith("time-slot-") || criterion.startsWith("!gm-"),
         );
@@ -80,11 +80,18 @@ const event_manage_schedule = (scope_id: string) => {
         console.error(`Scope with id ${scope_id} not found`);
         return;
     }
+    const event = scope.dataset.event;
+    if (!event) {
+        console.error("Event ID not found in scope");
+        return;
+    }
 
     const unscheduledGamesElement = scope.querySelector(".unscheduled-games") as HTMLElement;
     const scheduleTableSlotElements = scope.querySelectorAll(".schedule-table-slot") as NodeListOf<ScheduleTableSlot>;
     const gameCardElements = scope.querySelectorAll(".game-card") as NodeListOf<GameCard>;
     const summaryElements = scope.querySelectorAll(".time-slot-summary") as NodeListOf<HTMLElement>;
+    const saveButton = scope.querySelector(".save-button") as HTMLButtonElement;
+    const commitButton = scope.querySelector(".commit-button") as HTMLButtonElement;
 
     // Global state requiring functions
     const emplaceCard = (
@@ -93,7 +100,7 @@ const event_manage_schedule = (scope_id: string) => {
         toElement: ScheduleTableSlot | HTMLElement,
     ) => {
         // Triggered on drag end OR on initialization if the game card is already in a slot (in which case fromElement is the unscheduledGamesElement and toElement is the slot)
-        const gmId = gameCard.dataset.gmId as string;
+        const gm = gameCard.dataset.gm as string;
         const playerCountMinimum = gameCard.dataset.playerCountMinimum
             ? parseInt(gameCard.dataset.playerCountMinimum, 10)
             : 0;
@@ -104,23 +111,23 @@ const event_manage_schedule = (scope_id: string) => {
             ? parseInt(gameCard.dataset.playerCountMaximum, 10)
             : 0;
 
-        const fromTimeSlotId = fromElement.dataset.timeSlotId;
-        const toTimeSlotId = toElement.dataset.timeSlotId;
+        const fromTimeSlot = fromElement.dataset.timeSlot;
+        const toTimeSlot = toElement.dataset.timeSlot;
 
-        // Add the gm-id to the provides of every schedule table slot in the column (with the same time slot) as the to element
+        // Add the gm to the provides of every schedule table slot in the column (with the same time slot) as the to element
         // EXCEPT the toElement itself
         if ("provides" in toElement) {
             // Find all the schedule table slots with the same time slot id
             const matchingSlots = Array.from(scheduleTableSlotElements).filter(
-                (slot) => slot.dataset.timeSlotId === toTimeSlotId && slot !== toElement,
+                (slot) => slot.dataset.timeSlot === toTimeSlot && slot !== toElement,
             ) as ScheduleTableSlot[];
-            // Add the gm-id to the provides of each matching slot
+            // Add the gm to the provides of each matching slot
             for (const slot of matchingSlots) {
                 if (!slot.provides) {
                     // If provides is undefined, initialize it
                     slot.provides = [];
                 }
-                slot.provides.push(`gm-${gmId}`);
+                slot.provides.push(`gm-${gm}`);
                 // If this slot contains a GameCard, update its display - as it may now be invalid
                 const gameCardInSlot = slot.querySelector(".game-card") as GameCard | null;
                 if (gameCardInSlot) {
@@ -129,26 +136,24 @@ const event_manage_schedule = (scope_id: string) => {
             }
         }
 
-        // Remove the gm-id from the provides of every schedule table slot in the column (with the same time slot) as the from element
+        // Remove the gm from the provides of every schedule table slot in the column (with the same time slot) as the from element
         // EXCEPT the fromElement itself
         if ("provides" in fromElement) {
             // Find all the schedule table slots with the same time slot id
             const matchingSlots = Array.from(scheduleTableSlotElements).filter(
-                (slot) => slot.dataset.timeSlotId === fromTimeSlotId && slot !== fromElement,
+                (slot) => slot.dataset.timeSlot === fromTimeSlot && slot !== fromElement,
             ) as ScheduleTableSlot[];
-            // Remove the gm-id from the provides of each matching slot
-            // Just remove one instance of the gm-id
-            // This is to ensure that if the gm-id was added multiple times, it only gets removed once
+            // Remove the gm from the provides of each matching slot
+            // Just remove one instance of the gm
+            // This is to ensure that if the gm was added multiple times, it only gets removed once
             for (const slot of matchingSlots) {
                 if (slot.provides) {
-                    const index = slot.provides.indexOf(`gm-${gmId}`);
+                    const index = slot.provides.indexOf(`gm-${gm}`);
                     if (index !== -1) {
-                        console.log("Removing gm-id from slot provides:", slot, "with gmId:", gmId);
                         slot.provides.splice(index, 1);
                         // If this slot contains a GameCard, update its display - as it may now be valid
                         const gameCardInSlot = slot.querySelector(".game-card") as GameCard | null;
                         if (gameCardInSlot) {
-                            console.log("Updating game card display for slot:", slot, "because gm-id was removed");
                             updateGameCardDisplay(gameCardInSlot, slot);
                         }
                     }
@@ -157,7 +162,7 @@ const event_manage_schedule = (scope_id: string) => {
         }
 
         // Add the counts to the summary information with the same time slot id as the to element
-        const toSummaryElement = Array.from(summaryElements).find((el) => el.dataset.timeSlotId === toTimeSlotId) as
+        const toSummaryElement = Array.from(summaryElements).find((el) => el.dataset.timeSlot === toTimeSlot) as
             | HTMLElement
             | undefined;
         if (toSummaryElement) {
@@ -186,9 +191,9 @@ const event_manage_schedule = (scope_id: string) => {
         }
 
         // Subtract the counts from the summary information with the same time slot id as the from element
-        const fromSummaryElement = Array.from(summaryElements).find(
-            (el) => el.dataset.timeSlotId === fromTimeSlotId,
-        ) as HTMLElement | undefined;
+        const fromSummaryElement = Array.from(summaryElements).find((el) => el.dataset.timeSlot === fromTimeSlot) as
+            | HTMLElement
+            | undefined;
         if (fromSummaryElement) {
             // Update the summary spans within the summary element
             fromSummaryElement.querySelectorAll(".summary-gm-count").forEach((el) => {
@@ -244,12 +249,12 @@ const event_manage_schedule = (scope_id: string) => {
                     continue;
                 }
 
-                // Edge case - moving to the same time slot and already has a single instance of the gm-id
-                // We can remove this provided gm-id - as it's created by THIS game card, so it might be valid to move it there (different table, same time slot)
-                const gmId = (evt.item as GameCard).dataset.gmId;
-                if (provides.includes(`gm-${gmId}`) && slot.dataset.timeSlotId === evt.from.dataset.timeSlotId) {
-                    // Remove the gm-id from the provides
-                    const index = provides.indexOf(`gm-${gmId}`);
+                // Edge case - moving to the same time slot and already has a single instance of the gm
+                // We can remove this provided gm - as it's created by THIS game card, so it might be valid to move it there (different table, same time slot)
+                const gm = (evt.item as GameCard).dataset.gm;
+                if (provides.includes(`gm-${gm}`) && slot.dataset.timeSlot === evt.from.dataset.timeSlot) {
+                    // Remove the gm from the provides
+                    const index = provides.indexOf(`gm-${gm}`);
                     if (index !== -1) {
                         provides.splice(index, 1);
                     }
@@ -332,6 +337,48 @@ const event_manage_schedule = (scope_id: string) => {
             emplaceCard(gameCard, unscheduledGamesElement, parentSlot);
         }
     }
+
+    // Add event listeners for save and commit buttons
+    saveButton.addEventListener("click", () => {
+        console.log("Save button clicked");
+
+        // Get the state
+        // Should be in this example format:
+        // {
+        //     "sessions": [
+        //         {
+        //             "game": "SqidXYZ",
+        //             "time_slot": "Sqid123",
+        //             "table": "SqidABC"
+        //         },
+        //         ...
+        //     ]
+        // }
+        const sessions = Array.from(gameCardElements)
+            .map((gameCard) => {
+                const game = gameCard.dataset.game;
+                const timeSlot = (gameCard.closest(".schedule-table-slot") as HTMLElement)?.dataset.timeSlot;
+                const table = (gameCard.closest(".schedule-table-slot") as HTMLElement)?.dataset.table;
+
+                if (!game || !timeSlot || !table) {
+                    return null;
+                }
+
+                return {
+                    game: game,
+                    time_slot: timeSlot,
+                    table: table,
+                };
+            })
+            .filter((session) => session !== null);
+        console.log("Sessions to save:", sessions);
+    });
+
+    commitButton.addEventListener("click", () => {
+        console.log("Commit button clicked");
+        // Implement commit functionality here
+        alert("Commit functionality not implemented yet.");
+    });
 };
 
 export default event_manage_schedule;

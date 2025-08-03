@@ -2,7 +2,7 @@
     {% block content %}
         <title>{{ event.name }} Manage Schedule - Convergence 2025</title>
         <PageContainer size="max-w-full">
-            <Component name="event_manage_schedule">
+            <Component name="event_manage_schedule" :data-event="swim(event)">
                 <div class="group">
                     <div class="full-screen grid h-screen grid-cols-[auto_max-content] gap-4">
                         <div class="overflow-y-scroll">
@@ -68,12 +68,12 @@
                                                     </Tooltip>
                                                 </td>
                                                 {% for time_slot in event.time_slots %}
-                                                    {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ time_slot.id]) | join('","')) ~ '"]' %}
+                                                    {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ swim(time_slot)]) | join('","')) ~ '"]' %}
                                                     {# fmt: off #}
                                                     <td
                                                         class="schedule-table-slot border border-base-content/5 p-0 [&>.game-card]:w-full"
-                                                        data-time-slot-id="{{ time_slot.id }}"
-                                                        data-table-id="{{ table.id }}"
+                                                        data-time-slot="{{ swim(time_slot) }}"
+                                                        data-table="{{ swim(table) }}"
                                                         {{ "data-provides='" ~ provide_string ~ "'" }}
                                                     >
                                                         {% if (table.id, time_slot.id) in sessions_by_table_and_time_slot %}
@@ -96,7 +96,7 @@
                                         {% for time_slot in event.time_slots %}
                                             <td class="p-0">
                                                 <table
-                                                    data-time-slot-id="{{ time_slot.id }}"
+                                                    data-time-slot="{{ swim(time_slot) }}"
                                                     class="time-slot-summary table p-0 table-xs"
                                                 >
                                                     <thead>
@@ -149,9 +149,8 @@
                             </FieldsetBase>
                             <FieldsetBase>
                                 <legend class="fieldset-legend">Controls</legend>
-                                <button class="btn btn-primary">Save (Admin Draft)</button>
-                                <button class="btn btn-primary">Undo (Admin Draft)</button>
-                                <button class="btn btn-primary" disabled>Commit (Public)</button>
+                                <button class="save-button btn btn-primary">Save (Admin Draft)</button>
+                                <button class="commit-button btn btn-primary">Commit (Public)</button>
                             </FieldsetBase>
                             <h2 class="text-lg font-semibold">Unscheduled Games</h2>
                             <div

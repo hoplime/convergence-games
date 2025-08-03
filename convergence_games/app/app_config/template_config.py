@@ -81,6 +81,7 @@ jinja_env.filters["GameRoomRequirement"] = GameRoomRequirement
 jinja_env.filters["GameTableSizeRequirement"] = GameTableSizeRequirement
 jinja_env.filters["RoomFacility"] = RoomFacility
 jinja_env.filters["TableFacility"] = TableFacility
+jinja_env.filters["swim"] = swim
 
 jinja_env.filters["has_permission"] = user_has_permission
 
