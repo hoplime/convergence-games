@@ -98,6 +98,9 @@
     </div>
     <div class="flex flex-row justify-between gap-2 text-xs group-has-[#minimal-view:checked]:hidden">
         <div>{{ game.game_requirement.times_to_run }}x</div>
+        {% if game.submission_status != "Approved" %}
+            <span class="{{ game.submission_status.color_classes }} badge-xs">{{ game.submission_status }}</span>
+        {% endif %}
         <div data-criteria-match="{{ criteria_time_slot_ids }}" class="flex flex-row gap-[1px] self-end">
             {% for time_slot in event.time_slots %}
                 {% if time_slot in game.game_requirement.available_time_slots %}
