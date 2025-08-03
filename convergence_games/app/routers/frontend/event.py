@@ -5,9 +5,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Annotated, Literal
 
-from litestar import Controller, get
+from litestar import Controller, Response, get, put
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
+from litestar.params import Body, RequestEncodingType
+from litestar.status_codes import HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -319,6 +321,17 @@ class MultiselectFormData:
     description: str | None = None
 
 
+class PutEventManageScheduleSession(BaseModel):
+    game: SqidInt
+    table: SqidInt
+    time_slot: SqidInt
+
+
+class PutEventManageScheduleForm(BaseModel):
+    sessions: list[PutEventManageScheduleSession]
+    commit: bool = False
+
+
 class EventController(Controller):
     dependencies = {
         "event": Provide(get_event_dep),
@@ -390,13 +403,67 @@ class EventController(Controller):
                     (table.id, time_slot.id): [
                         session
                         for session in event.sessions
-                        if session.table_id == table.id and session.time_slot_id == time_slot.id
+                        if session.table_id == table.id
+                        and session.time_slot_id == time_slot.id
+                        and not session.committed  # Only show uncommitted (but saved) sessions
                     ]
                     for table in event.tables
                     for time_slot in event.time_slots
                 },
             },
         )
+
+    @put(
+        path="/event/{event_sqid:str}/manage-schedule",
+        guards=[user_guard],
+        dependencies={
+            "event": Provide(get_full_event_schedule_dep),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def put_event_manage_schedule(
+        self,
+        event: Event,
+        permission: bool,
+        transaction: AsyncSession,
+        data: Annotated[PutEventManageScheduleForm, Body(media_type=RequestEncodingType.JSON)],
+    ) -> Response[str]:
+        print(data)
+        # Set the event's sessions to the new data - including deleting any existing sessions
+        new_sessions: list[Session] = []
+
+        if not data.commit:
+            # We are not committing, so don't remove existing committed sessions
+            new_sessions = [s for s in event.sessions if s.committed]
+
+        for session_data in data.sessions:
+            new_sessions.append(
+                Session(
+                    game_id=session_data.game,
+                    table_id=session_data.table,
+                    time_slot_id=session_data.time_slot,
+                    event_id=event.id,
+                    committed=False,
+                )
+            )
+            if data.commit:
+                # Also add a committed session for the game
+                new_sessions.append(
+                    Session(
+                        game_id=session_data.game,
+                        table_id=session_data.table,
+                        time_slot_id=session_data.time_slot,
+                        event_id=event.id,
+                        committed=True,
+                    )
+                )
+
+        event.sessions = new_sessions
+
+        # Save the event
+        transaction.add(event)
+
+        return Response(content="", status_code=HTTP_204_NO_CONTENT)
 
     @get(
         path="/event/{event_sqid:str}/manage-submissions",

@@ -235,17 +235,14 @@ const event_manage_schedule = (scope_id: string) => {
             // Check if the dragged item has a criteria property
             const criteria = (evt.item as GameCard).criteria;
             if (!criteria) {
-                console.error("No criteria found on the dragged item");
                 return;
             }
-            console.log("Criteria for drag:", criteria);
 
             // Highlight available time slots based on the dragged item's criteria
             for (const slot of scheduleTableSlotElements) {
                 // Take a copy of the provides array to avoid modifying the original
                 const provides = slot.provides ? [...slot.provides] : [];
                 if (!provides) {
-                    console.warn("No provides found for schedule table slot:", slot);
                     continue;
                 }
 
@@ -279,7 +276,6 @@ const event_manage_schedule = (scope_id: string) => {
             }
         },
         onEnd: (evt) => {
-            console.log("Drag ended", evt);
             for (const el of scheduleTableSlotElements) {
                 el.classList.remove("bg-success/25");
                 el.classList.remove("bg-warning/25");
@@ -338,22 +334,8 @@ const event_manage_schedule = (scope_id: string) => {
         }
     }
 
-    // Add event listeners for save and commit buttons
-    saveButton.addEventListener("click", () => {
-        console.log("Save button clicked");
-
-        // Get the state
-        // Should be in this example format:
-        // {
-        //     "sessions": [
-        //         {
-        //             "game": "SqidXYZ",
-        //             "time_slot": "Sqid123",
-        //             "table": "SqidABC"
-        //         },
-        //         ...
-        //     ]
-        // }
+    const saveState = (commit: boolean) => {
+        // Get the state - the game cards in the schedule table slots are the sessions to save
         const sessions = Array.from(gameCardElements)
             .map((gameCard) => {
                 const game = gameCard.dataset.game;
@@ -372,12 +354,34 @@ const event_manage_schedule = (scope_id: string) => {
             })
             .filter((session) => session !== null);
         console.log("Sessions to save:", sessions);
+
+        const bodyJson = {
+            sessions: sessions,
+            commit: commit,
+        };
+
+        // PUT request to ./save endpoint
+        // Fire and forget - no need to wait for the response
+        fetch(window.location.href, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(bodyJson),
+        });
+    };
+
+    // Add event listeners for save and commit buttons
+    saveButton.addEventListener("click", () => {
+        console.log("Save button clicked");
+        saveState(false);
     });
 
     commitButton.addEventListener("click", () => {
         console.log("Commit button clicked");
-        // Implement commit functionality here
-        alert("Commit functionality not implemented yet.");
+        if (confirm("Are you sure you want to commit the currently displayed schedule?")) {
+            saveState(true);
+        }
     });
 };
 
