@@ -387,7 +387,6 @@ class EventController(Controller):
                 unscheduled_games.remove(session.game)
             else:
                 print("!!!! WARNING: Session game not found in unscheduled games - count mismatch", session.game.name)
-                print("TODO - FIX THIS TO MAKE SURE THINGS ALIGN WHEN TIMES TO RUN IS EDITED")
 
         return HTMXBlockTemplate(
             template_name="pages/event_manage_schedule.html.jinja",
