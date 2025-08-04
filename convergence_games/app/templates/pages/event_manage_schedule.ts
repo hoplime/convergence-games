@@ -192,13 +192,13 @@ const event_manage_schedule = (scope_id: string) => {
                 el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMaximum).toString();
             });
             toSummaryElement.querySelectorAll(".summary-total-minimum").forEach((el) => {
-                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMinimum).toString();
+                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMinimum + 1).toString();
             });
             toSummaryElement.querySelectorAll(".summary-total-optimum").forEach((el) => {
-                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountOptimum).toString();
+                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountOptimum + 1).toString();
             });
             toSummaryElement.querySelectorAll(".summary-total-maximum").forEach((el) => {
-                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMaximum).toString();
+                el.textContent = (parseInt(el.textContent || "0", 10) + playerCountMaximum + 1).toString();
             });
         }
 
@@ -221,13 +221,13 @@ const event_manage_schedule = (scope_id: string) => {
                 el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMaximum).toString();
             });
             fromSummaryElement.querySelectorAll(".summary-total-minimum").forEach((el) => {
-                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMinimum).toString();
+                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMinimum - 1).toString();
             });
             fromSummaryElement.querySelectorAll(".summary-total-optimum").forEach((el) => {
-                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountOptimum).toString();
+                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountOptimum - 1).toString();
             });
             fromSummaryElement.querySelectorAll(".summary-total-maximum").forEach((el) => {
-                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMaximum).toString();
+                el.textContent = (parseInt(el.textContent || "0", 10) - playerCountMaximum - 1).toString();
             });
         }
 
