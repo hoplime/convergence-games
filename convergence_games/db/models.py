@@ -206,9 +206,9 @@ class Game(Base):
     tone: Mapped[GameTone] = mapped_column(Enum(GameTone), default=GameTone.LIGHT_HEARTED, index=True)
 
     # Player Count
-    player_count_minimum: Mapped[int]
-    player_count_optimum: Mapped[int]
-    player_count_maximum: Mapped[int]
+    player_count_minimum: Mapped[int] = mapped_column()
+    player_count_optimum: Mapped[int] = mapped_column()
+    player_count_maximum: Mapped[int] = mapped_column()
 
     # Bonus
     ksps: Mapped[GameKSP] = mapped_column(Integer, default=GameKSP.NONE)

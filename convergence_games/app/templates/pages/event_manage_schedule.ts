@@ -1,11 +1,12 @@
 import Sortable from "sortablejs";
 
 type GameCard = HTMLElement & {
-    criteria: string[] | undefined;
+    criteria: string[];
+    times_to_run: number;
 };
 
 type ScheduleTableSlot = HTMLElement & {
-    provides: string[] | undefined;
+    provides: string[];
 };
 
 const errorBgStyle = "bg-error/25";
@@ -32,35 +33,6 @@ const unmatchedCriteria = (criteria: string[], provides: string[]) => {
     // Check for the criteria that are not met by the provides
     // And return them as a string array
     return criteria.filter((criterion) => !criterionMatches(criterion, provides));
-};
-
-const updateGameCardDisplay = (gameCard: GameCard, scheduleTableSlot: ScheduleTableSlot | HTMLElement) => {
-    // If the scheduleTableSlot has undefined provides, it is the unscheduled games element - so nothing is unmatched
-    const unmatched =
-        !("provides" in scheduleTableSlot) || scheduleTableSlot.provides === undefined
-            ? []
-            : unmatchedCriteria(gameCard.criteria || [], scheduleTableSlot.provides || []);
-
-    clearGameCardDisplay(gameCard);
-
-    if (unmatched.length !== 0) {
-        // If not all criteria are met, show the game card with a warning or error style
-        // If the unmatched criteria include a time slot or gm, use an error style
-        const isError = unmatched.some(
-            (criterion) => criterion.startsWith("time-slot-") || criterion.startsWith("!gm-"),
-        );
-        gameCard.classList.add(isError ? errorBgStyle : warningBgStyle);
-
-        // And find the elements with unmatched data-criteria attributes
-        Array.from(gameCard.querySelectorAll("[data-criteria-match]"))
-            .filter((el) => {
-                const criterion = el.getAttribute("data-criteria-match");
-                return criterion && unmatched.includes(criterion);
-            })
-            .forEach((el) => {
-                el.classList.add(errorTextStyle);
-            });
-    }
 };
 
 const clearGameCardDisplay = (gameCard: GameCard) => {
@@ -96,6 +68,44 @@ const event_manage_schedule = (scope_id: string) => {
     const lastSavedInput = scope.querySelector("input[name='last-saved']") as HTMLInputElement;
 
     // Global state requiring functions
+    const updateGameCardDisplay = (gameCard: GameCard, scheduleTableSlot: ScheduleTableSlot | HTMLElement) => {
+        // If the scheduleTableSlot has undefined provides, it is the unscheduled games element - so nothing is unmatched
+        const unmatched =
+            !("provides" in scheduleTableSlot) || scheduleTableSlot.provides === undefined
+                ? []
+                : unmatchedCriteria(gameCard.criteria || [], scheduleTableSlot.provides || []);
+
+        // Find out if there are more game cards scheduled with the same game
+        const countScheduledGameCardsWithSameGame = Array.from(gameCardElements).filter(
+            (card) => card.dataset.game === gameCard.dataset.game && card.parentElement !== unscheduledGamesElement,
+        ).length;
+        if (countScheduledGameCardsWithSameGame > gameCard.times_to_run) {
+            unmatched.push(`times-to-run`);
+        }
+
+        clearGameCardDisplay(gameCard);
+
+        if (unmatched.length !== 0) {
+            // If not all criteria are met, show the game card with a warning or error style
+            // If the unmatched criteria include a time slot or gm, use an error style
+            const isError = unmatched.some(
+                (criterion) =>
+                    criterion.startsWith("time-slot-") || criterion.startsWith("!gm-") || criterion === "times-to-run",
+            );
+            gameCard.classList.add(isError ? errorBgStyle : warningBgStyle);
+
+            // And find the elements with unmatched data-criteria attributes
+            Array.from(gameCard.querySelectorAll("[data-criteria-match]"))
+                .filter((el) => {
+                    const criterion = el.getAttribute("data-criteria-match");
+                    return criterion && unmatched.includes(criterion);
+                })
+                .forEach((el) => {
+                    el.classList.add(errorTextStyle);
+                });
+        }
+    };
+
     const emplaceCard = (
         gameCard: GameCard,
         fromElement: ScheduleTableSlot | HTMLElement,
@@ -320,6 +330,17 @@ const event_manage_schedule = (scope_id: string) => {
             }
         } else {
             console.warn("No criteria found for game card:", gameCard);
+        }
+
+        // Set the times_to_run property from the data-times-to-run attribute
+        const timesToRunString = gameCard.dataset.timesToRun;
+        if (timesToRunString) {
+            const timesToRun = parseInt(timesToRunString, 10);
+            if (!isNaN(timesToRun)) {
+                gameCard.times_to_run = timesToRun;
+            } else {
+                console.warn("Invalid times_to_run value for game card:", gameCard, timesToRunString);
+            }
         }
     }
 

@@ -23,6 +23,7 @@
     {{ "data-criteria='" ~ criteria_string ~ "'" }}
     data-game="{{ swim(game) }}"
     data-gm="{{ swim(game.gamemaster) }}"
+    data-times-to-run="{{ game.game_requirement.times_to_run }}"
     data-player-count-minimum="{{ game.player_count_minimum }}"
     data-player-count-optimum="{{ game.player_count_optimum }}"
     data-player-count-maximum="{{ game.player_count_maximum }}"
@@ -97,7 +98,7 @@
         {% endif %}
     </div>
     <div class="flex flex-row justify-between gap-2 text-xs group-has-[#minimal-view:checked]:hidden">
-        <div>{{ game.game_requirement.times_to_run }}x</div>
+        <div data-criteria-match="times-to-run">{{ game.game_requirement.times_to_run }}x</div>
         {% if game.submission_status != "Approved" %}
             <span class="{{ game.submission_status.color_classes }} badge-xs">{{ game.submission_status }}</span>
         {% endif %}
