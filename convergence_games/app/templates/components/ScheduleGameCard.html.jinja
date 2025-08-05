@@ -4,7 +4,7 @@
 #}
 {% set game_requirement = game.game_requirement %}
 {% set table_size_requirement = game_requirement.table_size_requirement | GameTableSizeRequirement %}
-{% if bitwise_and(table_size_requirement, 3) %}
+{% if table_size_requirement == 3 %}
     {% set table_size_requirement = 0 | GameTableSizeRequirement %}
 {% endif %}
 {% set table_size_notes = game_requirement.table_size_notes %}
