@@ -5,7 +5,7 @@
             {# Header content #}
             <h1 class="text-3xl">{{ game.name }}</h1>
             <div class="italic">{{ game.tagline }}</div>
-            <div class="bg-base-200 rounded-box border-base-300 card border">
+            <div class="card rounded-box border border-base-300 bg-base-200">
                 <div class="card-body">
                     <h2 class="card-title">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</h2>
                     <div class="mb-2 grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -55,11 +55,11 @@
                             <div class="flex flex-row flex-wrap gap-2">
                                 {% for note, tooltip in zip(game_core_activity.notes, game_core_activity.tooltips) %}
                                     <div class="badge">
-                                        <Tooltip class="w-fit" align="bottom" fallback="false">
+                                        <Tooltip class="w-fit" align="bottom" :fallback="false">
                                             <div class="inline-flex gap-2">
                                                 <span>{{ note }}</span>
                                             </div>
-                                            <TooltipContent>{{ tooltip }}</TooltipContent>
+                                            <TooltipContent :fallback="false">{{ tooltip }}</TooltipContent>
                                         </Tooltip>
                                     </div>
                                 {% endfor %}
@@ -81,11 +81,11 @@
                         <div class="flex flex-row flex-wrap gap-2">
                             {% for note, tooltip, icon in zip(game_ksps.notes, game_ksps.tooltips, game_ksps.icons) %}
                                 <div class="badge">
-                                    <Tooltip class="w-fit" align="bottom" fallback="false">
+                                    <Tooltip class="w-fit" align="bottom" :fallback="false">
                                         <div class="inline-flex gap-2">
                                             <span class="{{ icon }} my-auto"></span> <span>{{ note }}</span>
                                         </div>
-                                        <TooltipContent>{{ tooltip }}</TooltipContent>
+                                        <TooltipContent :fallback="false">{{ tooltip }}</TooltipContent>
                                     </Tooltip>
                                 </div>
                             {% endfor %}
@@ -98,14 +98,14 @@
                 <h1 class="text-3xl">Images</h1>
                 <div class="flex flex-row flex-wrap gap-4">
                     {% for image_url in game_image_urls %}
-                        <a href="{{ image_url.full }}" class="h-50 rounded-box flex cursor-zoom-in overflow-clip">
+                        <a href="{{ image_url.full }}" class="flex h-50 cursor-zoom-in overflow-clip rounded-box">
                             <img src="{{ image_url.thumbnail }}" class="object-cover" />
                         </a>
                     {% endfor %}
                 </div>
             {% endif %}
             {% if game.gamemaster_id == request.user.id %}
-                <div class="card bg-base-200 border-base-300 rounded-box border">
+                <div class="card rounded-box border border-base-300 bg-base-200">
                     <div class="card-body">
                         <h2 class="card-title text-xl">Game Master Section</h2>
                         <p>You are the game master of this game.</p>
