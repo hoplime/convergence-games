@@ -47,7 +47,7 @@
                             "silk",
                         ]
                     %}
-                        <li class="w-full">
+                        <li class="w-full min-w-0">
                             <button
                                 data-theme="{{ theme_name }}"
                                 class="p-4"
@@ -58,14 +58,14 @@
                                 "
                             >
                                 <div
-                                    class="bg-base-100 border-1 grid shrink-0 grid-cols-2 gap-0.5 rounded-md p-1 shadow-sm"
+                                    class="grid shrink-0 grid-cols-2 gap-0.5 rounded-md border-1 bg-base-100 p-1 shadow-sm"
                                 >
-                                    <div class="bg-accent size-1 rounded-full"></div>
-                                    <div class="bg-base-content size-1 rounded-full"></div>
-                                    <div class="bg-primary size-1 rounded-full"></div>
-                                    <div class="bg-secondary size-1 rounded-full"></div>
+                                    <div class="size-1 rounded-full bg-accent"></div>
+                                    <div class="size-1 rounded-full bg-base-content"></div>
+                                    <div class="size-1 rounded-full bg-primary"></div>
+                                    <div class="size-1 rounded-full bg-secondary"></div>
                                 </div>
-                                <div>{{ theme_name }}</div>
+                                <div class="inline-block overflow-hidden">{{ theme_name }}</div>
                             </button>
                         </li>
                     {% endfor %}
