@@ -98,6 +98,7 @@ class FlagWithNotes(enum.IntFlag):
     __form_notes__: ClassVar[dict[int, str]] = {}
     __tooltips__: ClassVar[dict[int, str]] = {}
     __icons__: ClassVar[dict[int, str]] = {}
+    __excluded_from_submission__: ClassVar[int] = 0
 
     @classmethod
     def all_notes_and_values(cls) -> list[tuple[int, str]]:
@@ -245,12 +246,14 @@ class GameKSP(FlagWithNotes):
     NZ_MADE = 2
     IN_PLAYTEST = 4
     FOR_SALE = 8
+    SPECIAL_GUEST = 16
 
     __notes__ = {
         DESIGNER_RUN: "Designer run",
         NZ_MADE: "NZ made",
         IN_PLAYTEST: "In playtest",
         FOR_SALE: "For sale",
+        SPECIAL_GUEST: "Special guest",
     }
 
     __form_notes__ = {
@@ -258,6 +261,7 @@ class GameKSP(FlagWithNotes):
         NZ_MADE: "This system was designed in New Zealand",
         IN_PLAYTEST: "This system is in playtest",
         FOR_SALE: "This system or scenario will be for sale at the event",
+        SPECIAL_GUEST: "This system is being run by a special guest",
     }
 
     __tooltips__ = {
@@ -265,6 +269,7 @@ class GameKSP(FlagWithNotes):
         NZ_MADE: "This system is made in New Zealand",
         IN_PLAYTEST: "This system is in playtest, and you have the opportunity to help shape it",
         FOR_SALE: "This system or scenario will be for sale at the event",
+        SPECIAL_GUEST: "This system is being run by a special guest",
     }
 
     __icons__ = {
@@ -272,7 +277,10 @@ class GameKSP(FlagWithNotes):
         NZ_MADE: "icon-[game-icons--kiwi-bird]",
         IN_PLAYTEST: "icon-[mdi--cog]",
         FOR_SALE: "icon-[raphael--dollar]",
+        SPECIAL_GUEST: "icon-[material-symbols--star]",
     }
+
+    __excluded_from_submission__ = SPECIAL_GUEST  # Special guest can only be set by the event organisers
 
 
 class GameTableSizeRequirement(Requirement):

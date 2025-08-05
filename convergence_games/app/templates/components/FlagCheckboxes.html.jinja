@@ -5,7 +5,13 @@
     value: FlagWithNotes = 0
 #}
 {% for f in flag_enum %}
-    {% if display_tooltips and f.tooltips[0] %}
+    {% if bitwise_and(flag_enum.__excluded_from_submission__, f) %}
+        {% if bitwise_and(value, f) %}
+            {# We need to preserve a checkbox for this flag so on resubmission it isn't lost #}
+            {# Even if it is normally hidden from submission #}
+            <input type="checkbox" name="{{ name }}" value="{{ f }}" class="checkbox" checked hidden />
+        {% endif %}
+    {% elif display_tooltips and f.tooltips[0] %}
         <Tooltip class="w-fit">
             <label class="flex items-center gap-2">
                 <input
