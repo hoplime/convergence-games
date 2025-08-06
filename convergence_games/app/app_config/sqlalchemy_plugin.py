@@ -5,7 +5,7 @@ from convergence_games.settings import SETTINGS
 
 config = SQLAlchemyAsyncConfig(
     connection_string=SETTINGS.DATABASE_URL.render_as_string(hide_password=False),
-    create_all=True,
+    create_all=False,
     metadata=Base.metadata,
     before_send_handler="autocommit",
     engine_config=EngineConfig(
