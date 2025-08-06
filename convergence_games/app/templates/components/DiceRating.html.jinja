@@ -1,0 +1,99 @@
+{#def
+    name: str = "rating-x",
+    display_d20: bool = False,
+    hx_post_url: str = "",
+#}
+{% set common = "relative mask text-gray-800 after:absolute after:top-1/2 after:left-1/2 after:block after:-translate-x-1/2 after:-translate-y-1/2 after:text-center after:align-middle after:leading-none after:font-bold" %}
+{%
+    set breakpoints = "
+     has-[input[value='0']:checked]:via-[14.29%]  has-[input[value='0']:checked]:to-[14.29%]
+     has-[input[value='4']:checked]:via-[28.57%]  has-[input[value='4']:checked]:to-[28.57%]
+     has-[input[value='6']:checked]:via-[42.86%]  has-[input[value='6']:checked]:to-[42.86%]
+     has-[input[value='8']:checked]:via-[57.14%]  has-[input[value='8']:checked]:to-[57.14%]
+    has-[input[value='10']:checked]:via-[71.43%] has-[input[value='10']:checked]:to-[71.43%]
+    has-[input[value='12']:checked]:via-[85.71%] has-[input[value='12']:checked]:to-[85.71%]
+    " if display_d20 else "
+     has-[input[value='0']:checked]:via-[16.67%]  has-[input[value='0']:checked]:to-[16.67%]
+     has-[input[value='4']:checked]:via-[33.33%]  has-[input[value='4']:checked]:to-[33.33%]
+     has-[input[value='6']:checked]:via-[50.00%]  has-[input[value='6']:checked]:to-[50.00%]
+     has-[input[value='8']:checked]:via-[66.67%]  has-[input[value='8']:checked]:to-[66.67%]
+    has-[input[value='10']:checked]:via-[83.33%] has-[input[value='10']:checked]:to-[83.33%]
+    has-[input[value='12']:checked]:via-100% has-[input[value='12']:checked]:to-100%
+    "
+%}
+<!-- prettier-ignore-start -->
+<div class="rounded-selector bg-linear-to-r p-[2px] to-base-100
+    has-[input[value='0']:checked]:from-gray-400 has-[input[value='0']:checked]:via-gray-400
+    has-[input[value='4']:checked]:from-blue-400 has-[input[value='4']:checked]:via-blue-400
+    has-[input[value='6']:checked]:from-indigo-400 has-[input[value='6']:checked]:via-indigo-400
+    has-[input[value='8']:checked]:from-violet-400 has-[input[value='8']:checked]:via-violet-400
+    has-[input[value='10']:checked]:from-red-400 has-[input[value='10']:checked]:via-red-400
+    has-[input[value='12']:checked]:from-orange-400 has-[input[value='12']:checked]:via-orange-400
+    has-[input[value='20']:checked]:from-yellow-400 has-[input[value='20']:checked]:via-yellow-400
+    has-[input[value='20']:checked]:via-100% has-[input[value='20']:checked]:to-100%
+    {{ breakpoints }}
+    duration-200 ease-in-out
+    transition-[--tw-gradient-via-position,--tw-gradient-to-position,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to]
+    "
+    >
+    <div
+        class="rating-xl rating gap-1 rounded-[calc(var(--radius-selector)-2px)] bg-base-100 text-xl"
+        hx-swap="none"
+        hx-post="{{ hx_post_url }}"
+        hx-trigger="change delay:200ms"
+    >
+        <input
+            type="radio"
+            name="{{ name }}"
+            value="0"
+            class="{{ common }} bg-gray-400 mask-d0 after:content-['0']"
+            aria-label="D0"
+        />
+        <input
+            type="radio"
+            name="{{ name }}"
+            value="4"
+            class="{{ common }} bg-blue-400 mask-d4 after:content-['4']"
+            aria-label="D4"
+        />
+        <input
+            type="radio"
+            name="{{ name }}"
+            value="6"
+            class="{{ common }} bg-indigo-400 mask-d6 after:content-['6']"
+            aria-label="D6"
+            checked
+        />
+        <input
+            type="radio"
+            name="{{ name }}"
+            value="8"
+            class="{{ common }} bg-violet-400 mask-d8 after:content-['8']"
+            aria-label="D8"
+        />
+        <input
+            type="radio"
+            name="{{ name }}"
+            value="10"
+            class="{{ common }} bg-red-400 mask-d10 after:content-['10']"
+            aria-label="D10"
+        />
+        <input
+            type="radio"
+            name="{{ name }}"
+            value="12"
+            class="{{ common }} bg-orange-400 mask-d12 after:content-['12']"
+            aria-label="D12"
+        />
+        {% if display_d20 %}
+            <input
+                type="radio"
+                name="{{ name }}"
+                value="20"
+                class="{{ common }} bg-yellow-400 mask-d20 after:content-['20']"
+                aria-label="D20"
+            />
+        {% endif %}
+    </div>
+</div>
+<!-- prettier-ignore-end -->

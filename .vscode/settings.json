@@ -72,6 +72,8 @@
                     "meta.tag.other.CollapseTitle.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.ComplexityStars.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.Component.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.DiceRating.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.DiceRatingSlider.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.ErrorHolder.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.ErrorHolderOobCollection.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.FieldsetBase.html invalid.illegal.unrecognized-tag.html",
