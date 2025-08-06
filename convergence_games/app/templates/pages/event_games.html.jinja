@@ -8,7 +8,7 @@
                 hx-get="/games"
                 hx-target="#game_list"
                 hx-push-url="true"
-                hx-trigger="change from:input:not([name=filter_tab]) delay:100ms, reset delay:10ms"
+                hx-trigger="change delay:100ms, reset delay:10ms"
                 hx-params="not filter_tab"
                 class="tabs-border tabs"
             >
@@ -29,7 +29,7 @@
                 {% block game_list %}
                     {% for game in games %}
                         <div class="card rounded-box border border-base-300 bg-base-200">
-                            <a href="/game/{{ swim(game) }}">
+                            <a href="/game/{{ swim(game) }}" class="grow">
                                 <div class="card-body">
                                     <h2 class="card-title">{{ game.name }}</h2>
                                     <div class="italic">{{ game.tagline }}</div>
@@ -79,6 +79,15 @@
                                     {% endif %}
                                 </div>
                             </a>
+                            <div class="mt-auto flex flex-col items-center gap-2 pb-6">
+                                <span class="w-full text-center font-semibold">Preference</span>
+                                {% set dice_rating_name = "rating-" ~ swim(game) %}
+                                <DiceRating
+                                    :name="dice_rating_name"
+                                    :display_d20="true"
+                                    :hx_post_url="'/game/' + swim(game) + '/rate'"
+                                />
+                            </div>
                         </div>
                     {% endfor %}
                     {% if not games %}
