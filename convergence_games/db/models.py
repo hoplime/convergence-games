@@ -27,6 +27,7 @@ from convergence_games.db.enums import (
     SubmissionStatus,
     TableFacility,
     TableSize,
+    UserGamePreferenceValue,
 )
 
 
@@ -248,6 +249,7 @@ class Game(Base):
         lazy="noload",
         order_by=GameImageLink.sort_order,
     )
+    user_preferences: Mapped[list[UserGamePreference]] = relationship(back_populates="game", lazy="noload")
 
     # Assocation Proxy Relationships
     genre_links: Mapped[list[GameGenreLink]] = relationship(back_populates="game", lazy="noload")
@@ -503,6 +505,9 @@ class User(Base):
     event_roles: Mapped[list[UserEventRole]] = relationship(
         back_populates="user", primaryjoin="User.id == UserEventRole.user_id", lazy="noload"
     )
+    game_preferences: Mapped[list[UserGamePreference]] = relationship(
+        back_populates="user", primaryjoin="User.id == UserGamePreference.user_id", lazy="noload"
+    )
 
     @property
     def is_profile_setup(self) -> bool:
@@ -547,6 +552,24 @@ class UserEventRole(Base):
     )
 
     __table_args__ = (UniqueConstraint("event_id", "user_id", "role"),)
+
+
+class UserGamePreference(Base):
+    preference: Mapped[UserGamePreferenceValue] = mapped_column(
+        Enum(UserGamePreferenceValue, validate_strings=True), index=True, nullable=False
+    )
+
+    # Foreign Keys
+    game_id: Mapped[int] = mapped_column(ForeignKey("game.id"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
+
+    # Relationships
+    game: Mapped[Game] = relationship(back_populates="user_preferences", lazy="noload")
+    user: Mapped[User] = relationship(
+        back_populates="game_preferences", primaryjoin="User.id == UserGamePreference.user_id", lazy="noload"
+    )
+
+    __table_args__ = (UniqueConstraint("game_id", "user_id"),)
 
 
 class UserLogin(Base):
