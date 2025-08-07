@@ -84,7 +84,7 @@
                                 {% set dice_rating_name = "rating-" ~ swim(game) %}
                                 <DiceRating
                                     :name="dice_rating_name"
-                                    :display_d20="true"
+                                    :display_d20="false"
                                     :hx_post_url="'/game/' + swim(game) + '/rate'"
                                 />
                             </div>
