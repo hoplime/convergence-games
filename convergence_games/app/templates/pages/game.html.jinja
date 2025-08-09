@@ -124,6 +124,20 @@
                         </div>
                     </div>
                 </div>
+            {% elif request.user %}
+                <div class="card mx-auto w-fit rounded-box border border-base-300 bg-base-200">
+                    <div class="card-body">
+                        <div class="flex flex-col items-center gap-2 text-base">
+                            <span class="w-full text-center font-semibold">Preference</span>
+                            {% set dice_rating_name = "rating-" ~ swim(game) %}
+                            <DiceRating
+                                :display_d20="false"
+                                :hx_put_url="'/game/' + swim(game) + '/preference'"
+                                :starting_value="preference or 6"
+                            />
+                        </div>
+                    </div>
+                </div>
             {% endif %}
         </PageContainer>
     {% endblock %}
