@@ -2,11 +2,21 @@ from __future__ import annotations
 
 import datetime as dt
 from base64 import urlsafe_b64decode, urlsafe_b64encode
+from typing import Any
 from uuid import UUID
 
 from advanced_alchemy.base import BigIntAuditBase
 from advanced_alchemy.types import DateTimeUTC
-from sqlalchemy import Connection, Enum, ForeignKey, ForeignKeyConstraint, Integer, UniqueConstraint
+from sqlalchemy import (
+    Connection,
+    Enum,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy import event as sqla_event
 from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, validates
 
@@ -75,6 +85,8 @@ class GameGenreLink(Base):
     game: Mapped[Game] = relationship(back_populates="genre_links", lazy="noload")
     genre: Mapped[Genre] = relationship(back_populates="game_links", lazy="noload")
 
+    __table_args__ = (UniqueConstraint("game_id", "genre_id"),)
+
 
 class GameContentWarningLink(Base):
     game_id: Mapped[int] = mapped_column(ForeignKey("game.id"), primary_key=True)
@@ -82,6 +94,8 @@ class GameContentWarningLink(Base):
 
     game: Mapped[Game] = relationship(back_populates="content_warning_links", lazy="noload")
     content_warning: Mapped[ContentWarning] = relationship(back_populates="game_links", lazy="noload")
+
+    __table_args__ = (UniqueConstraint("game_id", "content_warning_id"),)
 
 
 class GameImageLink(Base):
@@ -104,7 +118,7 @@ class Image(Base):
         lazy="noload",
     )
 
-    # Assocation Proxy Relationships
+    # Association Proxy Relationships
     game_links: Mapped[list[GameImageLink]] = relationship(back_populates="image", lazy="noload")
 
 
@@ -168,7 +182,7 @@ class Genre(Base):
         lazy="noload",
     )
 
-    # Assocation Proxy Relationships
+    # Association Proxy Relationships
     game_links: Mapped[list[GameGenreLink]] = relationship(back_populates="genre", lazy="noload")
 
 
@@ -188,7 +202,7 @@ class ContentWarning(Base):
         lazy="noload",
     )
 
-    # Assocation Proxy Relationships
+    # Association Proxy Relationships
     game_links: Mapped[list[GameContentWarningLink]] = relationship(back_populates="content_warning", lazy="noload")
 
 
@@ -251,7 +265,7 @@ class Game(Base):
     )
     user_preferences: Mapped[list[UserGamePreference]] = relationship(back_populates="game", lazy="noload")
 
-    # Assocation Proxy Relationships
+    # Association Proxy Relationships
     genre_links: Mapped[list[GameGenreLink]] = relationship(back_populates="game", lazy="noload")
     content_warning_links: Mapped[list[GameContentWarningLink]] = relationship(back_populates="game", lazy="noload")
     image_links: Mapped[list[GameImageLink]] = relationship(back_populates="game", lazy="noload")
@@ -311,7 +325,7 @@ class GameRequirement(Base):
         lazy="noload",
     )
 
-    # Assocation Proxy Relationships
+    # Association Proxy Relationships
     time_slot_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
         back_populates="game_requirement",
         primaryjoin="GameRequirement.id == GameRequirementTimeSlotLink.game_requirement_id",
@@ -327,7 +341,7 @@ class GameRequirement(Base):
 
 
 @sqla_event.listens_for(GameRequirement, "before_insert")
-def game_requirement_before_insert(mapper: Mapper, connection: Connection, target: GameRequirement):
+def game_requirement_before_insert(mapper: Mapper[Any], connection: Connection, target: GameRequirement):
     if target.event_id is None:
         target.event_id = target.game.event_id
 
@@ -358,7 +372,7 @@ class GameRequirementTimeSlotLink(Base):
 
 @sqla_event.listens_for(GameRequirementTimeSlotLink, "before_insert")
 def game_requirement_time_slot_link_before_insert(
-    mapper: Mapper, connection: Connection, target: GameRequirementTimeSlotLink
+    mapper: Mapper[Any], connection: Connection, target: GameRequirementTimeSlotLink
 ):
     if target.event_id is None:
         if target.time_slot is not None:
@@ -369,7 +383,7 @@ def game_requirement_time_slot_link_before_insert(
 
 # Timetable Information Models
 class TimeSlot(Base):
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(default="")
     start_time: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True))
     end_time: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True))
 
@@ -389,8 +403,11 @@ class TimeSlot(Base):
         viewonly=True,
         lazy="noload",
     )
+    parties: Mapped[list[Party]] = relationship(
+        back_populates="time_slot", foreign_keys="Party.time_slot_id", lazy="noload"
+    )
 
-    # Assocation Proxy Relationships
+    # Association Proxy Relationships
     game_requirement_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
         back_populates="time_slot",
         primaryjoin="TimeSlot.id == GameRequirementTimeSlotLink.time_slot_id",
@@ -408,8 +425,8 @@ class TimeSlot(Base):
 
 
 class Room(Base):
-    name: Mapped[str]
-    description: Mapped[str]
+    name: Mapped[str] = mapped_column(default="")
+    description: Mapped[str] = mapped_column(default="")
     facilities: Mapped[RoomFacility] = mapped_column(Integer, default=RoomFacility.NONE, server_default="0")
 
     # Foreign Keys
@@ -426,7 +443,7 @@ class Room(Base):
 
 
 class Table(Base):
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(default="")
     facilities: Mapped[TableFacility] = mapped_column(Integer, default=TableFacility.NONE, server_default="0")
     size: Mapped[TableSize] = mapped_column(
         Enum(TableSize), default=TableSize.SMALL, server_default="SMALL", index=True
@@ -453,7 +470,7 @@ class Table(Base):
 
 
 @sqla_event.listens_for(Table, "before_insert")
-def table_before_insert(mapper: Mapper, connection: Connection, target: Table):
+def table_before_insert(mapper: Mapper[Any], connection: Connection, target: Table):
     if target.event_id is None:
         target.event_id = target.room.event_id
 
@@ -485,6 +502,52 @@ class Session(Base):
     )
 
 
+class Party(Base):
+    invite_code: Mapped[str] = mapped_column(index=True)
+
+    # Foreign Keys
+    time_slot_id: Mapped[int] = mapped_column(ForeignKey("time_slot.id"), index=True)
+
+    # Relationships
+    time_slot: Mapped[TimeSlot] = relationship(back_populates="parties", foreign_keys=time_slot_id, lazy="noload")
+    members: Mapped[list[User]] = relationship(
+        back_populates="parties",
+        secondary="party_user_link",
+        primaryjoin="Party.id == PartyUserLink.party_id",
+        secondaryjoin="User.id == PartyUserLink.user_id",
+        viewonly=True,
+        lazy="noload",
+    )
+
+    # Association Proxy Relationships
+    party_user_links: Mapped[list[PartyUserLink]] = relationship(back_populates="party", lazy="noload")
+
+    @declared_attr
+    def leader(self) -> Mapped[User | None]:
+        return relationship(
+            "User",
+            secondary="party_user_link",
+            primaryjoin="PartyUserLink.party_id == Party.id and PartyUserLink.is_leader == True",
+            secondaryjoin="PartyUserLink.user_id == User.id",
+            lazy="noload",
+            viewonly=True,
+        )
+
+
+class PartyUserLink(Base):
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
+    party_id: Mapped[int] = mapped_column(ForeignKey("party.id"), primary_key=True)
+    is_leader: Mapped[bool] = mapped_column(default=False, server_default="0")
+
+    user: Mapped[User] = relationship(back_populates="party_user_links", foreign_keys=user_id, lazy="noload")
+    party: Mapped[Party] = relationship(back_populates="party_user_links", foreign_keys=party_id, lazy="noload")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "party_id"),
+        Index("ix_unique_party_leader", "party_id", unique=True, postgresql_where=(is_leader == True)),
+    )
+
+
 # User Information Models
 class User(Base):
     first_name: Mapped[str] = mapped_column(index=True, default="")
@@ -507,6 +570,19 @@ class User(Base):
     )
     game_preferences: Mapped[list[UserGamePreference]] = relationship(
         back_populates="user", primaryjoin="User.id == UserGamePreference.user_id", lazy="noload"
+    )
+    parties: Mapped[list[Party]] = relationship(
+        back_populates="members",
+        secondary=PartyUserLink.__table__,
+        primaryjoin="User.id == PartyUserLink.user_id",
+        secondaryjoin="Party.id == PartyUserLink.party_id",
+        viewonly=True,
+        lazy="noload",
+    )
+
+    # Association Proxy Relationships
+    party_user_links: Mapped[list[PartyUserLink]] = relationship(
+        back_populates="user", primaryjoin="User.id == PartyUserLink.user_id", lazy="noload"
     )
 
     @property
