@@ -520,7 +520,12 @@ class Party(Base):
     )
 
     # Association Proxy Relationships
-    party_user_links: Mapped[list[PartyUserLink]] = relationship(back_populates="party", lazy="noload")
+    party_user_links: Mapped[list[PartyUserLink]] = relationship(
+        back_populates="party",
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     @declared_attr
     def leader(self) -> Mapped[User | None]:
@@ -536,7 +541,7 @@ class Party(Base):
 
 class PartyUserLink(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
-    party_id: Mapped[int] = mapped_column(ForeignKey("party.id"), primary_key=True)
+    party_id: Mapped[int] = mapped_column(ForeignKey("party.id", ondelete="CASCADE"), primary_key=True)
     is_leader: Mapped[bool] = mapped_column(default=False, server_default="0")
 
     user: Mapped[User] = relationship(back_populates="party_user_links", foreign_keys=user_id, lazy="noload")
@@ -544,7 +549,12 @@ class PartyUserLink(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "party_id"),
-        Index("ix_unique_party_leader", "party_id", unique=True, postgresql_where=(is_leader == True)),
+        Index(
+            "ix_unique_party_leader",
+            "party_id",
+            unique=True,
+            postgresql_where=(is_leader == True),  # noqa: E712 - We need to compare to True to make it a condition instead of a Mapped
+        ),
     )
 
 
