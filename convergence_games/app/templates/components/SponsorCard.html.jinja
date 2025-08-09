@@ -1,0 +1,35 @@
+{#def
+    img_src: str = "",
+    name: str = "",
+    website_url: str = "",
+    tier: Literal["volunteer", "prize", "silver", "gold"] = "prize"
+#}
+{%
+    set tier_border =
+    "bg-linear-to-br from-amber-500 from-10% via-amber-200 via-25% to-amber-500 to-45%" if tier == "gold" else
+    "bg-linear-to-br from-gray-500  from-10% via-gray-200  via-25% to-gray-500  to-45%" if tier == "silver" else
+    "bg-linear-to-br from-gray-200  from-10% via-gray-200  via-25% to-gray-200  to-45%" if tier == "prize" else
+    "bg-white"
+%}
+{%
+    set tier_height =
+    "h-32 md:h-48" if tier == "gold" else
+    "h-24 md:h-32" if tier == "silver" else
+    "h-24 md:h-32" if tier == "prize" else
+    "h-24 md:h-32"
+%}
+<div {{ attrs.render(class="rounded-box card card-xs p-[2px]") }}>
+    <a
+        href="{{ website_url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-[calc(var(--radius-box)-2px)] bg-white"
+    >
+        <figure class="{{ tier_height }} px-6 py-2 md:px-12 md:py-4">
+            <img src="{{ img_src }}" class="h-full w-full object-contain" alt="{{ name }} Logo" />
+        </figure>
+        <div class="card-body items-center overflow-clip text-nowrap">
+            <h2 class="card-title text-black">{{ name }}</h2>
+        </div>
+    </a>
+</div>

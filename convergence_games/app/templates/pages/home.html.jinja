@@ -21,58 +21,19 @@
             <p>Tickets are now generally available - get in quick as we sell out earlier and earlier each year.</p>
             <a
                 href="https://convergence-2025.lilregie.com"
-                class="btn btn-xl btn-primary mx-auto w-full py-10 text-3xl"
+                class="btn mx-auto w-full py-10 text-3xl btn-xl btn-primary"
             >
                 Purchase Your Ticket Now
             </a>
-            <h2 class="mt-4 text-xl">Where</h2>
-            <div class="flex flex-row flex-wrap gap-4">
-                <div style="max-width:100%;list-style:none; transition: none;overflow:hidden;width:250px;height:250px;">
-                    <div id="g-mapdisplay" style="height:100%; width:100%;max-width:100%;">
-                        <iframe
-                            style="height:100%;width:100%;border:0;"
-                            frameborder="0"
-                            src="https://www.google.com/maps/embed/v1/place?q=the+distinction+hotel+and+conference+centre+hamilton&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"
-                        ></iframe>
-                    </div>
-                    <style>
-                        #g-mapdisplay img {
-                            max-height: none;
-                            max-width: none !important;
-                            background: none !important;
-                        }
-                    </style>
-                </div>
-                <div class="max-w-54 flex flex-col gap-2">
-                    <p>The Distinction Hamilton Hotel & Conference Centre, 100 Garnett Avenue, Hamilton.</p>
-                    <p>The Conference Centre is at the rear of the hotel.</p>
-                </div>
-            </div>
-            <h2 class="mt-4 text-xl">Key Dates</h2>
-            <table>
-                <tr>
-                    <td class="border-r pr-2 text-right align-top">6th June</td>
-                    <td class="pl-2 text-left align-top">Initial round of GM submissions close</td>
-                </tr>
-                <tr>
-                    <td class="border-r pr-2 text-right align-top">13th - 27th June</td>
-                    <td class="pl-2 text-left align-top">
-                        Pre-sales for weekend tickets (only for WRPG society members and previous attendees)
-                    </td>
-                </tr>
-                <tr>
-                    <td class="border-r pr-2 text-right align-top">11th July</td>
-                    <td class="pl-2 text-left align-top">General ticket sales open</td>
-                </tr>
-            </table>
-            <h2 class="mt-4 text-xl">Timetable</h2>
+            <div class="divider divider-vertical"></div>
+            <h2 class="text-xl">Timetable</h2>
             <p>
                 Saturday will have 3 sessions and Sunday will have 2 sessions, with a mix of 3 and 4 hour slots based on
                 the GM submissions. Below is a rough timetable, based on what has happened in previous years. The start
                 and end times of sessions may end up changing by September, please check back closer to the time. Always
                 aim to be 15 minutes early to sessions as the raffle draws and announcements will come beforehand.
             </p>
-            <div class="flex flex-row flex-wrap gap-8">
+            <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
                 <div class="flex flex-col gap-2">
                     <h3 class="text-lg">Friday 12th</h3>
                     <table>
@@ -82,7 +43,7 @@
                             ]
                         %}
                             <tr>
-                                <td class="border-r pr-2 text-right align-top">{{ time }}</td>
+                                <td class="w-20 border-r pr-2 text-right align-top">{{ time }}</td>
                                 <td class="{{ style }} pl-2 text-left align-top">{{ info }}</td>
                             </tr>
                         {% endfor %}
@@ -104,7 +65,7 @@
                             ]
                         %}
                             <tr>
-                                <td class="border-r pr-2 text-right align-top">{{ time }}</td>
+                                <td class="w-20 border-r pr-2 text-right align-top">{{ time }}</td>
                                 <td class="{{ style }} pl-2 text-left align-top">{{ info }}</td>
                             </tr>
                         {% endfor %}
@@ -126,16 +87,37 @@
                             ]
                         %}
                             <tr>
-                                <td class="border-r pr-2 text-right align-top">{{ time }}</td>
+                                <td class="w-20 border-r pr-2 text-right align-top">{{ time }}</td>
                                 <td class="{{ style }} pl-2 text-left align-top">{{ info }}</td>
                             </tr>
                         {% endfor %}
                     </table>
                 </div>
             </div>
-            <div class="divider divider-vertical"></div>
-            <h2 class="text-xl">Important Info</h2>
-            <div class="collapse-plus bg-base-100 border-base-300 collapse border">
+            <h2 class="mt-4 text-xl">Location</h2>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-[2fr_1fr]">
+                <div style="max-width:100%;list-style:none; transition: none;overflow:hidden;" class="grow">
+                    <div id="g-mapdisplay" style="height:100%; width:100%;max-width:100%;">
+                        <iframe
+                            style="height:100%;width:100%;border:0;"
+                            frameborder="0"
+                            src="https://www.google.com/maps/embed/v1/place?q=the+distinction+hotel+and+conference+centre+hamilton&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"
+                        ></iframe>
+                    </div>
+                    <style>
+                        #g-mapdisplay img {
+                            max-height: none;
+                            max-width: none !important;
+                            background: none !important;
+                        }
+                    </style>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <p>The Distinction Hamilton Hotel & Conference Centre, 100 Garnett Avenue, Hamilton.</p>
+                    <p>The Conference Centre is at the rear of the hotel.</p>
+                </div>
+            </div>
+            <div class="collapse-plus collapse mt-4 border border-base-300 bg-base-100">
                 <input type="checkbox" />
                 <div class="collapse-title font-semibold">
                     <h3 id="ttrpg">What is a TTRPG?</h3>
@@ -151,7 +133,7 @@
                     </p>
                 </div>
             </div>
-            <div class="collapse-plus bg-base-100 border-base-300 collapse border">
+            <div class="collapse-plus collapse border border-base-300 bg-base-100">
                 <input type="checkbox" />
                 <div class="collapse-title font-semibold">
                     <h3 id="ttrpg">What's on at Convergence?</h3>
@@ -211,7 +193,7 @@
                     </p>
                 </div>
             </div>
-            <div class="collapse-plus bg-base-100 border-base-300 collapse border">
+            <div class="collapse-plus collapse border border-base-300 bg-base-100">
                 <input type="checkbox" />
                 <div class="collapse-title font-semibold">
                     <h3 id="photographs"><span class="italic">Ticket Prices -</span> What are the ticket prices?</h3>
@@ -243,7 +225,7 @@
                     </div>
                 </div>
             </div>
-            <div class="collapse-plus bg-base-100 border-base-300 collapse border">
+            <div class="collapse-plus collapse border border-base-300 bg-base-100">
                 <input type="checkbox" />
                 <div class="collapse-title font-semibold">
                     <h3 id="parking"><span class="italic">Parking -</span> Where is the best parking available?</h3>
@@ -256,7 +238,7 @@
                     </p>
                 </div>
             </div>
-            <div class="collapse-plus bg-base-100 border-base-300 collapse border">
+            <div class="collapse-plus collapse border border-base-300 bg-base-100">
                 <input type="checkbox" />
                 <div class="collapse-title font-semibold">
                     <h3 id="accommodation">
@@ -276,7 +258,7 @@
                     </p>
                 </div>
             </div>
-            <div class="collapse-plus bg-base-100 border-base-300 collapse border">
+            <div class="collapse-plus collapse border border-base-300 bg-base-100">
                 <input type="checkbox" />
                 <div class="collapse-title font-semibold">
                     <h3 id="food"><span class="italic">Food and Drink -</span> Where can I get food during event?</h3>
@@ -294,7 +276,7 @@
                     <p>During the social on Sunday, dinner and drinks will be available from the hotel bar!</p>
                 </div>
             </div>
-            <div class="collapse-plus bg-base-100 border-base-300 collapse border">
+            <div class="collapse-plus collapse border border-base-300 bg-base-100">
                 <input type="checkbox" />
                 <div class="collapse-title font-semibold">
                     <h3 id="photographs">
@@ -315,7 +297,7 @@
                     </p>
                 </div>
             </div>
-            <div class="collapse-plus bg-base-100 border-base-300 collapse border">
+            <div class="collapse-plus collapse border border-base-300 bg-base-100">
                 <input type="checkbox" />
                 <div class="collapse-title font-semibold">
                     <h3 id="ages"><span class="italic">Age Restrictions -</span> What ages can come to Convergence?</h3>
@@ -334,16 +316,13 @@
                 </div>
             </div>
             <div class="divider divider-vertical"></div>
-            <h2 class="mt-4 text-xl">See the games submitted so far</h2>
+            <h2 class="text-xl">See the games submitted so far</h2>
             <p>
                 We have a number of games submitted already, and more are coming in every day! Check out the
                 <a href="/games" class="link">games page</a> to see what has been submitted so far.
             </p>
-            <a href="/games" class="btn btn-xl btn-primary mx-auto">View All Games</a>
-            <h2 class="mt-4 text-xl">Got another question?</h2>
-            <p>If it's not answered on this page, it might be answered in the FAQ.</p>
-            <a href="/faq" class="btn btn-xl btn-primary mx-auto">View The FAQ</a>
-            <h2 class="text-xl">Want to be a Game Master?</h2>
+            <a href="/games" class="btn mx-auto btn-xl btn-primary">View All Games</a>
+            <h2 class="mt-4 text-xl">Want to be a Game Master?</h2>
             {# TODO RESUBMISSIONS #}
             <p>
                 The game submissions period has ended for Convergence 2025, and we cannot guarantee more GM spots until
@@ -355,7 +334,7 @@
                 A huge thanks to everyone who has submitted a game for this years Convergence - it's going to be the
                 biggest and best yet.
             </p>
-            <a href="/submit-game" class="btn btn-xl btn-primary btn-disabled mx-auto">Sign Up To GM</a>
+            <a href="/submit-game" class="btn-disabled btn mx-auto btn-xl btn-primary">Sign Up To GM</a>
             <h2 class="mt-4 text-xl">Keen to volunteer?</h2>
             <p>
                 Convergence 2025 has a lot of moving parts and we need volunteers to help make sure that the convention
@@ -367,9 +346,40 @@
                 Our goal is that each volunteer will be working for one game session and one break leaving you the rest
                 of the time to enjoy yourself!
             </p>
-            <a class="btn btn-xl btn-primary mx-auto" href="https://forms.gle/8qtaj1gQ2g5Bykq1A" target="_blank">
+            <a class="btn mx-auto btn-xl btn-primary" href="https://forms.gle/8qtaj1gQ2g5Bykq1A" target="_blank">
                 Sign Up To Volunteer
             </a>
+            <h2 class="mt-4 text-xl">Got another question?</h2>
+            <p>If it's not answered on this page, it might be answered in the FAQ.</p>
+            <a href="/faq" class="btn mx-auto btn-xl btn-primary">View The FAQ</a>
+            <!-- prettier-ignore-start -->
+            <div class="divider divider-vertical"></div>
+            <h2 class="text-xl" id="sponsors">Sponsors</h2>
+            <h3 class="mt2 text-lg">Gold Tier</h3>
+            <div class="grid grid-cols-1 gap-2">
+                <SponsorCard tier="gold" img-src="/static/images/sponsors/gamersphere.png" name="Gamersphere" website_url="https://www.gamersphere.nz/" />
+            </div>
+            <h3 class="mt2 text-lg">Silver Tier</h3>
+            <div class="grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-3">
+                <SponsorCard tier="silver" img-src="/static/images/sponsors/dice_goblin.png" name="Dice Goblin" website_url="https://www.dicegoblin.nz/" />
+                <SponsorCard tier="silver" img-src="/static/images/sponsors/gaming_dna.png" name="Gaming DNA" website_url="https://gamingdna.co.nz/" />
+                <SponsorCard tier="silver" img-src="/static/images/sponsors/beadnd.png" name="BeaDnD" website_url="https://www.beadndgames.co.nz/" />
+                <SponsorCard tier="silver" img-src="/static/images/sponsors/chaosium.png" name="Chaosium" website_url="https://www.chaosium.com/" />
+                <SponsorCard tier="silver" img-src="/static/images/sponsors/cold_robot_design.png" name="Cold Robot Design" website_url="https://www.coldrobotdesign.co.nz/" />
+            </div>
+            <h3 class="mt2 text-lg">Prize Support</h3>
+            <div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/game_roost.png" name="Game Roost" website_url="https://www.gameroost.co.nz/" />
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/free_league.png" name="Free League" website_url="https://freeleaguepublishing.com/" />
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/flat_cap_games.jpg" name="Flat Cap Games" website_url="https://www.facebook.com/flatcapgames/" />
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/cheeky_parrot.png" name="Cheeky Parrot Games" website_url="https://www.cheekyparrotgames.com/" />
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/looking_glass_workshop.png" name="Looking Glass Workshop" website_url="https://lookingglassworkshop.com/" />
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/ludogix.png" name="Ludogix" website_url="https://ludogix.com/" />
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/schilmil.jpg" name="SchilMil" website_url="https://www.schilmilgames.com/" />
+                <SponsorCard tier="volunteer" img-src="/static/images/sponsors/escapist.png" name="Escapist" website_url="https://www.escapist.co.nz/" />
+            </div>
+            <div class="divider divider-vertical"></div>
+            <!-- prettier-ignore-end -->
         </PageContainer>
     {% endblock %}
 </Page>
