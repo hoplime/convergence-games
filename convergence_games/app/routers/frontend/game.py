@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from litestar import Controller, Response, get, put
 from litestar.exceptions import HTTPException
@@ -48,6 +48,19 @@ class GameController(Controller):
             )
         ).scalar_one_or_none()
 
+        if request.user:
+            user_game_preference = (
+                await transaction.execute(
+                    select(UserGamePreference).where(
+                        UserGamePreference.game_id == game_id,
+                        UserGamePreference.user_id == request.user.id,
+                    )
+                )
+            ).scalar_one_or_none()
+            preference = user_game_preference.preference if user_game_preference else None
+        else:
+            preference = None
+
         if game is None:
             raise HTTPException(status_code=404, detail="Game not found")
 
@@ -65,6 +78,7 @@ class GameController(Controller):
             context={
                 "game": game,
                 "game_image_urls": game_image_urls,
+                "preference": preference,
             },
         )
 
