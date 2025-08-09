@@ -79,15 +79,17 @@
                                     {% endif %}
                                 </div>
                             </a>
-                            <div class="mt-auto flex flex-col items-center gap-2 pb-6">
-                                <span class="w-full text-center font-semibold">Preference</span>
-                                {% set dice_rating_name = "rating-" ~ swim(game) %}
-                                <DiceRating
-                                    :name="dice_rating_name"
-                                    :display_d20="false"
-                                    :hx_post_url="'/game/' + swim(game) + '/rate'"
-                                />
-                            </div>
+                            {% if request.user %}
+                                <div class="mt-auto flex flex-col items-center gap-2 pb-6">
+                                    <span class="w-full text-center font-semibold">Preference</span>
+                                    {% set dice_rating_name = "rating-" ~ swim(game) %}
+                                    <DiceRating
+                                        :display_d20="false"
+                                        :hx_put_url="'/game/' + swim(game) + '/preference'"
+                                        :starting_value="preferences.get(game.id, 6)"
+                                    />
+                                </div>
+                            {% endif %}
                         </div>
                     {% endfor %}
                     {% if not games %}

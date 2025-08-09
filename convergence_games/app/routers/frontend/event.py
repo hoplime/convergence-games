@@ -21,7 +21,7 @@ from sqlalchemy.sql.base import ExecutableOption
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.db.enums import GameKSP, GameTone, SubmissionStatus
+from convergence_games.db.enums import GameKSP, GameTone, SubmissionStatus, UserGamePreferenceValue
 from convergence_games.db.models import (
     ContentWarning,
     Event,
@@ -34,6 +34,7 @@ from convergence_games.db.models import (
     Session,
     System,
     User,
+    UserGamePreference,
 )
 from convergence_games.db.ocean import Sqid, sink, swim
 from convergence_games.permissions import user_has_permission
@@ -318,6 +319,22 @@ class EventScheduleEditState:
     last_saved_by: str | None = None
 
 
+async def get_user_game_preferences(
+    request: Request, transaction: AsyncSession, event: Event
+) -> dict[int, UserGamePreferenceValue]:
+    if request.user is None:
+        return {}
+
+    stmt = (
+        select(UserGamePreference)
+        .join(Game, UserGamePreference.game_id == Game.id)
+        .where(UserGamePreference.user_id == request.user.id)
+        .where(Game.event_id == event.id)
+    )
+    preferences = (await transaction.execute(stmt)).scalars().all()
+    return {preference.game_id: preference.preference for preference in preferences}
+
+
 class EventController(Controller):
     dependencies = {
         "event": event_with(),
@@ -329,6 +346,7 @@ class EventController(Controller):
             "query_params": Provide(build_event_games_query),
             "games": Provide(get_event_approved_games_dep),
             "form_data": Provide(get_form_data),
+            "preferences": Provide(get_user_game_preferences),
         },
     )
     async def get_event_games(
@@ -336,6 +354,7 @@ class EventController(Controller):
         request: Request,
         event: Event,
         games: Sequence[Game],
+        preferences: dict[int, UserGamePreferenceValue],
         form_data: dict[str, MultiselectFormData],
     ) -> Template:
         return HTMXBlockTemplate(
@@ -345,6 +364,7 @@ class EventController(Controller):
                 "event": event,
                 "games": games,
                 "form_data": form_data,
+                "preferences": preferences,
             },
         )
 
