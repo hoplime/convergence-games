@@ -1,7 +1,8 @@
 {#def
-    name: str = "rating-x",
+    name: str = "rating",
     display_d20: bool = False,
-    hx_post_url: str = "",
+    hx_put_url: str = "",
+    starting_value: int = 6
 #}
 {% set common = "relative mask text-gray-800 after:absolute after:top-1/2 after:left-1/2 after:block after:-translate-x-1/2 after:-translate-y-1/2 after:text-center after:align-middle after:leading-none after:font-bold" %}
 <!-- prettier-ignore-start -->
@@ -25,11 +26,11 @@
     has-[input[value='20']]:[--break-divisor:7] [--break-divisor:6]
     "
     >
-    <div
+    <form
         class="rating-xl rating gap-1 rounded-[calc(var(--radius-selector)-2px)] bg-base-100 text-xl"
         hx-swap="none"
-        hx-post="{{ hx_post_url }}"
-        hx-trigger="change delay:200ms"
+        hx-put="{{ hx_put_url }}"
+        hx-trigger="change"
     >
         <input
             type="radio"
@@ -37,6 +38,7 @@
             value="0"
             class="{{ common }} bg-gray-400 mask-d0 after:content-['0']"
             aria-label="D0"
+            {% if starting_value == 0 %}checked{% endif %}
         />
         <input
             type="radio"
@@ -44,6 +46,7 @@
             value="4"
             class="{{ common }} bg-blue-400 mask-d4 after:content-['4']"
             aria-label="D4"
+            {% if starting_value == 4 %}checked{% endif %}
         />
         <input
             type="radio"
@@ -51,7 +54,7 @@
             value="6"
             class="{{ common }} bg-indigo-400 mask-d6 after:content-['6']"
             aria-label="D6"
-            checked
+            {% if starting_value == 6 %}checked{% endif %}
         />
         <input
             type="radio"
@@ -59,6 +62,7 @@
             value="8"
             class="{{ common }} bg-violet-400 mask-d8 after:content-['8']"
             aria-label="D8"
+            {% if starting_value == 8 %}checked{% endif %}
         />
         <input
             type="radio"
@@ -66,6 +70,7 @@
             value="10"
             class="{{ common }} bg-red-400 mask-d10 after:content-['10']"
             aria-label="D10"
+            {% if starting_value == 10 %}checked{% endif %}
         />
         <input
             type="radio"
@@ -73,6 +78,7 @@
             value="12"
             class="{{ common }} bg-orange-400 mask-d12 after:content-['12']"
             aria-label="D12"
+            {% if starting_value == 12 or not display_d20 and starting_value == 20 %}checked{% endif %}
         />
         {% if display_d20 %}
             <input
@@ -81,8 +87,9 @@
                 value="20"
                 class="{{ common }} bg-yellow-400 mask-d20 after:content-['20']"
                 aria-label="D20"
+                {% if starting_value == 20 %}checked{% endif %}
             />
         {% endif %}
-    </div>
+    </form>
 </div>
 <!-- prettier-ignore-end -->

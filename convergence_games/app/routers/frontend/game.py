@@ -1,14 +1,23 @@
-from litestar import Controller, get
+from typing import Annotated, Literal
+
+from litestar import Controller, Response, get, put
 from litestar.exceptions import HTTPException
+from litestar.params import Body, RequestEncodingType
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.db.models import Game
+from convergence_games.db.enums import UserGamePreferenceValue
+from convergence_games.db.models import Game, User, UserGamePreference
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.services import ImageLoader
+
+
+class RatingPutData(BaseModel):
+    rating: UserGamePreferenceValue
 
 
 class GameController(Controller):
@@ -58,3 +67,26 @@ class GameController(Controller):
                 "game_image_urls": game_image_urls,
             },
         )
+
+    @put(path="/{game_sqid:str}/preference")
+    async def put_game_preference(
+        self,
+        game_sqid: Sqid,
+        user: User,
+        transaction: AsyncSession,
+        data: Annotated[RatingPutData, Body(media_type=RequestEncodingType.URL_ENCODED)],
+    ) -> Response[str]:
+        game_id: int = sink(game_sqid)
+        user_game_preference = (
+            await transaction.execute(
+                select(UserGamePreference).where(
+                    UserGamePreference.game_id == game_id,
+                    UserGamePreference.user_id == user.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if user_game_preference is None:
+            user_game_preference = UserGamePreference(game_id=game_id, user_id=user.id)
+        user_game_preference.preference = data.rating
+        transaction.add(user_game_preference)
+        return Response(content="", status_code=204)
