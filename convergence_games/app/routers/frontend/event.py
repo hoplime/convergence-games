@@ -40,6 +40,48 @@ from convergence_games.db.ocean import Sqid, sink, swim
 from convergence_games.permissions import user_has_permission
 
 
+# region Data Schema
+class PutEventManageScheduleSession(BaseModel):
+    game: SqidInt
+    table: SqidInt
+    time_slot: SqidInt
+
+
+class PutEventManageScheduleForm(BaseModel):
+    sessions: list[PutEventManageScheduleSession]
+    commit: bool = False
+
+
+SqidInt = Annotated[int, BeforeValidator(sink)]
+
+
+class EventGamesQuery(BaseModel):
+    genre: list[SqidInt] = []
+    system: list[SqidInt] = []
+    tone: list[str] = []
+    bonus: list[int] = []
+    content: list[SqidInt] = []
+
+
+@dataclass
+class MultiselectFormDataOption:
+    label: str
+    value: str
+    selected: bool = False
+
+
+@dataclass
+class MultiselectFormData:
+    label: str
+    name: str
+    options: list[MultiselectFormDataOption]
+    description: str | None = None
+
+
+# endregion
+
+
+# region Dependencies
 def event_with(*options: ExecutableOption):
     async def wrapper(
         transaction: AsyncSession,
@@ -109,17 +151,6 @@ async def get_event_games_dep(
     return games
 
 
-SqidInt = Annotated[int, BeforeValidator(sink)]
-
-
-class EventGamesQuery(BaseModel):
-    genre: list[SqidInt] = []
-    system: list[SqidInt] = []
-    tone: list[str] = []
-    bonus: list[int] = []
-    content: list[SqidInt] = []
-
-
 async def get_event_approved_games_dep(
     event: Event,
     transaction: AsyncSession,
@@ -156,7 +187,7 @@ async def get_event_approved_games_dep(
     return games
 
 
-async def build_event_games_query(
+async def event_games_query_from_params_dep(
     genre: list[Sqid] | Sqid | None = None,
     system: list[Sqid] | Sqid | None = None,
     tone: list[str] | str | None = None,
@@ -174,7 +205,7 @@ async def build_event_games_query(
     )
 
 
-async def get_form_data(
+async def get_form_data_dep(
     transaction: AsyncSession,
     event: Event,
     query_params: EventGamesQuery,
@@ -283,42 +314,6 @@ async def get_form_data(
     }
 
 
-def user_can_manage_submissions(user: User, event: Event) -> bool:
-    return user_has_permission(user, "event", (event, event), "manage_submissions")
-
-
-@dataclass
-class MultiselectFormDataOption:
-    label: str
-    value: str
-    selected: bool = False
-
-
-@dataclass
-class MultiselectFormData:
-    label: str
-    name: str
-    options: list[MultiselectFormDataOption]
-    description: str | None = None
-
-
-class PutEventManageScheduleSession(BaseModel):
-    game: SqidInt
-    table: SqidInt
-    time_slot: SqidInt
-
-
-class PutEventManageScheduleForm(BaseModel):
-    sessions: list[PutEventManageScheduleSession]
-    commit: bool = False
-
-
-@dataclass
-class EventScheduleEditState:
-    last_saved: str | None = None
-    last_saved_by: str | None = None
-
-
 async def get_user_game_preferences(
     request: Request, transaction: AsyncSession, event: Event
 ) -> dict[int, UserGamePreferenceValue]:
@@ -335,17 +330,29 @@ async def get_user_game_preferences(
     return {preference.game_id: preference.preference for preference in preferences}
 
 
+# endregion
+
+
+# region Permissions
+def user_can_manage_submissions(user: User, event: Event) -> bool:
+    return user_has_permission(user, "event", (event, event), "manage_submissions")
+
+
+# endregion
+
+
 class EventController(Controller):
     dependencies = {
         "event": event_with(),
     }
 
+    # Event viewing
     @get(
         ["/event/{event_sqid:str}", "/event/{event_sqid:str}/games", "/games"],
         dependencies={
-            "query_params": Provide(build_event_games_query),
+            "query_params": Provide(event_games_query_from_params_dep),
             "games": Provide(get_event_approved_games_dep),
-            "form_data": Provide(get_form_data),
+            "form_data": Provide(get_form_data_dep),
             "preferences": Provide(get_user_game_preferences),
         },
     )
@@ -368,6 +375,7 @@ class EventController(Controller):
             },
         )
 
+    # Event management
     @get(
         path="/event/{event_sqid:str}/manage-schedule",
         guards=[user_guard],
@@ -493,7 +501,10 @@ class EventController(Controller):
         },
     )
     async def get_event_manage_schedule_last_updated(
-        self, event: Event, user: User, last_saved: Annotated[datetime | None, Parameter(query="last-saved")] = None
+        self,
+        event: Event,
+        user: User,
+        last_saved: Annotated[datetime | None, Parameter(query="last-saved")] = None,
     ) -> Response[str]:
         current_time = datetime.now(tz=timezone.utc)
 
