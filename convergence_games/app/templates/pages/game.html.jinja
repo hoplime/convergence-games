@@ -133,7 +133,7 @@
                             <DiceRating
                                 :display_d20="false"
                                 :hx_put_url="'/game/' + swim(game) + '/preference'"
-                                :starting_value="preference or 6"
+                                :starting_value="preference if preference is not none else 6"
                             />
                         </div>
                     </div>
