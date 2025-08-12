@@ -51,7 +51,6 @@ class PartyController(Controller):
     )
     async def join_party(
         self,
-        request: Request,
         transaction: AsyncSession,
         party: Party | None,
         user: User,
@@ -68,4 +67,6 @@ class PartyController(Controller):
         party_user_link = PartyUserLink(user_id=user.id, party_id=party.id)
         transaction.add(party_user_link)
 
-        return HTMXBlockTemplate(template_name="party/joined.html", context={"party": party})
+        return alerts_response(
+            [Alert(alert_class="alert-success", message="You have joined the party successfully.")],
+        )
