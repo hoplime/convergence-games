@@ -213,7 +213,7 @@ class FormError:
     errors: list[str]
 
 
-def handle_submit_game_form_validation_error(request: Request, exc: ValidationException) -> Response:
+def handle_submit_game_form_validation_error(request: Request, exc: ValidationException) -> HTMXBlockTemplate:
     error_messages: dict[str, list[str]] = {}
     if exc.extra is not None:
         for extra in exc.extra:

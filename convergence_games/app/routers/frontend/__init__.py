@@ -15,6 +15,7 @@ from .home import HomeController
 from .misc_components import MiscComponentsController
 from .my_submissions import MySubmissionsController
 from .oauth import OAuthController
+from .party import PartyController
 from .profile import ProfileController
 from .search import SearchController
 from .settings import SettingsController
@@ -48,6 +49,7 @@ router = Router(
         MiscComponentsController,
         MySubmissionsController,
         OAuthController,
+        PartyController,
         ProfileController,
         SearchController,
         SettingsController,
