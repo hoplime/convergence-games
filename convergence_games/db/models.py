@@ -129,6 +129,7 @@ class Event(Base):
     start_date: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True), index=True)
     end_date: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True), index=True)
     timezone: Mapped[str] = mapped_column(default="Pacific/Auckland")
+    max_party_size: Mapped[int] = mapped_column(default=3, server_default="3")
 
     # Relationships
     rooms: Mapped[list[Room]] = relationship(back_populates="event", lazy="noload")
