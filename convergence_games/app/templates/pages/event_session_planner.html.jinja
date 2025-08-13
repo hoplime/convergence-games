@@ -1,0 +1,26 @@
+<Page>
+    {% block content %}
+        <title>{{ event.name }} Session Planner - Convergence 2025</title>
+        <PageContainer size="max-w-screen-2xl">
+            <h2 class="text-xl">{{ event.name }} Session Planner</h2>
+            {# 
+            TODO:
+                - Tab session selector
+                    - Remove sessions that are finished? Or default to the next one in the time order
+                - View party for each session
+                - Manage party
+                    - Host
+                        - Show the invite code and QR code
+                        - Able to kick or promote players
+                        - Able to leave the party
+                    - Join
+                        - Show the invite code and QR code
+                        - Show the party members
+                        - Able to leave the party
+                - View the games tiered by preference
+                - Same game filter selectors?
+             #}
+            <PartyOverview />
+        </PageContainer>
+    {% endblock content %}
+</Page>

@@ -10,6 +10,7 @@ from litestar import Controller, Response, get, put
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
 from litestar.params import Body, Parameter, RequestEncodingType
+from litestar.response import Template
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import select
@@ -19,7 +20,7 @@ from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
+from convergence_games.app.response_type import HTMXBlockTemplate
 from convergence_games.db.enums import SubmissionStatus
 from convergence_games.db.models import (
     Event,
