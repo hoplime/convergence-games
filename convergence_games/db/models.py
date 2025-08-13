@@ -18,7 +18,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy import event as sqla_event
-from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, validates
+from sqlalchemy.orm import Mapped, Mapper, declared_attr, defer, mapped_column, relationship, validates
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
@@ -504,8 +504,6 @@ class Session(Base):
 
 
 class Party(Base):
-    invite_code: Mapped[str] = mapped_column(index=True)
-
     # Foreign Keys
     time_slot_id: Mapped[int] = mapped_column(ForeignKey("time_slot.id"), index=True)
 
@@ -527,17 +525,6 @@ class Party(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
-
-    @declared_attr
-    def leader(self) -> Mapped[User | None]:
-        return relationship(
-            "User",
-            secondary="party_user_link",
-            primaryjoin="PartyUserLink.party_id == Party.id and PartyUserLink.is_leader == True",
-            secondaryjoin="PartyUserLink.user_id == User.id",
-            lazy="noload",
-            viewonly=True,
-        )
 
 
 class PartyUserLink(Base):
