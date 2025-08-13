@@ -7,6 +7,7 @@ from typing import Annotated
 from litestar import Controller, get
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
+from litestar.response import Template
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +15,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
+from convergence_games.app.response_type import HTMXBlockTemplate
 from convergence_games.db.enums import GameKSP, GameTone, SubmissionStatus, UserGamePreferenceValue
 from convergence_games.db.models import (
     ContentWarning,
@@ -284,5 +285,15 @@ class EventPlayerController(Controller):
                 "games": games,
                 "form_data": form_data,
                 "preferences": preferences,
+            },
+        )
+
+    @get("/event/{event_sqid:str}/planner", dependencies={"event": event_with()})
+    async def get_event_session_planner(self, request: Request, event: Event) -> Template:
+        return HTMXBlockTemplate(
+            template_name="pages/event_session_planner.html.jinja",
+            block_name=request.htmx.target,
+            context={
+                "event": event,
             },
         )
