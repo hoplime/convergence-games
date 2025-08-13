@@ -26,6 +26,7 @@ else:
     HasID: TypeAlias = Any
 
 _sqids = Sqids(alphabet=SETTINGS.SQIDS_ALPHABET or DEFAULT_ALPHABET, min_length=SETTINGS.SQIDS_MIN_LENGTH)
+_upper_sqids = Sqids(alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ", min_length=SETTINGS.SQIDS_MIN_LENGTH)
 
 Sqid = NewType("Sqid", str)
 
@@ -44,6 +45,14 @@ def sink(sqid: Sqid) -> int:
     Suitable to dive into the database!
     """
     return _sqids.decode(sqid)[-1]
+
+
+def sink_upper(sqid: Sqid) -> int:
+    """
+    Extract the ID from an upper-case sqid.
+    Suitable to dive into the database!
+    """
+    return _upper_sqids.decode(sqid)[-1]
 
 
 @overload
@@ -67,6 +76,29 @@ def swim(obj: HasID | str, obj_id: int | None = None) -> Sqid:
         obj_id = cast(int, obj.id)
 
     return cast(Sqid, _sqids.encode([_ink(class_name), obj_id]))
+
+
+@overload
+def swim_upper(obj: HasID) -> Sqid: ...
+
+
+@overload
+def swim_upper(obj: str, obj_id: int) -> Sqid: ...
+
+
+def swim_upper(obj: HasID | str, obj_id: int | None = None) -> Sqid:
+    """
+    Create an upper-case sqid from an object.
+    Suitable to surface to the client!
+    """
+    if isinstance(obj, str):
+        class_name = obj
+        assert obj_id is not None
+    else:
+        class_name = obj.__class__.__name__
+        obj_id = cast(int, obj.id)
+
+    return cast(Sqid, _upper_sqids.encode([_ink(class_name), obj_id]))
 
 
 if __name__ == "__main__":
