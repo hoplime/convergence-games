@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import itertools
 from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
@@ -21,26 +20,22 @@ from sqlalchemy.sql.base import ExecutableOption
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.db.enums import GameKSP, GameTone, SubmissionStatus, UserGamePreferenceValue
+from convergence_games.db.enums import SubmissionStatus
 from convergence_games.db.models import (
-    ContentWarning,
     Event,
     Game,
-    GameContentWarningLink,
-    GameGenreLink,
     GameRequirement,
-    Genre,
     Room,
     Session,
-    System,
     User,
-    UserGamePreference,
 )
-from convergence_games.db.ocean import Sqid, sink, swim
+from convergence_games.db.ocean import Sqid, sink
 from convergence_games.permissions import user_has_permission
 
-
 # region Data Schema
+SqidInt = Annotated[int, BeforeValidator(sink)]
+
+
 class PutEventManageScheduleSession(BaseModel):
     game: SqidInt
     table: SqidInt
@@ -50,32 +45,6 @@ class PutEventManageScheduleSession(BaseModel):
 class PutEventManageScheduleForm(BaseModel):
     sessions: list[PutEventManageScheduleSession]
     commit: bool = False
-
-
-SqidInt = Annotated[int, BeforeValidator(sink)]
-
-
-class EventGamesQuery(BaseModel):
-    genre: list[SqidInt] = []
-    system: list[SqidInt] = []
-    tone: list[str] = []
-    bonus: list[int] = []
-    content: list[SqidInt] = []
-
-
-@dataclass
-class MultiselectFormDataOption:
-    label: str
-    value: str
-    selected: bool = False
-
-
-@dataclass
-class MultiselectFormData:
-    label: str
-    name: str
-    options: list[MultiselectFormDataOption]
-    description: str | None = None
 
 
 # endregion
@@ -151,185 +120,6 @@ async def get_event_games_dep(
     return games
 
 
-async def get_event_approved_games_dep(
-    event: Event,
-    transaction: AsyncSession,
-    query_params: EventGamesQuery,
-) -> Sequence[Game]:
-    event_id: int = event.id
-    stmt = (
-        select(Game)
-        .options(
-            selectinload(Game.system),
-            selectinload(Game.gamemaster),
-            selectinload(Game.game_requirement),
-            selectinload(Game.genres),
-            selectinload(Game.content_warnings),
-            selectinload(Game.event),
-        )
-        .order_by(Game.name)
-        .where(
-            Game.event_id == event_id,
-            Game.submission_status == SubmissionStatus.APPROVED,
-        )
-    )
-    if query_params.genre:
-        stmt = stmt.where(Game.genres.any(Genre.id.in_(query_params.genre)))
-    if query_params.system:
-        stmt = stmt.where(Game.system_id.in_(query_params.system))
-    if query_params.tone:
-        stmt = stmt.where(Game.tone.in_(query_params.tone))
-    if query_params.bonus:
-        stmt = stmt.where(Game.ksps.bitwise_and(sum(query_params.bonus)) > 0)
-    if query_params.content:
-        stmt = stmt.where(~Game.content_warnings.any(ContentWarning.id.in_(query_params.content)))
-    games = (await transaction.execute(stmt)).scalars().all()
-    return games
-
-
-async def event_games_query_from_params_dep(
-    genre: list[Sqid] | Sqid | None = None,
-    system: list[Sqid] | Sqid | None = None,
-    tone: list[str] | str | None = None,
-    bonus: list[int] | int | None = None,
-    content: list[Sqid] | Sqid | None = None,
-) -> EventGamesQuery:
-    return EventGamesQuery.model_validate(
-        {
-            "genre": [] if genre is None else (genre if isinstance(genre, list) else [genre]),
-            "system": [] if system is None else (system if isinstance(system, list) else [system]),
-            "tone": [] if tone is None else (tone if isinstance(tone, list) else [tone]),
-            "bonus": [] if bonus is None else (bonus if isinstance(bonus, list) else [bonus]),
-            "content": [] if content is None else (content if isinstance(content, list) else [content]),
-        }
-    )
-
-
-async def get_form_data_dep(
-    transaction: AsyncSession,
-    event: Event,
-    query_params: EventGamesQuery,
-) -> dict[str, MultiselectFormData]:
-    all_present_genres = (
-        (
-            await transaction.execute(
-                select(Genre)
-                .join(GameGenreLink, GameGenreLink.genre_id == Genre.id)
-                .join(Game, Game.id == GameGenreLink.game_id)
-                .where(Game.event_id == event.id)
-                .where(Game.submission_status == SubmissionStatus.APPROVED)
-                .order_by(Genre.name)
-                .distinct()
-            )
-        )
-        .scalars()
-        .all()
-    )
-    all_present_systems = (
-        (
-            await transaction.execute(
-                select(System)
-                .join(Game, Game.system_id == System.id)
-                .where(Game.event_id == event.id)
-                .where(Game.submission_status == SubmissionStatus.APPROVED)
-                .order_by(System.name)
-                .distinct()
-            )
-        )
-        .scalars()
-        .all()
-    )
-    all_present_content_warnings = (
-        (
-            await transaction.execute(
-                select(ContentWarning)
-                .join(GameContentWarningLink, GameContentWarningLink.content_warning_id == ContentWarning.id)
-                .join(Game, Game.id == GameContentWarningLink.game_id)
-                .where(Game.event_id == event.id)
-                .where(Game.submission_status == SubmissionStatus.APPROVED)
-                .order_by(ContentWarning.name)
-                .distinct()
-            )
-        )
-        .scalars()
-        .all()
-    )
-    all_tones = list(GameTone)
-    all_bonus = list(GameKSP)
-
-    return {
-        "genre": MultiselectFormData(
-            label="Genre",
-            name="genre",
-            options=[
-                MultiselectFormDataOption(label=genre.name, value=swim(genre), selected=genre.id in query_params.genre)
-                for genre in all_present_genres
-            ],
-            description="Find games tagged with any of these genres:",
-        ),
-        "system": MultiselectFormData(
-            label="System",
-            name="system",
-            options=[
-                MultiselectFormDataOption(
-                    label=system.name, value=swim(system), selected=system.id in query_params.system
-                )
-                for system in all_present_systems
-            ],
-            description="Find games using any of these systems:",
-        ),
-        "tone": MultiselectFormData(
-            label="Tone",
-            name="tone",
-            options=[
-                MultiselectFormDataOption(label=tone.value, value=tone.value, selected=tone.value in query_params.tone)
-                for tone in all_tones
-            ],
-            description="Find games with any of these tones:",
-        ),
-        "bonus": MultiselectFormData(
-            label="Bonus Features",
-            name="bonus",
-            options=[
-                MultiselectFormDataOption(
-                    label=bonus.notes[0], value=str(bonus.value), selected=bonus.value in query_params.bonus
-                )
-                for bonus in all_bonus
-            ],
-            description="Find games with any of these bonus features:",
-        ),
-        "content": MultiselectFormData(
-            label="Exclude Content",
-            name="content",
-            options=[
-                MultiselectFormDataOption(
-                    label=content_warning.name,
-                    value=swim(content_warning),
-                    selected=content_warning.id in query_params.content,
-                )
-                for content_warning in all_present_content_warnings
-            ],
-            description='Find games <span class="text-warning font-semibold">EXCLUDING</span> any of these content warnings:',
-        ),
-    }
-
-
-async def get_user_game_preferences(
-    request: Request, transaction: AsyncSession, event: Event
-) -> dict[int, UserGamePreferenceValue]:
-    if request.user is None:
-        return {}
-
-    stmt = (
-        select(UserGamePreference)
-        .join(Game, UserGamePreference.game_id == Game.id)
-        .where(UserGamePreference.user_id == request.user.id)
-        .where(Game.event_id == event.id)
-    )
-    preferences = (await transaction.execute(stmt)).scalars().all()
-    return {preference.game_id: preference.preference for preference in preferences}
-
-
 # endregion
 
 
@@ -341,40 +131,7 @@ def user_can_manage_submissions(user: User, event: Event) -> bool:
 # endregion
 
 
-class EventController(Controller):
-    dependencies = {
-        "event": event_with(),
-    }
-
-    # Event viewing
-    @get(
-        ["/event/{event_sqid:str}", "/event/{event_sqid:str}/games", "/games"],
-        dependencies={
-            "query_params": Provide(event_games_query_from_params_dep),
-            "games": Provide(get_event_approved_games_dep),
-            "form_data": Provide(get_form_data_dep),
-            "preferences": Provide(get_user_game_preferences),
-        },
-    )
-    async def get_event_games(
-        self,
-        request: Request,
-        event: Event,
-        games: Sequence[Game],
-        preferences: dict[int, UserGamePreferenceValue],
-        form_data: dict[str, MultiselectFormData],
-    ) -> Template:
-        return HTMXBlockTemplate(
-            template_name="pages/event_games.html.jinja",
-            block_name=request.htmx.target,
-            context={
-                "event": event,
-                "games": games,
-                "form_data": form_data,
-                "preferences": preferences,
-            },
-        )
-
+class EventManagerController(Controller):
     # Event management
     @get(
         path="/event/{event_sqid:str}/manage-schedule",
@@ -550,6 +307,7 @@ class EventController(Controller):
         path="/event/{event_sqid:str}/manage-submissions",
         guards=[user_guard],
         dependencies={
+            "event": event_with(),
             "permission": permission_check(user_can_manage_submissions),
             "games": Provide(get_event_games_dep),
         },

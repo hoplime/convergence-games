@@ -217,7 +217,7 @@ class PartyController(Controller):
             ]
         )
 
-    @get(
+    @get(  # TODO: POST so we don't form resubmit on page refresh etc
         path="/promote/{time_slot_sqid:str}/{member_sqid:str}",
         dependencies={
             "time_slot": time_slot_with(),
