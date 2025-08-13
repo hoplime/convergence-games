@@ -8,7 +8,7 @@
 
     {% else %}
         <div class="card-body">
-            <h2 class="card-title">No Party</h2>
+            <h2 class="card-title">Adventuring Solo</h2>
             <p class="text-sm">You are not currently in a party.</p>
             <p class="text-sm">Join a party to play games with others!</p>
             <div class="card-actions justify-start">
@@ -22,10 +22,15 @@
                         </form>
                         <h3 class="text-lg font-bold">Join a Party</h3>
                         <p>Enter the invite code to join a party.</p>
-                        <div class="modal-action justify-start">
-                            <input type="text" class="input-bordered input w-full max-w-xs" placeholder="CODE" />
-                            <button class="btn">Join</button>
-                        </div>
+                        <form class="modal-action justify-start" hx-post="/party/join" hx-swap="none">
+                            <input
+                                type="text"
+                                class="input-bordered input w-full max-w-xs"
+                                name="invite_sqid"
+                                placeholder="CODE"
+                            />
+                            <button class="btn" type="submit">Join</button>
+                        </form>
                     </div>
                 </dialog>
             </div>
