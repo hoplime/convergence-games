@@ -119,6 +119,7 @@ class PartyController(Controller):
         party: Party | None,
         user: User,
     ) -> HTMXBlockTemplate:
+        # TODO: Unfortunately because this it dynamic input it needs a data object to parse out the invite_sqid
         if party is None:
             return alerts_response([Alert(alert_class="alert-error", message="Party not found.")])
         if len(party.members) >= party.time_slot.event.max_party_size:
