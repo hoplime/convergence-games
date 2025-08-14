@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import time
-from typing import overload
+from typing import cast, overload
 
 from litestar import Controller, get, post, put
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
 from litestar.params import Body, RequestEncodingType
+from litestar.response import Redirect
 from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -71,9 +72,33 @@ class PartyController(Controller):
             "time_slot": time_slot_with(raise_404=True),
         },
     )
-    async def overview_party(self, time_slot: TimeSlot) -> Template:
-        template_str = catalog.render("PartyOverview", time_slot=time_slot)
-        return HTMXBlockTemplate(template_str=template_str)
+    async def overview_party(self, transaction: AsyncSession, time_slot: TimeSlot, user: User) -> Template:
+        party_and_is_leader = (
+            await transaction.execute(
+                select(Party, Party.party_user_links.any(user_id=user.id, is_leader=True).label("is_host"))
+                .where(Party.time_slot_id == time_slot.id)
+                .where(Party.members.any(id=user.id))
+                .options(
+                    selectinload(Party.time_slot), selectinload(Party.party_user_links), selectinload(Party.members)
+                )
+            )
+        ).one_or_none()
+        if party_and_is_leader is None:
+            party = None
+            is_host = False
+            leader_id = None
+        else:
+            party, is_host = party_and_is_leader.tuple()
+            leader_id = next((link.user_id for link in party.party_user_links if link.is_leader), None)
+        return HTMXBlockTemplate(
+            template_str=catalog.render(
+                "PartyOverview",
+                time_slot=time_slot,
+                party=party,
+                is_host=is_host,
+                leader_id=leader_id,
+            )
+        )
 
     @post(
         path="/host/{time_slot_sqid:str}",
@@ -86,7 +111,7 @@ class PartyController(Controller):
         transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
-    ) -> HTMXBlockTemplate:
+    ) -> Template | Redirect:
         if time_slot is None:
             return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
 
@@ -109,11 +134,8 @@ class PartyController(Controller):
         )
         transaction.add(party)
         await transaction.flush()
-        invite_sqid = swim_upper(party)
 
-        return alerts_response(
-            [Alert(alert_class="alert-info", message=f"You created a new party with invite code {invite_sqid}.")]
-        )
+        return Redirect(f"/party/overview/{swim(time_slot)}")
 
     @get(path="/join")
     async def join_empty_party(self, request: Request) -> Template:
@@ -135,7 +157,7 @@ class PartyController(Controller):
         request: Request,
         time_slot_sqid: Sqid,
         invite_sqid: Sqid,
-    ) -> HTMXBlockTemplate:
+    ) -> Template | Redirect:
         time_slot_id = sink(time_slot_sqid)
 
         try:
@@ -155,6 +177,7 @@ class PartyController(Controller):
             return alerts_response(
                 [Alert(alert_class="alert-error", message="No party found with that code.")], request
             )
+
         if len(party.members) >= party.time_slot.event.max_party_size:
             return alerts_response([Alert(alert_class="alert-error", message="Party is full.")], request)
         if user.id in [member.id for member in party.members]:
@@ -165,9 +188,7 @@ class PartyController(Controller):
         party_user_link = PartyUserLink(user_id=user.id, party_id=party.id)
         transaction.add(party_user_link)
 
-        return alerts_response(
-            [Alert(alert_class="alert-success", message="You have joined the party successfully.")], request
-        )
+        return Redirect(f"/party/overview/{swim(party.time_slot)}")
 
     @post(
         path="/leave/{time_slot_sqid:str}",
@@ -180,7 +201,7 @@ class PartyController(Controller):
         transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
-    ) -> HTMXBlockTemplate:
+    ) -> Template | Redirect:
         if time_slot is None:
             return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
 
@@ -215,7 +236,7 @@ class PartyController(Controller):
             # If the leader is the only member, delete the party
             await transaction.delete(party_user_link.party)
 
-        return alerts_response([Alert(alert_class="alert-success", message="You have left the party successfully.")])
+        return Redirect(f"/party/overview/{swim(time_slot)}")
 
     @get(
         path="/members/{time_slot_sqid:str}",
@@ -226,7 +247,7 @@ class PartyController(Controller):
         transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
-    ) -> HTMXBlockTemplate:
+    ) -> Template:
         if time_slot is None:
             return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
 
@@ -263,7 +284,7 @@ class PartyController(Controller):
         user: User,
         time_slot: TimeSlot | None,
         member_sqid: Sqid,
-    ) -> HTMXBlockTemplate:
+    ) -> Template | Redirect:
         if time_slot is None:
             return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
 
@@ -302,18 +323,11 @@ class PartyController(Controller):
         other_party_user_link.is_leader = True
         transaction.add(other_party_user_link)
 
-        return alerts_response(
-            [
-                Alert(
-                    alert_class="alert-success",
-                    message=f"{other_party_user_link.user.full_name} has been promoted to leader of the party.",
-                )
-            ]
-        )
+        return Redirect(f"/party/overview/{swim(time_slot)}")
 
     @get(path="/whoami")
     async def whoami(
         self,
         user: User,
-    ) -> HTMXBlockTemplate:
+    ) -> Template:
         return alerts_response([Alert(alert_class="alert-info", message=swim(user))])

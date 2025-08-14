@@ -1,17 +1,46 @@
 {#def
     time_slot: TimeSlot,
     party: Party | None = None,
-    is_host: bool = False,
+    is_leader: bool = False,
+    leader_id: int | None = None
 #}
-<div {{ attrs.render() }}>
+<div {{ attrs.render(class="card-body p-0") }} hx-target="this">
     {% if party %}
-
+        {% set invite_link = "/party/join/" ~ swim(time_slot) ~ "/" ~ swim_upper(party) %}
+        {% if is_leader %}
+            <h2 class="card-title">Leading a Party</h2>
+        {% else %}
+            <h2 class="card-title">In a Party</h2>
+        {% endif %}
+        <div class="flex flex-row flex-wrap gap-4">
+            <div class="flex w-fit flex-col items-center gap-1">
+                <QRCode :relative_url="invite_link" class="rounded-box" />
+                <span class="text-lg">
+                    <span class="opacity-50">Code: </span>
+                    <span class="font-semibold">{{ swim_upper(party) }}</span>
+                </span>
+            </div>
+            <div class="flex flex-col gap-4">
+                {% for member in party.members %}
+                    <div class="flex items-center gap-2">
+                        <div class="flex">
+                            <span class="font-semibold">
+                                {{ member.full_name }}
+                                {% if member.id == leader_id %}
+                                    <span class="icon-[material-symbols--crown]"></span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
     {% else %}
         <h2 class="card-title">Adventuring Solo</h2>
-        <p class="text-sm">You are not currently in a party.</p>
-        <p class="text-sm">Join a party to play games with others!</p>
+        <p>You are not currently in a party.</p>
+        <p>Join a party to group up together!</p>
         <div class="card-actions justify-start">
-            <button class="btn btn-primary">Start a New Party</button>
+            <button class="btn btn-primary" hx-post="/party/host/{{ swim(time_slot) }}">Lead a New Party</button>
             <button class="btn btn-secondary" _="on click join_modal_{{ swim(time_slot) }}.showModal()">
                 Join a Party
             </button>

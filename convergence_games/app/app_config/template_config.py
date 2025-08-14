@@ -20,7 +20,7 @@ from convergence_games.db.enums import (
     RoomFacility,
     TableFacility,
 )
-from convergence_games.db.ocean import swim
+from convergence_games.db.ocean import swim, swim_upper
 from convergence_games.permissions.permissions import user_has_permission
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.time_utils import nice_time_format, time_range_format
@@ -84,10 +84,12 @@ jinja_env.filters["GameTableSizeRequirement"] = GameTableSizeRequirement
 jinja_env.filters["RoomFacility"] = RoomFacility
 jinja_env.filters["TableFacility"] = TableFacility
 jinja_env.filters["swim"] = swim
+jinja_env.filters["swim_upper"] = swim_upper
 
 jinja_env.filters["has_permission"] = user_has_permission
 
 jinja_env.globals["swim"] = swim
+jinja_env.globals["swim_upper"] = swim_upper
 jinja_env.globals["random_id"] = lambda: str(uuid.uuid4())
 jinja_env.globals["bitwise_and"] = lambda a, b: a & b
 jinja_env.globals["SETTINGS"] = SETTINGS

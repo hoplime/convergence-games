@@ -1,0 +1,11 @@
+{#def
+    relative_url: str = "/"
+#}
+{% set id = random_id() %}
+<canvas id="{{ id }}" {{ attrs.render() }}></canvas>
+<script>
+    QRCode.toCanvas(document.getElementById("{{ id }}"), `${window.location.origin}{{ relative_url }}`, {
+        errorCorrectionLevel: "L",
+        margin: 2,
+    });
+</script>
