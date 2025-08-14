@@ -22,7 +22,13 @@
                         </form>
                         <h3 class="text-lg font-bold">Join a Party</h3>
                         <p>Enter the invite code to join a party.</p>
-                        <form class="modal-action justify-start" hx-post="/party/join" hx-swap="none">
+                        <form
+                            class="modal-action justify-start"
+                            hx-get="/party/join/{invite_sqid}"
+                            hx-swap="none"
+                            hx-ext="path-params"
+                            hx-vals='{"alert-retarget": "#join_modal"}'
+                        >
                             <input
                                 type="text"
                                 class="input-bordered input w-full max-w-xs"

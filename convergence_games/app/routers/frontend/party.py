@@ -104,6 +104,10 @@ class PartyController(Controller):
             [Alert(alert_class="alert-info", message=f"You created a new party with invite code {invite_sqid}.")]
         )
 
+    @get(path="/join")
+    async def join_empty_party(self, request: Request) -> Template:
+        return alerts_response([Alert(alert_class="alert-error", message="No party found with that code.")], request)
+
     @get(
         path="/join/{invite_sqid:str}",
         dependencies={
@@ -118,21 +122,24 @@ class PartyController(Controller):
         transaction: AsyncSession,
         party: Party | None,
         user: User,
+        request: Request,
     ) -> HTMXBlockTemplate:
         if party is None:
-            return alerts_response([Alert(alert_class="alert-error", message="Party not found.")])
+            return alerts_response(
+                [Alert(alert_class="alert-error", message="No party found with that code.")], request
+            )
         if len(party.members) >= party.time_slot.event.max_party_size:
-            return alerts_response([Alert(alert_class="alert-error", message="Party is full.")])
+            return alerts_response([Alert(alert_class="alert-error", message="Party is full.")], request)
         if user.id in [member.id for member in party.members]:
             return alerts_response(
-                [Alert(alert_class="alert-warning", message="You are already a member of this party.")]
+                [Alert(alert_class="alert-warning", message="You are already a member of this party.")], request
             )
 
         party_user_link = PartyUserLink(user_id=user.id, party_id=party.id)
         transaction.add(party_user_link)
 
         return alerts_response(
-            [Alert(alert_class="alert-success", message="You have joined the party successfully.")],
+            [Alert(alert_class="alert-success", message="You have joined the party successfully.")], request
         )
 
     @post(

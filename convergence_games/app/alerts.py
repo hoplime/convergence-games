@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from convergence_games.app.app_config.template_config import catalog
+from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
 
 
@@ -11,9 +12,7 @@ class Alert:
     message: str
 
 
-def alerts_response(
-    alerts: list[Alert],
-) -> HTMXBlockTemplate:
+def alerts_response(alerts: list[Alert], request: Request | None = None) -> HTMXBlockTemplate:
     """
     Generates an HTMX response with a list of alerts.
 
@@ -25,4 +24,8 @@ def alerts_response(
         An HTMXBlockTemplate containing the rendered alerts.
     """
     template_str = catalog.render("ToastAlerts", alerts=alerts)
-    return HTMXBlockTemplate(template_str=template_str, re_target="#content", re_swap="beforeend")
+    return HTMXBlockTemplate(
+        template_str=template_str,
+        re_target=request.query_params.get("alert-retarget", "#content") if request is not None else "#content",
+        re_swap="beforeend",
+    )
