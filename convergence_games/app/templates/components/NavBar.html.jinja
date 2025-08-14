@@ -3,7 +3,7 @@
 {% set blur_on_click = '_="on click js document.activeElement.blur()"' %}
 <nav {{ attrs.render(class="navbar") }}>
     <div class="flex flex-1 flex-row">
-        <a class="btn btn-ghost text-xl normal-case" href="/">
+        <a class="btn text-xl normal-case btn-ghost" href="/">
             <svg
                 width="1080"
                 height="1080"
@@ -41,18 +41,19 @@
                 hx-get="/games"
                 hx-target="#content"
                 hx-push-url="true"
-                class="btn btn-ghost bg-base-300 rounded-full text-lg"
+                class="btn rounded-full bg-base-300 text-lg btn-ghost"
                 {{ blur_on_click }}
+                preload="mousedown"
             >
                 <span class="icon-[bi--dice-6-fill]"></span>
                 <span>Games</span>
             </div>
-            <div tabindex="0" class="btn btn-ghost btn-circle avatar">
-                <div class="bg-base-300 w-10 rounded-full p-1">
+            <div tabindex="0" class="btn avatar btn-circle btn-ghost">
+                <div class="w-10 rounded-full bg-base-300 p-1">
                     <span class="icon-[iconamoon--profile-fill] size-full"></span>
                 </div>
             </div>
-            <ul tabindex="0" class="menu dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+            <ul tabindex="0" class="dropdown-content menu z-1 mt-3 w-52 rounded-box bg-base-100 p-2 shadow">
                 {% if request.user %}
                     <li class="menu-title">{{ request.user.full_name }}</li>
                     <li>

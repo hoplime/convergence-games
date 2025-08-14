@@ -64,7 +64,7 @@ class PartyController(Controller):
     path = "/party"
     guards = [user_guard]
 
-    @get(  # TODO: POST so we don't form resubmit on page refresh etc
+    @post(
         path="/host/{time_slot_sqid:str}",
         dependencies={
             "time_slot": time_slot_with(),
@@ -104,7 +104,7 @@ class PartyController(Controller):
             [Alert(alert_class="alert-info", message=f"You created a new party with invite code {invite_sqid}.")]
         )
 
-    @get(  # TODO: POST so we don't form resubmit on page refresh etc
+    @get(
         path="/join/{invite_sqid:str}",
         dependencies={
             "party": party_with(
@@ -119,7 +119,6 @@ class PartyController(Controller):
         party: Party | None,
         user: User,
     ) -> HTMXBlockTemplate:
-        # TODO: Unfortunately because this it dynamic input it needs a data object to parse out the invite_sqid
         if party is None:
             return alerts_response([Alert(alert_class="alert-error", message="Party not found.")])
         if len(party.members) >= party.time_slot.event.max_party_size:
@@ -136,7 +135,7 @@ class PartyController(Controller):
             [Alert(alert_class="alert-success", message="You have joined the party successfully.")],
         )
 
-    @get(  # TODO: POST so we don't form resubmit on page refresh etc
+    @post(
         path="/leave/{time_slot_sqid:str}",
         dependencies={
             "time_slot": time_slot_with(),
@@ -218,7 +217,7 @@ class PartyController(Controller):
             ]
         )
 
-    @get(  # TODO: POST so we don't form resubmit on page refresh etc
+    @post(
         path="/promote/{time_slot_sqid:str}/{member_sqid:str}",
         dependencies={
             "time_slot": time_slot_with(),
