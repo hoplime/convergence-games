@@ -20,7 +20,14 @@
                 - View the games tiered by preference
                 - Same game filter selectors?
              #}
-            <PartyOverview />
+            <div class="tabs-border tabs">
+                {% for time_slot in event.time_slots %}
+                    <input type="radio" name="time_slot_selector" class="tab" aria-label="{{ time_slot.name }}" />
+                    <div class="tab-content rounded-box border border-base-300 bg-base-200 p-4">
+                        <div hx-get="/party/overview/{{ swim(time_slot) }}" hx-trigger="load"></div>
+                    </div>
+                {% endfor %}
+            </div>
         </PageContainer>
     {% endblock content %}
 </Page>

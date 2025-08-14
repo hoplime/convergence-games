@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 
+from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
 from convergence_games.db.enums import GameKSP, GameTone, SubmissionStatus, UserGamePreferenceValue
@@ -288,7 +289,11 @@ class EventPlayerController(Controller):
             },
         )
 
-    @get("/event/{event_sqid:str}/planner", dependencies={"event": event_with()})
+    @get(
+        "/event/{event_sqid:str}/planner",
+        dependencies={"event": event_with(selectinload(Event.time_slots))},
+        guards=[user_guard],
+    )
     async def get_event_session_planner(self, request: Request, event: Event) -> Template:
         return HTMXBlockTemplate(
             template_name="pages/event_session_planner.html.jinja",

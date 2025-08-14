@@ -14,6 +14,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.alerts import Alert, alerts_response
+from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
@@ -64,6 +65,16 @@ class PartyController(Controller):
     path = "/party"
     guards = [user_guard]
 
+    @get(
+        path="/overview/{time_slot_sqid:str}",
+        dependencies={
+            "time_slot": time_slot_with(raise_404=True),
+        },
+    )
+    async def overview_party(self, time_slot: TimeSlot) -> Template:
+        template_str = catalog.render("PartyOverview", time_slot=time_slot)
+        return HTMXBlockTemplate(template_str=template_str)
+
     @post(
         path="/host/{time_slot_sqid:str}",
         dependencies={
@@ -109,7 +120,7 @@ class PartyController(Controller):
         return alerts_response([Alert(alert_class="alert-error", message="No party found with that code.")], request)
 
     @get(
-        path="/join/{invite_sqid:str}",
+        path="/join/{time_slot_sqid:str}/{invite_sqid:str}",
         dependencies={
             "party": party_with(
                 selectinload(Party.time_slot).selectinload(TimeSlot.event),
@@ -120,10 +131,26 @@ class PartyController(Controller):
     async def join_party(
         self,
         transaction: AsyncSession,
-        party: Party | None,
         user: User,
         request: Request,
+        time_slot_sqid: Sqid,
+        invite_sqid: Sqid,
     ) -> HTMXBlockTemplate:
+        time_slot_id = sink(time_slot_sqid)
+
+        try:
+            invite_id = sink_upper(invite_sqid)
+        except Exception:
+            return alerts_response([Alert(alert_class="alert-error", message="Invalid invite code.")], request)
+
+        party = (
+            await transaction.execute(
+                select(Party)
+                .where(Party.id == invite_id, Party.time_slot_id == time_slot_id)
+                .options(selectinload(Party.members), selectinload(Party.time_slot).selectinload(TimeSlot.event))
+            )
+        ).scalar_one_or_none()
+
         if party is None:
             return alerts_response(
                 [Alert(alert_class="alert-error", message="No party found with that code.")], request
