@@ -1,5 +1,6 @@
 {#def
-    relative_url: str = "/"
+    relative_url: str = "/",
+    scale: int = 4,
 #}
 {% set id = random_id() %}
 <canvas id="{{ id }}" {{ attrs.render() }}></canvas>
@@ -7,5 +8,8 @@
     QRCode.toCanvas(document.getElementById("{{ id }}"), `${window.location.origin}{{ relative_url }}`, {
         errorCorrectionLevel: "L",
         margin: 2,
+        scale: {{ scale }}
     });
+    document.getElementById("{{ id }}").style.removeProperty("width");
+    document.getElementById("{{ id }}").style.removeProperty("height");
 </script>
