@@ -23,8 +23,18 @@
                                 {% endif %}
                             </span>
                             {% if request.user.id == leader_id and request.user.id != member.id %}
-                                <button class="btn btn-sm">Promote</button>
-                                <button class="btn btn-sm">Remove</button>
+                                <button
+                                    class="btn btn-sm"
+                                    hx-post="/party/promote/{{ swim(time_slot) }}/{{ swim(member) }}"
+                                >
+                                    Promote
+                                </button>
+                                <button
+                                    class="btn btn-sm"
+                                    hx-post="/party/remove/{{ swim(time_slot) }}/{{ swim(member) }}"
+                                >
+                                    Remove
+                                </button>
                             {% elif request.user.id == member.id %}
                                 <button class="btn btn-sm" hx-post="/party/leave/{{ swim(time_slot) }}">
                                     Leave Party
@@ -36,8 +46,12 @@
             </div>
             <div class="collapse-arrow collapse px-0">
                 <input type="checkbox" class="peer px-0" />
-                <div class="collapse-title inline px-0 font-semibold peer-checked:hidden">Show Code</div>
-                <div class="collapse-title hidden px-0 font-semibold peer-checked:inline">Hide Code</div>
+                <div class="collapse-title inline px-0 font-semibold peer-checked:hidden">
+                    Show Code <span class="icon-[bx--qr]"></span>
+                </div>
+                <div class="collapse-title hidden px-0 font-semibold peer-checked:inline">
+                    Hide Code <span class="icon-[bx--qr]"></span>
+                </div>
                 <div class="collapse-content flex flex-col items-center gap-2">
                     <QRCode :relative_url="invite_link" class="w-full rounded-box" :scale="10" />
                     <div class="text-xl">
