@@ -72,31 +72,26 @@ class PartyController(Controller):
             "time_slot": time_slot_with(raise_404=True),
         },
     )
-    async def overview_party(self, transaction: AsyncSession, time_slot: TimeSlot, user: User) -> Template:
-        party_and_is_leader = (
+    async def overview_party(
+        self, transaction: AsyncSession, time_slot: TimeSlot, user: User, request: Request
+    ) -> Template:
+        party = (
             await transaction.execute(
-                select(Party, Party.party_user_links.any(user_id=user.id, is_leader=True).label("is_host"))
+                select(Party)
                 .where(Party.time_slot_id == time_slot.id)
                 .where(Party.members.any(id=user.id))
                 .options(
                     selectinload(Party.time_slot), selectinload(Party.party_user_links), selectinload(Party.members)
                 )
             )
-        ).one_or_none()
-        if party_and_is_leader is None:
-            party = None
-            is_host = False
+        ).scalar_one_or_none()
+        if party is None:
             leader_id = None
         else:
-            party, is_host = party_and_is_leader.tuple()
             leader_id = next((link.user_id for link in party.party_user_links if link.is_leader), None)
         return HTMXBlockTemplate(
             template_str=catalog.render(
-                "PartyOverview",
-                time_slot=time_slot,
-                party=party,
-                is_host=is_host,
-                leader_id=leader_id,
+                "PartyOverview", time_slot=time_slot, party=party, leader_id=leader_id, request=request
             )
         )
 

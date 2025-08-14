@@ -2,7 +2,7 @@
     alerts: list[Alert] = []
 #}
 {% if alerts %}
-    <div class="toast" _="on load wait 4000ms then remove me">
+    <div class="toast z-50" _="on load wait 4000ms then remove me">
         {% for alert in alerts %}
             <div
                 class="{{ alert.alert_class }} alert-lg alert max-w-full text-wrap transition-opacity duration-1000 ease-in-out"
