@@ -1,45 +1,47 @@
 {#def
+    time_slot: TimeSlot,
     party: Party | None = None,
-    time_slot: TimeSlot | None = None,
     is_host: bool = False,
 #}
-<div {{ attrs.render(class="card rounded-box border border-base-300 bg-base-200") }}>
+<div {{ attrs.render() }}>
     {% if party %}
 
     {% else %}
-        <div class="card-body">
-            <h2 class="card-title">Adventuring Solo</h2>
-            <p class="text-sm">You are not currently in a party.</p>
-            <p class="text-sm">Join a party to play games with others!</p>
-            <div class="card-actions justify-start">
-                <button class="btn btn-primary">Start a New Party</button>
-                <button class="btn btn-secondary" _="on click join_modal.showModal()">Join a Party</button>
+        <h2 class="card-title">Adventuring Solo</h2>
+        <p class="text-sm">You are not currently in a party.</p>
+        <p class="text-sm">Join a party to play games with others!</p>
+        <div class="card-actions justify-start">
+            <button class="btn btn-primary">Start a New Party</button>
+            <button class="btn btn-secondary" _="on click join_modal_{{ swim(time_slot) }}.showModal()">
+                Join a Party
+            </button>
 
-                <dialog id="join_modal" class="modal">
-                    <div class="modal-box">
-                        <form method="dialog">
-                            <button class="btn absolute top-2 right-2 btn-circle btn-ghost btn-sm">✕</button>
-                        </form>
-                        <h3 class="text-lg font-bold">Join a Party</h3>
-                        <p>Enter the invite code to join a party.</p>
-                        <form
-                            class="modal-action justify-start"
-                            hx-get="/party/join/{invite_sqid}"
-                            hx-swap="none"
-                            hx-ext="path-params"
-                            hx-vals='{"alert-retarget": "#join_modal"}'
-                        >
-                            <input
-                                type="text"
-                                class="input-bordered input w-full max-w-xs"
-                                name="invite_sqid"
-                                placeholder="CODE"
-                            />
-                            <button class="btn" type="submit">Join</button>
-                        </form>
-                    </div>
-                </dialog>
-            </div>
+            <dialog id="join_modal_{{ swim(time_slot) }}" class="modal">
+                <div class="modal-box">
+                    <form method="dialog">
+                        <button class="btn absolute top-2 right-2 btn-circle btn-ghost btn-sm">✕</button>
+                    </form>
+                    <h3 class="text-lg font-bold">Join a Party</h3>
+                    <p>Enter the invite code to join a party.</p>
+                    <form
+                        class="modal-action justify-start"
+                        hx-get="/party/join/{{ swim(time_slot) }}/{invite_sqid}"
+                        hx-ext="path-params"
+                        hx-vals='{"alert-retarget": "#join_modal_{{ swim(time_slot) }}"}'
+                    >
+                        <input
+                            type="text"
+                            pattern="[A-Z]*"
+                            class="input-bordered input w-full max-w-xs"
+                            name="invite_sqid"
+                            placeholder="CODE"
+                            autocapitalize="characters"
+                            onkeyup="this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '')"
+                        />
+                        <button class="btn" type="submit">Join</button>
+                    </form>
+                </div>
+            </dialog>
         </div>
     {% endif %}
 </div>
