@@ -320,6 +320,57 @@ class PartyController(Controller):
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
 
+    @post(
+        path="/remove/{time_slot_sqid:str}/{member_sqid:str}",
+        dependencies={
+            "time_slot": time_slot_with(),
+        },
+    )
+    async def remove_party_member(
+        self,
+        transaction: AsyncSession,
+        user: User,
+        time_slot: TimeSlot | None,
+        member_sqid: Sqid,
+    ) -> Template | Redirect:
+        if time_slot is None:
+            return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
+
+        member_id = sink(member_sqid)
+
+        if member_id == user.id:
+            return alerts_response(
+                [Alert(alert_class="alert-error", message="You cannot remove yourself from the party.")]
+            )
+
+        party_user_link = (
+            await transaction.execute(
+                select(PartyUserLink).where(
+                    PartyUserLink.party.has(time_slot_id=time_slot.id), PartyUserLink.user_id == user.id
+                )
+            )
+        ).scalar_one_or_none()
+
+        if party_user_link is None or not party_user_link.is_leader:
+            return alerts_response([Alert(alert_class="alert-error", message="You are not leading a party.")])
+
+        other_party_user_link = (
+            await transaction.execute(
+                select(PartyUserLink)
+                .where(PartyUserLink.party.has(time_slot_id=time_slot.id), PartyUserLink.user_id == member_id)
+                .options(
+                    selectinload(PartyUserLink.user),
+                )
+            )
+        ).scalar_one_or_none()
+
+        if other_party_user_link is None:
+            return alerts_response([Alert(alert_class="alert-error", message="Member not found in this party.")])
+
+        await transaction.delete(other_party_user_link)
+
+        return Redirect(f"/party/overview/{swim(time_slot)}")
+
     @get(path="/whoami")
     async def whoami(
         self,
