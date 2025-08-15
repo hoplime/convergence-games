@@ -1,5 +1,7 @@
 {#def
-    alerts: list[Alert] = []
+    alerts: list[Alert] = [],
+    redirect_text: str | None = None,
+    redirect_url: str | None = None,
 #}
 {% if alerts %}
     <div class="toast z-50" _="on load wait 4000ms then remove me">
@@ -11,5 +13,8 @@
                 {{ alert.message }}
             </div>
         {% endfor %}
+        {% if redirect_url is not none %}
+            <a href="{{ redirect_url }}">{{ redirect_text if redirect_text is not none else redirect_url }}</a>
+        {% endif %}
     </div>
 {% endif %}

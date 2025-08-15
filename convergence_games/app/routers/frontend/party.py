@@ -14,13 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import query, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 
-from convergence_games.app.alerts import Alert, alerts_response
+from convergence_games.app.alerts import Alert, AlertError
 from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.models import Party, PartyUserLink, TimeSlot, User
-from convergence_games.db.ocean import Sqid, sink, sink_upper, swim, swim_upper
+from convergence_games.db.ocean import Sqid, sink, sink_upper, swim
 
 
 def party_with(*options: ExecutableOption, raise_404: bool = False) -> Provide:
@@ -108,7 +108,7 @@ class PartyController(Controller):
         time_slot: TimeSlot | None,
     ) -> Template | Redirect:
         if time_slot is None:
-            return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
+            raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
         existing_party_for_time_slot = (
             await transaction.execute(
@@ -117,7 +117,7 @@ class PartyController(Controller):
         ).scalar_one_or_none()
 
         if existing_party_for_time_slot:
-            return alerts_response(
+            raise AlertError(
                 [Alert(alert_class="alert-warning", message="You are already in a party for this time slot.")]
             )
 
@@ -133,8 +133,8 @@ class PartyController(Controller):
         return Redirect(f"/party/overview/{swim(time_slot)}")
 
     @get(path="/join")
-    async def join_empty_party(self, request: Request) -> Template:
-        return alerts_response([Alert(alert_class="alert-error", message="No party found with that code.")], request)
+    async def join_empty_party(self) -> Template:
+        raise AlertError([Alert(alert_class="alert-error", message="No party found with that code.")])
 
     @get(
         path="/join/{time_slot_sqid:str}/{invite_sqid:str}",
@@ -157,8 +157,8 @@ class PartyController(Controller):
 
         try:
             invite_id = sink_upper(invite_sqid)
-        except Exception:
-            return alerts_response([Alert(alert_class="alert-error", message="Invalid invite code.")], request)
+        except Exception as e:
+            raise AlertError([Alert(alert_class="alert-error", message="Invalid invite code.")]) from e
 
         party = (
             await transaction.execute(
@@ -169,16 +169,11 @@ class PartyController(Controller):
         ).scalar_one_or_none()
 
         if party is None:
-            return alerts_response(
-                [Alert(alert_class="alert-error", message="No party found with that code.")], request
-            )
-
+            raise AlertError([Alert(alert_class="alert-error", message="No party found with that code.")])
         if len(party.members) >= party.time_slot.event.max_party_size:
-            return alerts_response([Alert(alert_class="alert-error", message="Party is full.")], request)
+            raise AlertError([Alert(alert_class="alert-error", message="Party is full.")])
         if user.id in [member.id for member in party.members]:
-            return alerts_response(
-                [Alert(alert_class="alert-warning", message="You are already a member of this party.")], request
-            )
+            raise AlertError([Alert(alert_class="alert-warning", message="You are already a member of this party.")])
 
         party_user_link = PartyUserLink(user_id=user.id, party_id=party.id)
         transaction.add(party_user_link)
@@ -202,7 +197,7 @@ class PartyController(Controller):
         time_slot: TimeSlot | None,
     ) -> Template | Redirect:
         if time_slot is None:
-            return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
+            raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
         party_user_link = (
             await transaction.execute(
@@ -213,12 +208,10 @@ class PartyController(Controller):
         ).scalar_one_or_none()
 
         if party_user_link is None:
-            return alerts_response(
-                [Alert(alert_class="alert-warning", message="You are not in a party for this time slot.")]
-            )
+            raise AlertError([Alert(alert_class="alert-warning", message="You are not in a party for this time slot.")])
 
         if party_user_link.is_leader and len(party_user_link.party.members) > 1:
-            return alerts_response(
+            raise AlertError(
                 [
                     Alert(
                         alert_class="alert-error",
@@ -248,7 +241,7 @@ class PartyController(Controller):
         time_slot: TimeSlot | None,
     ) -> Template:
         if time_slot is None:
-            return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
+            raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
         party = (
             await transaction.execute(
@@ -260,9 +253,9 @@ class PartyController(Controller):
         ).scalar_one_or_none()
 
         if party is None:
-            return alerts_response([Alert(alert_class="alert-warning", message="No party found for this time slot.")])
+            raise AlertError([Alert(alert_class="alert-warning", message="No party found for this time slot.")])
 
-        return alerts_response(
+        raise AlertError(
             [
                 Alert(
                     alert_class="alert-info",
@@ -285,7 +278,7 @@ class PartyController(Controller):
         member_sqid: Sqid,
     ) -> Template | Redirect:
         if time_slot is None:
-            return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
+            raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
         party_user_link = (
             await transaction.execute(
@@ -296,7 +289,7 @@ class PartyController(Controller):
         ).scalar_one_or_none()
 
         if party_user_link is None or not party_user_link.is_leader:
-            return alerts_response([Alert(alert_class="alert-error", message="You are not leading a party.")])
+            raise AlertError([Alert(alert_class="alert-error", message="You are not leading a party.")])
 
         member_id = sink(member_sqid)
 
@@ -311,7 +304,7 @@ class PartyController(Controller):
         ).scalar_one_or_none()
 
         if other_party_user_link is None:
-            return alerts_response([Alert(alert_class="alert-error", message="Member not found in this party.")])
+            raise AlertError([Alert(alert_class="alert-error", message="Member not found in this party.")])
 
         # We need to use a nested transaction so we can force is_leader = False before setting the new leader
         # Otherwise we violate the unique constraint (well, index) on ix_unique_party_leader
@@ -338,14 +331,12 @@ class PartyController(Controller):
         member_sqid: Sqid,
     ) -> Template | Redirect:
         if time_slot is None:
-            return alerts_response([Alert(alert_class="alert-error", message="Time slot not found.")])
+            raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
         member_id = sink(member_sqid)
 
         if member_id == user.id:
-            return alerts_response(
-                [Alert(alert_class="alert-error", message="You cannot remove yourself from the party.")]
-            )
+            raise AlertError([Alert(alert_class="alert-error", message="You cannot remove yourself from the party.")])
 
         party_user_link = (
             await transaction.execute(
@@ -356,7 +347,7 @@ class PartyController(Controller):
         ).scalar_one_or_none()
 
         if party_user_link is None or not party_user_link.is_leader:
-            return alerts_response([Alert(alert_class="alert-error", message="You are not leading a party.")])
+            raise AlertError([Alert(alert_class="alert-error", message="You are not leading a party.")])
 
         other_party_user_link = (
             await transaction.execute(
@@ -369,7 +360,7 @@ class PartyController(Controller):
         ).scalar_one_or_none()
 
         if other_party_user_link is None:
-            return alerts_response([Alert(alert_class="alert-error", message="Member not found in this party.")])
+            raise AlertError([Alert(alert_class="alert-error", message="Member not found in this party.")])
 
         await transaction.delete(other_party_user_link)
 
@@ -380,4 +371,4 @@ class PartyController(Controller):
         self,
         user: User,
     ) -> Template:
-        return alerts_response([Alert(alert_class="alert-info", message=swim(user))])
+        raise AlertError([Alert(alert_class="alert-info", message=swim(user))])
