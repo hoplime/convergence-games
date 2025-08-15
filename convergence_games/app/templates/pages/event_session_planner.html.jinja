@@ -3,24 +3,10 @@
         <title>{{ event.name }} Session Planner - Convergence 2025</title>
         <PageContainer size="max-w-screen-2xl">
             <h2 class="text-xl">{{ event.name }} Session Planner</h2>
-            {# 
-            TODO:
-                - Tab session selector
-                    - Remove sessions that are finished? Or default to the next one in the time order
-                - View party for each session
-                - Manage party
-                    - Host
-                        - Show the invite code and QR code
-                        - Able to kick or promote players
-                        - Able to leave the party
-                    - Join
-                        - Show the invite code and QR code
-                        - Show the party members
-                        - Able to leave the party
-                - View the games tiered by preference
-                - Same game filter selectors?
-             #}
-            <div class="tabs-border tabs">
+            <div class="tabs-border tabs tabs-sm">
+                <div class="inline-flex h-8 items-center justify-center text-sm">
+                    <span class="icon-[mdi--clock]"></span>
+                </div>
                 {% for time_slot in event.time_slots %}
                     <input
                         type="radio"
@@ -28,12 +14,19 @@
                         class="tab"
                         aria-label="{{ time_slot.name }}"
                         {{ "checked" if selected_time_slot_sqid == swim(time_slot) }}
+                        hx-get="/event/{{ swim(event) }}/planner?time_slot={{ swim(time_slot) }}"
+                        hx-params="none"
+                        hx-target="#game_list"
+                        hx-replace-url="true"
                     />
-                    <div class="tab-content rounded-box border border-base-300 bg-base-200 p-4">
+                    <div class="tab-content rounded-box border border-base-300 bg-base-200 p-4" hx-disinherit="*">
                         <div hx-get="/party/overview/{{ swim(time_slot) }}" hx-trigger="load"></div>
                     </div>
                 {% endfor %}
             </div>
+            {% block game_list %}
+                <div id="game_list">{{ selected_time_slot_sqid }}</div>
+            {% endblock %}
         </PageContainer>
     {% endblock content %}
 </Page>
