@@ -210,16 +210,6 @@ class PartyController(Controller):
         if party_user_link is None:
             raise AlertError([Alert(alert_class="alert-warning", message="You are not in a party for this time slot.")])
 
-        if party_user_link.is_leader and len(party_user_link.party.members) > 1:
-            raise AlertError(
-                [
-                    Alert(
-                        alert_class="alert-error",
-                        message="You cannot leave a party you are leading that still has other members - choose a new leader!",
-                    )
-                ]
-            )
-
         was_leader = party_user_link.is_leader
 
         await transaction.delete(party_user_link)

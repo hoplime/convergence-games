@@ -8,14 +8,21 @@
         {% set invite_link = "/party/join/" ~ swim(time_slot) ~ "/" ~ swim_upper(party) %}
         <div class="grid grid-cols-1 md:grid-cols-2">
             <div class="flex flex-col gap-4">
-                {% if request.user.id == leader_id %}
-                    <h2 class="card-title">Leading a Party</h2>
-                {% else %}
-                    <h2 class="card-title">In a Party</h2>
-                {% endif %}
-                {% for member in party.members %}
+                <div class="flex flex-row justify-between">
+                    {% if request.user.id == leader_id %}
+                        <h2 class="card-title">Leading a Party</h2>
+                    {% else %}
+                        <h2 class="card-title">In a Party</h2>
+                    {% endif %}
+
+                    <div>
+                        <span class="opacity-50">Join Code: </span>
+                        <span class="font-semibold">{{ swim_upper(party) }}</span>
+                    </div>
+                </div>
+                {% for member in party.members|sort(attribute="full_name") %}
                     <div class="flex items-center gap-2">
-                        <div class="flex flex-row items-center gap-2">
+                        <div class="flex w-full flex-row items-center gap-2">
                             <span class="font-semibold">
                                 {{ member.full_name }}
                                 {% if member.id == leader_id %}
@@ -24,40 +31,35 @@
                             </span>
                             {% if request.user.id == leader_id and request.user.id != member.id %}
                                 <button
-                                    class="btn btn-sm"
+                                    class="btn ml-auto btn-sm btn-primary"
                                     hx-post="/party/promote/{{ swim(time_slot) }}/{{ swim(member) }}"
                                 >
                                     Promote
                                 </button>
                                 <button
-                                    class="btn btn-sm"
+                                    class="btn btn-sm btn-error"
                                     hx-post="/party/remove/{{ swim(time_slot) }}/{{ swim(member) }}"
                                 >
                                     Remove
-                                </button>
-                            {% elif request.user.id == member.id %}
-                                <button class="btn btn-sm" hx-post="/party/leave/{{ swim(time_slot) }}">
-                                    Leave Party
                                 </button>
                             {% endif %}
                         </div>
                     </div>
                 {% endfor %}
+                <button class="btn btn-sm btn-error" hx-post="/party/leave/{{ swim(time_slot) }}">
+                    {{ "Disband" if request.user.id == leader_id else "Leave" }} Party
+                </button>
             </div>
             <div class="collapse-arrow collapse px-0">
                 <input type="checkbox" class="peer px-0" />
                 <div class="collapse-title inline px-0 font-semibold peer-checked:hidden">
-                    Show Code <span class="icon-[bx--qr]"></span>
+                    Show QR <span class="icon-[bx--qr]"></span>
                 </div>
                 <div class="collapse-title hidden px-0 font-semibold peer-checked:inline">
-                    Hide Code <span class="icon-[bx--qr]"></span>
+                    Hide QR <span class="icon-[bx--qr]"></span>
                 </div>
                 <div class="collapse-content flex flex-col items-center gap-2">
                     <QRCode :relative_url="invite_link" class="w-full rounded-box" :scale="10" />
-                    <div class="text-xl">
-                        <span class="opacity-50">Code: </span>
-                        <span class="font-semibold">{{ swim_upper(party) }}</span>
-                    </div>
                 </div>
             </div>
         </div>
