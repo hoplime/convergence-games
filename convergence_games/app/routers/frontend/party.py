@@ -11,7 +11,7 @@ from litestar.response import Redirect
 from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import query, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.alerts import Alert, alerts_response
@@ -182,6 +182,10 @@ class PartyController(Controller):
 
         party_user_link = PartyUserLink(user_id=user.id, party_id=party.id)
         transaction.add(party_user_link)
+
+        if not request.htmx:
+            # This is from a QRCode - go to the overall planner view
+            return Redirect(f"/event/{swim(party.time_slot.event)}/planner", query_params={"time_slot": time_slot_sqid})
 
         return Redirect(f"/party/overview/{swim(party.time_slot)}")
 
