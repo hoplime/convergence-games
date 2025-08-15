@@ -22,7 +22,13 @@
              #}
             <div class="tabs-border tabs">
                 {% for time_slot in event.time_slots %}
-                    <input type="radio" name="time_slot_selector" class="tab" aria-label="{{ time_slot.name }}" />
+                    <input
+                        type="radio"
+                        name="time_slot_selector"
+                        class="tab"
+                        aria-label="{{ time_slot.name }}"
+                        {{ "checked" if selected_time_slot_sqid == swim(time_slot) }}
+                    />
                     <div class="tab-content rounded-box border border-base-300 bg-base-200 p-4">
                         <div hx-get="/party/overview/{{ swim(time_slot) }}" hx-trigger="load"></div>
                     </div>

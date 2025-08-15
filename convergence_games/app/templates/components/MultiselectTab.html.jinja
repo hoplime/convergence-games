@@ -4,7 +4,7 @@
 <input
     type="radio"
     name="filter_tab"
-    class="tab"
+    class="tab z-1"
     id="filter_tab_{{ form_data.name }}"
     onchange="event.stopPropagation()"
     aria-label="{{ form_data.label }}"
@@ -21,12 +21,14 @@
     end
     "
 />
-<div class="tab-content rounded-box border border-base-300 bg-base-200 p-4">
+<div
+    {{ attrs.render(class="tab-content rounded-box border border-base-300 bg-base-200 p-4 pb-8 relative overflow-hidden") }}
+>
     <div class="flex flex-col gap-4">
         {% if form_data.description %}
-            <p>{{ form_data.description | safe }}</p>
+            <div class="max-w-full">{{ form_data.description | safe }}</div>
         {% endif %}
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        <div class="grid max-w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
             {% for option in form_data.options %}
                 <label class="flex items-center gap-2">
                     <input
@@ -45,7 +47,7 @@
         <div class="flex flex-row gap-2">
             <button
                 type="button"
-                class="btn btn-outline btn-sm btn-secondary"
+                class="btn btn-outline btn-sm btn-primary"
                 _="on click set <input[name={{ form_data.name }}]/>'s checked to true then trigger change on <input[name={{ form_data.name }}]/>"
             >
                 Select All
@@ -55,15 +57,14 @@
                 class="btn btn-outline btn-sm btn-secondary"
                 _="on click set <input[name={{ form_data.name }}]/>'s checked to false then trigger change on <input[name={{ form_data.name }}]/>"
             >
-                Deselect All
+                Clear Selection
             </button>
-            <button
-                type="button"
-                class="btn btn-outline btn-sm btn-secondary"
-                _="on click set #filter_tab_{{ form_data.name }}'s checked to false"
-            >
-                Hide
-            </button>
+        </div>
+        <div
+            class="absolute right-0 bottom-0 left-0 h-4 cursor-pointer bg-base-300/50 text-center"
+            _="on click set #filter_tab_{{ form_data.name }}'s checked to false"
+        >
+            <span class="icon-[tabler--chevron-up]"></span>
         </div>
     </div>
 </div>

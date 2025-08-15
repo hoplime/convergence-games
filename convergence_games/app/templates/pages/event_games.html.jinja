@@ -10,20 +10,24 @@
                 hx-push-url="true"
                 hx-trigger="change delay:100ms, reset delay:10ms"
                 hx-params="not filter_tab"
-                class="tabs-border tabs"
+                class="tabs-border tabs tabs-sm"
             >
-                <div class="inline-flex h-10 items-center justify-center text-sm">Filters:</div>
+                <div class="inline-flex h-8 items-center justify-center text-sm">
+                    <span class="icon-[mingcute--filter-fill]"></span>
+                </div>
                 <MultiselectTab :form_data="form_data.genre" />
                 <MultiselectTab :form_data="form_data.system" />
                 <MultiselectTab :form_data="form_data.tone" />
                 <MultiselectTab :form_data="form_data.bonus" />
                 <MultiselectTab :form_data="form_data.content" />
-                <div class="inline-flex h-10 items-center justify-center">
-                    <button type="reset" class="btn btn-outline btn-sm btn-secondary">
-                        <span>Clear Filters</span>
-                    </button>
-                </div>
             </form>
+            <button
+                type="button"
+                class="btn btn-outline btn-sm btn-secondary md:w-fit"
+                _="on click get the previous <form/> then it.reset()"
+            >
+                <span>Clear Filters</span>
+            </button>
             {# Game List #}
             <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" id="game_list">
                 {% block game_list %}

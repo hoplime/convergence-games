@@ -213,7 +213,7 @@ async def get_form_data_dep(
             description="Find games with any of these tones:",
         ),
         "bonus": MultiselectFormData(
-            label="Bonus Features",
+            label="Bonus",
             name="bonus",
             options=[
                 MultiselectFormDataOption(
@@ -300,5 +300,6 @@ class EventPlayerController(Controller):
             block_name=request.htmx.target,
             context={
                 "event": event,
+                "selected_time_slot_sqid": request.query_params.get("time_slot"),
             },
         )
