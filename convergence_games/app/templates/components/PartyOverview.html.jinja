@@ -6,8 +6,8 @@
 <div {{ attrs.render(class="card-body p-0") }} hx-target="this">
     {% if party %}
         {% set invite_link = "/party/join/" ~ swim(time_slot) ~ "/" ~ swim_upper(party) %}
-        <div class="grid grid-cols-1 md:grid-cols-2">
-            <div class="flex flex-col gap-4">
+        <div class="grid grid-cols-1 gap-x-4 md:grid-cols-[1fr_16rem]">
+            <div class="flex h-full flex-col gap-4">
                 <div class="flex flex-row justify-between">
                     {% if request.user.id == leader_id %}
                         <h2 class="card-title">Leading a Party</h2>
@@ -49,22 +49,22 @@
                     </div>
                 {% endfor %}
                 <button
-                    class="btn btn-sm btn-error"
+                    class="btn mt-auto btn-sm btn-error"
                     hx-post="/party/leave/{{ swim(time_slot) }}"
                     hx-confirm="Are you sure you wish to {{ 'disband' if request.user.id == leader_id else 'leave' }} the party?"
                 >
                     {{ "Disband" if request.user.id == leader_id else "Leave" }} Party
                 </button>
             </div>
-            <div class="collapse-arrow collapse px-0">
-                <input type="checkbox" class="peer px-0" />
-                <div class="collapse-title inline px-0 font-semibold peer-checked:hidden">
+            <div class="collapse-arrow collapse px-0 md:collapse-open md:p-0!">
+                <input type="checkbox" class="peer px-0 md:hidden" />
+                <div class="collapse-title inline px-0 font-semibold peer-checked:hidden md:hidden">
                     Show QR <span class="icon-[bx--qr]"></span>
                 </div>
-                <div class="collapse-title hidden px-0 font-semibold peer-checked:inline">
+                <div class="collapse-title hidden px-0 font-semibold peer-checked:inline md:hidden">
                     Hide QR <span class="icon-[bx--qr]"></span>
                 </div>
-                <div class="collapse-content flex flex-col items-center gap-2">
+                <div class="collapse-content flex flex-col items-center md:p-0!">
                     <QRCode :relative_url="invite_link" class="w-full rounded-box" :scale="10" />
                 </div>
             </div>
