@@ -1,0 +1,14 @@
+{#def
+    time: datetime
+#}
+{% set id = random_id() %}
+<span id="{{ id }}" {{ attrs.render(class="") }}></span>
+<script>
+    console.log("Rendering TimeDisplay for", "{{ time }}");
+    (() => {
+        const dt = new Date(Date.parse("{{ time }}"));
+        document.getElementById("{{ id }}").textContent = dt.toLocaleString([], {
+            timeStyle: "short",
+        });
+    })();
+</script>
