@@ -19,7 +19,7 @@ from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.db.models import Party, PartyUserLink, TimeSlot, User
+from convergence_games.db.models import Event, Party, PartyUserLink, TimeSlot, User
 from convergence_games.db.ocean import Sqid, sink, sink_upper, swim
 
 
@@ -81,7 +81,9 @@ class PartyController(Controller):
                 .where(Party.time_slot_id == time_slot.id)
                 .where(Party.members.any(id=user.id))
                 .options(
-                    selectinload(Party.time_slot), selectinload(Party.party_user_links), selectinload(Party.members)
+                    selectinload(Party.time_slot),
+                    selectinload(Party.party_user_links),
+                    selectinload(Party.members),
                 )
             )
         ).scalar_one_or_none()
@@ -89,9 +91,17 @@ class PartyController(Controller):
             leader_id = None
         else:
             leader_id = next((link.user_id for link in party.party_user_links if link.is_leader), None)
+        max_party_size = (
+            await transaction.execute(select(Event.max_party_size).where(Event.id == time_slot.event_id))
+        ).scalar_one_or_none()
         return HTMXBlockTemplate(
             template_str=catalog.render(
-                "PartyOverview", time_slot=time_slot, party=party, leader_id=leader_id, request=request
+                "PartyOverview",
+                time_slot=time_slot,
+                party=party,
+                leader_id=leader_id,
+                request=request,
+                max_party_size=max_party_size,
             )
         )
 

@@ -20,18 +20,19 @@
                         hx-replace-url="true"
                     />
                     <div class="tab-content rounded-box border border-base-300 bg-base-200 p-4" hx-disinherit="*">
-                        <div hx-get="/party/overview/{{ swim(time_slot) }}" hx-trigger="load"></div>
+                        <div hx-get="/party/overview/{{ swim(time_slot) }}" hx-trigger="intersect once"></div>
                     </div>
                 {% endfor %}
             </div>
             <div>
                 <div class="collapse-plus collapse border border-base-300 bg-base-100">
                     <input type="checkbox" />
-                    <div class="collapse-title font-semibold">Explanation</div>
+                    <div class="collapse-title font-semibold">Tier Explanation</div>
                     <div class="collapse-content flex flex-col gap-2">
                         <p class="italic">
                             Below is a preview of the ranked tier list of games running this session, according to your
-                            or your party leader's preferences. Games within each tier are equally weighted.
+                            or your party leader's preferences (dice ratings). Games within each tier are equally
+                            weighted.
                         </p>
                         <p class="italic">
                             The allocation algorithm will try to place you in the highest tier possible, while making
@@ -51,7 +52,7 @@
                         <div class="sticky top-0 z-10 bg-base-100">
                             <div class="divider divider-vertical">
                                 <div class="flex flex-row gap-4 text-xl font-semibold">
-                                    <div>Tier {{ loop.index }}</div>
+                                    <div>{% if tier.name == 'D0' %}-{% else %}Tier {{ loop.index }}{% endif %}</div>
                                     <div class="{{ tier.display_class }}"></div>
                                 </div>
                             </div>

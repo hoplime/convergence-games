@@ -1,7 +1,8 @@
 {#def
     time_slot: TimeSlot,
     party: Party | None = None,
-    leader_id: int | None = None
+    leader_id: int | None = None,
+    max_party_size: int = 3,
 #}
 <div {{ attrs.render(class="card-body p-0") }} hx-target="this">
     {% if party %}
@@ -9,45 +10,51 @@
         <div class="grid grid-cols-1 gap-x-4 md:grid-cols-[1fr_16rem]">
             <div class="flex h-full flex-col gap-4">
                 <div class="flex flex-row justify-between">
-                    {% if request.user.id == leader_id %}
-                        <h2 class="card-title">Leading a Party</h2>
-                    {% else %}
-                        <h2 class="card-title">In a Party</h2>
-                    {% endif %}
+                    <h2 class="card-title">
+                        {% if request.user.id == leader_id %}Leading{% else %}In{% endif %} a Party
+                    </h2>
 
-                    <div>
-                        <span class="opacity-50">Join Code: </span>
-                        <span class="font-semibold">{{ swim_upper(party) }}</span>
-                    </div>
-                </div>
-                {% for member in party.members|sort(attribute="full_name") %}
-                    <div class="flex items-center gap-2">
-                        <div class="flex w-full flex-row items-center gap-2">
-                            <span class="font-semibold">
-                                {{ member.full_name }}
-                                {% if member.id == leader_id %}
-                                    <span class="icon-[material-symbols--crown]"></span>
-                                {% endif %}
-                            </span>
-                            {% if request.user.id == leader_id and request.user.id != member.id %}
-                                <button
-                                    class="btn ml-auto btn-sm btn-primary"
-                                    hx-post="/party/promote/{{ swim(time_slot) }}/{{ swim(member) }}"
-                                    hx-confirm="Are you sure you want to promote {{ member.full_name }} to party leader?"
-                                >
-                                    Promote
-                                </button>
-                                <button
-                                    class="btn btn-sm btn-error"
-                                    hx-post="/party/remove/{{ swim(time_slot) }}/{{ swim(member) }}"
-                                    hx-confirm="Are you sure you want to remove {{ member.full_name }} from the party?"
-                                >
-                                    Remove
-                                </button>
-                            {% endif %}
+                    <div class="flex flex-wrap items-center gap-x-2">
+                        <div>
+                            <span class="opacity-50">Players: </span>
+                            <span class="font-semibold">{{ party.members|length }}/{{ max_party_size }}</span>
+                        </div>
+                        <div>
+                            <span class="opacity-50">Join Code: </span>
+                            <span class="font-semibold">{{ swim_upper(party) }}</span>
                         </div>
                     </div>
-                {% endfor %}
+                </div>
+                <div class="flex h-full flex-col gap-2">
+                    {% for member in party.members|sort(attribute="full_name") %}
+                        <div class="flex items-center gap-2">
+                            <div class="flex w-full flex-row items-center gap-2">
+                                <span class="font-semibold">
+                                    {{ member.full_name }}
+                                    {% if member.id == leader_id %}
+                                        <span class="icon-[material-symbols--crown]"></span>
+                                    {% endif %}
+                                </span>
+                                {% if request.user.id == leader_id and request.user.id != member.id %}
+                                    <button
+                                        class="btn ml-auto btn-sm btn-primary"
+                                        hx-post="/party/promote/{{ swim(time_slot) }}/{{ swim(member) }}"
+                                        hx-confirm="Are you sure you want to promote {{ member.full_name }} to party leader?"
+                                    >
+                                        Promote
+                                    </button>
+                                    <button
+                                        class="btn btn-sm btn-error"
+                                        hx-post="/party/remove/{{ swim(time_slot) }}/{{ swim(member) }}"
+                                        hx-confirm="Are you sure you want to remove {{ member.full_name }} from the party?"
+                                    >
+                                        Remove
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
                 <button
                     class="btn mt-auto btn-sm btn-error"
                     hx-post="/party/leave/{{ swim(time_slot) }}"
