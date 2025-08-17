@@ -137,8 +137,8 @@ class ProfileController(Controller):
         assert request.user is not None
 
         user = request.user
-        user.first_name = data.first_name
-        user.last_name = data.last_name
+        user.first_name = data.first_name.strip()
+        user.last_name = data.last_name.strip()
         if data.description is not None:
             user.description = data.description
         user.over_18 = data.is_over_18
