@@ -5,7 +5,7 @@ import zoneinfo
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from litestar import Controller, get
 from litestar.di import Provide
@@ -22,7 +22,14 @@ from sqlalchemy.sql.functions import coalesce
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
-from convergence_games.db.enums import GameKSP, GameTone, SubmissionStatus, UserGamePreferenceValue
+from convergence_games.db.enums import (
+    GameClassification,
+    GameKSP,
+    GameTone,
+    SubmissionStatus,
+    TierValue,
+    UserGamePreferenceValue,
+)
 from convergence_games.db.models import (
     ContentWarning,
     Event,
@@ -335,22 +342,31 @@ class EventPlayerController(Controller):
         ThisUserPreference = aliased(UserGamePreference)
         LeaderUserPreference = aliased(UserGamePreference)
 
-        party_leader_id_and_name_stmt = (
-            select(User.id, User.first_name)
-            .join(PLinkAllInParty, User.id == PLinkAllInParty.user_id)
-            .join(PLinkThisUser, PLinkAllInParty.party_id == PLinkThisUser.party_id)
-            .where(PLinkThisUser.user_id == user.id, PLinkThisUser.party.has(time_slot_id=time_slot.id))
-            .where(PLinkAllInParty.is_leader)
-            .limit(1)
+        party_members = list(
+            (
+                await transaction.execute(
+                    (
+                        select(User, PLinkAllInParty.is_leader)
+                        .join(PLinkAllInParty, User.id == PLinkAllInParty.user_id)
+                        .join(PLinkThisUser, PLinkAllInParty.party_id == PLinkThisUser.party_id)
+                        .where(PLinkThisUser.user_id == user.id, PLinkThisUser.party.has(time_slot_id=time_slot.id))
+                    )
+                )
+            ).all()
         )
-        party_leader_row = (await transaction.execute(party_leader_id_and_name_stmt)).one_or_none()
-        if party_leader_row is not None:
-            party_leader_id, party_leader_name = party_leader_row.tuple()
-        else:
-            party_leader_id, party_leader_name = user.id, user.first_name
+        party_leader = next(
+            (member_and_is_leader.t[0] for member_and_is_leader in party_members if member_and_is_leader.t[1]), user
+        )
+        all_party_members_over_18 = all(member_and_is_leader.t[0].over_18 for member_and_is_leader in party_members)
+
+        select_terms = (
+            (Game, ThisUserPreference.preference, LeaderUserPreference.preference)
+            if party_leader.id != user.id
+            else (Game, ThisUserPreference.preference, ThisUserPreference.preference)
+        )
 
         games_and_preferences_this_time_slot_stmt = (
-            select(Game, ThisUserPreference.preference, LeaderUserPreference.preference)
+            select(*select_terms)
             .options(
                 selectinload(Game.system),
                 selectinload(Game.gamemaster),
@@ -370,25 +386,35 @@ class EventPlayerController(Controller):
                 and_(ThisUserPreference.game_id == Game.id, ThisUserPreference.user_id == user.id),
                 isouter=True,
             )
-            .join(
+        )
+
+        if party_leader.id != user.id:
+            games_and_preferences_this_time_slot_stmt = games_and_preferences_this_time_slot_stmt.join(
                 LeaderUserPreference,
-                and_(LeaderUserPreference.game_id == Game.id, LeaderUserPreference.user_id == party_leader_id),
+                and_(LeaderUserPreference.game_id == Game.id, LeaderUserPreference.user_id == party_leader.id),
                 isouter=True,
             )
-        )
 
         games_and_preferences = (await transaction.execute(games_and_preferences_this_time_slot_stmt)).all()
 
-        game_tier_dict: dict[UserGamePreferenceValue, list[Game]] = {}
+        game_tier_dict: dict[TierValue, list[Game]] = {}
         preferences: dict[int, UserGamePreferenceValue] = {}
         for row in games_and_preferences:
             game, user_preference_value, leader_preference_value = row.tuple()
+            # Get the personal preference
+            preferences[game.id] = user_preference_value
+
+            # Deal with the leader preference for tiering
             if leader_preference_value is None:  # pyright: ignore[reportUnnecessaryComparison]  # We actually can get None from the outer join with no coalesce for default
                 leader_preference_value = UserGamePreferenceValue.D6
-            if leader_preference_value not in game_tier_dict:
-                game_tier_dict[leader_preference_value] = []
-            game_tier_dict[leader_preference_value].append(game)
-            preferences[game.id] = user_preference_value
+            tier_value = TierValue(leader_preference_value)
+            if game.gamemaster_id == user.id:
+                tier_value = TierValue.GM
+            elif game.classification == GameClassification.R18 and not all_party_members_over_18:
+                tier_value = TierValue.AGE_RESTRICTED
+            if tier_value not in game_tier_dict:
+                game_tier_dict[tier_value] = []
+            game_tier_dict[tier_value].append(game)
 
         game_tier_list = sorted(game_tier_dict.items(), key=lambda item: item[0].value, reverse=True)
 
@@ -400,7 +426,7 @@ class EventPlayerController(Controller):
                 "selected_time_slot": time_slot,
                 "game_tier_list": game_tier_list,
                 "preferences": preferences,
-                "party_leader_id": party_leader_id,
-                "party_leader_name": party_leader_name,
+                "party_leader": party_leader,
+                "all_party_members_over_18": all_party_members_over_18,
             },
         )

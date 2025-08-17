@@ -1,6 +1,7 @@
 {#def
     game: Game,
-    preference: int | None = None
+    preference: int | None = None,
+    all_party_members_over_18: bool = False,
 #}
 <div class="card rounded-box border border-base-300 bg-base-200">
     <a href="/game/{{ swim(game) }}" class="grow">
@@ -54,12 +55,12 @@
         </div>
     </a>
     {% if request.user %}
-        {% if request.user.id == game.gamemaster_id %}
-            <div class="mt-auto flex flex-col items-center gap-2 pb-6">
+        <div class="mt-auto flex flex-col items-center gap-2 pb-6">
+            {% if request.user.id == game.gamemaster_id %}
                 <span class="w-full text-center font-semibold">You are GMing this game.</span>
-            </div>
-        {% else %}
-            <div class="mt-auto flex flex-col items-center gap-2 pb-6">
+            {% elif not request.user.over_18 and game.classification.value == "R18" %}
+                <span class="w-full text-center font-semibold">You must be 18 or older to play/rate this game.</span>
+            {% else %}
                 <span class="w-full text-center font-semibold">Preference</span>
                 {% set dice_rating_name = "rating-" ~ swim(game) %}
                 <DiceRating
@@ -67,7 +68,12 @@
                     :hx_put_url="'/game/' + swim(game) + '/preference'"
                     :starting_value="preference if preference is not none else 6"
                 />
-            </div>
-        {% endif %}
+                {% if not all_party_members_over_18 and game.classification.value == "R18" %}
+                    <span class="w-full text-center font-semibold"
+                        >All party members must be 18 or older to play this game.</span
+                    >
+                {% endif %}
+            {% endif %}
+        </div>
     {% endif %}
 </div>

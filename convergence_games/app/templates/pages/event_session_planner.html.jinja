@@ -64,18 +64,19 @@
             </div>
             {% block game_list %}
                 <div id="game_list">
-                    {% if party_leader_id != request.user.id %}
-                        <div>You are not the party leader - showing {{ party_leader_name }}'s preferences.</div>
+                    {% if party_leader.id != request.user.id %}
+                        <div>You are not the party leader - showing {{ party_leader.first_name }}'s preferences.</div>
                     {% endif %}
                     <div class="flex flex-col gap-4">
+                        {% set tier_list_offset = 1 if game_tier_list and game_tier_list[0][0].name == "GM" else 0 %}
                         {% for tier, games in game_tier_list %}
                             <div class="sticky top-0 z-10 bg-base-100">
                                 <div class="divider divider-vertical">
                                     <div class="flex flex-col gap-0">
                                         <div class="flex flex-row gap-4 text-xl font-semibold">
-                                            <div>
-                                                {% if tier.name == 'D0' %}-{% else %}Tier {{ loop.index }}{% endif %}
-                                            </div>
+                                            {% if tier.name not in ['D0', 'AGE_RESTRICTED', 'GM'] %}
+                                                <div>Tier {{ loop.index - tier_list_offset }}</div>
+                                            {% endif %}
                                             <div class="{{ tier.display_class }}"></div>
                                         </div>
                                     </div>
@@ -84,9 +85,21 @@
 
                             <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {% for game in games %}
-                                    <GameCard :game="game" :preference="preferences.get(game.id)" />
+                                    <GameCard
+                                        :game="game"
+                                        :preference="preferences.get(game.id)"
+                                        :all_party_members_over_18="all_party_members_over_18"
+                                    />
                                 {% endfor %}
                             </div>
+
+                            {% if tier.name == "GM" %}
+                                <div>
+                                    You are scheduled to GM a game this session - however, if we are unable to allocate
+                                    enough players to your game, you will be allocated as a player based on your
+                                    preferences for this session.
+                                </div>
+                            {% endif %}
                         {% endfor %}
                     </div>
                 </div>

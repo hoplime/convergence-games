@@ -526,3 +526,29 @@ class UserGamePreferenceValue(enum.IntEnum):
             return f"{common} bg-yellow-400 mask-d20 after:content-['20']"
 
         return common
+
+
+class TierValue(enum.IntEnum):
+    AGE_RESTRICTED = -2
+    D0 = 0
+    D4 = 4
+    D6 = 6
+    D8 = 8
+    D10 = 10
+    D12 = 12
+    D20 = 20
+    GM = 21
+
+    @property
+    def display_class(self) -> str:
+        common = "w-8 h-8 text-xl relative mask text-gray-800 after:absolute after:top-1/2 after:left-1/2 after:block after:-translate-x-1/2 after:-translate-y-1/2 after:text-center after:align-middle after:leading-none after:font-bold"
+
+        if self in UserGamePreferenceValue:
+            return UserGamePreferenceValue(self).display_class
+
+        if self == TierValue.AGE_RESTRICTED:
+            return f"{common} bg-red-500 border px-6 rounded-box after:content-['R18']"
+        if self == TierValue.GM:
+            return f"{common} bg-white border px-6 rounded-box after:content-['GM']"
+
+        return ""
