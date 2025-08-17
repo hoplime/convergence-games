@@ -358,6 +358,8 @@ class EventPlayerController(Controller):
             (member_and_is_leader.t[0] for member_and_is_leader in party_members if member_and_is_leader.t[1]), user
         )
         all_party_members_over_18 = all(member_and_is_leader.t[0].over_18 for member_and_is_leader in party_members)
+        if not party_members:
+            all_party_members_over_18 = user.over_18
 
         select_terms = (
             (Game, ThisUserPreference.preference, LeaderUserPreference.preference)
