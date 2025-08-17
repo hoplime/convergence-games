@@ -67,6 +67,7 @@
             },
             {
                 "scope": [
+                    "meta.tag.other.AdminSectionCard.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.Collapse.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.CollapseContent.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.CollapseTitle.html invalid.illegal.unrecognized-tag.html",
@@ -103,6 +104,7 @@
                     "meta.tag.other.Tooltip.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.TooltipContent.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.TooltipIcon.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.UserManageRow.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.VerifyCode.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.forms.multislider.Multislider.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.forms.multislider.MultisliderContainer.html invalid.illegal.unrecognized-tag.html",

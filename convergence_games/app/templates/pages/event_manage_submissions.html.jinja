@@ -46,7 +46,7 @@
                     </tr>
                 </tbody>
             </table>
-            <a href="/event/{{ swim(event) }}/manage-schedule" class="btn btn-primary">Manage Schedule</a>
+            <AdminSectionCard :event="event" />
         </PageContainer>
     {% endblock %}
 </Page>

@@ -610,6 +610,8 @@ class UserEventStatus(Base):
     event: Mapped[Event] = relationship(back_populates="event_statuses", lazy="noload")
     user: Mapped[User] = relationship(back_populates="event_statuses", foreign_keys=user_id, lazy="noload")
 
+    __table_args__ = (UniqueConstraint("event_id", "user_id"),)
+
 
 class UserEventRole(Base):
     role: Mapped[Role] = mapped_column(Enum(Role), index=True)

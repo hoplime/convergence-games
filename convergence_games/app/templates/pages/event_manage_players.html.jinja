@@ -4,8 +4,23 @@
         <PageContainer size="max-w-screen-2xl">
             <div>Manage Players</div>
             <table class="table bg-base-200 table-sm">
-                <thead></thead>
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Logins</th>
+                        <th>D20s</th>
+                        <th>Compensation</th>
+                        <th>Roles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <UserManageRow :user="user" />
+                    {% endfor %}
+                </tbody>
             </table>
+            <AdminSectionCard :event="event" />
         </PageContainer>
     {% endblock %}
 </Page>
