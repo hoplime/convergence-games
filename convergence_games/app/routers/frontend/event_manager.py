@@ -15,7 +15,7 @@ from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.guards import permission_check, user_guard
@@ -29,6 +29,8 @@ from convergence_games.db.models import (
     Room,
     Session,
     User,
+    UserEventRole,
+    UserEventStatus,
 )
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.permissions import user_has_permission
@@ -370,5 +372,44 @@ class EventManagerController(Controller):
                         if game.submission_status == SubmissionStatus.CANCELLED
                     ]
                 ),
+            },
+        )
+
+    @get(
+        path="/event/{event_sqid:str}/manage-players",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def get_event_manage_players(
+        self, event: Event, request: Request, transaction: AsyncSession, permission: bool
+    ) -> Template:
+        users = (
+            (
+                await transaction.execute(
+                    select(User)
+                    .options(
+                        selectinload(User.event_statuses),
+                        selectinload(User.event_roles),
+                        selectinload(User.logins),
+                        with_loader_criteria(UserEventStatus, UserEventStatus.event_id == event.id),
+                        with_loader_criteria(
+                            UserEventRole, (UserEventRole.event_id == event.id) | (UserEventRole.event_id.is_(None))
+                        ),
+                    )
+                    .order_by(User.last_name, User.first_name)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return HTMXBlockTemplate(
+            template_name="pages/event_manage_players.html.jinja",
+            block_name=request.htmx.target,
+            context={
+                "event": event,
+                "users": users,
             },
         )
