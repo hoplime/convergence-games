@@ -37,7 +37,7 @@
             <div>
                 <div class="collapse-plus collapse border border-base-300 bg-base-100">
                     <input type="checkbox" />
-                    <div class="collapse-title font-semibold">Tier Explanation</div>
+                    <div class="collapse-title font-semibold">Preferences & Tier Explanation</div>
                     <div class="collapse-content flex flex-col gap-2">
                         <p class="italic">
                             Below is a preview of the ranked tier list of games running this session, according to your
@@ -50,8 +50,14 @@
                         </p>
                         <p class="italic">
                             Try to make sure you accurately represent your preferences with a good selection of games in
-                            the first few tiers - trying to cheat the system with one D12 and all D0s will possibly mean
-                            you can't get into a game at all!
+                            the first few tiers - cheating the system with one D12 and all D0s will possibly mean you
+                            can't get into a game at all!
+                        </p>
+                        <p class="italic">
+                            Your preference for a game is shared
+                            <span class="font-semibold">across all sessions</span> - if you really want to get into a
+                            game with limited sessions and a game running in all five sessions, consider adjusting your
+                            preferences between sessions.
                         </p>
                     </div>
                 </div>
@@ -59,7 +65,7 @@
             {% block game_list %}
                 <div id="game_list">
                     {% if party_leader_id != request.user.id %}
-                        <div>You are not the party leader - showing {{ party_leader_name }}'s preferences:</div>
+                        <div>You are not the party leader - showing {{ party_leader_name }}'s preferences.</div>
                     {% endif %}
                     <div class="flex flex-col gap-4">
                         {% for tier, games in game_tier_list %}
