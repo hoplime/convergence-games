@@ -2,17 +2,20 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Annotated
 
 from litestar import Controller, get
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
+from litestar.params import Parameter
 from litestar.response import Template
 from pydantic import BaseModel, BeforeValidator
-from sqlalchemy import select
+from sqlalchemy import and_, case, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.sql.functions import coalesce
 
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
@@ -25,7 +28,12 @@ from convergence_games.db.models import (
     GameContentWarningLink,
     GameGenreLink,
     Genre,
+    Party,
+    PartyUserLink,
+    Session,
     System,
+    TimeSlot,
+    User,
     UserGamePreference,
 )
 from convergence_games.db.ocean import Sqid, sink, swim
@@ -290,16 +298,75 @@ class EventPlayerController(Controller):
         )
 
     @get(
-        "/event/{event_sqid:str}/planner",
+        ["/event/{event_sqid:str}/planner", "/event/{event_sqid:str}/planner/{time_slot_sqid:str}"],
         dependencies={"event": event_with(selectinload(Event.time_slots))},
         guards=[user_guard],
     )
-    async def get_event_session_planner(self, request: Request, event: Event) -> Template:
+    async def get_event_session_planner(
+        self,
+        request: Request,
+        transaction: AsyncSession,
+        event: Event,
+        user: User,
+        time_slot_sqid: Annotated[Sqid | None, Parameter()] = None,
+    ) -> Template:
+        time_slot: TimeSlot | None = None
+        if time_slot_sqid is not None:
+            time_slot_id = sink(time_slot_sqid)
+            time_slot = next(
+                (ts for ts in event.time_slots if ts.id == time_slot_id),
+                None,
+            )
+        if time_slot is None:
+            # Get the next upcoming time slot, or the last one if there are no upcoming slots
+            sorted_event_time_slots = sorted(event.time_slots, key=lambda ts: ts.start_time)
+            time_slot = next(
+                (ts for ts in sorted_event_time_slots if ts.start_time > datetime.now()),
+                sorted_event_time_slots[-1],
+            )
+
+        PLinkThisUser = aliased(PartyUserLink)
+        PLinkAllInParty = aliased(PartyUserLink)
+
+        party_leader_id_stmt = coalesce(
+            select(PLinkAllInParty.user_id)
+            .join(PLinkThisUser, PLinkAllInParty.party_id == PLinkThisUser.party_id)
+            .where(PLinkThisUser.user_id == user.id, PLinkThisUser.party.has(time_slot_id=time_slot.id))
+            .where(PLinkAllInParty.is_leader)
+            .limit(1),
+            user.id,
+        )
+        # game_preference_score = coalesce(, UserGamePreferenceValue.D6.name).alias("game_preference_score")
+        games_and_preferences_this_time_slot_stmt = (
+            select(Game, UserGamePreference.preference)
+            .join(Session, Session.game_id == Game.id)
+            .where((Session.time_slot_id == time_slot.id) & Session.committed)
+            .join(
+                UserGamePreference,
+                and_(UserGamePreference.game_id == Game.id, UserGamePreference.user_id == party_leader_id_stmt),
+                isouter=True,
+            )
+        )
+
+        games_and_preferences = (await transaction.execute(games_and_preferences_this_time_slot_stmt)).all()
+
+        game_tier_dict: dict[UserGamePreferenceValue, list[Game]] = {}
+        for row in games_and_preferences:
+            game, preference_value = row.tuple()
+            if preference_value is None:  # pyright: ignore[reportUnnecessaryComparison]  # We actually can get None from the outer join with no coalesce for default
+                preference_value = UserGamePreferenceValue.D6
+            if preference_value not in game_tier_dict:
+                game_tier_dict[preference_value] = []
+            game_tier_dict[preference_value].append(game)
+
+        game_tier_list = sorted(game_tier_dict.items(), key=lambda item: item[0].value, reverse=True)
+
         return HTMXBlockTemplate(
             template_name="pages/event_session_planner.html.jinja",
             block_name=request.htmx.target,
             context={
                 "event": event,
-                "selected_time_slot_sqid": request.query_params.get("time_slot"),
+                "selected_time_slot": time_slot,
+                "game_tier_list": game_tier_list,
             },
         )

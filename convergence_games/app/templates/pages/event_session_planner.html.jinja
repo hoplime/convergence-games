@@ -13,8 +13,8 @@
                         name="time_slot_selector"
                         class="tab"
                         aria-label="{{ time_slot.name }}"
-                        {{ "checked" if selected_time_slot_sqid == swim(time_slot) }}
-                        hx-get="/event/{{ swim(event) }}/planner?time_slot={{ swim(time_slot) }}"
+                        {{ "checked" if selected_time_slot.id == time_slot.id }}
+                        hx-get="/event/{{ swim(event) }}/planner/{{ swim(time_slot) }}"
                         hx-params="none"
                         hx-target="#game_list"
                         hx-replace-url="true"
@@ -25,7 +25,17 @@
                 {% endfor %}
             </div>
             {% block game_list %}
-                <div id="game_list">{{ selected_time_slot_sqid }}</div>
+                <div id="game_list">
+                    {% for tier, games in game_tier_list %}
+                        <h3 class="text-lg font-semibold">T {{ loop.index }}</h3>
+                        <h3 class="text-lg font-semibold">{{ tier.value }}</h3>
+                        <ul>
+                            {% for game in games %}
+                                <li>{{ game.name }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endfor %}
+                </div>
             {% endblock %}
         </PageContainer>
     {% endblock content %}
