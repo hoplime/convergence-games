@@ -354,7 +354,11 @@ class EventPlayerController(Controller):
                 selectinload(Game.event),
             )
             .join(Session, Session.game_id == Game.id)
-            .where((Session.time_slot_id == time_slot.id) & Session.committed)
+            .where(
+                (Session.time_slot_id == time_slot.id)
+                & Session.committed
+                & (Game.submission_status == SubmissionStatus.APPROVED)
+            )
             .join(
                 ThisUserPreference,
                 and_(ThisUserPreference.game_id == Game.id, ThisUserPreference.user_id == user.id),
