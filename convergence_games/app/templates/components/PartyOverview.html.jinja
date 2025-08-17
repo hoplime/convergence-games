@@ -4,7 +4,7 @@
     leader_id: int | None = None,
     max_party_size: int = 3,
 #}
-<div {{ attrs.render(class="card-body p-0") }} hx-target="this">
+<div {{ attrs.render(class="card-body party-overview p-0") }} hx-target="this">
     {% if party %}
         {% set invite_link = "/party/join/" ~ swim(time_slot) ~ "/" ~ swim_upper(party) %}
         <div class="grid grid-cols-1 gap-x-4 md:grid-cols-[1fr_16rem]">
