@@ -9,6 +9,7 @@
             <div>{{ login.provider }}: {{ login.provider_email }}</div>
         {% endfor %}
     </td>
+    <td>{{ user.over_18 }}</td>
     <td>{{ user.event_statuses[0].d20s if user.event_statuses else 0 }}</td>
     <td>{{ user.event_statuses[0].compensation if user.event_statuses else 0 }}</td>
     <td>
