@@ -335,14 +335,20 @@ class EventPlayerController(Controller):
         ThisUserPreference = aliased(UserGamePreference)
         LeaderUserPreference = aliased(UserGamePreference)
 
-        party_leader_id_stmt = coalesce(
-            select(PLinkAllInParty.user_id)
+        party_leader_id_and_name_stmt = (
+            select(User.id, User.first_name)
+            .join(PLinkAllInParty, User.id == PLinkAllInParty.user_id)
             .join(PLinkThisUser, PLinkAllInParty.party_id == PLinkThisUser.party_id)
             .where(PLinkThisUser.user_id == user.id, PLinkThisUser.party.has(time_slot_id=time_slot.id))
             .where(PLinkAllInParty.is_leader)
-            .limit(1),
-            user.id,
+            .limit(1)
         )
+        party_leader_row = (await transaction.execute(party_leader_id_and_name_stmt)).one_or_none()
+        if party_leader_row is not None:
+            party_leader_id, party_leader_name = party_leader_row.tuple()
+        else:
+            party_leader_id, party_leader_name = user.id, user.first_name
+
         games_and_preferences_this_time_slot_stmt = (
             select(Game, ThisUserPreference.preference, LeaderUserPreference.preference)
             .options(
@@ -366,7 +372,7 @@ class EventPlayerController(Controller):
             )
             .join(
                 LeaderUserPreference,
-                and_(LeaderUserPreference.game_id == Game.id, LeaderUserPreference.user_id == party_leader_id_stmt),
+                and_(LeaderUserPreference.game_id == Game.id, LeaderUserPreference.user_id == party_leader_id),
                 isouter=True,
             )
         )
@@ -394,5 +400,7 @@ class EventPlayerController(Controller):
                 "selected_time_slot": time_slot,
                 "game_tier_list": game_tier_list,
                 "preferences": preferences,
+                "party_leader_id": party_leader_id,
+                "party_leader_name": party_leader_name,
             },
         )
