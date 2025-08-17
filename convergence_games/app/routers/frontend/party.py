@@ -165,6 +165,19 @@ class PartyController(Controller):
     ) -> Template | Redirect:
         time_slot_id = sink(time_slot_sqid)
 
+        # existing_party_user_link = (
+        #     await transaction.execute(
+        #         select(PartyUserLink)
+        #         .options(selectinload(PartyUserLink.party).selectinload(Party.members))
+        #         .where(PartyUserLink.user_id == user.id, PartyUserLink.party.has(time_slot_id=time_slot_id))
+        #     )
+        # ).scalar_one_or_none()
+
+        # if existing_party_user_link is not None:
+        #     raise AlertError(
+        #         [Alert(alert_class="alert-warning", message="You are already in a party for this time slot.")]
+        #     )
+
         try:
             invite_id = sink_upper(invite_sqid)
         except Exception as e:
@@ -190,7 +203,7 @@ class PartyController(Controller):
 
         if not request.htmx:
             # This is from a QRCode - go to the overall planner view
-            return Redirect(f"/event/{swim(party.time_slot.event)}/planner", query_params={"time_slot": time_slot_sqid})
+            return Redirect(f"/event/{swim(party.time_slot.event)}/planner/{time_slot_sqid}")
 
         return Redirect(f"/party/overview/{swim(party.time_slot)}")
 
