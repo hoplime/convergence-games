@@ -29,11 +29,11 @@
                     {% for tier, games in game_tier_list %}
                         <h3 class="text-lg font-semibold">T {{ loop.index }}</h3>
                         <h3 class="text-lg font-semibold">{{ tier.value }}</h3>
-                        <ul>
+                        <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {% for game in games %}
-                                <li>{{ game.name }}</li>
+                                <GameCard :game="game" :preference="preferences.get(game.id)" />
                             {% endfor %}
-                        </ul>
+                        </div>
                     {% endfor %}
                 </div>
             {% endblock %}
