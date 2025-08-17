@@ -12,7 +12,7 @@
                         type="radio"
                         name="time_slot_selector"
                         class="tab"
-                        aria-label="{{ time_slot.name }}"
+                        aria-label="{{ 'Session ' ~ loop.index }}"
                         {{ "checked" if selected_time_slot.id == time_slot.id }}
                         hx-get="/event/{{ swim(event) }}/planner/{{ swim(time_slot) }}"
                         hx-params="none"
@@ -20,7 +20,16 @@
                         hx-replace-url="true"
                     />
                     <div class="tab-content rounded-box border border-base-300 bg-base-200 p-4" hx-disinherit="*">
-                        <div hx-get="/party/overview/{{ swim(time_slot) }}" hx-trigger="intersect once"></div>
+                        <div class="flex flex-col gap-2">
+                            <div>
+                                {{ time_slot.name }} @
+                                <span class="italic"
+                                    ><TimeDisplay :time="time_slot.start_time" /> -
+                                    <TimeDisplay :time="time_slot.end_time"
+                                /></span>
+                            </div>
+                            <div hx-get="/party/overview/{{ swim(time_slot) }}" hx-trigger="intersect once"></div>
+                        </div>
                     </div>
                 {% endfor %}
             </div>

@@ -14,7 +14,7 @@
                         {% if request.user.id == leader_id %}Leading{% else %}In{% endif %} a Party
                     </h2>
 
-                    <div class="flex flex-wrap items-center gap-x-2">
+                    <div class="flex flex-wrap content-end items-center justify-end gap-x-2">
                         <div>
                             <span class="opacity-50">Players: </span>
                             <span class="font-semibold">{{ party.members|length }}/{{ max_party_size }}</span>
