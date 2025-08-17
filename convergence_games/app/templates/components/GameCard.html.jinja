@@ -54,14 +54,20 @@
         </div>
     </a>
     {% if request.user %}
-        <div class="mt-auto flex flex-col items-center gap-2 pb-6">
-            <span class="w-full text-center font-semibold">Preference</span>
-            {% set dice_rating_name = "rating-" ~ swim(game) %}
-            <DiceRating
-                :display_d20="false"
-                :hx_put_url="'/game/' + swim(game) + '/preference'"
-                :starting_value="preference if preference is not none else 6"
-            />
-        </div>
+        {% if request.user.id == game.gamemaster_id %}
+            <div class="mt-auto flex flex-col items-center gap-2 pb-6">
+                <span class="w-full text-center font-semibold">You are GMing this game.</span>
+            </div>
+        {% else %}
+            <div class="mt-auto flex flex-col items-center gap-2 pb-6">
+                <span class="w-full text-center font-semibold">Preference</span>
+                {% set dice_rating_name = "rating-" ~ swim(game) %}
+                <DiceRating
+                    :display_d20="false"
+                    :hx_put_url="'/game/' + swim(game) + '/preference'"
+                    :starting_value="preference if preference is not none else 6"
+                />
+            </div>
+        {% endif %}
     {% endif %}
 </div>
