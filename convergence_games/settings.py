@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     LAST_UPDATED: AwareDatetime | None = None
     USE_CACHE_BUSTED_FILES: bool = False
 
+    # Feature Flags
+    FLAG_PREFERENCES: bool = False
+
     @cached_property
     def RELEASE(self) -> str:  # noqa: N802
         """Get the release version from the last updated date."""

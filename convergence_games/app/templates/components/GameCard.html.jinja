@@ -54,7 +54,7 @@
             {% endif %}
         </div>
     </a>
-    {% if request.user %}
+    {% if SETTINGS.FLAG_PREFERENCES and request.user %}
         <div class="mt-auto flex flex-col items-center gap-2 pb-6">
             {% if request.user.id == game.gamemaster_id %}
                 <span class="w-full text-center font-semibold">You are GMing this game.</span>
