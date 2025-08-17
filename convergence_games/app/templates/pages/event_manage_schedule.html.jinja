@@ -2,172 +2,169 @@
     {% block content %}
         <title>{{ event.name }} Manage Schedule - Convergence 2025</title>
         <PageContainer size="max-w-full">
-            <Component name="event_manage_schedule" :data-event="swim(event)">
-                <div class="group">
-                    <div class="full-screen grid h-screen grid-cols-[auto_max-content] gap-4">
-                        <div class="overflow-y-scroll">
-                            <table class="schedule-table table-pin-rows table h-screen table-fixed px-0">
-                                <thead>
-                                    <tr>
-                                        <th class="w-16 text-center">Table</th>
-                                        {% for time_slot in event.time_slots %}
-                                            <th class="text-center">{{ time_slot.name }}</th>
-                                        {% endfor %}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for room in event.rooms if room.tables %}
-                                        {% set room_facilities = room.facilities | RoomFacility %}
-                                        <tr class="group-not-has-[#show-rooms:checked]:hidden">
-                                            <td
-                                                colspan="{{ event.time_slots|length + 1 }}"
-                                                class="text-center font-semibold"
-                                            >
-                                                {{ room.name }} - {{ room.description }}
-                                                {% for icon in room_facilities.icons %}
-                                                    <span class="{{ icon }}"></span>
-                                                {% endfor %}
-                                            </td>
-                                        </tr>
-                                        {% for table in room.tables %}
-                                            {% set table_facilities = table.facilities | TableFacility %}
-                                            {% set provides = room_facilities.provides + table_facilities.provides + [table.size.provides] %}
-                                            <tr>
-                                                <td class="h-24 p-0 group-has-[#minimal-view:checked]:h-8.5">
-                                                    <Tooltip>
-                                                        <div>
-                                                            <p>{{ table.name }}</p>
-                                                            <p class="text-xs group-has-[#minimal-view:checked]:hidden">
-                                                                <span class="{{ table.size.icon }}"></span>
-                                                                {{ table.size }}
-                                                            </p>
-                                                            <div
-                                                                class="flex flex-row group-has-[#minimal-view:checked]:hidden"
-                                                            >
-                                                                {% for icon in table_facilities.icons %}
-                                                                    <span class="{{ icon }}"></span>
-                                                                {% endfor %}
-                                                            </div>
-                                                        </div>
-                                                        <TooltipContent>
-                                                            <p>
-                                                                {{ room.name }} - {{ room.description }} |
-                                                                {{ table.name }}
-                                                            </p>
-                                                            {% for icon, note in zip(room_facilities.icons, room_facilities.notes) %}
-                                                                <p><span class="{{ icon }}"></span> {{ note }} room</p>
-                                                            {% endfor %}
-                                                            <p>
-                                                                <span class="{{ table.size.icon }}"></span>
-                                                                {{ table.size }}
-                                                            </p>
-                                                            {% for icon, note in zip(table_facilities.icons, table_facilities.notes) %}
-                                                                <p><span class="{{ icon }}"></span> {{ note }}</p>
-                                                            {% endfor %}
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </td>
-                                                {% for time_slot in event.time_slots %}
-                                                    {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ swim(time_slot)]) | join('","')) ~ '"]' %}
-                                                    {# fmt: off #}
-                                                    <td
-                                                        class="schedule-table-slot relative border border-base-content/5 p-0 after:absolute after:bottom-1 after:left-1 after:text-warning after:content-[attr(data-issues-info)] [&>.game-card]:w-full"
-                                                        data-time-slot="{{ swim(time_slot) }}"
-                                                        data-table="{{ swim(table) }}"
-                                                        {{ "data-provides='" ~ provide_string ~ "'" }}
-                                                    >
-                                                        {% if (table.id, time_slot.id) in sessions_by_table_and_time_slot %}
-                                                            {% for session in sessions_by_table_and_time_slot[(table.id, time_slot.id)] %}
-                                                                <ScheduleGameCard :game="session.game" :event="event" />
-                                                            {% endfor %}
-                                                        {% endif %}
-                                                    </td>
-                                                    {# fmt: on #}
-                                                {% endfor %}
-                                            </tr>
-                                        {% endfor %}
+            <Component name="event_manage_schedule" class="group" :data-event="swim(event)">
+                <div class="full-screen grid h-screen grid-cols-[auto_max-content] gap-4">
+                    <div class="overflow-y-scroll">
+                        <table class="schedule-table table-pin-rows table h-screen table-fixed px-0">
+                            <thead>
+                                <tr>
+                                    <th class="w-16 text-center">Table</th>
+                                    {% for time_slot in event.time_slots %}
+                                        <th class="text-center">{{ time_slot.name }}</th>
                                     {% endfor %}
-                                </tbody>
-                                <tfoot>
-                                    {# Display the summary information counts under each time slot #}
-                                    <tr>
-                                        <td class="p-0"><p>Σ</p></td>
-                                        {# One per time slot #}
-                                        {% for time_slot in event.time_slots %}
-                                            <td class="p-0">
-                                                <table
-                                                    data-time-slot="{{ swim(time_slot) }}"
-                                                    class="time-slot-summary table p-0 table-xs"
-                                                >
-                                                    <thead>
-                                                        <tr>
-                                                            <th></th>
-                                                            <th>Min</th>
-                                                            <th>Opt</th>
-                                                            <th>Max</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <th>GMs</th>
-                                                            <td class="summary-gm-count font-light">0</td>
-                                                            <td class="summary-gm-count font-light">0</td>
-                                                            <td class="summary-gm-count font-light">0</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>Players</th>
-                                                            <td class="summary-player-minimum font-light">0</td>
-                                                            <td class="summary-player-optimum font-light">0</td>
-                                                            <td class="summary-player-maximum font-light">0</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>Total</th>
-                                                            <td class="summary-total-minimum">0</td>
-                                                            <td class="summary-total-optimum">0</td>
-                                                            <td class="summary-total-maximum">0</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </td>
-                                        {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for room in event.rooms if room.tables %}
+                                    {% set room_facilities = room.facilities | RoomFacility %}
+                                    <tr class="group-not-has-[#show-rooms:checked]:hidden">
+                                        <td
+                                            colspan="{{ event.time_slots|length + 1 }}"
+                                            class="text-center font-semibold"
+                                        >
+                                            {{ room.name }} - {{ room.description }}
+                                            {% for icon in room_facilities.icons %}
+                                                <span class="{{ icon }}"></span>
+                                            {% endfor %}
+                                        </td>
                                     </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-
-                        <div class="flex h-full max-w-80 flex-col gap-2 overflow-hidden">
-                            <FieldsetBase>
-                                <legend class="fieldset-legend">Display Settings</legend>
-                                <label class="label">
-                                    <input type="checkbox" class="toggle toggle-primary" id="show-rooms" />
-                                    <span class="label-text">Show Rooms</span>
-                                </label>
-                                <label class="label">
-                                    <input type="checkbox" class="toggle toggle-primary" id="minimal-view" />
-                                    <span class="label-text">Minimal View</span>
-                                </label>
-                            </FieldsetBase>
-                            <FieldsetBase>
-                                <legend class="fieldset-legend">Controls</legend>
-                                <button class="save-button btn btn-primary">Save (Admin Draft)</button>
-                                <button class="commit-button btn btn-primary">Commit (Public)</button>
-                                <p
-                                    class="edit-warning empty:hidden"
-                                    hx-get="/event/{{ swim(event) }}/manage-schedule/last-updated-by"
-                                    hx-trigger="load, every 5s [document.visibilityState=='visible']"
-                                    hx-swap="innerHTML"
-                                    hx-include="next [name='last-saved']"
-                                ></p>
-                                <input type="hidden" name="last-saved" value="{{ utcnow() | isoformat }}" />
-                            </FieldsetBase>
-                            <h2 class="text-lg font-semibold">Unscheduled Games</h2>
-                            <div
-                                class="unscheduled-games scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
-                            >
-                                {% for game in unscheduled_games %}
-                                    <ScheduleGameCard :game="game" :event="event" />
+                                    {% for table in room.tables %}
+                                        {% set table_facilities = table.facilities | TableFacility %}
+                                        {% set provides = room_facilities.provides + table_facilities.provides + [table.size.provides] %}
+                                        <tr>
+                                            <td class="h-24 p-0 group-has-[#minimal-view:checked]:h-8.5">
+                                                <Tooltip>
+                                                    <div>
+                                                        <p>{{ table.name }}</p>
+                                                        <p class="text-xs group-has-[#minimal-view:checked]:hidden">
+                                                            <span class="{{ table.size.icon }}"></span>
+                                                            {{ table.size }}
+                                                        </p>
+                                                        <div
+                                                            class="flex flex-row group-has-[#minimal-view:checked]:hidden"
+                                                        >
+                                                            {% for icon in table_facilities.icons %}
+                                                                <span class="{{ icon }}"></span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    <TooltipContent>
+                                                        <p>
+                                                            {{ room.name }} - {{ room.description }} | {{ table.name }}
+                                                        </p>
+                                                        {% for icon, note in zip(room_facilities.icons, room_facilities.notes) %}
+                                                            <p><span class="{{ icon }}"></span> {{ note }} room</p>
+                                                        {% endfor %}
+                                                        <p>
+                                                            <span class="{{ table.size.icon }}"></span>
+                                                            {{ table.size }}
+                                                        </p>
+                                                        {% for icon, note in zip(table_facilities.icons, table_facilities.notes) %}
+                                                            <p><span class="{{ icon }}"></span> {{ note }}</p>
+                                                        {% endfor %}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </td>
+                                            {% for time_slot in event.time_slots %}
+                                                {% set provide_string = '["' ~ ((provides + ["time-slot-" ~ swim(time_slot)]) | join('","')) ~ '"]' %}
+                                                {# fmt: off #}
+                                                <td
+                                                    class="schedule-table-slot relative border border-base-content/5 p-0 after:absolute after:bottom-1 after:left-1 after:text-warning after:content-[attr(data-issues-info)] [&>.game-card]:w-full"
+                                                    data-time-slot="{{ swim(time_slot) }}"
+                                                    data-table="{{ swim(table) }}"
+                                                    {{ "data-provides='" ~ provide_string ~ "'" }}
+                                                >
+                                                    {% if (table.id, time_slot.id) in sessions_by_table_and_time_slot %}
+                                                        {% for session in sessions_by_table_and_time_slot[(table.id, time_slot.id)] %}
+                                                            <ScheduleGameCard :game="session.game" :event="event" />
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                </td>
+                                                {# fmt: on #}
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
                                 {% endfor %}
-                            </div>
+                            </tbody>
+                            <tfoot>
+                                {# Display the summary information counts under each time slot #}
+                                <tr>
+                                    <td class="p-0"><p>Σ</p></td>
+                                    {# One per time slot #}
+                                    {% for time_slot in event.time_slots %}
+                                        <td class="p-0">
+                                            <table
+                                                data-time-slot="{{ swim(time_slot) }}"
+                                                class="time-slot-summary table p-0 table-xs"
+                                            >
+                                                <thead>
+                                                    <tr>
+                                                        <th></th>
+                                                        <th>Min</th>
+                                                        <th>Opt</th>
+                                                        <th>Max</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <th>GMs</th>
+                                                        <td class="summary-gm-count font-light">0</td>
+                                                        <td class="summary-gm-count font-light">0</td>
+                                                        <td class="summary-gm-count font-light">0</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Players</th>
+                                                        <td class="summary-player-minimum font-light">0</td>
+                                                        <td class="summary-player-optimum font-light">0</td>
+                                                        <td class="summary-player-maximum font-light">0</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Total</th>
+                                                        <td class="summary-total-minimum">0</td>
+                                                        <td class="summary-total-optimum">0</td>
+                                                        <td class="summary-total-maximum">0</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="flex h-full max-w-80 flex-col gap-2 overflow-hidden">
+                        <FieldsetBase>
+                            <legend class="fieldset-legend">Display Settings</legend>
+                            <label class="label">
+                                <input type="checkbox" class="toggle toggle-primary" id="show-rooms" />
+                                <span class="label-text">Show Rooms</span>
+                            </label>
+                            <label class="label">
+                                <input type="checkbox" class="toggle toggle-primary" id="minimal-view" />
+                                <span class="label-text">Minimal View</span>
+                            </label>
+                        </FieldsetBase>
+                        <FieldsetBase>
+                            <legend class="fieldset-legend">Controls</legend>
+                            <button class="save-button btn btn-primary">Save (Admin Draft)</button>
+                            <button class="commit-button btn btn-primary">Commit (Public)</button>
+                            <p
+                                class="edit-warning empty:hidden"
+                                hx-get="/event/{{ swim(event) }}/manage-schedule/last-updated-by"
+                                hx-trigger="load, every 5s [document.visibilityState=='visible']"
+                                hx-swap="innerHTML"
+                                hx-include="next [name='last-saved']"
+                            ></p>
+                            <input type="hidden" name="last-saved" value="{{ utcnow() | isoformat }}" />
+                        </FieldsetBase>
+                        <h2 class="text-lg font-semibold">Unscheduled Games</h2>
+                        <div
+                            class="unscheduled-games scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
+                        >
+                            {% for game in unscheduled_games %}
+                                <ScheduleGameCard :game="game" :event="event" />
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
