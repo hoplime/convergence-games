@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import datetime as dt
+import zoneinfo
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,7 +13,7 @@ from litestar.exceptions import HTTPException
 from litestar.params import Parameter
 from litestar.response import Template
 from pydantic import BaseModel, BeforeValidator
-from sqlalchemy import and_, case, exists, select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.sql.base import ExecutableOption
@@ -320,13 +322,16 @@ class EventPlayerController(Controller):
         if time_slot is None:
             # Get the next upcoming time slot, or the last one if there are no upcoming slots
             sorted_event_time_slots = sorted(event.time_slots, key=lambda ts: ts.start_time)
+            # mock_time = datetime(2025, 9, 13, 15, 0, 0, tzinfo=zoneinfo.ZoneInfo(event.timezone))
             time_slot = next(
-                (ts for ts in sorted_event_time_slots if ts.start_time > datetime.now()),
+                (ts for ts in sorted_event_time_slots if ts.start_time > datetime.now(tz=dt.timezone.utc)),
                 sorted_event_time_slots[-1],
             )
 
         PLinkThisUser = aliased(PartyUserLink)
         PLinkAllInParty = aliased(PartyUserLink)
+        ThisUserPreference = aliased(UserGamePreference)
+        LeaderUserPreference = aliased(UserGamePreference)
 
         party_leader_id_stmt = coalesce(
             select(PLinkAllInParty.user_id)
@@ -336,14 +341,26 @@ class EventPlayerController(Controller):
             .limit(1),
             user.id,
         )
-        # game_preference_score = coalesce(, UserGamePreferenceValue.D6.name).alias("game_preference_score")
         games_and_preferences_this_time_slot_stmt = (
-            select(Game, UserGamePreference.preference)
+            select(Game, ThisUserPreference.preference, LeaderUserPreference.preference)
+            .options(
+                selectinload(Game.system),
+                selectinload(Game.gamemaster),
+                selectinload(Game.game_requirement),
+                selectinload(Game.genres),
+                selectinload(Game.content_warnings),
+                selectinload(Game.event),
+            )
             .join(Session, Session.game_id == Game.id)
             .where((Session.time_slot_id == time_slot.id) & Session.committed)
             .join(
-                UserGamePreference,
-                and_(UserGamePreference.game_id == Game.id, UserGamePreference.user_id == party_leader_id_stmt),
+                ThisUserPreference,
+                and_(ThisUserPreference.game_id == Game.id, ThisUserPreference.user_id == user.id),
+                isouter=True,
+            )
+            .join(
+                LeaderUserPreference,
+                and_(LeaderUserPreference.game_id == Game.id, LeaderUserPreference.user_id == party_leader_id_stmt),
                 isouter=True,
             )
         )
@@ -351,13 +368,15 @@ class EventPlayerController(Controller):
         games_and_preferences = (await transaction.execute(games_and_preferences_this_time_slot_stmt)).all()
 
         game_tier_dict: dict[UserGamePreferenceValue, list[Game]] = {}
+        preferences: dict[int, UserGamePreferenceValue] = {}
         for row in games_and_preferences:
-            game, preference_value = row.tuple()
-            if preference_value is None:  # pyright: ignore[reportUnnecessaryComparison]  # We actually can get None from the outer join with no coalesce for default
-                preference_value = UserGamePreferenceValue.D6
-            if preference_value not in game_tier_dict:
-                game_tier_dict[preference_value] = []
-            game_tier_dict[preference_value].append(game)
+            game, user_preference_value, leader_preference_value = row.tuple()
+            if leader_preference_value is None:  # pyright: ignore[reportUnnecessaryComparison]  # We actually can get None from the outer join with no coalesce for default
+                leader_preference_value = UserGamePreferenceValue.D6
+            if leader_preference_value not in game_tier_dict:
+                game_tier_dict[leader_preference_value] = []
+            game_tier_dict[leader_preference_value].append(game)
+            preferences[game.id] = user_preference_value
 
         game_tier_list = sorted(game_tier_dict.items(), key=lambda item: item[0].value, reverse=True)
 
@@ -368,5 +387,6 @@ class EventPlayerController(Controller):
                 "event": event,
                 "selected_time_slot": time_slot,
                 "game_tier_list": game_tier_list,
+                "preferences": preferences,
             },
         )
