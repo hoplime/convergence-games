@@ -321,6 +321,8 @@ class EventPlayerController(Controller):
             )
         if time_slot is None:
             # Get the next upcoming time slot, or the last one if there are no upcoming slots
+            # TODO: Do this based on completed/upcoming status in time slots - logic TODO after allocation is done
+            # TODO: Also lock down changing party based on time slot status - UPCOMING (unlocked), ALLOCATING (locked), COMPLETED (locked)
             sorted_event_time_slots = sorted(event.time_slots, key=lambda ts: ts.start_time)
             # mock_time = datetime(2025, 9, 13, 15, 0, 0, tzinfo=zoneinfo.ZoneInfo(event.timezone))
             time_slot = next(
