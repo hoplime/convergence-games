@@ -18,6 +18,7 @@
                         hx-params="none"
                         hx-target="#game_list"
                         hx-replace-url="true"
+                        hx-trigger="click, htmx:load from:next"
                     />
                     <div class="tab-content rounded-box border border-base-300 bg-base-200 p-4" hx-disinherit="*">
                         <div class="flex flex-col gap-2">
@@ -56,23 +57,32 @@
                 </div>
             </div>
             {% block game_list %}
-                <div id="game_list" class="flex flex-col gap-4">
-                    {% for tier, games in game_tier_list %}
-                        <div class="sticky top-0 z-10 bg-base-100">
-                            <div class="divider divider-vertical">
-                                <div class="flex flex-row gap-4 text-xl font-semibold">
-                                    <div>{% if tier.name == 'D0' %}-{% else %}Tier {{ loop.index }}{% endif %}</div>
-                                    <div class="{{ tier.display_class }}"></div>
+                <div id="game_list">
+                    {% if party_leader_id != request.user.id %}
+                        <div>You are not the party leader - showing {{ party_leader_name }}'s preferences:</div>
+                    {% endif %}
+                    <div class="flex flex-col gap-4">
+                        {% for tier, games in game_tier_list %}
+                            <div class="sticky top-0 z-10 bg-base-100">
+                                <div class="divider divider-vertical">
+                                    <div class="flex flex-col gap-0">
+                                        <div class="flex flex-row gap-4 text-xl font-semibold">
+                                            <div>
+                                                {% if tier.name == 'D0' %}-{% else %}Tier {{ loop.index }}{% endif %}
+                                            </div>
+                                            <div class="{{ tier.display_class }}"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {% for game in games %}
-                                <GameCard :game="game" :preference="preferences.get(game.id)" />
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
+                            <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                {% for game in games %}
+                                    <GameCard :game="game" :preference="preferences.get(game.id)" />
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
             {% endblock %}
         </PageContainer>
