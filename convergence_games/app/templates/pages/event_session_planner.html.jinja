@@ -25,19 +25,25 @@
                 {% endfor %}
             </div>
             <div>
-                <p class="italic">
-                    Below is a preview of the ranked tier list of games running this session, according to your or your
-                    party leader's preferences. Games within each tier are equally weighted.
-                </p>
-                <p class="italic">
-                    The allocation algorithm will try to place you in the highest tier possible, while making sure as
-                    many games run at optimal player counts.
-                </p>
-                <p class="italic">
-                    Try to make sure you accurately represent your preferences with a good selection of games in the
-                    first few tiers - trying to cheat the system with one D12 and all D0s will possibly mean you can't
-                    get into a game at all!
-                </p>
+                <div class="collapse-plus collapse border border-base-300 bg-base-100">
+                    <input type="checkbox" />
+                    <div class="collapse-title font-semibold">Explanation</div>
+                    <div class="collapse-content flex flex-col gap-2">
+                        <p class="italic">
+                            Below is a preview of the ranked tier list of games running this session, according to your
+                            or your party leader's preferences. Games within each tier are equally weighted.
+                        </p>
+                        <p class="italic">
+                            The allocation algorithm will try to place you in the highest tier possible, while making
+                            sure as many games run at optimal player counts.
+                        </p>
+                        <p class="italic">
+                            Try to make sure you accurately represent your preferences with a good selection of games in
+                            the first few tiers - trying to cheat the system with one D12 and all D0s will possibly mean
+                            you can't get into a game at all!
+                        </p>
+                    </div>
+                </div>
             </div>
             {% block game_list %}
                 <div id="game_list" class="flex flex-col gap-4">

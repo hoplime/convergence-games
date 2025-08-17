@@ -25,7 +25,7 @@
                         If your game is accepted you'll be eligible for free tickets to Convergence, and goodie bags, so
                         don't buy a ticket just yet - look out for an email.
                     </p>
-                    <Collapse class="collapse-arrow border">
+                    <Collapse class="collapse-plus border">
                         <input type="checkbox" />
                         <CollapseTitle class="text-lg">What rewards do I get for running sessions?</CollapseTitle>
                         <CollapseContent class="flex flex-col gap-4">
@@ -60,7 +60,7 @@
                         get players excited to come to your table, and give them a clear idea of what they're in for by
                         rating your game highly in their preferences. Please read below for some of our suggestions.
                     </p>
-                    <Collapse class="collapse-arrow border">
+                    <Collapse class="collapse-plus border">
                         <input type="checkbox" />
                         <CollapseTitle class="text-lg">What makes a great game submission?</CollapseTitle>
                         <CollapseContent class="flex flex-col gap-4">
@@ -156,7 +156,7 @@
                             >
                         </CollapseContent>
                     </Collapse>
-                    <p class="border-l-base-content border-l-4 pl-4 italic">
+                    <p class="border-l-4 border-l-base-content pl-4 italic">
                         Have any questions about the game submission process?
                         <a class="link" href="https://discord.gg/4wBtAG2rjt" target="_blank">Join the Discord</a> and
                         ask in
@@ -367,7 +367,7 @@
                             <p>Read more info for an explanation of the complexity scale</p>
                         </TooltipContent>
                     </Tooltip>
-                    <Collapse class="collapse-arrow border">
+                    <Collapse class="collapse-plus border">
                         <input type="checkbox" />
                         <CollapseTitle>More Info</CollapseTitle>
                         <CollapseContent class="flex flex-col gap-4">
@@ -780,7 +780,7 @@
                 {# Submit #}
                 <ErrorHolder name="form" />
                 <button
-                    class="btn btn-primary btn-lg"
+                    class="btn btn-lg btn-primary"
                     {% if editing %}
                         hx-put="/game/{{ swim(game) }}"
                     {% else %}
