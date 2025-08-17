@@ -15,10 +15,9 @@ from sqlalchemy import (
     Index,
     Integer,
     UniqueConstraint,
-    text,
 )
 from sqlalchemy import event as sqla_event
-from sqlalchemy.orm import Mapped, Mapper, declared_attr, defer, mapped_column, relationship, validates
+from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, validates
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (

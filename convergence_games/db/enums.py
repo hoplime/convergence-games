@@ -506,3 +506,23 @@ class UserGamePreferenceValue(enum.IntEnum):
     D10 = 10
     D12 = 12
     D20 = 20
+
+    @property
+    def display_class(self) -> str:
+        common = "w-8 h-8 text-xl relative mask text-gray-800 after:absolute after:top-1/2 after:left-1/2 after:block after:-translate-x-1/2 after:-translate-y-1/2 after:text-center after:align-middle after:leading-none after:font-bold"
+        if self == UserGamePreferenceValue.D0:
+            return f"{common} bg-gray-400 mask-d0 after:content-['0']"
+        if self == UserGamePreferenceValue.D4:
+            return f"{common} bg-blue-400 mask-d4 after:content-['4']"
+        if self == UserGamePreferenceValue.D6:
+            return f"{common} bg-indigo-400 mask-d6 after:content-['6']"
+        if self == UserGamePreferenceValue.D8:
+            return f"{common} bg-violet-400 mask-d8 after:content-['8']"
+        if self == UserGamePreferenceValue.D10:
+            return f"{common} bg-red-400 mask-d10 after:content-['10']"
+        if self == UserGamePreferenceValue.D12:
+            return f"{common} bg-orange-400 mask-d12 after:content-['12']"
+        if self == UserGamePreferenceValue.D20:
+            return f"{common} bg-yellow-400 mask-d20 after:content-['20']"
+
+        return common
