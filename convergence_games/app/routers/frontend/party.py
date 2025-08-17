@@ -148,12 +148,6 @@ class PartyController(Controller):
 
     @get(
         path="/join/{time_slot_sqid:str}/{invite_sqid:str}",
-        dependencies={
-            "party": party_with(
-                selectinload(Party.time_slot).selectinload(TimeSlot.event),
-                selectinload(Party.members),
-            )
-        },
     )
     async def join_party(
         self,
@@ -165,18 +159,25 @@ class PartyController(Controller):
     ) -> Template | Redirect:
         time_slot_id = sink(time_slot_sqid)
 
-        # existing_party_user_link = (
-        #     await transaction.execute(
-        #         select(PartyUserLink)
-        #         .options(selectinload(PartyUserLink.party).selectinload(Party.members))
-        #         .where(PartyUserLink.user_id == user.id, PartyUserLink.party.has(time_slot_id=time_slot_id))
-        #     )
-        # ).scalar_one_or_none()
+        existing_party_user_link = (
+            await transaction.execute(
+                select(PartyUserLink).where(
+                    PartyUserLink.user_id == user.id, PartyUserLink.party.has(time_slot_id=time_slot_id)
+                )
+            )
+        ).scalar_one_or_none()
 
-        # if existing_party_user_link is not None:
-        #     raise AlertError(
-        #         [Alert(alert_class="alert-warning", message="You are already in a party for this time slot.")]
-        #     )
+        if existing_party_user_link is not None:
+            time_slot = (
+                await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot_id))
+            ).scalar_one_or_none()
+            raise AlertError(
+                [Alert(alert_class="alert-warning", message="You are already in a party for this time slot.")],
+                redirect_url=f"/event/{swim('Event', time_slot.event_id)}/planner/{time_slot_sqid}"
+                if time_slot
+                else None,
+                redirect_text="Return to Planner",
+            )
 
         try:
             invite_id = sink_upper(invite_sqid)
@@ -191,12 +192,30 @@ class PartyController(Controller):
             )
         ).scalar_one_or_none()
 
+        # TODO: Tidy these up
         if party is None:
-            raise AlertError([Alert(alert_class="alert-error", message="No party found with that code.")])
+            time_slot = (
+                await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot_id))
+            ).scalar_one_or_none()
+            raise AlertError(
+                [Alert(alert_class="alert-error", message="No party found with that code.")],
+                redirect_url=f"/event/{swim('Event', time_slot.event_id)}/planner/{time_slot_sqid}"
+                if time_slot
+                else None,
+                redirect_text="Return to Planner",
+            )
         if len(party.members) >= party.time_slot.event.max_party_size:
-            raise AlertError([Alert(alert_class="alert-error", message="Party is full.")])
+            raise AlertError(
+                [Alert(alert_class="alert-error", message="Party is full.")],
+                redirect_url=f"/event/{swim(party.time_slot.event)}/planner/{time_slot_sqid}",
+                redirect_text="Return to Planner",
+            )
         if user.id in [member.id for member in party.members]:
-            raise AlertError([Alert(alert_class="alert-warning", message="You are already a member of this party.")])
+            raise AlertError(
+                [Alert(alert_class="alert-warning", message="You are already a member of this party.")],
+                redirect_url=f"/event/{swim(party.time_slot.event)}/planner/{time_slot_sqid}",
+                redirect_text="Return to Planner",
+            )
 
         party_user_link = PartyUserLink(user_id=user.id, party_id=party.id)
         transaction.add(party_user_link)
