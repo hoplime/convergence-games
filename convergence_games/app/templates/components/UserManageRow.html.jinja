@@ -1,5 +1,6 @@
 {#def
     user: User,
+    event: Event,
 #}
 <tr {{ attrs.render() }}>
     <td>{{ user.first_name }}</td>
@@ -10,8 +11,29 @@
         {% endfor %}
     </td>
     <td>{{ user.over_18 }}</td>
-    <td>{{ user.latest_d20_transaction.current_balance if user.latest_d20_transaction else 0 }}</td>
-    <td>{{ user.latest_compensation_transaction.current_balance if user.latest_compensation_transaction else 0 }}</td>
+    <td class="flex flex-row gap-1">
+        {{ user.latest_d20_transaction.current_balance if user.latest_d20_transaction else 0 }}
+        {% set expected_latest_sqid = (', "expected_latest_sqid": "' ~ swim(user.latest_d20_transaction) ~ '"') if user.latest_d20_transaction else "" %}
+        <button
+            class="btn btn-ghost btn-xs"
+            hx-put="/event/{{ swim(event) }}/player/{{ swim(user) }}/d20s"
+            hx-vals='{ "delta": 1 {{ expected_latest_sqid }} }'
+        >
+            +
+        </button>
+        <button
+            class="btn btn-ghost btn-xs"
+            hx-put="/event/{{ swim(event) }}/player/{{ swim(user) }}/d20s"
+            hx-vals='{ "delta": -1 {{ expected_latest_sqid }} }'
+        >
+            -
+        </button>
+    </td>
+    <td>
+        {{ user.latest_compensation_transaction.current_balance if user.latest_compensation_transaction else 0 }}
+        <button class="btn btn-ghost btn-xs">+</button>
+        <button class="btn btn-ghost btn-xs">-</button>
+    </td>
     <td>
         {% if user.event_roles %}
             {% for role in user.event_roles %}
