@@ -17,7 +17,7 @@
                 </thead>
                 <tbody>
                     {% for user in users %}
-                        <UserManageRow :user="user" />
+                        <UserManageRow :user="user" :event="event" />
                     {% endfor %}
                 </tbody>
             </table>

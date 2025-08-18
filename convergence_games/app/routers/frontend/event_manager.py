@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
 
+from convergence_games.app.alerts import Alert, AlertError
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
@@ -49,6 +50,11 @@ class PutEventManageScheduleSession(BaseModel):
 class PutEventManageScheduleForm(BaseModel):
     sessions: list[PutEventManageScheduleSession]
     commit: bool = False
+
+
+class PutEventPlayerD20Form(BaseModel):
+    expected_latest_sqid: SqidInt | None = None
+    delta: int
 
 
 # endregion
@@ -385,7 +391,11 @@ class EventManagerController(Controller):
         },
     )
     async def get_event_manage_players(
-        self, event: Event, request: Request, transaction: AsyncSession, permission: bool
+        self,
+        event: Event,
+        request: Request,
+        transaction: AsyncSession,
+        permission: bool,
     ) -> Template:
         users = (
             (
@@ -418,3 +428,62 @@ class EventManagerController(Controller):
                 "users": users,
             },
         )
+
+    @put(
+        path="/event/{event_sqid:str}/player/{user_sqid:str}/d20s",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def put_player_d20s(
+        self,
+        request: Request,
+        event: Event,
+        user_sqid: Sqid,
+        transaction: AsyncSession,
+        data: Annotated[PutEventPlayerD20Form, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        permission: bool,
+    ) -> Template:
+        user_id = sink(user_sqid)
+        delta = data.delta
+        expected_latest_transaction_id = data.expected_latest_sqid
+
+        player = (
+            (
+                await transaction.execute(
+                    select(User)
+                    .where(User.id == user_id)
+                    .options(
+                        selectinload(User.latest_d20_transaction),
+                        with_loader_criteria(UserEventD20Transaction, UserEventD20Transaction.event_id == event.id),
+                    )
+                )
+            )
+            .scalars()
+            .one()
+        )
+
+        latest_transaction_id = None if player.latest_d20_transaction is None else player.latest_d20_transaction.id
+
+        if expected_latest_transaction_id != latest_transaction_id:
+            raise AlertError([Alert("alert-error", "You are out of sync with the database")])
+
+        latest_current_balance = (
+            0 if player.latest_d20_transaction is None else player.latest_d20_transaction.current_balance
+        )
+
+        new_d20_transaction = UserEventD20Transaction(
+            current_balance=latest_current_balance + delta,
+            previous_balance=latest_current_balance,
+            delta=delta,
+            user_id=player.id,
+            event_id=event.id,
+            previous_transaction_id=latest_transaction_id,
+        )
+        transaction.add(new_d20_transaction)
+
+        print(player)
+
+        return HTMXBlockTemplate(template_str="<div>Nice</div>", block_name=request.htmx.target)
