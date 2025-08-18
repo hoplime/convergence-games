@@ -65,7 +65,7 @@ RUN RELEASE=$(date -d "$LAST_UPDATED" +"%Y.%m.%d+%H.%M.%S") && \
     mv /app/convergence_games/app/static/css/style.css /app/convergence_games/app/static/css/style.$RELEASE.css && \
     mv /app/convergence_games/app/static/js/lib.js /app/convergence_games/app/static/js/lib.$RELEASE.js
 
-CMD ["python", "-m", "uvicorn", "--host=0.0.0.0", "convergence_games.app:app"]
+CMD ["python", "-m", "gunicorn", "convergence_games.app:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
 
 FROM default AS azure
 
@@ -73,6 +73,6 @@ EXPOSE 8000 2222
 RUN echo "root:Docker!" | chpasswd
 
 ENTRYPOINT [ "./entrypoint.sh" ]
-CMD ["python", "-m", "uvicorn", "--host=0.0.0.0", "convergence_games.app:app"]
+CMD ["python", "-m", "gunicorn", "convergence_games.app:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
 
 FROM default
