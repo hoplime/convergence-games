@@ -29,8 +29,9 @@ from convergence_games.db.models import (
     Room,
     Session,
     User,
+    UserEventCompensationTransaction,
+    UserEventD20Transaction,
     UserEventRole,
-    UserEventStatus,
 )
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.permissions import user_has_permission
@@ -391,10 +392,14 @@ class EventManagerController(Controller):
                 await transaction.execute(
                     select(User)
                     .options(
-                        selectinload(User.event_statuses),
+                        selectinload(User.latest_d20_transaction),
+                        selectinload(User.latest_compensation_transaction),
                         selectinload(User.event_roles),
                         selectinload(User.logins),
-                        with_loader_criteria(UserEventStatus, UserEventStatus.event_id == event.id),
+                        with_loader_criteria(
+                            UserEventCompensationTransaction, UserEventCompensationTransaction.event_id == event.id
+                        ),
+                        with_loader_criteria(UserEventD20Transaction, UserEventD20Transaction.event_id == event.id),
                         with_loader_criteria(
                             UserEventRole, (UserEventRole.event_id == event.id) | (UserEventRole.event_id.is_(None))
                         ),
