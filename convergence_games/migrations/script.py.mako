@@ -5,6 +5,7 @@ Revises: ${down_revision | comma,n}
 Create Date: ${create_date}
 
 """
+# pyright: reportUnusedCallResult=false
 
 import warnings
 from typing import TYPE_CHECKING
