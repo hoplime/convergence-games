@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import datetime as dt
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from advanced_alchemy.base import BigIntAuditBase
 from advanced_alchemy.types import DateTimeUTC
 from sqlalchemy import (
+    CheckConstraint,
     Connection,
     Enum,
     ForeignKey,
@@ -15,6 +16,8 @@ from sqlalchemy import (
     Index,
     Integer,
     UniqueConstraint,
+    and_,
+    select,
 )
 from sqlalchemy import event as sqla_event
 from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, validates
@@ -134,12 +137,15 @@ class Event(Base):
     rooms: Mapped[list[Room]] = relationship(back_populates="event", lazy="noload")
     tables: Mapped[list[Table]] = relationship(back_populates="event", lazy="noload")
     sessions: Mapped[list[Session]] = relationship(back_populates="event", lazy="noload", cascade="all, delete-orphan")
-    event_statuses: Mapped[list[UserEventStatus]] = relationship(back_populates="event", lazy="noload")
     time_slots: Mapped[list[TimeSlot]] = relationship(back_populates="event", lazy="noload")
     games: Mapped[list[Game]] = relationship(back_populates="event", lazy="noload")
     user_roles: Mapped[list[UserEventRole]] = relationship(back_populates="event", lazy="noload")
     game_requirements: Mapped[list[GameRequirement]] = relationship(back_populates="event", lazy="noload")
     game_requirement_time_slot_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
+        back_populates="event", lazy="noload"
+    )
+    d20_transactions: Mapped[list[UserEventD20Transaction]] = relationship(back_populates="event", lazy="noload")
+    compensation_transactions: Mapped[list[UserEventCompensationTransaction]] = relationship(
         back_populates="event", lazy="noload"
     )
 
@@ -406,6 +412,16 @@ class TimeSlot(Base):
     parties: Mapped[list[Party]] = relationship(
         back_populates="time_slot", foreign_keys="Party.time_slot_id", lazy="noload"
     )
+    d20_transactions: Mapped[list[UserEventD20Transaction]] = relationship(
+        back_populates="associated_time_slot",
+        foreign_keys="UserEventD20Transaction.associated_time_slot_id",
+        lazy="noload",
+    )
+    compensation_transactions: Mapped[list[UserEventCompensationTransaction]] = relationship(
+        back_populates="associated_time_slot",
+        foreign_keys="UserEventCompensationTransaction.associated_time_slot_id",
+        lazy="noload",
+    )
 
     # Association Proxy Relationships
     game_requirement_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
@@ -546,6 +562,118 @@ class PartyUserLink(Base):
 
 
 # User Information Models
+
+
+class UserEventD20Transaction(Base):
+    current_balance: Mapped[int] = mapped_column(default=0)
+    previous_balance: Mapped[int] = mapped_column(default=0)
+    delta: Mapped[int] = mapped_column(default=0)
+
+    # Foreign Keys
+    event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    previous_transaction_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user_event_d20_transaction.id"), index=True, nullable=True
+    )
+    associated_time_slot_id: Mapped[int | None] = mapped_column(ForeignKey("time_slot.id"), index=True, nullable=True)
+
+    # Relationships
+    event: Mapped[Event] = relationship(back_populates="d20_transactions", lazy="noload")
+    user: Mapped[User] = relationship(
+        back_populates="d20_transactions", primaryjoin="User.id == UserEventD20Transaction.user_id", lazy="noload"
+    )
+    previous_transaction: Mapped[UserEventD20Transaction | None] = relationship(
+        foreign_keys=[event_id, user_id, previous_transaction_id],
+        remote_side="UserEventD20Transaction.event_id, UserEventD20Transaction.user_id, UserEventD20Transaction.id",
+        back_populates="next_transaction",
+        lazy="noload",
+        viewonly=True,
+    )
+    next_transaction: Mapped[UserEventD20Transaction | None] = relationship(
+        foreign_keys="UserEventD20Transaction.event_id, UserEventD20Transaction.user_id, UserEventD20Transaction.id",
+        remote_side=[event_id, user_id, previous_transaction_id],
+        back_populates="previous_transaction",
+        lazy="noload",
+        viewonly=True,
+    )
+    associated_time_slot: Mapped[TimeSlot | None] = relationship(back_populates="d20_transactions", lazy="noload")
+
+    __table_args__ = (
+        UniqueConstraint("previous_transaction_id"),
+        # We need to make sure that all transactions in a chain point to the same event and user
+        UniqueConstraint("event_id", "user_id", "id", name="uq_d20_transaction_event_user_id"),
+        UniqueConstraint(
+            "event_id", "user_id", "previous_transaction_id", name="uq_d20_transaction_event_user_previous"
+        ),
+        ForeignKeyConstraint(
+            columns=["event_id", "user_id", "previous_transaction_id"],
+            refcolumns=[
+                "user_event_d20_transaction.event_id",
+                "user_event_d20_transaction.user_id",
+                "user_event_d20_transaction.id",
+            ],
+            name="fk_d20_transaction_previous_transaction",
+        ),
+    )
+
+
+class UserEventCompensationTransaction(Base):
+    current_balance: Mapped[int] = mapped_column(default=0)
+    previous_balance: Mapped[int] = mapped_column(default=0)
+    delta: Mapped[int] = mapped_column(default=0)
+
+    # Foreign Keys
+    event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    previous_transaction_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user_event_compensation_transaction.id"), index=True, nullable=True
+    )
+    associated_time_slot_id: Mapped[int | None] = mapped_column(ForeignKey("time_slot.id"), index=True, nullable=True)
+
+    # Relationships
+    event: Mapped[Event] = relationship(back_populates="compensation_transactions", lazy="noload")
+    user: Mapped[User] = relationship(
+        back_populates="compensation_transactions",
+        primaryjoin="User.id == UserEventCompensationTransaction.user_id",
+        lazy="noload",
+    )
+    previous_transaction: Mapped[UserEventCompensationTransaction | None] = relationship(
+        foreign_keys=[event_id, user_id, previous_transaction_id],
+        remote_side="UserEventCompensationTransaction.event_id, UserEventCompensationTransaction.user_id, UserEventCompensationTransaction.id",
+        back_populates="next_transaction",
+        lazy="noload",
+        viewonly=True,
+    )
+    next_transaction: Mapped[UserEventCompensationTransaction | None] = relationship(
+        foreign_keys="UserEventCompensationTransaction.event_id, UserEventCompensationTransaction.user_id, UserEventCompensationTransaction.id",
+        remote_side=[event_id, user_id, previous_transaction_id],
+        back_populates="previous_transaction",
+        lazy="noload",
+        viewonly=True,
+    )
+    associated_time_slot: Mapped[TimeSlot | None] = relationship(
+        back_populates="compensation_transactions", lazy="noload", viewonly=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint("previous_transaction_id"),
+        # We need to make sure that all transactions in a chain point to the same event and user
+        UniqueConstraint("event_id", "user_id", "id", name="uq_compensation_transaction_event_user_id"),
+        UniqueConstraint(
+            "event_id", "user_id", "previous_transaction_id", name="uq_compensation_transaction_event_user_previous"
+        ),
+        ForeignKeyConstraint(
+            columns=["event_id", "user_id", "previous_transaction_id"],
+            refcolumns=[
+                "user_event_compensation_transaction.event_id",
+                "user_event_compensation_transaction.user_id",
+                "user_event_compensation_transaction.id",
+            ],
+            name="fk_compensation_transaction_previous_transaction",
+        ),
+    )
+
+
 class User(Base):
     first_name: Mapped[str] = mapped_column(index=True, default="")
     last_name: Mapped[str] = mapped_column(index=True, default="")
@@ -555,9 +683,6 @@ class User(Base):
     # Relationships
     games: Mapped[list[Game]] = relationship(
         back_populates="gamemaster", primaryjoin="User.id == Game.gamemaster_id", lazy="noload"
-    )
-    event_statuses: Mapped[list[UserEventStatus]] = relationship(
-        back_populates="user", primaryjoin="User.id == UserEventStatus.user_id", lazy="noload"
     )
     logins: Mapped[list[UserLogin]] = relationship(
         back_populates="user", primaryjoin="User.id == UserLogin.user_id", lazy="noload"
@@ -576,6 +701,63 @@ class User(Base):
         viewonly=True,
         lazy="noload",
     )
+    d20_transactions: Mapped[list[UserEventD20Transaction]] = relationship(
+        back_populates="user", primaryjoin="User.id == UserEventD20Transaction.user_id", lazy="noload"
+    )
+    compensation_transactions: Mapped[list[UserEventCompensationTransaction]] = relationship(
+        back_populates="user", primaryjoin="User.id == UserEventCompensationTransaction.user_id", lazy="noload"
+    )
+
+    @declared_attr.directive
+    @classmethod
+    def __mapper_args__(cls):
+        # https://stackoverflow.com/a/73517812
+        latest_d20_transaction = relationship(
+            UserEventD20Transaction,
+            primaryjoin=and_(
+                UserEventD20Transaction.id
+                == (
+                    select(UserEventD20Transaction.id)
+                    .where(UserEventD20Transaction.user_id == cls.id)
+                    .order_by(UserEventD20Transaction.id.desc())
+                    .limit(1)
+                    .correlate(cls.__table__)
+                    .scalar_subquery()
+                ),
+                UserEventD20Transaction.user_id == cls.id,
+            ),
+            uselist=False,
+            viewonly=True,
+        )
+
+        latest_compensation_transaction = relationship(
+            UserEventCompensationTransaction,
+            primaryjoin=and_(
+                UserEventCompensationTransaction.id
+                == (
+                    select(UserEventCompensationTransaction.id)
+                    .where(UserEventCompensationTransaction.user_id == cls.id)
+                    .order_by(UserEventCompensationTransaction.id.desc())
+                    .limit(1)
+                    .correlate(cls.__table__)
+                    .scalar_subquery()
+                ),
+                UserEventCompensationTransaction.user_id == cls.id,
+            ),
+            uselist=False,
+            viewonly=True,
+        )
+
+        return {
+            "properties": {
+                "latest_d20_transaction": latest_d20_transaction,
+                "latest_compensation_transaction": latest_compensation_transaction,
+            }
+        }
+
+    if TYPE_CHECKING:
+        latest_d20_transaction: Mapped[UserEventD20Transaction | None] = relationship()
+        latest_compensation_transaction: Mapped[UserEventCompensationTransaction | None] = relationship()
 
     # Association Proxy Relationships
     party_user_links: Mapped[list[PartyUserLink]] = relationship(
@@ -596,21 +778,6 @@ class User(Base):
         if self.last_name:
             initials += self.last_name[0].upper()
         return initials
-
-
-class UserEventStatus(Base):
-    golden_d20s: Mapped[int] = mapped_column(default=0)
-    compensation: Mapped[int] = mapped_column(default=0)
-
-    # Foreign Keys
-    event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
-
-    # Relationships
-    event: Mapped[Event] = relationship(back_populates="event_statuses", lazy="noload")
-    user: Mapped[User] = relationship(back_populates="event_statuses", foreign_keys=user_id, lazy="noload")
-
-    __table_args__ = (UniqueConstraint("event_id", "user_id"),)
 
 
 class UserEventRole(Base):
