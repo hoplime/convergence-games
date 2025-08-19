@@ -19,6 +19,7 @@ from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.alerts import Alert, AlertError
+from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
@@ -34,7 +35,7 @@ from convergence_games.db.models import (
     UserEventD20Transaction,
     UserEventRole,
 )
-from convergence_games.db.ocean import Sqid, sink
+from convergence_games.db.ocean import Sqid, sink, swim
 from convergence_games.permissions import user_has_permission
 
 # region Data Schema
@@ -52,7 +53,7 @@ class PutEventManageScheduleForm(BaseModel):
     commit: bool = False
 
 
-class PutEventPlayerD20Form(BaseModel):
+class PutEventPlayerTransactionForm(BaseModel):
     expected_latest_sqid: SqidInt | None = None
     delta: int
 
@@ -139,6 +140,71 @@ def user_can_manage_submissions(user: User, event: Event) -> bool:
 
 
 # endregion
+
+
+async def add_transaction_with_delta(
+    table_type: type[UserEventD20Transaction] | type[UserEventCompensationTransaction],
+    request: Request,
+    event: Event,
+    event_sqid: Sqid,
+    user_sqid: Sqid,
+    transaction: AsyncSession,
+    data: Annotated[PutEventPlayerTransactionForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> HTMXBlockTemplate:
+    user_id = sink(user_sqid)
+    delta = data.delta
+    expected_latest_transaction_id = data.expected_latest_sqid
+
+    player = (
+        (
+            await transaction.execute(
+                select(User)
+                .where(User.id == user_id)
+                .options(
+                    selectinload(
+                        User.latest_d20_transaction
+                        if table_type is UserEventD20Transaction
+                        else User.latest_compensation_transaction
+                    ),
+                    with_loader_criteria(table_type, where_criteria=table_type.event_id == event.id),
+                )
+            )
+        )
+        .scalars()
+        .one()
+    )
+    latest_transaction = (
+        player.latest_d20_transaction
+        if table_type is UserEventD20Transaction
+        else player.latest_compensation_transaction
+    )
+
+    latest_transaction_id = None if latest_transaction is None else latest_transaction.id
+
+    if expected_latest_transaction_id != latest_transaction_id:
+        raise AlertError([Alert("alert-error", "You are out of sync with the database")])
+
+    latest_current_balance = 0 if latest_transaction is None else latest_transaction.current_balance
+
+    new_transaction_row = table_type(
+        current_balance=latest_current_balance + delta,
+        previous_balance=latest_current_balance,
+        delta=delta,
+        user_id=player.id,
+        event_id=event.id,
+        previous_transaction_id=latest_transaction_id,
+    )
+    transaction.add(new_transaction_row)
+    await transaction.flush()
+    await transaction.refresh(new_transaction_row)
+
+    template_str = catalog.render(
+        "UserManageDelta",
+        current_value=new_transaction_row.current_balance,
+        expected_latest_sqid=swim(new_transaction_row),
+        endpoint=f"/event/{event_sqid}/player/{user_sqid}/{'d20s' if table_type is UserEventD20Transaction else 'compensation'}",
+    )
+    return HTMXBlockTemplate(template_str=template_str, block_name=request.htmx.target)
 
 
 class EventManagerController(Controller):
@@ -441,49 +507,46 @@ class EventManagerController(Controller):
         self,
         request: Request,
         event: Event,
+        event_sqid: Sqid,
         user_sqid: Sqid,
         transaction: AsyncSession,
-        data: Annotated[PutEventPlayerD20Form, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        data: Annotated[PutEventPlayerTransactionForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
         permission: bool,
     ) -> Template:
-        user_id = sink(user_sqid)
-        delta = data.delta
-        expected_latest_transaction_id = data.expected_latest_sqid
-
-        player = (
-            (
-                await transaction.execute(
-                    select(User)
-                    .where(User.id == user_id)
-                    .options(
-                        selectinload(User.latest_d20_transaction),
-                        with_loader_criteria(UserEventD20Transaction, UserEventD20Transaction.event_id == event.id),
-                    )
-                )
-            )
-            .scalars()
-            .one()
+        return await add_transaction_with_delta(
+            table_type=UserEventD20Transaction,
+            request=request,
+            event=event,
+            event_sqid=event_sqid,
+            user_sqid=user_sqid,
+            transaction=transaction,
+            data=data,
         )
 
-        latest_transaction_id = None if player.latest_d20_transaction is None else player.latest_d20_transaction.id
-
-        if expected_latest_transaction_id != latest_transaction_id:
-            raise AlertError([Alert("alert-error", "You are out of sync with the database")])
-
-        latest_current_balance = (
-            0 if player.latest_d20_transaction is None else player.latest_d20_transaction.current_balance
+    @put(
+        path="/event/{event_sqid:str}/player/{user_sqid:str}/compensation",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def put_player_compensation(
+        self,
+        request: Request,
+        event: Event,
+        event_sqid: Sqid,
+        user_sqid: Sqid,
+        transaction: AsyncSession,
+        data: Annotated[PutEventPlayerTransactionForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        permission: bool,
+    ) -> Template:
+        return await add_transaction_with_delta(
+            table_type=UserEventCompensationTransaction,
+            request=request,
+            event=event,
+            event_sqid=event_sqid,
+            user_sqid=user_sqid,
+            transaction=transaction,
+            data=data,
         )
-
-        new_d20_transaction = UserEventD20Transaction(
-            current_balance=latest_current_balance + delta,
-            previous_balance=latest_current_balance,
-            delta=delta,
-            user_id=player.id,
-            event_id=event.id,
-            previous_transaction_id=latest_transaction_id,
-        )
-        transaction.add(new_d20_transaction)
-
-        print(player)
-
-        return HTMXBlockTemplate(template_str="<div>Nice</div>", block_name=request.htmx.target)

@@ -1,4 +1,3 @@
-from litestar import Response
 from litestar.datastructures import Cookie
 from litestar.response import Redirect
 

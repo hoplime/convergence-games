@@ -1,0 +1,25 @@
+{#def
+    current_value: int,
+    expected_latest_sqid: str | None,
+    endpoint: str,
+#}
+<td {{ attrs.render() }} hx-target="this" hx-swap="outerHTML">
+    {% set expected_sqid_string = (', "expected_latest_sqid": "' ~ expected_latest_sqid ~ '"') if expected_latest_sqid is not none else '' %}
+    <div class="flex flex-row gap-1">
+        {{ current_value }}
+        <button
+            class="btn btn-ghost btn-xs"
+            hx-put="{{ endpoint }}"
+            hx-vals='{ "delta":  1{{ expected_sqid_string }} }'
+        >
+            +
+        </button>
+        <button
+            class="btn btn-ghost btn-xs"
+            hx-put="{{ endpoint }}"
+            hx-vals='{ "delta": -1{{ expected_sqid_string }} }'
+        >
+            -
+        </button>
+    </div>
+</td>
