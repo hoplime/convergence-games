@@ -129,11 +129,10 @@
                     <div class="card-body">
                         <div class="flex flex-col items-center gap-2 text-base">
                             <span class="w-full text-center font-semibold">Preference</span>
-                            {% set dice_rating_name = "rating-" ~ swim(game) %}
                             <DiceRating
                                 :display_d20="false"
                                 :hx_put_url="'/game/' + swim(game) + '/preference'"
-                                :starting_value="preference if preference is not none else 6"
+                                :starting_value="preference"
                             />
                         </div>
                     </div>

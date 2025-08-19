@@ -2,11 +2,11 @@
     name: str = "rating",
     display_d20: bool = False,
     hx_put_url: str = "",
-    starting_value: int = 6
+    starting_value: int | None = None,
 #}
 {% set common = "relative mask text-gray-800 after:absolute after:top-1/2 after:left-1/2 after:block after:-translate-x-1/2 after:-translate-y-1/2 after:text-center after:align-middle after:leading-none after:font-bold" %}
 <!-- prettier-ignore-start -->
-<div class="rounded-selector bg-linear-to-r p-[2px] to-base-100
+<div {{ attrs.render(class="rounded-selector bg-linear-to-r p-[2px] to-base-100
     has-[input[value='0']:checked]:from-gray-400 has-[input[value='0']:checked]:via-gray-400
     has-[input[value='4']:checked]:from-blue-400 has-[input[value='4']:checked]:via-blue-400
     has-[input[value='6']:checked]:from-indigo-400 has-[input[value='6']:checked]:via-indigo-400
@@ -23,11 +23,11 @@
     has-[input[value='20']:checked]:via-100% has-[input[value='20']:checked]:to-100%
     duration-200 ease-in-out
     transition-[--tw-gradient-via-position,--tw-gradient-to-position,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to]
-    has-[input[value='20']]:[--break-divisor:7] [--break-divisor:6]
-    "
+    has-[input[value='20']]:[--break-divisor:7] [--break-divisor:6] relative
+    ")}}
     >
     <form
-        class="rating-xl rating gap-1 rounded-[calc(var(--radius-selector)-2px)] bg-base-100 text-xl"
+        class="rating-xl rating gap-1 rounded-[calc(var(--radius-selector)-2px)] bg-base-100 text-lg peer"
         hx-swap="none"
         hx-put="{{ hx_put_url }}"
         hx-trigger="change"
@@ -91,5 +91,6 @@
             />
         {% endif %}
     </form>
+    <div class="hidden not-peer-has-checked:flex flex-row justify-center gap-[1px] items-center w-full text-center absolute text-xs opacity-50">(Unset =<span class="{{ common }} w-5 h-5 after:content-['6'] mask-d6 bg-indigo-400"></span>)</div>
 </div>
 <!-- prettier-ignore-end -->
