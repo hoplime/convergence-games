@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from litestar import Controller, get, post
+from litestar import Controller, get, post, put
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
 from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.alerts import Alert, AlertError
@@ -15,7 +15,7 @@ from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import TimeSlotStatus
-from convergence_games.db.models import Event, Party, PartyUserLink, TimeSlot, User
+from convergence_games.db.models import Event, Party, PartyUserLink, TimeSlot, User, UserCheckinStatus
 from convergence_games.db.ocean import Sqid, sink, sink_upper, swim
 
 
@@ -79,10 +79,18 @@ class PartyController(Controller):
                 .options(
                     selectinload(Party.time_slot),
                     selectinload(Party.party_user_links),
-                    selectinload(Party.members),
+                    selectinload(Party.members).selectinload(User.checkin_statuses),
+                    with_loader_criteria(UserCheckinStatus, UserCheckinStatus.time_slot_id == time_slot.id),
                 )
             )
         ).scalar_one_or_none()
+        checked_in = (
+            await transaction.execute(
+                select(UserCheckinStatus.checked_in)
+                .where(UserCheckinStatus.user_id == user.id)
+                .where(UserCheckinStatus.time_slot_id == time_slot.id)
+            )
+        ).scalar_one_or_none() or False
         if party is None:
             leader_id = None
         else:
@@ -98,6 +106,7 @@ class PartyController(Controller):
                 leader_id=leader_id,
                 request=request,
                 max_party_size=max_party_size,
+                checked_in=checked_in,
             )
         )
 
@@ -410,5 +419,69 @@ class PartyController(Controller):
             raise AlertError([Alert(alert_class="alert-error", message="Member not found in this party.")])
 
         await transaction.delete(other_party_user_link)
+
+        return Redirect(f"/party/overview/{swim(time_slot)}")
+
+    @post(
+        path="/checkin/{time_slot_sqid:str}",
+        dependencies={
+            "time_slot": time_slot_with(),
+        },
+    )
+    async def check_in(
+        self,
+        transaction: AsyncSession,
+        user: User,
+        time_slot: TimeSlot | None,
+    ) -> Template | Redirect:
+        if time_slot is None:
+            raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
+
+        existing_checkin = (
+            await transaction.execute(
+                select(UserCheckinStatus).where(
+                    UserCheckinStatus.user_id == user.id, UserCheckinStatus.time_slot_id == time_slot.id
+                )
+            )
+        ).scalar_one_or_none()
+
+        if existing_checkin:
+            existing_checkin.checked_in = True
+            transaction.add(existing_checkin)
+        else:
+            new_checkin = UserCheckinStatus(user_id=user.id, time_slot_id=time_slot.id, checked_in=True)
+            transaction.add(new_checkin)
+
+        return Redirect(f"/party/overview/{swim(time_slot)}")
+
+    @post(
+        path="/checkout/{time_slot_sqid:str}",
+        dependencies={
+            "time_slot": time_slot_with(),
+        },
+    )
+    async def check_out(
+        self,
+        transaction: AsyncSession,
+        user: User,
+        time_slot: TimeSlot | None,
+    ) -> Template | Redirect:
+        if time_slot is None:
+            raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
+
+        existing_checkin = (
+            await transaction.execute(
+                select(UserCheckinStatus).where(
+                    UserCheckinStatus.user_id == user.id, UserCheckinStatus.time_slot_id == time_slot.id
+                )
+            )
+        ).scalar_one_or_none()
+
+        if existing_checkin:
+            existing_checkin.checked_in = False
+            transaction.add(existing_checkin)
+        else:
+            new_checkin = UserCheckinStatus(user_id=user.id, time_slot_id=time_slot.id, checked_in=False)
+            transaction.add(new_checkin)
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
