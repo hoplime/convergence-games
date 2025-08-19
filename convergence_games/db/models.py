@@ -20,7 +20,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy import event as sqla_event
-from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, validates
+from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, session, validates
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
@@ -422,6 +422,7 @@ class TimeSlot(Base):
         foreign_keys="UserEventCompensationTransaction.associated_time_slot_id",
         lazy="noload",
     )
+    checkin_statuses: Mapped[list[UserCheckinStatus]] = relationship(back_populates="time_slot", lazy="noload")
 
     # Association Proxy Relationships
     game_requirement_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
@@ -707,6 +708,9 @@ class User(Base):
     compensation_transactions: Mapped[list[UserEventCompensationTransaction]] = relationship(
         back_populates="user", primaryjoin="User.id == UserEventCompensationTransaction.user_id", lazy="noload"
     )
+    checkin_statuses: Mapped[list[UserCheckinStatus]] = relationship(
+        back_populates="user", primaryjoin="User.id == UserCheckinStatus.user_id", lazy="noload"
+    )
 
     @declared_attr.directive
     @classmethod
@@ -812,6 +816,24 @@ class UserGamePreference(Base):
     )
 
     __table_args__ = (UniqueConstraint("game_id", "user_id"),)
+
+
+class UserCheckinStatus(Base):
+    checked_in: Mapped[bool] = mapped_column(default=False)
+
+    # Foreign Keys
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
+    time_slot_id: Mapped[int] = mapped_column(ForeignKey("time_slot.id"), primary_key=True)
+
+    # Relationships
+    user: Mapped[User] = relationship(
+        back_populates="checkin_statuses", primaryjoin="User.id == UserCheckinStatus.user_id", lazy="noload"
+    )
+    time_slot: Mapped[TimeSlot] = relationship(
+        back_populates="checkin_statuses", foreign_keys=time_slot_id, lazy="noload"
+    )
+
+    __table_args__ = (UniqueConstraint("user_id", "time_slot_id"),)
 
 
 class UserLogin(Base):
