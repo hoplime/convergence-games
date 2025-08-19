@@ -25,6 +25,11 @@
                         </div>
                     </div>
                 </div>
+                {% if time_slot.status == 'Allocating' %}
+                    <span>Allocating - party changes are locked</span>
+                {% elif time_slot.status == 'Allocated' %}
+                    <span>Allocated - party changes are locked</span>
+                {% endif %}
                 <div class="flex h-full flex-col gap-2">
                     {% for member in party.members|sort(attribute="full_name") %}
                         <div class="flex items-center gap-2">
@@ -35,7 +40,7 @@
                                         <span class="icon-[material-symbols--crown]"></span>
                                     {% endif %}
                                 </span>
-                                {% if request.user.id == leader_id and request.user.id != member.id %}
+                                {% if time_slot.status == 'Pre-Allocation' and request.user.id == leader_id and request.user.id != member.id %}
                                     <button
                                         class="btn ml-auto btn-sm btn-primary"
                                         hx-post="/party/promote/{{ swim(time_slot) }}/{{ swim(member) }}"
@@ -55,63 +60,73 @@
                         </div>
                     {% endfor %}
                 </div>
-                <button
-                    class="btn mt-auto btn-sm btn-error"
-                    hx-post="/party/leave/{{ swim(time_slot) }}"
-                    hx-confirm="Are you sure you wish to {{ 'disband' if request.user.id == leader_id else 'leave' }} the party?"
-                >
-                    {{ "Disband" if request.user.id == leader_id else "Leave" }} Party
-                </button>
+                {% if time_slot.status == 'Pre-Allocation' %}
+                    <button
+                        class="btn mt-auto btn-sm btn-error"
+                        hx-post="/party/leave/{{ swim(time_slot) }}"
+                        hx-confirm="Are you sure you wish to {{ 'disband' if request.user.id == leader_id else 'leave' }} the party?"
+                    >
+                        {{ "Disband" if request.user.id == leader_id else "Leave" }} Party
+                    </button>
+                {% endif %}
             </div>
-            <div class="collapse-plus collapse px-0 md:collapse-open md:p-0!">
-                <input type="checkbox" class="peer px-0 md:hidden" />
-                <div class="collapse-title inline px-0 font-semibold peer-checked:hidden md:hidden">
-                    Show QR <span class="icon-[bx--qr]"></span>
+            {% if time_slot.status == 'Pre-Allocation' %}
+                <div class="collapse-plus collapse px-0 md:collapse-open md:p-0!">
+                    <input type="checkbox" class="peer px-0 md:hidden" />
+                    <div class="collapse-title inline px-0 font-semibold peer-checked:hidden md:hidden">
+                        Show QR <span class="icon-[bx--qr]"></span>
+                    </div>
+                    <div class="collapse-title hidden px-0 font-semibold peer-checked:inline md:hidden">
+                        Hide QR <span class="icon-[bx--qr]"></span>
+                    </div>
+                    <div class="collapse-content flex flex-col items-center md:p-0!">
+                        <QRCode :relative_url="invite_link" class="w-full rounded-box" :scale="10" />
+                    </div>
                 </div>
-                <div class="collapse-title hidden px-0 font-semibold peer-checked:inline md:hidden">
-                    Hide QR <span class="icon-[bx--qr]"></span>
-                </div>
-                <div class="collapse-content flex flex-col items-center md:p-0!">
-                    <QRCode :relative_url="invite_link" class="w-full rounded-box" :scale="10" />
-                </div>
-            </div>
+            {% endif %}
         </div>
     {% else %}
         <h2 class="card-title">Adventuring Solo</h2>
-        <p>You are not currently in a party.</p>
-        <p>Join a party to group up together!</p>
-        <div class="card-actions justify-start">
-            <button class="btn btn-primary" hx-post="/party/host/{{ swim(time_slot) }}">Lead a New Party</button>
-            <button class="btn btn-secondary" _="on click join_modal_{{ swim(time_slot) }}.showModal()">
-                Join a Party
-            </button>
+        {% if time_slot.status == 'Allocating' %}
+            <span>Allocating - party changes are locked</span>
+        {% elif time_slot.status == 'Allocated' %}
+            <span>Allocated - party changes are locked</span>
+        {% else %}
+            <p>You are not currently in a party.</p>
+            <p>Join a party to group up together!</p>
+            <div class="card-actions justify-start">
+                <button class="btn btn-primary" hx-post="/party/host/{{ swim(time_slot) }}">Lead a New Party</button>
+                <button class="btn btn-secondary" _="on click join_modal_{{ swim(time_slot) }}.showModal()">
+                    Join a Party
+                </button>
 
-            <dialog id="join_modal_{{ swim(time_slot) }}" class="modal">
-                <div class="modal-box">
-                    <form method="dialog">
-                        <button class="btn absolute top-2 right-2 btn-circle btn-ghost btn-sm">✕</button>
-                    </form>
-                    <h3 class="text-lg font-bold">Join a Party</h3>
-                    <p>Enter the invite code to join a party.</p>
-                    <form
-                        class="modal-action justify-start"
-                        hx-get="/party/join/{{ swim(time_slot) }}/{invite_sqid}"
-                        hx-ext="path-params"
-                        hx-vals='{"alert-retarget": "#join_modal_{{ swim(time_slot) }}"}'
-                    >
-                        <input
-                            type="text"
-                            pattern="[A-Z]*"
-                            class="input-bordered input w-full max-w-xs"
-                            name="invite_sqid"
-                            placeholder="CODE"
-                            autocapitalize="characters"
-                            onkeyup="this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '')"
-                        />
-                        <button class="btn" type="submit">Join</button>
-                    </form>
-                </div>
-            </dialog>
-        </div>
+                <dialog id="join_modal_{{ swim(time_slot) }}" class="modal">
+                    <div class="modal-box">
+                        <form method="dialog">
+                            <button class="btn absolute top-2 right-2 btn-circle btn-ghost btn-sm">✕</button>
+                        </form>
+                        <h3 class="text-lg font-bold">Join a Party</h3>
+                        <p>Enter the invite code to join a party.</p>
+                        <form
+                            class="modal-action justify-start"
+                            hx-get="/party/join/{{ swim(time_slot) }}/{invite_sqid}"
+                            hx-ext="path-params"
+                            hx-vals='{"alert-retarget": "#join_modal_{{ swim(time_slot) }}"}'
+                        >
+                            <input
+                                type="text"
+                                pattern="[A-Z]*"
+                                class="input-bordered input w-full max-w-xs"
+                                name="invite_sqid"
+                                placeholder="CODE"
+                                autocapitalize="characters"
+                                onkeyup="this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '')"
+                            />
+                            <button class="btn" type="submit">Join</button>
+                        </form>
+                    </div>
+                </dialog>
+            </div>
+        {% endif %}
     {% endif %}
 </div>
