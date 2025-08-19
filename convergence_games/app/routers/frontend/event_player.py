@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import zoneinfo
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -13,11 +12,10 @@ from litestar.exceptions import HTTPException
 from litestar.params import Parameter
 from litestar.response import Template
 from pydantic import BaseModel, BeforeValidator
-from sqlalchemy import and_, select
+from sqlalchemy import and_, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlalchemy.sql.functions import coalesce
 
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
@@ -37,7 +35,6 @@ from convergence_games.db.models import (
     GameContentWarningLink,
     GameGenreLink,
     Genre,
-    Party,
     PartyUserLink,
     Session,
     System,
@@ -57,6 +54,7 @@ class EventGamesQuery(BaseModel):
     tone: list[str] = []
     bonus: list[int] = []
     content: list[SqidInt] = []
+    preference: list[Literal["unrated", "rated"]] = []
 
 
 @dataclass
@@ -97,6 +95,7 @@ async def get_event_approved_games_dep(
     event: Event,
     transaction: AsyncSession,
     query_params: EventGamesQuery,
+    request: Request,
 ) -> Sequence[Game]:
     event_id: int = event.id
     stmt = (
@@ -125,24 +124,38 @@ async def get_event_approved_games_dep(
         stmt = stmt.where(Game.ksps.bitwise_and(sum(query_params.bonus)) > 0)
     if query_params.content:
         stmt = stmt.where(~Game.content_warnings.any(ContentWarning.id.in_(query_params.content)))
+    if request.user is not None and len(query_params.preference) == 1:
+        if query_params.preference[0] == "unrated":
+            # Where not exists a UserGamePreference
+            stmt = stmt.where(
+                ~select(UserGamePreference)
+                .where((UserGamePreference.game_id == Game.id) & (UserGamePreference.user_id == request.user.id))
+                .exists()
+            )
+        else:
+            stmt = stmt.join(UserGamePreference, UserGamePreference.game_id == Game.id).where(
+                UserGamePreference.user_id == request.user.id
+            )
     games = (await transaction.execute(stmt)).scalars().all()
     return games
 
 
 async def event_games_query_from_params_dep(
-    genre: list[Sqid] | Sqid | None = None,
-    system: list[Sqid] | Sqid | None = None,
-    tone: list[str] | str | None = None,
-    bonus: list[int] | int | None = None,
-    content: list[Sqid] | Sqid | None = None,
+    genre: list[Sqid] | None = None,
+    system: list[Sqid] | None = None,
+    tone: list[str] | None = None,
+    bonus: list[int] | None = None,
+    content: list[Sqid] | None = None,
+    preference: list[Literal["unrated", "rated"]] | None = None,
 ) -> EventGamesQuery:
     return EventGamesQuery.model_validate(
         {
-            "genre": [] if genre is None else (genre if isinstance(genre, list) else [genre]),
-            "system": [] if system is None else (system if isinstance(system, list) else [system]),
-            "tone": [] if tone is None else (tone if isinstance(tone, list) else [tone]),
-            "bonus": [] if bonus is None else (bonus if isinstance(bonus, list) else [bonus]),
-            "content": [] if content is None else (content if isinstance(content, list) else [content]),
+            "genre": genre or [],
+            "system": system or [],
+            "tone": tone or [],
+            "bonus": bonus or [],
+            "content": content or [],
+            "preference": preference or [],
         }
     )
 
@@ -252,6 +265,23 @@ async def get_form_data_dep(
                 for content_warning in all_present_content_warnings
             ],
             description='Find games <span class="text-warning font-semibold">EXCLUDING</span> any of these content warnings:',
+        ),
+        "preference": MultiselectFormData(
+            label="Preference",
+            name="preference",
+            options=[
+                MultiselectFormDataOption(
+                    label="Unrated",
+                    value="unrated",
+                    selected="unrated" in query_params.preference,
+                ),
+                MultiselectFormDataOption(
+                    label="Rated",
+                    value="rated",
+                    selected="rated" in query_params.preference,
+                ),
+            ],
+            description="Find games that you've not yet rated, or only games that you've rated.",
         ),
     }
 
