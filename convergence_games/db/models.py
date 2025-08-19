@@ -8,7 +8,6 @@ from uuid import UUID
 from advanced_alchemy.base import BigIntAuditBase
 from advanced_alchemy.types import DateTimeUTC
 from sqlalchemy import (
-    CheckConstraint,
     Connection,
     Enum,
     ForeignKey,
@@ -20,7 +19,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy import event as sqla_event
-from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, session, validates
+from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, validates
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
@@ -39,6 +38,7 @@ from convergence_games.db.enums import (
     SubmissionStatus,
     TableFacility,
     TableSize,
+    TimeSlotStatus,
     UserGamePreferenceValue,
 )
 
@@ -392,6 +392,10 @@ class TimeSlot(Base):
     name: Mapped[str] = mapped_column(default="")
     start_time: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True))
     end_time: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True))
+    checkin_open_time: Mapped[dt.datetime | None] = mapped_column(DateTimeUTC(timezone=True), nullable=True)
+    status: Mapped[TimeSlotStatus] = mapped_column(
+        Enum(TimeSlotStatus), default=TimeSlotStatus.PRE_ALLOCATION, server_default="PRE_ALLOCATION"
+    )
 
     # Foreign Keys
     event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
