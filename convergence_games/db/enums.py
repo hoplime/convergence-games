@@ -498,6 +498,12 @@ class LoginProvider(enum.StrEnum):
     FACEBOOK = "facebook"
 
 
+class TimeSlotStatus(enum.StrEnum):
+    PRE_ALLOCATION = "Pre-Allocation"
+    ALLOCATING = "Allocating"
+    ALLOCATED = "Allocated"
+
+
 class UserGamePreferenceValue(enum.IntEnum):
     D0 = 0
     D4 = 4
