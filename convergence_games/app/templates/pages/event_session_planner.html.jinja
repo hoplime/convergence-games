@@ -22,25 +22,13 @@
                     />
                     <div class="tab-content rounded-box border border-base-300 bg-base-200 p-4" hx-disinherit="*">
                         <div class="flex flex-col gap-2">
-                            <div class="flex w-full flex-row flex-wrap justify-between">
-                                <span>
-                                    {{ time_slot.name }} @
-                                    <span class="italic">
-                                        <TimeDisplay :time="time_slot.start_time" /> -
-                                        <TimeDisplay :time="time_slot.end_time" />
-                                    </span>
+                            <span>
+                                {{ time_slot.name }} @
+                                <span class="italic">
+                                    <TimeDisplay :time="time_slot.start_time" /> -
+                                    <TimeDisplay :time="time_slot.end_time" />
                                 </span>
-                                {% if time_slot.checkin_open_time %}
-                                    {% if utcnow() < time_slot.checkin_open_time %}
-                                        <span
-                                            >Check-in opens:
-                                            <TimeDisplay :time="time_slot.checkin_open_time" :date="true"
-                                        /></span>
-                                    {% else %}
-                                        <span>Check-in Open!</span>
-                                    {% endif %}
-                                {% endif %}
-                            </div>
+                            </span>
                             <div hx-get="/party/overview/{{ swim(time_slot) }}" hx-trigger="intersect once"></div>
                         </div>
                     </div>
