@@ -19,6 +19,7 @@ from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
+from convergence_games.db.enums import TimeSlotStatus
 from convergence_games.db.models import Event, Party, PartyUserLink, TimeSlot, User
 from convergence_games.db.ocean import Sqid, sink, sink_upper, swim
 
@@ -120,6 +121,9 @@ class PartyController(Controller):
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
+        if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
+            return Redirect(f"/party/overview/{swim(time_slot)}")
+
         existing_party_for_time_slot = (
             await transaction.execute(
                 select(Party).where(Party.time_slot_id == time_slot.id).where(Party.members.any(id=user.id))
@@ -148,32 +152,39 @@ class PartyController(Controller):
 
     @get(
         path="/join/{time_slot_sqid:str}/{invite_sqid:str}",
+        dependencies={
+            "time_slot": time_slot_with(),
+        },
     )
     async def join_party(
         self,
         transaction: AsyncSession,
         user: User,
         request: Request,
-        time_slot_sqid: Sqid,
+        time_slot: TimeSlot | None,
         invite_sqid: Sqid,
     ) -> Template | Redirect:
-        time_slot_id = sink(time_slot_sqid)
+        if time_slot is None:
+            raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
+
+        if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
+            return Redirect(f"/party/overview/{swim(time_slot)}")
 
         existing_party_user_link = (
             await transaction.execute(
                 select(PartyUserLink).where(
-                    PartyUserLink.user_id == user.id, PartyUserLink.party.has(time_slot_id=time_slot_id)
+                    PartyUserLink.user_id == user.id, PartyUserLink.party.has(time_slot_id=time_slot.id)
                 )
             )
         ).scalar_one_or_none()
 
         if existing_party_user_link is not None:
             time_slot = (
-                await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot_id))
+                await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot.id))
             ).scalar_one_or_none()
             raise AlertError(
                 [Alert(alert_class="alert-warning", message="You are already in a party for this time slot.")],
-                redirect_url=f"/event/{swim('Event', time_slot.event_id)}/planner/{time_slot_sqid}"
+                redirect_url=f"/event/{swim('Event', time_slot.event_id)}/planner/{swim(time_slot)}"
                 if time_slot
                 else None,
                 redirect_text="Return to Planner",
@@ -187,7 +198,7 @@ class PartyController(Controller):
         party = (
             await transaction.execute(
                 select(Party)
-                .where(Party.id == invite_id, Party.time_slot_id == time_slot_id)
+                .where(Party.id == invite_id, Party.time_slot_id == time_slot.id)
                 .options(selectinload(Party.members), selectinload(Party.time_slot).selectinload(TimeSlot.event))
             )
         ).scalar_one_or_none()
@@ -195,11 +206,11 @@ class PartyController(Controller):
         # TODO: Tidy these up
         if party is None:
             time_slot = (
-                await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot_id))
+                await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot.id))
             ).scalar_one_or_none()
             raise AlertError(
                 [Alert(alert_class="alert-error", message="No party found with that code.")],
-                redirect_url=f"/event/{swim('Event', time_slot.event_id)}/planner/{time_slot_sqid}"
+                redirect_url=f"/event/{swim('Event', time_slot.event_id)}/planner/{swim(time_slot)}"
                 if time_slot
                 else None,
                 redirect_text="Return to Planner",
@@ -207,13 +218,13 @@ class PartyController(Controller):
         if len(party.members) >= party.time_slot.event.max_party_size:
             raise AlertError(
                 [Alert(alert_class="alert-error", message="Party is full.")],
-                redirect_url=f"/event/{swim(party.time_slot.event)}/planner/{time_slot_sqid}",
+                redirect_url=f"/event/{swim(party.time_slot.event)}/planner/{swim(time_slot)}",
                 redirect_text="Return to Planner",
             )
         if user.id in [member.id for member in party.members]:
             raise AlertError(
                 [Alert(alert_class="alert-warning", message="You are already a member of this party.")],
-                redirect_url=f"/event/{swim(party.time_slot.event)}/planner/{time_slot_sqid}",
+                redirect_url=f"/event/{swim(party.time_slot.event)}/planner/{swim(time_slot)}",
                 redirect_text="Return to Planner",
             )
 
@@ -222,7 +233,7 @@ class PartyController(Controller):
 
         if not request.htmx:
             # This is from a QRCode - go to the overall planner view
-            return Redirect(f"/event/{swim(party.time_slot.event)}/planner/{time_slot_sqid}")
+            return Redirect(f"/event/{swim(party.time_slot.event)}/planner/{swim(time_slot)}")
 
         return Redirect(f"/party/overview/{swim(party.time_slot)}")
 
@@ -240,6 +251,9 @@ class PartyController(Controller):
     ) -> Template | Redirect:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
+
+        if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
+            return Redirect(f"/party/overview/{swim(time_slot)}")
 
         party_user_link = (
             await transaction.execute(
@@ -312,6 +326,9 @@ class PartyController(Controller):
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
+        if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
+            return Redirect(f"/party/overview/{swim(time_slot)}")
+
         party_user_link = (
             await transaction.execute(
                 select(PartyUserLink).where(
@@ -365,6 +382,9 @@ class PartyController(Controller):
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
+        if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
+            return Redirect(f"/party/overview/{swim(time_slot)}")
+
         member_id = sink(member_sqid)
 
         if member_id == user.id:
@@ -397,10 +417,3 @@ class PartyController(Controller):
         await transaction.delete(other_party_user_link)
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
-
-    @get(path="/whoami")
-    async def whoami(
-        self,
-        user: User,
-    ) -> Template:
-        raise AlertError([Alert(alert_class="alert-info", message=swim(user))])
