@@ -513,6 +513,10 @@ class UserGamePreferenceValue(enum.IntEnum):
     D12 = 12
     D20 = 20
 
+    @override
+    def __repr__(self) -> str:
+        return self.name
+
     @property
     def display_class(self) -> str:
         common = "w-8 h-8 text-xl relative mask text-gray-800 after:absolute after:top-1/2 after:left-1/2 after:block after:-translate-x-1/2 after:-translate-y-1/2 after:text-center after:align-middle after:leading-none after:font-bold"
