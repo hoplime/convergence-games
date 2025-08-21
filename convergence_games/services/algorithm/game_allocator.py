@@ -1,20 +1,17 @@
+from __future__ import annotations
+
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import total_ordering
 from itertools import groupby
 from operator import itemgetter
 from random import Random
-from typing import Literal, Self, final, override
+from typing import Literal, Self, cast, final, override
 
+from rich import print
 from rich.pretty import pprint
 
 from convergence_games.db.enums import UserGamePreferenceValue as UGPV
-from convergence_games.services.algorithm.mock_data import (
-    DefaultPartyGenerator,
-    DefaultSessionGenerator,
-    MockDataGenerator,
-    MockDataState,
-)
 from convergence_games.services.algorithm.models import AlgParty, AlgResult, AlgSession, PartyID, SessionID
 
 
@@ -85,24 +82,289 @@ class AlgPartyP:
         return tier_list
 
 
+@dataclass
+class CurrentAllocation:
+    session: AlgSession
+    parties: list[AlgPartyP] = field(default_factory=list)
+
+    @property
+    def player_count(self) -> int:
+        return sum(party.group_size for party in self.parties)
+
+    @property
+    def players_to_max(self) -> int:
+        return self.session.max_players - self.player_count
+
+    @property
+    def players_to_opt(self) -> int:
+        return self.session.opt_players - self.player_count
+
+    @property
+    def players_to_min(self) -> int:
+        return self.session.min_players - self.player_count
+
+
+type SessionSearchPriorityMode = Literal[
+    "RANDOM", "BY_LEAST_POPULAR", "BY_PLAYERS_TO_MIN", "BY_PLAYERS_TO_OPT", "BY_PLAYERS_TO_MAX", "IN_ORDER"
+]
+type SessionCanFitMode = Literal["MIN", "OPT", "MAX"]
+
+
 @final
 class GameAllocator:
-    def __init__(self) -> None:
+    def __init__(self, max_iterations: int = 1) -> None:
         self.r = Random()
+        self._max_iterations = max_iterations
 
-    def _allocate(self, sessions: list[AlgSession], parties: list[AlgPartyP]) -> list[AlgResult]:
+    def _single_allocate(self, sessions: list[AlgSession], parties: list[AlgPartyP]) -> list[AlgResult]:
+        # Process:
+        # 1. Allocate D20 Players - They MUST, if possible, go to one of their D20 games at all costs
+        # 2. Look for the least popular games judged by how many people have them as first choice
+        #   - these will be limited, so we need an initial attempt to place first choices in there
+        #   - seed them with first choices IF POSSIBLE
+        # 3. Fill the other games to minimum as well as possible
+        # 4. Assign remaining players based on their preferences
+        # 5. For any games still under minimum, see if we can accept side-grades (or single tier downs?)
+        # 6. For any game STILL under minimum, allocate their GM
+
+        # This holds the whole working state and has internal allocation functions
+
+        # State
+        # TODO: Maybe cache the lookups
+        party_lookup = {party.party_id: party for party in parties}
+        session_lookup = {session.session_id: session for session in sessions}
+        free_party_ids: set[PartyID] = {party.party_id for party in parties}
+        current_allocations: dict[SessionID, CurrentAllocation] = {
+            session.session_id: CurrentAllocation(session=session) for session in sessions
+        }
+
+        # Functions
+        def shuffled[T](l: list[T]) -> list[T]:
+            self.r.shuffle(l)
+            return l
+
+        def sorted_sessions(
+            sessions: list[SessionID],
+            mode: SessionSearchPriorityMode = "RANDOM",
+        ) -> list[SessionID]:
+            if mode == "RANDOM":
+                return self.r.sample(sessions, len(sessions))
+            elif mode in ("BY_LEAST_POPULAR", "BY_LEAST_PLAYERS_TO_MIN", "BY_LEAST_PLAYERS_TO_OPTIMAL"):
+                # TODO: Implement other sorting strategies here
+                return sessions
+            elif mode == "IN_ORDER":
+                return sessions
+            return sessions
+
+        def allocate_party(
+            party: AlgPartyP,
+            min_acceptable_tier: Tier | None = None,
+            session_priority_mode: SessionSearchPriorityMode = "RANDOM",
+            can_fit_mode: SessionCanFitMode = "MAX",
+            allow_bump: bool = False,
+            max_bump_tier_down: int = 0,
+            blocked_session_ids: set[SessionID] | None = None,
+        ) -> SessionID | None:
+            if blocked_session_ids is None:
+                blocked_session_ids = set()
+
+            def _() -> SessionID | None:
+                # Iterate in descending order of tier
+                for tier, session_ids in party.tier_list:
+                    if min_acceptable_tier is not None and min_acceptable_tier.beats(tier):
+                        return
+
+                    # Pass 1 - Allocate to the first table that fits within this tier
+                    for session_id in sorted_sessions(session_ids, mode=session_priority_mode):
+                        if session_id in blocked_session_ids:
+                            continue
+
+                        current_allocation = current_allocations[session_id]
+                        if party.group_size <= (
+                            current_allocation.players_to_min
+                            if can_fit_mode == "MIN"
+                            else current_allocation.players_to_opt
+                            if can_fit_mode == "OPT"
+                            else current_allocation.players_to_max
+                        ):
+                            return session_id
+
+                    if not allow_bump:
+                        continue
+
+                    # Pass 2 - Allow Bumping
+                    for session_id in sorted_sessions(session_ids, mode=session_priority_mode):
+                        if session_id in blocked_session_ids:
+                            continue
+
+                        current_allocation = current_allocations[session_id]
+                        for other_party in current_allocation.parties:
+                            could_fit_if_swapped = party.group_size - other_party.group_size <= (
+                                current_allocation.players_to_min
+                                if can_fit_mode == "MIN"
+                                else current_allocation.players_to_opt
+                                if can_fit_mode == "OPT"
+                                else current_allocation.players_to_max
+                            )
+                            if not could_fit_if_swapped:
+                                continue
+                            print(f"Trying to bump {other_party.party_id} from {session_id}")
+                            tier_of_other_party_currently = other_party.tier_by_session.get(session_id, Tier.zero())
+                            if allocate_party(
+                                other_party,
+                                min_acceptable_tier=Tier(
+                                    is_d20=tier_of_other_party_currently.is_d20,
+                                    tier=tier_of_other_party_currently.tier + max_bump_tier_down,
+                                ),
+                                session_priority_mode=session_priority_mode,
+                                can_fit_mode=can_fit_mode,
+                                allow_bump=False,
+                                blocked_session_ids={session_id},
+                            ):
+                                # We successfully moved the other party, so REMOVE THEM FROM HERE and slot us in
+                                current_allocations[session_id].parties.remove(other_party)
+                                return session_id
+
+            result_session_id = _()
+
+            if result_session_id is not None:
+                if party.party_id in free_party_ids:
+                    free_party_ids.remove(party.party_id)
+                current_allocations[result_session_id].parties.append(party)
+
+            return result_session_id
+
+        # Do it
+        # Step 1 - Allocate parties using a D20
+        # Allow filling to max
+        # Don't allow anything below tier 0
+        print("Step 1 | Allocating D20s")
+        for party in shuffled([party for party in parties if party.has_d20]):
+            session_id = allocate_party(
+                party,
+                min_acceptable_tier=Tier(is_d20=True, tier=0),
+                session_priority_mode="RANDOM",
+                can_fit_mode="MAX",
+                allow_bump=True,
+            )
+            print(f"Party {party.party_id} allocated to session {session_id}")
+
+        # Step 2 - Allocate remaining parties
+        # Preferring least popular games to give them a chance
+        # Allow filling to the minimum
+        # Don't allow anything below tier 1
+        print("Step 2 | Allocating Remaining Parties - Minimum")
+        for party in shuffled([party_lookup[party_id] for party_id in free_party_ids]):
+            session_id = allocate_party(
+                party,
+                min_acceptable_tier=Tier(is_d20=False, tier=1),
+                session_priority_mode="BY_LEAST_POPULAR",
+                can_fit_mode="MIN",
+                allow_bump=True,
+            )
+            print(f"Party {party.party_id} allocated to session {session_id}")
+
+        # Step 3 - Allocate remaining parties
+        # By random
+        # Allow filling to the optimum
+        # Don't allow anything below tier 1
+        print("Step 3 | Allocating Remaining Parties - Optimum Pass")
+        for party in shuffled([party_lookup[party_id] for party_id in free_party_ids]):
+            session_id = allocate_party(
+                party,
+                min_acceptable_tier=Tier(is_d20=False, tier=1),
+                session_priority_mode="RANDOM",
+                can_fit_mode="OPT",
+                allow_bump=True,
+            )
+            print(f"Party {party.party_id} allocated to session {session_id}")
+
+        # Step 4 - We still have remaining parties
+        # By least players to optimum
+        # Allow filling to the maximum
+        # Allow any tier
+        print("Step 4 | Allocating Remaining Parties - Final Pass")
+        for party in shuffled([party_lookup[party_id] for party_id in free_party_ids]):
+            session_id = allocate_party(
+                party,
+                min_acceptable_tier=None,
+                session_priority_mode="RANDOM",
+                can_fit_mode="MAX",
+                allow_bump=True,
+            )
+            print(f"Party {party.party_id} allocated to session {session_id}")
+
+        return [
+            AlgResult(party_id=party_id, session_id=session_id)
+            for session_id, current_allocation in current_allocations.items()
+            for party_id in (party.party_id for party in current_allocation.parties)
+        ]
+
+    def _allocate(self, sessions: list[AlgSession], parties: list[AlgPartyP]) -> tuple[list[AlgResult], Compensation]:
+        print("Allocating for:")
         pprint(sessions)
         pprint(parties)
-        return []
+        best_results: list[AlgResult] | None = None
+        best_compensation: Compensation | None = None
+        for i in range(self._max_iterations):
+            print(f"Iteration {i + 1} of {self._max_iterations}")
+            results = self._single_allocate(sessions, parties)
+            valid = is_valid_allocation(sessions, parties, results)
+            compensation = calculate_compensation(sessions, parties, results)
+            pprint(results)
+            print(f"Valid = {valid}")
+            pprint(compensation)
+            print(f"Compensation Total = {compensation.total}")
+            if best_compensation is None or compensation < best_compensation:
+                print("Better result :white_check_mark:")
+                best_results = results
+                best_compensation = compensation
+            print("")
 
-    def allocate(self, sessions: list[AlgSession], parties: list[AlgParty]) -> list[AlgResult]:
+        if best_results is None or best_compensation is None:
+            raise ValueError("No valid allocation found")
+
+        return best_results, best_compensation
+
+    def allocate(self, sessions: list[AlgSession], parties: list[AlgParty]) -> tuple[list[AlgResult], Compensation]:
         return self._allocate(
             sessions,
             [AlgPartyP.from_alg_party(party=party) for party in parties],
         )
 
 
-def compensation_value(sessions: list[AlgSession], parties: list[AlgPartyP], results: list[AlgResult]) -> int:
+@total_ordering
+@dataclass(eq=False)
+class Compensation:
+    party_compensations: dict[PartyID, int]
+    session_compensations: dict[SessionID, int]
+    session_virtual_compensations: dict[SessionID, int]
+
+    @property
+    def real_total(self) -> int:
+        return sum(self.party_compensations.values()) + sum(self.session_compensations.values())
+
+    @property
+    def total(self) -> int:
+        return (
+            sum(self.party_compensations.values())
+            + sum(self.session_compensations.values())
+            + sum(self.session_virtual_compensations.values())
+        )
+
+    @override
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Compensation):
+            return NotImplemented
+        return self.real_total == other.real_total and self.total == other.total
+
+    def __lt__(self, other: Self) -> bool:
+        return self.total < other.total
+
+
+def calculate_compensation(
+    sessions: list[AlgSession], parties: list[AlgPartyP], results: list[AlgResult]
+) -> Compensation:
     # Sum up "compensation" - a value which represents how much each party and GM has _missed out_ on getting what they want
     # Lower is better!
 
@@ -166,14 +428,14 @@ def compensation_value(sessions: list[AlgSession], parties: list[AlgPartyP], res
             difference = abs(result_count - opt_player_counts[session_id])
             session_virtual_compensations[session_id] += difference
 
-    return (
-        sum(session_compensations.values())
-        + sum(session_virtual_compensations.values())
-        + sum(party_compensations.values())
+    return Compensation(
+        party_compensations=party_compensations,
+        session_compensations=session_compensations,
+        session_virtual_compensations=session_virtual_compensations,
     )
 
 
-def is_valid_allocation(sessions: list[AlgSession], parties: list[AlgParty], results: list[AlgResult]) -> bool:
+def is_valid_allocation(sessions: list[AlgSession], parties: list[AlgPartyP], results: list[AlgResult]) -> bool:
     success = True
 
     # 0. Data structures
@@ -207,3 +469,36 @@ def is_valid_allocation(sessions: list[AlgSession], parties: list[AlgParty], res
             success = False
 
     return success
+
+
+if __name__ == "__main__":
+    import argparse
+
+    from convergence_games.services.algorithm.mock_data import (
+        DefaultPartyGenerator,
+        DefaultSessionGenerator,
+        MockDataGenerator,
+    )
+
+    # End to End
+    parser = argparse.ArgumentParser()
+    _ = parser.add_argument("--sessions", "-s", type=int, default=3)
+    _ = parser.add_argument("--parties", "-p", type=int, default=16)
+    _ = parser.add_argument("--iterations", "-i", type=int, default=1)
+    args = parser.parse_args()
+
+    mock_data_generator = MockDataGenerator(
+        session_generator=DefaultSessionGenerator(), party_generator=DefaultPartyGenerator()
+    )
+    sessions, parties = mock_data_generator.create_scenario(
+        session_count=cast(int, args.sessions),
+        party_count=cast(int, args.parties),
+    )
+    game_allocator = GameAllocator(max_iterations=cast(int, args.iterations))
+    results, compensation = game_allocator.allocate(sessions, parties)
+    print("Final Results:")
+    pprint(results)
+    print("Final Compensation:")
+    pprint(compensation)
+    print(compensation.total)
+    print(compensation.real_total)
