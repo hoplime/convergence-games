@@ -137,6 +137,8 @@ class GameAllocator:
         current_allocations: dict[SessionID, CurrentAllocation] = {
             session.session_id: CurrentAllocation(session=session) for session in sessions
         }
+        # TODO: Do we need to store if a party has been bumped down? We really shouldn't be bumping a group down
+        # more than 1 tier from an original placement to accomodate player spread
 
         # Functions
         def shuffled[T](l: list[T]) -> list[T]:
@@ -234,6 +236,41 @@ class GameAllocator:
 
             return result_session_id
 
+        def try_to_fill_session(session_id: SessionID) -> bool:
+            current_allocation = current_allocations[session_id]
+            number_of_players_required_min = current_allocation.players_to_min
+            number_of_players_required_max = current_allocation.players_to_max
+            # Only the sessions above optimum
+            valid_sessions_to_poach_from = [
+                other_session_id
+                for other_session_id, other_allocation in current_allocations.items()
+                if other_session_id != session_id and other_allocation.players_to_opt < 0
+            ]
+
+            # Get all the possible parties
+            candidate_parties: list[tuple[SessionID, PartyID]] = []
+            valid_parties_to_poach = [
+                party
+                for other_session_id in valid_sessions_to_poach_from
+                for party in current_allocations[other_session_id].parties
+                if (
+                    # 1. Can't take too many players into the session we're trying to fill
+                    party.group_size <= number_of_players_required_max
+                    # 3. Can't take too many player FROM the session we're poaching from
+                    # So the players OVER min = -players_to_min
+                    # If we take away the group size from the player count, players OVER min drops by the group size
+                    # So players_over_min_new = -players_to_min + group_size
+                    # e.g. a session is at 6 players, min is 4
+                    #     players_to_min = -2
+                    # if we remove a group of size 3, that session ends up at 3 players
+                    #     players_to_min = 1
+                    # this result actually needs to be <= 0, so we can take maximum 2
+                    # i.e the group_size <= players_over_min
+                    and party.group_size <= -current_allocations[other_session_id].players_to_min
+                )
+            ]
+            return False
+
         # Do it
         # Step 1 - Allocate parties using a D20
         # Allow filling to max
@@ -293,6 +330,29 @@ class GameAllocator:
                 allow_bump=True,
             )
             print(f"Party {party.party_id} allocated to session {session_id}")
+
+        # Step 5 - Now, there's gonna be games that don't have minimum players
+        # Let's try to fill them up by taking from tables which are over the optimum
+        # And have a group with a preference that wouldn't be downgraded more than once
+        unfillable_session_ids: set[SessionID] = set()
+        print("Step 5 | Trying to Fill Tables Below Minimum")
+        unfilled_session_ids = [
+            session_id
+            for session_id, current_allocation in current_allocations.items()
+            if current_allocation.players_to_min > 0
+        ]
+        for session_id in shuffled(unfilled_session_ids):
+            if try_to_fill_session(session_id):
+                print(f"Filled session {session_id}")
+            else:
+                print(f"Failed to fill session {session_id}")
+                unfillable_session_ids.add(session_id)
+
+        # Step 6 - It is not possible to get enough players into this game
+        # We need to allocate the GM and any remaining parties to other games
+        print("Step 6 | Allocating GM and Remaining Parties From Unfillable Games")
+        for session_id in shuffled(list(unfillable_session_ids)):
+            pass
 
         return [
             AlgResult(party_id=party_id, session_id=session_id)
