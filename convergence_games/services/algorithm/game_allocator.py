@@ -118,7 +118,7 @@ class GameAllocator:
         self.r = Random()
         self._max_iterations = max_iterations
 
-    def _single_allocate(self, sessions: list[AlgSession], parties: list[AlgPartyP]) -> list[AlgResult]:
+    def _allocate_trial(self, sessions: list[AlgSession], parties: list[AlgPartyP]) -> list[AlgResult]:
         # Process:
         # 1. Allocate D20 Players - They MUST, if possible, go to one of their D20 games at all costs
         # 2. Look for the least popular games judged by how many people have them as first choice
@@ -395,9 +395,43 @@ class GameAllocator:
 
         # Step 6 - It is not possible to get enough players into this game
         # We need to allocate the GM and any remaining parties to other games
+        actually_unfillable_session_ids: set[SessionID] = set()
         print("Step 6 | Allocating GM and Remaining Parties From Unfillable Games")
         for session_id in shuffled(list(unfillable_session_ids)):
             print(f"UNFILLABLE SESSION :( {session_id}")
+            if current_allocations[session_id].players_to_min < 0:
+                # We've managed to fill this table from others in this process of final table clean up
+                continue
+
+            # It is unfortunately unfillable
+            actually_unfillable_session_ids.add(session_id)
+
+            # 1. Allocate the GM
+            gm_party = AlgPartyP.from_alg_party(session_lookup[session_id].gm_party)
+            free_party_ids.add(gm_party.party_id)
+            new_session_id = allocate_party(
+                gm_party,
+                min_acceptable_tier=None,
+                session_priority_mode="BY_PLAYERS_TO_MIN",
+                can_fit_mode="MAX",
+                allow_bump=True,
+                blocked_session_ids=actually_unfillable_session_ids,
+            )
+            print(f"Moved GM to {new_session_id}")
+
+            # 2. Allocate the other players
+            other_allocated_parties = current_allocations[session_id].parties
+            for party in shuffled(other_allocated_parties):
+                new_session_id = allocate_party(
+                    party,
+                    min_acceptable_tier=None,
+                    session_priority_mode="BY_PLAYERS_TO_MIN",
+                    can_fit_mode="MAX",
+                    allow_bump=True,
+                    blocked_session_ids=actually_unfillable_session_ids,
+                )
+                print(f"Moved party {party.party_id} to {new_session_id}")
+            current_allocations[session_id].parties = []
 
         return [
             AlgResult(party_id=party_id, session_id=session_id)
@@ -426,7 +460,7 @@ class GameAllocator:
         best_compensation: Compensation | None = None
         for i in range(self._max_iterations):
             print(f"Iteration {i + 1} of {self._max_iterations}")
-            results = self._single_allocate(sessions, parties)
+            results = self._allocate_trial(sessions, parties)
             valid = is_valid_allocation(sessions, parties, results)
             compensation = calculate_compensation(sessions, parties, results)
             summaries.append(compensation.real_total)
@@ -610,8 +644,6 @@ if __name__ == "__main__":
     import argparse
 
     from convergence_games.services.algorithm.mock_data import (
-        DefaultPartyGenerator,
-        DefaultSessionGenerator,
         MockDataGenerator,
     )
 
@@ -623,12 +655,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     mock_data_generator = MockDataGenerator(
-        session_generator=DefaultSessionGenerator(), party_generator=DefaultPartyGenerator()
-    )
-    sessions, parties = mock_data_generator.create_scenario(
         session_count=cast(int, args.sessions),
         party_count=cast(int, args.parties),
+        multitable_ids=[0],
     )
+    sessions, parties = mock_data_generator.run()
 
     print("Session Player Count Ranges:")
     print(f"Min: {sum(session.min_players for session in sessions)}")

@@ -1,9 +1,13 @@
 from dataclasses import dataclass, field
+from typing import Literal
 
 from convergence_games.db.enums import UserGamePreferenceValue as UGPV
 
-type SessionID = int
-type PartyID = int
+# Typing with lists of things is _weird_
+# so SessionID of "OVERFLOW" is the only valid string value - but we don't use Literal["OVERFLOW"] because of invariance
+type SessionID = int | str
+
+type PartyID = tuple[Literal["PARTY", "USER", "GM"], int]
 
 
 @dataclass
@@ -21,6 +25,7 @@ class AlgSession:
     opt_players: int
     max_players: int
     compensation: int  # GM's compensation
+    gm_party: AlgParty
     tags: list[str] = field(default_factory=list)
 
 
