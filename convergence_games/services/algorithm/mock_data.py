@@ -52,14 +52,19 @@ class MockDataGenerator:
 
 
 class DefaultSessionGenerator(SessionGenerator):
+    def __init__(self, multitable_ids: list[int] | None = None):
+        if multitable_ids is None:
+            multitable_ids = []
+        self._multitable_ids: list[int] = multitable_ids
+
     @override
     def __call__(self, r: Random, state: MockDataState, session_id: SessionID) -> AlgSession:
-        game_type = "MULTITABLE" if session_id % 20 == 0 else "REGULAR"
+        game_type = "MULTITABLE" if session_id in self._multitable_ids else "REGULAR"
         match game_type:
             case "REGULAR":
-                player_counts = sorted(r.sample(range(3, 6), 3))
+                player_counts = sorted([r.randint(2, 8) for _ in range(3)])
             case "MULTITABLE":
-                player_counts = sorted(r.sample(range(12, 26), 3))
+                player_counts = sorted([r.randint(12, 25) for _ in range(3)])
         return AlgSession(
             session_id=session_id,
             min_players=player_counts[0],

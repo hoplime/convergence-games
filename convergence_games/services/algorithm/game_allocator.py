@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import itertools
 from collections import Counter
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from functools import total_ordering
 from itertools import groupby
 from operator import itemgetter
 from random import Random
-from typing import Literal, Self, cast, final, override
+from typing import Literal, Self, cast, final, overload, override
 
 from rich import print
 from rich.pretty import pprint
@@ -212,6 +214,7 @@ class GameAllocator:
                                 continue
                             print(f"Trying to bump {other_party.party_id} from {session_id}")
                             tier_of_other_party_currently = other_party.tier_by_session.get(session_id, Tier.zero())
+                            # TODO: TIER DROP LOGIC
                             if allocate_party(
                                 other_party,
                                 min_acceptable_tier=Tier(
@@ -240,23 +243,23 @@ class GameAllocator:
             current_allocation = current_allocations[session_id]
             number_of_players_required_min = current_allocation.players_to_min
             number_of_players_required_max = current_allocation.players_to_max
-            # Only the sessions above optimum
-            valid_sessions_to_poach_from = [
+
+            # 1. Only consider the sessions above optimum
+            poachable_sessions = [
                 other_session_id
                 for other_session_id, other_allocation in current_allocations.items()
                 if other_session_id != session_id and other_allocation.players_to_opt < 0
             ]
 
-            # Get all the possible parties
-            candidate_parties: list[tuple[SessionID, PartyID]] = []
-            valid_parties_to_poach = [
-                party
-                for other_session_id in valid_sessions_to_poach_from
-                for party in current_allocations[other_session_id].parties
+            # 2. Get all the possibly poachable parties
+            poachable_parties = [
+                (other_session_id, other_party)
+                for other_session_id in poachable_sessions
+                for other_party in current_allocations[other_session_id].parties
                 if (
                     # 1. Can't take too many players into the session we're trying to fill
-                    party.group_size <= number_of_players_required_max
-                    # 3. Can't take too many player FROM the session we're poaching from
+                    other_party.group_size <= number_of_players_required_max
+                    # 2. Can't take too many player FROM the session we're poaching from
                     # So the players OVER min = -players_to_min
                     # If we take away the group size from the player count, players OVER min drops by the group size
                     # So players_over_min_new = -players_to_min + group_size
@@ -266,10 +269,52 @@ class GameAllocator:
                     #     players_to_min = 1
                     # this result actually needs to be <= 0, so we can take maximum 2
                     # i.e the group_size <= players_over_min
-                    and party.group_size <= -current_allocations[other_session_id].players_to_min
+                    and other_party.group_size <= -current_allocations[other_session_id].players_to_min
+                    # 3. Can't be dropping more than one tier from their current game tier
+                    # TODO: TIER DROP LOGIC
+                    and other_party.tier_by_session.get(other_session_id, Tier.zero()).tier + 1
+                    <= other_party.tier_by_session.get(session_id, Tier.zero()).tier
                 )
             ]
-            return False
+
+            # 3. Get all the possible combinations of poachable parties that'll work
+            possible_table_subset_combinations: list[tuple[tuple[SessionID, AlgPartyP], ...]] = []
+
+            # Considering any more than number_of_players_required_max groups to take is redundant
+            for n_groups in range(1, max(len(poachable_parties), number_of_players_required_max)):
+                # Generate all combinations of poachable parties of size n_groups
+                for combination in itertools.combinations(poachable_parties, n_groups):
+                    # Ensure it's at least the minimum player count
+                    if sum(p.group_size for _, p in combination) < number_of_players_required_min:
+                        continue
+                    # Ensure that it isn't taking too many players from each session it takes from
+                    # Important if there are multiple groups being taken from a single session
+                    players_taken_from_session_counts: dict[SessionID, int] = {}
+                    for other_session_id, other_party in combination:
+                        players_taken_from_session_counts[other_session_id] = (
+                            players_taken_from_session_counts.get(other_session_id, 0) + other_party.group_size
+                        )
+                        if (
+                            players_taken_from_session_counts[other_session_id]
+                            > -current_allocations[other_session_id].players_to_min
+                        ):
+                            break
+                    else:  # nobreak - We didn't find a group that we poached too much from
+                        possible_table_subset_combinations.append(combination)
+
+            # 5. If there's no possible combination of poachable parties, we failed
+            if not possible_table_subset_combinations:
+                return False
+
+            # 6. Otherwise, pick one at random and then move those parties into this session
+            selected_combination = self.r.choice(possible_table_subset_combinations)
+            for other_session_id, other_party in selected_combination:
+                # Remove the party from the current allocation
+                current_allocations[other_session_id].parties.remove(other_party)
+                # Add it to the new session
+                current_allocations[session_id].parties.append(other_party)
+                # TODO: TIER DROP LOGIC
+            return True
 
         # Do it
         # Step 1 - Allocate parties using a D20
@@ -352,7 +397,7 @@ class GameAllocator:
         # We need to allocate the GM and any remaining parties to other games
         print("Step 6 | Allocating GM and Remaining Parties From Unfillable Games")
         for session_id in shuffled(list(unfillable_session_ids)):
-            pass
+            print(f"UNFILLABLE SESSION :( {session_id}")
 
         return [
             AlgResult(party_id=party_id, session_id=session_id)
@@ -360,10 +405,23 @@ class GameAllocator:
             for party_id in (party.party_id for party in current_allocation.parties)
         ]
 
-    def _allocate(self, sessions: list[AlgSession], parties: list[AlgPartyP]) -> tuple[list[AlgResult], Compensation]:
+    @overload
+    def _allocate(
+        self, sessions: list[AlgSession], parties: list[AlgPartyP], include_run_summaries: Literal[False]
+    ) -> tuple[list[AlgResult], Compensation]: ...
+
+    @overload
+    def _allocate(
+        self, sessions: list[AlgSession], parties: list[AlgPartyP], include_run_summaries: Literal[True]
+    ) -> tuple[list[AlgResult], Compensation, list[int]]: ...
+
+    def _allocate(
+        self, sessions: list[AlgSession], parties: list[AlgPartyP], include_run_summaries: bool = False
+    ) -> tuple[list[AlgResult], Compensation] | tuple[list[AlgResult], Compensation, list[int]]:
         print("Allocating for:")
         pprint(sessions)
         pprint(parties)
+        summaries: list[int] = []
         best_results: list[AlgResult] | None = None
         best_compensation: Compensation | None = None
         for i in range(self._max_iterations):
@@ -371,9 +429,10 @@ class GameAllocator:
             results = self._single_allocate(sessions, parties)
             valid = is_valid_allocation(sessions, parties, results)
             compensation = calculate_compensation(sessions, parties, results)
-            pprint(results)
+            summaries.append(compensation.real_total)
+            # pprint(results)
             print(f"Valid = {valid}")
-            pprint(compensation)
+            # pprint(compensation)
             print(f"Compensation Total = {compensation.total}")
             if best_compensation is None or compensation < best_compensation:
                 print("Better result :white_check_mark:")
@@ -384,12 +443,28 @@ class GameAllocator:
         if best_results is None or best_compensation is None:
             raise ValueError("No valid allocation found")
 
-        return best_results, best_compensation
+        if include_run_summaries:
+            return best_results, best_compensation, summaries
+        else:
+            return best_results, best_compensation
 
-    def allocate(self, sessions: list[AlgSession], parties: list[AlgParty]) -> tuple[list[AlgResult], Compensation]:
+    @overload
+    def allocate(
+        self, sessions: list[AlgSession], parties: list[AlgParty], include_run_summaries: Literal[False]
+    ) -> tuple[list[AlgResult], Compensation]: ...
+
+    @overload
+    def allocate(
+        self, sessions: list[AlgSession], parties: list[AlgParty], include_run_summaries: Literal[True]
+    ) -> tuple[list[AlgResult], Compensation, list[int]]: ...
+
+    def allocate(
+        self, sessions: list[AlgSession], parties: list[AlgParty], include_run_summaries: bool = False
+    ) -> tuple[list[AlgResult], Compensation] | tuple[list[AlgResult], Compensation, list[int]]:
         return self._allocate(
             sessions,
             [AlgPartyP.from_alg_party(party=party) for party in parties],
+            include_run_summaries=include_run_summaries,
         )
 
 
@@ -554,11 +629,21 @@ if __name__ == "__main__":
         session_count=cast(int, args.sessions),
         party_count=cast(int, args.parties),
     )
+
+    print("Session Player Count Ranges:")
+    print(f"Min: {sum(session.min_players for session in sessions)}")
+    print(f"Opt: {sum(session.opt_players for session in sessions)}")
+    print(f"Max: {sum(session.max_players for session in sessions)}")
+    print("Actual Player Count")
+    print(f"Total: {sum(party.group_size for party in parties)}")
+
     game_allocator = GameAllocator(max_iterations=cast(int, args.iterations))
-    results, compensation = game_allocator.allocate(sessions, parties)
+    results, compensation, summaries = game_allocator.allocate(sessions, parties, True)
+
     print("Final Results:")
     pprint(results)
     print("Final Compensation:")
     pprint(compensation)
     print(compensation.total)
     print(compensation.real_total)
+    print(summaries)
