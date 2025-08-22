@@ -455,7 +455,9 @@ class Room(Base):
 
     # Relationships
     event: Mapped[Event] = relationship(back_populates="rooms", lazy="noload")
-    tables: Mapped[list[Table]] = relationship(back_populates="room", foreign_keys="Table.room_id", lazy="noload")
+    tables: Mapped[list[Table]] = relationship(
+        back_populates="room", foreign_keys="Table.room_id", lazy="noload", order_by="Table.name"
+    )
 
     __table_args__ = (
         # This redundant constraint is necessary for the foreign key constraint in Session
