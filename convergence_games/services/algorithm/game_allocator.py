@@ -133,7 +133,9 @@ class GameAllocator:
 
         # State
         # TODO: Maybe cache the lookups
-        party_lookup = {party.party_id: party for party in parties}
+        party_lookup = {party.party_id: party for party in parties} | {
+            session.gm_party.party_id: AlgPartyP.from_alg_party(session.gm_party) for session in sessions
+        }
         session_lookup = {session.session_id: session for session in sessions}
         free_party_ids: set[PartyID] = {party.party_id for party in parties}
         current_allocations: dict[SessionID, CurrentAllocation] = {
@@ -433,11 +435,16 @@ class GameAllocator:
                 print(f"Moved party {party.party_id} to {new_session_id}")
             current_allocations[session_id].parties = []
 
-        return [
+        # Step 7 - Any Remaining Free Parties Go to Overflow
+        print("Step 7 | Allocating Remaining Parties to Overflow")
+        overflow_results = [AlgResult(party_id=party_id, session_id="OVERFLOW") for party_id in free_party_ids]
+
+        allocated_results = [
             AlgResult(party_id=party_id, session_id=session_id)
             for session_id, current_allocation in current_allocations.items()
             for party_id in (party.party_id for party in current_allocation.parties)
         ]
+        return allocated_results + overflow_results
 
     @overload
     def _allocate(
@@ -552,11 +559,13 @@ def calculate_compensation(
     #   and then double (?) the total points if the GM already had some compensation
 
     # 0. Data structures
-    party_lookup = {party.party_id: party for party in parties}
+    party_lookup = {party.party_id: party for party in parties} | {
+        session.gm_party.party_id: AlgPartyP.from_alg_party(session.gm_party) for session in sessions
+    }
     session_lookup = {session.session_id: session for session in sessions}
-    party_compensations = {party.party_id: 0 for party in parties}
-    session_compensations = {session.session_id: 0 for session in sessions}
-    session_virtual_compensations = {session.session_id: 0 for session in sessions}
+    party_compensations = dict.fromkeys(party_lookup, 0)
+    session_compensations = dict.fromkeys(session_lookup, 0)
+    session_virtual_compensations = dict.fromkeys(session_lookup, 0)
 
     # 1. Calculate party compensations
     for result in results:
@@ -608,7 +617,9 @@ def is_valid_allocation(sessions: list[AlgSession], parties: list[AlgPartyP], re
     success = True
 
     # 0. Data structures
-    party_lookup = {party.party_id: party for party in parties}
+    party_lookup = {party.party_id: party for party in parties} | {
+        session.gm_party.party_id: AlgPartyP.from_alg_party(session.gm_party) for session in sessions
+    }
 
     # 1. Every party must be allocated to exactly one session (None is a valid session ID, with no max)
     party_id_count = Counter([party.party_id for party in parties])
