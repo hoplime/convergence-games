@@ -20,7 +20,9 @@
                 <MultiselectTab :form_data="form_data.tone" />
                 <MultiselectTab :form_data="form_data.bonus" />
                 <MultiselectTab :form_data="form_data.content" />
-                <MultiselectTab :form_data="form_data.preference" />
+                {% if request.user is not none and SETTINGS.FLAG_PREFERENCES %}
+                    <MultiselectTab :form_data="form_data.preference" />
+                {% endif %}
             </form>
             <button
                 type="button"
