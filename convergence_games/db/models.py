@@ -853,7 +853,7 @@ class UserLogin(Base):
     # Relationships
     user: Mapped[User] = relationship(back_populates="logins", foreign_keys=user_id, lazy="noload")
 
-    __table_args__ = (UniqueConstraint("provider", "provider_user_id"), UniqueConstraint("user_id", "provider"))
+    __table_args__ = (UniqueConstraint("provider", "provider_user_id"),)
 
 
 class UserEmailVerificationCode(Base):

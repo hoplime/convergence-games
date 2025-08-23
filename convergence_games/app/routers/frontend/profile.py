@@ -13,6 +13,7 @@ from convergence_games.app.events import EVENT_EMAIL_SIGN_IN
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
+from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import UserLogin
 from convergence_games.db.ocean import Sqid, sink
 
@@ -59,7 +60,11 @@ async def render_profile(
     user_logins: Sequence[UserLogin] = (
         (await transaction.execute(select(UserLogin).where(UserLogin.user_id == request.user.id))).scalars().all()
     )
-    user_login_dict = {login.provider: login for login in user_logins}
+    user_login_dict: dict[LoginProvider, list[UserLogin]] = {}
+    for login in user_logins:
+        if login.provider not in user_login_dict:
+            user_login_dict[login.provider] = []
+        user_login_dict[login.provider].append(login)
     return HTMXBlockTemplate(
         template_name="pages/profile.html.jinja",
         block_name=request.htmx.target,

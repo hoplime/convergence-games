@@ -58,14 +58,16 @@
                 <div class="grid max-w-96 gap-4">
                     {% for key in ['email', 'discord', 'google'] %}
                         {% if key in user_logins %}
-                            <button class="btn btn-ghost pointer-events-none">
-                                <img
-                                    src="static/icons/logos/{{ key }}.svg"
-                                    class="h-8"
-                                    alt="{{ key.capitalize() }} Logo"
-                                />
-                                <span>{{ key.capitalize() }} - {{ user_logins[key].provider_email }}</span>
-                            </button>
+                            {% for user_login in user_logins[key] %}
+                                <button class="btn pointer-events-none btn-ghost">
+                                    <img
+                                        src="static/icons/logos/{{ key }}.svg"
+                                        class="h-8"
+                                        alt="{{ key.capitalize() }} Logo"
+                                    />
+                                    <span>{{ key.capitalize() }} - {{ user_login.provider_email }}</span>
+                                </button>
+                            {% endfor %}
                         {% else %}
                             {{ catalog.irender("forms.sign_in_buttons." ~ key.capitalize(), linking_account_sqid=swim(request.user)) }}
                         {% endif %}
