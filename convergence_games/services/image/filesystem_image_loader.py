@@ -1,6 +1,6 @@
 from io import BytesIO
 from pathlib import Path
-from typing import override
+from typing import final, override
 from uuid import UUID
 
 from aiofiles import open as aio_open
@@ -10,9 +10,11 @@ from .common import subfolder_names_for_guid
 from .image_loader import ImageLoader
 
 
+@final
 class FilesystemImageLoader(ImageLoader):
-    def __init__(self, base_path: Path, pre_cache_sizes: list[int] | None = None) -> None:
+    def __init__(self, base_path: Path, static_relative_path: Path, pre_cache_sizes: list[int] | None = None) -> None:
         self._base_path = base_path
+        self._static_relative_path = static_relative_path
         self._pre_cache_sizes = pre_cache_sizes or []
 
     async def _write_image(self, image: PILImage.Image, path: Path, thumbnail_size: int | None = None) -> None:
@@ -40,7 +42,7 @@ class FilesystemImageLoader(ImageLoader):
         path = self._base_path.joinpath(*subfolder_names_for_guid(lookup))
 
         if size is None:
-            return str(path / f"{lookup}_full.jpg")
+            return str("/static" / path.relative_to(self._static_relative_path) / f"{lookup}_full.jpg")
 
         thumbnail_path = path / f"{lookup}_{size}.jpg"
 
@@ -48,7 +50,7 @@ class FilesystemImageLoader(ImageLoader):
             full_size_image = PILImage.open(path / f"{lookup}_full.jpg")
             await self._write_image(full_size_image, thumbnail_path, thumbnail_size=size)
 
-        return str(thumbnail_path)
+        return str("/static" / thumbnail_path.relative_to(self._static_relative_path))
 
 
 if __name__ == "__main__":

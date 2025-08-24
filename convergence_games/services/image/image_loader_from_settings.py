@@ -1,3 +1,4 @@
+from convergence_games.app.paths import STATIC_DIR_PATH
 from convergence_games.settings import SETTINGS
 
 from .blob_image_loader import BlobImageLoader
@@ -24,6 +25,7 @@ def _image_loader_from_settings() -> ImageLoader:
         )
         image_loader = FilesystemImageLoader(
             base_path=SETTINGS.IMAGE_STORAGE_PATH,
+            static_relative_path=STATIC_DIR_PATH,
             pre_cache_sizes=SETTINGS.IMAGE_STORAGE_PRE_CACHE_SIZES,
         )
 
