@@ -5,8 +5,9 @@ from uuid import uuid4
 from litestar import Controller, Response, get, post, put
 from litestar.datastructures import UploadFile
 from litestar.di import Provide
-from litestar.exceptions import NotFoundException, ValidationException
+from litestar.exceptions import HTTPException, NotFoundException, ValidationException
 from litestar.params import Body, RequestEncodingType
+from litestar.status_codes import HTTP_413_REQUEST_ENTITY_TOO_LARGE
 from pydantic import (
     BaseModel,
     BeforeValidator,
@@ -22,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 
+from convergence_games.app.alerts import Alert, AlertError
 from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
@@ -235,6 +237,15 @@ def handle_submit_game_form_validation_error(request: Request, exc: ValidationEx
     return HTMXBlockTemplate(re_swap="none", template_str=template_str)
 
 
+def handle_request_entity_too_large_error(request: Request, exc: HTTPException) -> HTMXBlockTemplate:
+    raise AlertError(
+        [
+            Alert("alert-error", "Too much data for the server to handle! (Error 413)"),
+            Alert("alert-error", "If you've submitted images, try reducing their total size below 20MB."),
+        ]
+    )
+
+
 # endregion
 
 
@@ -407,7 +418,11 @@ class SubmitGameController(Controller):
     @post(
         path="/game",
         guards=[user_guard],
-        exception_handlers={ValidationException: handle_submit_game_form_validation_error},  # type: ignore[assignment]
+        exception_handlers={
+            ValidationException: handle_submit_game_form_validation_error,
+            HTTP_413_REQUEST_ENTITY_TOO_LARGE: handle_request_entity_too_large_error,
+        },  # type: ignore[assignment]
+        request_max_body_size=20 * 1024 * 1024,  # 20 MB
     )
     async def post_game(
         self,
@@ -491,7 +506,11 @@ class SubmitGameController(Controller):
     @put(
         path="/game/{game_sqid:str}",
         guards=[user_guard],
-        exception_handlers={ValidationException: handle_submit_game_form_validation_error},  # type: ignore[assignment]
+        exception_handlers={
+            ValidationException: handle_submit_game_form_validation_error,
+            HTTP_413_REQUEST_ENTITY_TOO_LARGE: handle_request_entity_too_large_error,
+        },  # type: ignore[assignment]
+        request_max_body_size=20 * 1024 * 1024,  # 20 MB
         dependencies={
             "game": game_with(
                 selectinload(Game.system),
