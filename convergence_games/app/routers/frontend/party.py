@@ -157,7 +157,7 @@ class PartyController(Controller):
     @get(
         path="/join/{time_slot_sqid:str}/{invite_sqid:str}",
         dependencies={
-            "time_slot": time_slot_with(),
+            "time_slot": time_slot_with(selectinload(TimeSlot.event)),
         },
     )
     async def join_party(
