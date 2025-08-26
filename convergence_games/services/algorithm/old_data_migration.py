@@ -19,6 +19,7 @@ from convergence_games.db.models import (
     Table,
     TimeSlot,
     User,
+    UserCheckinStatus,
     UserGamePreference,
     UserGamePreferenceValue,
 )
@@ -57,7 +58,6 @@ class OldGame:
     minimum_players: int
     optimal_players: int
     maximum_players: int
-    hidden: bool
     gamemaster_id: int
 
 
@@ -66,6 +66,7 @@ class OldParty:
     # AKA adventuringgroup
     id: int
     time_slot_id: int
+    checked_in: bool
 
 
 @dataclass
@@ -89,7 +90,7 @@ class OldPartyUserLink:
     user_id: int  # person_id
 
 
-async def main() -> None:
+async def main(time_slot_id: int = 1) -> None:
     # Grab the old data:
     with old_engine.connect() as conn:
         old_users = [OldUser(id=row[0], name=row[1]) for row in conn.execute(text("SELECT id, name FROM person"))]
@@ -104,18 +105,17 @@ async def main() -> None:
                 minimum_players=row[2],
                 optimal_players=row[3],
                 maximum_players=row[4],
-                hidden=row[5],
-                gamemaster_id=row[6],
+                gamemaster_id=row[5],
             )
             for row in conn.execute(
                 text(
-                    "SELECT id, title, minimum_players, optimal_players, maximum_players, hidden, gamemaster_id FROM game"
+                    "SELECT id, title, minimum_players, optimal_players, maximum_players, gamemaster_id FROM game WHERE hidden = false"
                 )
             )
         ]
         old_parties = [
-            OldParty(id=row[0], time_slot_id=row[1])
-            for row in conn.execute(text("SELECT id, time_slot_id FROM adventuringgroup WHERE checked_in = true"))
+            OldParty(id=row[0], time_slot_id=row[1], checked_in=row[2])
+            for row in conn.execute(text("SELECT id, time_slot_id, checked_in FROM adventuringgroup"))
         ]
         old_party_user_links = [
             OldPartyUserLink(party_id=row[0], user_id=row[1])
@@ -124,7 +124,10 @@ async def main() -> None:
         old_user_game_preferences = [
             OldUserGamePreference(preference=row[0], party_id=row[1], session_id=row[2])
             for row in conn.execute(
-                text("SELECT preference, adventuring_group_id, table_allocation_id FROM sessionpreference")
+                text(
+                    "SELECT preference, adventuring_group_id, table_allocation_id FROM sessionpreference JOIN adventuringgroup ON sessionpreference.adventuring_group_id = adventuringgroup.id WHERE adventuringgroup.time_slot_id = :tsid"
+                ),
+                {"tsid": time_slot_id},
             )
         ]
 
@@ -168,7 +171,7 @@ async def main() -> None:
     system = System(name="Migration System")
 
     # Create imported users
-    new_objects: list[Event | User | Game | Session | PartyUserLink | Party | UserGamePreference] = [event]
+    new_objects: list[Base] = [event]
 
     for old_user in old_users:
         new_user = User(
@@ -192,7 +195,11 @@ async def main() -> None:
         )
         new_objects.append(new_game)
 
+    session_game_map = {old_session.id: old_session.game_id for old_session in old_sessions}
     for old_session in old_sessions:
+        if old_session.game_id not in [old_game.id for old_game in old_games]:
+            # This game was hidden, so skip it
+            continue
         new_session = Session(
             committed=True,
             game_id=old_session.game_id,
@@ -202,22 +209,64 @@ async def main() -> None:
         )
         new_objects.append(new_session)
 
+    old_parties_by_id: dict[int, OldParty] = {old_party.id: old_party for old_party in old_parties}
+    party_member_counts = {
+        old_party.id: sum(1 for p in old_party_user_links if p.party_id == old_party.id) for old_party in old_parties
+    }
+    excluded_single_parties: set[int] = set()
     for old_party in old_parties:
+        # For half of single person parties, don't make them parties! They need to be individuals
+        if party_member_counts[old_party.id] == 1 and old_party.id % 2 == 0:
+            excluded_single_parties.add(old_party.id)
+            continue
+
         new_party = Party(
             id=old_party.id,
             time_slot_id=old_party.time_slot_id,
         )
         new_objects.append(new_party)
 
+    already_inserted_party_ids: set[int] = set()
     for old_party_user_link in old_party_user_links:
-        if old_party_user_link.party_id not in [old_party.id for old_party in old_parties]:
-            # This party wasn't checked in, so skip it
-            continue
-        new_party_user_link = PartyUserLink(
-            party_id=old_party_user_link.party_id,
+        # Always set the checkin
+        new_user_checkin_status = UserCheckinStatus(
+            checked_in=old_parties_by_id[old_party_user_link.party_id].checked_in,
             user_id=old_party_user_link.user_id,
+            time_slot_id=old_parties_by_id[old_party_user_link.party_id].time_slot_id,
         )
-        new_objects.append(new_party_user_link)
+        new_objects.append(new_user_checkin_status)
+
+        if old_party_user_link.party_id not in excluded_single_parties:
+            new_party_user_link = PartyUserLink(
+                party_id=old_party_user_link.party_id,
+                user_id=old_party_user_link.user_id,
+                is_leader=old_party_user_link.party_id not in already_inserted_party_ids,
+            )
+            new_objects.append(new_party_user_link)
+        already_inserted_party_ids.add(old_party_user_link.party_id)
+
+    # Adding preferences to all party members, though only solos or the leaders should matter
+    for old_user_game_preference in old_user_game_preferences:
+        party_members = [
+            link.user_id for link in old_party_user_links if link.party_id == old_user_game_preference.party_id
+        ]
+        for party_member in party_members:
+            new_user_game_preference = UserGamePreference(
+                user_id=party_member,
+                game_id=session_game_map[old_user_game_preference.session_id],
+                preference=UserGamePreferenceValue(
+                    {
+                        0: 0,
+                        1: 4,
+                        2: 6,
+                        3: 8,
+                        4: 10,
+                        5: 12,
+                        20: 20,
+                    }[old_user_game_preference.preference]
+                ),
+            )
+            new_objects.append(new_user_game_preference)
 
     # Add all new objects
     async with AsyncSession(new_engine) as session:
@@ -231,4 +280,9 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--time-slot-id", "-t", type=int, default=1)
+    args = parser.parse_args()
+    asyncio.run(main(args.time_slot_id))
