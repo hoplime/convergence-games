@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from sqlalchemy import URL, create_engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
+from convergence_games.db.enums import UserGamePreferenceValue
 from convergence_games.db.models import (
     Base,
     Event,
@@ -21,7 +22,6 @@ from convergence_games.db.models import (
     User,
     UserCheckinStatus,
     UserGamePreference,
-    UserGamePreferenceValue,
 )
 
 # This script takes in last year's data and converts it to this year's database format
@@ -215,9 +215,10 @@ async def main(time_slot_id: int = 1) -> None:
     }
     excluded_single_parties: set[int] = set()
     for old_party in old_parties:
-        # For half of single person parties, don't make them parties! They need to be individuals
-        if party_member_counts[old_party.id] == 1 and old_party.id % 2 == 0:
+        # For 3/4 of single person parties, don't make them parties! They need to be individuals
+        if party_member_counts[old_party.id] == 1 and old_party.id % 4 != 0:
             excluded_single_parties.add(old_party.id)
+            # print("EXCLUDING", old_party.id)
             continue
 
         new_party = Party(
