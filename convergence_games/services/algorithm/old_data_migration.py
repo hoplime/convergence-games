@@ -21,6 +21,7 @@ from convergence_games.db.models import (
     TimeSlot,
     User,
     UserCheckinStatus,
+    UserEventD20Transaction,
     UserGamePreference,
 )
 
@@ -130,6 +131,15 @@ async def main(time_slot_id: int = 1) -> None:
                 {"tsid": time_slot_id},
             )
         ]
+        old_parties_which_used_d20s_in_this_time_slot: set[int] = {
+            row[0]
+            for row in conn.execute(
+                text(
+                    "SELECT DISTINCT adventuring_group_id FROM sessionpreference JOIN tableallocation ON sessionpreference.table_allocation_id = tableallocation.id WHERE tableallocation.time_slot_id = :tsid AND sessionpreference.preference = 20"
+                ),
+                {"tsid": time_slot_id},
+            )
+        }
 
     print(old_users)
     print(old_games)
@@ -236,6 +246,16 @@ async def main(time_slot_id: int = 1) -> None:
             time_slot_id=old_parties_by_id[old_party_user_link.party_id].time_slot_id,
         )
         new_objects.append(new_user_checkin_status)
+
+        # Always set the D20 transactions
+        if old_party_user_link.party_id in old_parties_which_used_d20s_in_this_time_slot:
+            new_d20_transaction = UserEventD20Transaction(
+                current_balance=1,  # Assume they had none before
+                delta=1,
+                user_id=old_party_user_link.user_id,
+                event=event,
+            )
+            new_objects.append(new_d20_transaction)
 
         if old_party_user_link.party_id not in excluded_single_parties:
             new_party_user_link = PartyUserLink(
