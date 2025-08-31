@@ -14,7 +14,7 @@ from litestar.response import Template
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import and_, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased, selectinload
+from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.guards import user_guard
@@ -382,6 +382,7 @@ class EventPlayerController(Controller):
                 (ts for ts in event.time_slots if ts.id == time_slot_id),
                 None,
             )
+
         if time_slot is None:
             # Get the next upcoming time slot, or the last one if there are no upcoming slots
             # TODO: Do this based on completed/upcoming status in time slots - logic TODO after allocation is done
@@ -392,6 +393,16 @@ class EventPlayerController(Controller):
                 (ts for ts in sorted_event_time_slots if ts.start_time > datetime.now(tz=dt.timezone.utc)),
                 sorted_event_time_slots[-1],
             )
+
+        latest_d20_transaction = (
+            await transaction.execute(
+                select(UserEventD20Transaction)
+                .where(UserEventD20Transaction.user_id == user.id)
+                .where(UserEventD20Transaction.event_id == event.id)
+                .order_by(UserEventD20Transaction.id.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
 
         PLinkThisUser = aliased(PartyUserLink)
         PLinkAllInParty = aliased(PartyUserLink)
@@ -406,6 +417,10 @@ class EventPlayerController(Controller):
                         .join(PLinkAllInParty, User.id == PLinkAllInParty.user_id)
                         .join(PLinkThisUser, PLinkAllInParty.party_id == PLinkThisUser.party_id)
                         .where(PLinkThisUser.user_id == user.id, PLinkThisUser.party.has(time_slot_id=time_slot.id))
+                        .options(
+                            selectinload(User.latest_d20_transaction),
+                            with_loader_criteria(UserEventD20Transaction, UserEventD20Transaction.event_id == event.id),
+                        )
                     )
                 )
             ).all()
@@ -414,8 +429,18 @@ class EventPlayerController(Controller):
             (member_and_is_leader.t[0] for member_and_is_leader in party_members if member_and_is_leader.t[1]), user
         )
         all_party_members_over_18 = all(member_and_is_leader.t[0].over_18 for member_and_is_leader in party_members)
+        all_party_members_have_d20 = all(
+            (
+                member_and_is_leader.t[0].latest_d20_transaction is not None
+                and member_and_is_leader.t[0].latest_d20_transaction.current_balance > 0
+            )
+            for member_and_is_leader in party_members
+        )
         if not party_members:
             all_party_members_over_18 = user.over_18
+            all_party_members_have_d20 = (
+                latest_d20_transaction is not None and latest_d20_transaction.current_balance > 0
+            )
 
         select_terms = (
             (Game, ThisUserPreference.preference, LeaderUserPreference.preference)
@@ -465,6 +490,7 @@ class EventPlayerController(Controller):
 
         game_tier_dict: dict[TierValue, list[Game]] = {}
         preferences: dict[int, UserGamePreferenceValue] = {}
+        downgraded_d20: bool = False
         for row in games_and_preferences:
             game, user_preference_value, leader_preference_value = row.tuple()
             # Get the personal preference
@@ -478,24 +504,16 @@ class EventPlayerController(Controller):
                 tier_value = TierValue.GM
             elif game.classification == GameClassification.R18 and not all_party_members_over_18:
                 tier_value = TierValue.AGE_RESTRICTED
+            elif tier_value == TierValue.D20 and not all_party_members_have_d20:
+                tier_value = TierValue.D12
+                if party_leader.id == user.id:
+                    downgraded_d20 = True
+
             if tier_value not in game_tier_dict:
                 game_tier_dict[tier_value] = []
             game_tier_dict[tier_value].append(game)
 
         game_tier_list = sorted(game_tier_dict.items(), key=lambda item: item[0].value, reverse=True)
-
-        if request.user:
-            latest_d20_transaction = (
-                await transaction.execute(
-                    select(UserEventD20Transaction)
-                    .where(UserEventD20Transaction.user_id == request.user.id)
-                    .where(UserEventD20Transaction.event_id == event.id)
-                    .order_by(UserEventD20Transaction.id.desc())
-                    .limit(1)
-                )
-            ).scalar_one_or_none()
-        else:
-            latest_d20_transaction = None
 
         return HTMXBlockTemplate(
             template_name="pages/event_session_planner.html.jinja",
@@ -508,6 +526,8 @@ class EventPlayerController(Controller):
                 "party_leader": party_leader,
                 "all_party_members_over_18": all_party_members_over_18,
                 "scheduled_time_slots": scheduled_time_slots_dict,
-                "latest_d20_transaction": latest_d20_transaction,
+                "has_d20": latest_d20_transaction is not None and latest_d20_transaction.current_balance > 0,
+                "all_party_members_have_d20": all_party_members_have_d20,
+                "downgraded_d20": downgraded_d20,
             },
         )

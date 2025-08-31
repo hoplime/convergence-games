@@ -77,11 +77,26 @@
                                             {% if tier.name not in ['D0', 'AGE_RESTRICTED', 'GM'] %}
                                                 <div>Tier {{ loop.index - tier_list_offset }}</div>
                                             {% endif %}
-                                            <div class="{{ tier.display_class }}"></div>
+                                            <div>
+                                                <div class="{{ tier.display_class }}"></div>
+                                                {% if tier.name == "D12" and has_d20 and downgraded_d20 %}
+                                                    /
+                                                    <div
+                                                        class="relative mask h-8 w-8 bg-yellow-400 mask-d20 text-xl text-gray-800 after:absolute after:top-1/2 after:left-1/2 after:block after:-translate-x-1/2 after:-translate-y-1/2 after:text-center after:align-middle after:leading-none after:font-bold after:content-['20']"
+                                                    ></div>
+                                                    * {# TODO: This but better with globals and casting to TierValue #}
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            {% if tier.name == "D12" and has_d20 and downgraded_d20 %}
+                                <span
+                                    >* = Not all party members have a Golden D20 - all D20s are treated as D12s for this
+                                    session.</span
+                                >
+                            {% endif %}
 
                             <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {% for game in games %}
@@ -90,7 +105,7 @@
                                         :preference="preferences.get(game.id)"
                                         :all_party_members_over_18="all_party_members_over_18"
                                         :scheduled_time_slot_ids="scheduled_time_slots.get(game.id, [])"
-                                        :display_d20="latest_d20_transaction is not none and latest_d20_transaction.current_balance > 0"
+                                        :display_d20="has_d20"
                                     />
                                 {% endfor %}
                             </div>
