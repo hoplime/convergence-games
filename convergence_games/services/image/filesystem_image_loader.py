@@ -39,18 +39,22 @@ class FilesystemImageLoader(ImageLoader):
 
     @override
     async def get_image_path(self, lookup: UUID, size: int | None = None) -> str:
-        path = self._base_path.joinpath(*subfolder_names_for_guid(lookup))
+        try:
+            path = self._base_path.joinpath(*subfolder_names_for_guid(lookup))
 
-        if size is None:
-            return str("/static" / path.relative_to(self._static_relative_path) / f"{lookup}_full.jpg")
+            if size is None:
+                return str("/static" / path.relative_to(self._static_relative_path) / f"{lookup}_full.jpg")
 
-        thumbnail_path = path / f"{lookup}_{size}.jpg"
+            thumbnail_path = path / f"{lookup}_{size}.jpg"
 
-        if not thumbnail_path.exists():
-            full_size_image = PILImage.open(path / f"{lookup}_full.jpg")
-            await self._write_image(full_size_image, thumbnail_path, thumbnail_size=size)
+            if not thumbnail_path.exists():
+                full_size_image = PILImage.open(path / f"{lookup}_full.jpg")
+                await self._write_image(full_size_image, thumbnail_path, thumbnail_size=size)
 
-        return str("/static" / thumbnail_path.relative_to(self._static_relative_path))
+            return str("/static" / thumbnail_path.relative_to(self._static_relative_path))
+        except Exception:
+            # Handle exceptions (e.g., file not found, permission denied)
+            return str("/static/error")
 
 
 if __name__ == "__main__":
