@@ -347,7 +347,7 @@ class EventPlayerController(Controller):
         )
 
     @get(
-        ["/event/{event_sqid:str}/planner", "/event/{event_sqid:str}/planner/{time_slot_sqid:str}"],
+        ["/event/{event_sqid:str}/planner", "/event/{event_sqid:str}/planner/{time_slot_sqid:str}", "/planner"],
         dependencies={"event": event_with(selectinload(Event.time_slots))},
         guards=[user_guard],
     )

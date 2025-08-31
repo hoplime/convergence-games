@@ -6,6 +6,10 @@
     themes: all;
 }
 
+@theme {
+    --breakpoint-xs: 24rem;
+}
+
 @plugin "daisyui/theme" {
     name: "light";
     default: false;

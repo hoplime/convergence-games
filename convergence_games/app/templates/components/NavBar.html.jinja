@@ -32,7 +32,7 @@
                     class="fill-current"
                 />
             </svg>
-            <span>Convergence</span>
+            <span class="hidden md:block">Convergence</span>
         </a>
     </div>
     <div class="flex gap-2">
@@ -46,8 +46,21 @@
                 preload="mousedown"
             >
                 <span class="icon-[bi--dice-6-fill]"></span>
-                <span>Games</span>
+                <span class="hidden xs:block">Games</span>
             </div>
+            {% if SETTINGS.FLAG_PLANNER and request.user %}
+                <div
+                    hx-get="/planner"
+                    hx-target="#content"
+                    hx-push-url="true"
+                    class="btn rounded-full bg-base-300 text-lg btn-ghost"
+                    {{ blur_on_click }}
+                    preload="mousedown"
+                >
+                    <span class="icon-[mdi--calendar]"></span>
+                    <span class="hidden xs:block">Planner</span>
+                </div>
+            {% endif %}
             <div tabindex="0" class="btn avatar btn-circle btn-ghost">
                 <div class="w-10 rounded-full bg-base-300 p-1">
                     <span class="icon-[iconamoon--profile-fill] size-full"></span>
