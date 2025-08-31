@@ -3,6 +3,7 @@
     preference: int | None = None,
     all_party_members_over_18: bool = True,
     scheduled_time_slot_ids: list[int] = [],
+    display_d20: bool = False,
 #}
 <div class="card rounded-box border border-base-300 bg-base-200">
     <a href="/game/{{ swim(game) }}" class="grow">
@@ -64,7 +65,7 @@
             {% else %}
                 <span class="w-full text-center font-semibold">Preference</span>
                 <DiceRating
-                    :display_d20="false"
+                    :display_d20="display_d20"
                     :hx_put_url="'/game/' + swim(game) + '/preference'"
                     :starting_value="preference"
                 />

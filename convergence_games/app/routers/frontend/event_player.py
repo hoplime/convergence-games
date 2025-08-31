@@ -40,6 +40,7 @@ from convergence_games.db.models import (
     System,
     TimeSlot,
     User,
+    UserEventD20Transaction,
     UserGamePreference,
 )
 from convergence_games.db.ocean import Sqid, sink, swim
@@ -334,6 +335,20 @@ class EventPlayerController(Controller):
             if game_id not in scheduled_time_slots_dict:
                 scheduled_time_slots_dict[game_id] = []
             scheduled_time_slots_dict[game_id].append(time_slot_id)
+
+        if request.user:
+            latest_d20_transaction = (
+                await transaction.execute(
+                    select(UserEventD20Transaction)
+                    .where(UserEventD20Transaction.user_id == request.user.id)
+                    .where(UserEventD20Transaction.event_id == event.id)
+                    .order_by(UserEventD20Transaction.id.desc())
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+        else:
+            latest_d20_transaction = None
+
         return HTMXBlockTemplate(
             template_name="pages/event_games.html.jinja",
             block_name=request.htmx.target,
@@ -343,6 +358,7 @@ class EventPlayerController(Controller):
                 "form_data": form_data,
                 "preferences": preferences,
                 "scheduled_time_slots": scheduled_time_slots_dict,
+                "latest_d20_transaction": latest_d20_transaction,
             },
         )
 
@@ -468,6 +484,19 @@ class EventPlayerController(Controller):
 
         game_tier_list = sorted(game_tier_dict.items(), key=lambda item: item[0].value, reverse=True)
 
+        if request.user:
+            latest_d20_transaction = (
+                await transaction.execute(
+                    select(UserEventD20Transaction)
+                    .where(UserEventD20Transaction.user_id == request.user.id)
+                    .where(UserEventD20Transaction.event_id == event.id)
+                    .order_by(UserEventD20Transaction.id.desc())
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+        else:
+            latest_d20_transaction = None
+
         return HTMXBlockTemplate(
             template_name="pages/event_session_planner.html.jinja",
             block_name=request.htmx.target,
@@ -479,5 +508,6 @@ class EventPlayerController(Controller):
                 "party_leader": party_leader,
                 "all_party_members_over_18": all_party_members_over_18,
                 "scheduled_time_slots": scheduled_time_slots_dict,
+                "latest_d20_transaction": latest_d20_transaction,
             },
         )

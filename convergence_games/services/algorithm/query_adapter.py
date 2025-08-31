@@ -26,12 +26,18 @@ from convergence_games.db.models import (
     User,
     UserCheckinStatus,
     UserEventCompensationTransaction,
+    UserEventD20Transaction,
     UserGamePreference,
 )
 from convergence_games.services.algorithm.models import AlgParty, AlgSession, SessionID
 
 
 async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple[list[AlgParty], list[AlgSession]]:
+    time_slot = (await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot_id))).scalar_one_or_none()
+
+    if time_slot is None:
+        raise ValueError(f"TimeSlot with id {time_slot_id} does not exist.")
+
     # Sessions
     Gamemaster = aliased(User)
 
@@ -62,6 +68,10 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
             selectinload(Gamemaster.latest_compensation_transaction),
             selectinload(Gamemaster.latest_d20_transaction),
             selectinload(Gamemaster.game_preferences),
+            with_loader_criteria(
+                UserEventCompensationTransaction, UserEventCompensationTransaction.event_id == time_slot.event_id
+            ),
+            with_loader_criteria(UserEventD20Transaction, UserEventD20Transaction.event_id == time_slot.event_id),
         )
     )
     session_results = [r.tuple() for r in (await transaction.execute(session_stmt)).all()]

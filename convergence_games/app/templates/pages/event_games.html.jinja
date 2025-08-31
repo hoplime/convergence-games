@@ -39,6 +39,7 @@
                             :game="game"
                             :preference="preferences.get(game.id)"
                             :scheduled_time_slot_ids="scheduled_time_slots.get(game.id, [])"
+                            :display_d20="latest_d20_transaction is not none and latest_d20_transaction.current_balance > 0"
                         />
                     {% endfor %}
                     {% if not games %}
