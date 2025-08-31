@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import itertools
 from collections import Counter
-from collections.abc import Generator
 from dataclasses import dataclass, field
 from functools import total_ordering
 from itertools import groupby
