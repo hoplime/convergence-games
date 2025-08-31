@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import UserGamePreferenceValue
-from convergence_games.db.models import Game, User, UserGamePreference
+from convergence_games.db.models import Game, Session, User, UserGamePreference
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.services import ImageLoader
 
@@ -72,6 +72,24 @@ class GameController(Controller):
             for image in game.images
         ]
 
+        scheduled_sessions = (
+            (
+                await transaction.execute(
+                    select(Session)
+                    .where(
+                        Session.game_id == game_id,
+                        Session.committed,
+                    )
+                    .options(
+                        selectinload(Session.table),
+                        selectinload(Session.time_slot),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+
         return HTMXBlockTemplate(
             template_name="pages/game.html.jinja",
             block_name=request.htmx.target,
@@ -79,6 +97,7 @@ class GameController(Controller):
                 "game": game,
                 "game_image_urls": game_image_urls,
                 "preference": preference,
+                "scheduled_sessions": sorted(scheduled_sessions, key=lambda s: s.time_slot.start_time),
             },
         )
 

@@ -104,6 +104,35 @@
                     {% endfor %}
                 </div>
             {% endif %}
+            {% if SETTINGS.FLAG_PLANNER %}
+                <div class="card rounded-box border border-base-300 bg-base-200">
+                    <div class="card-body">
+                        <h2 class="card-title text-xl">Scheduled Sessions</h2>
+                        {% if scheduled_sessions %}
+                            <ul class="list-inside list-disc space-y-1">
+                                {% for session in scheduled_sessions %}
+                                    <li>
+                                        Table {{ session.table.name }} - {{ session.time_slot.name }}
+                                        <span class="italic">
+                                            <TimeDisplay :time="session.time_slot.start_time" /> -
+                                            <TimeDisplay :time="session.time_slot.end_time" />
+                                        </span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>This game is not currently scheduled to run.</p>
+                        {% endif %}
+                        {% if request.user %}
+                            <div class="card-actions justify-start">
+                                <a href="/event/{{ swim(game.event) }}/planner" class="btn btn-primary"
+                                    >Plan my Schedule</a
+                                >
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
             {% if game.gamemaster_id == request.user.id %}
                 <div class="card rounded-box border border-base-300 bg-base-200">
                     <div class="card-body">
