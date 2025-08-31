@@ -15,7 +15,15 @@ from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import TimeSlotStatus
-from convergence_games.db.models import Event, Party, PartyUserLink, TimeSlot, User, UserCheckinStatus
+from convergence_games.db.models import (
+    Event,
+    Party,
+    PartyUserLink,
+    TimeSlot,
+    User,
+    UserCheckinStatus,
+    UserEventD20Transaction,
+)
 from convergence_games.db.ocean import Sqid, sink, sink_upper, swim
 
 
@@ -79,8 +87,13 @@ class PartyController(Controller):
                 .options(
                     selectinload(Party.time_slot),
                     selectinload(Party.party_user_links),
-                    selectinload(Party.members).selectinload(User.checkin_statuses),
+                    selectinload(Party.members).options(
+                        selectinload(User.checkin_statuses), selectinload(User.latest_d20_transaction)
+                    ),
                     with_loader_criteria(UserCheckinStatus, UserCheckinStatus.time_slot_id == time_slot.id),
+                    with_loader_criteria(
+                        UserEventD20Transaction, UserEventD20Transaction.event_id == time_slot.event_id
+                    ),
                 )
             )
         ).scalar_one_or_none()

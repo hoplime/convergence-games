@@ -62,6 +62,9 @@
                                     {% if member.id == leader_id %}
                                         <span class="icon-[material-symbols--crown]"></span>
                                     {% endif %}
+                                    {% if member.latest_d20_transaction is not none and member.latest_d20_transaction.current_balance > 0 %}
+                                        <span class="icon-[mdi--dice-d20] bg-yellow-400"></span>
+                                    {% endif %}
                                     {% if member.checkin_statuses and member.checkin_statuses[0].checked_in %}
                                         <span class="icon-[material-symbols--check]"></span>
                                     {% endif %}
