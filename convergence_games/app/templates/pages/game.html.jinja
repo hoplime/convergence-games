@@ -159,7 +159,7 @@
                         <div class="flex flex-col items-center gap-2 text-base">
                             <span class="w-full text-center font-semibold">Preference</span>
                             <DiceRating
-                                :display_d20="false"
+                                :display_d20="has_d20"
                                 :hx_put_url="'/game/' + swim(game) + '/preference'"
                                 :starting_value="preference"
                             />

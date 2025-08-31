@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import UserGamePreferenceValue
-from convergence_games.db.models import Game, Session, User, UserGamePreference
+from convergence_games.db.models import Game, Session, User, UserEventD20Transaction, UserGamePreference
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.services import ImageLoader
 
@@ -48,6 +48,9 @@ class GameController(Controller):
             )
         ).scalar_one_or_none()
 
+        if game is None:
+            raise HTTPException(status_code=404, detail="Game not found")
+
         if request.user:
             user_game_preference = (
                 await transaction.execute(
@@ -58,11 +61,18 @@ class GameController(Controller):
                 )
             ).scalar_one_or_none()
             preference = user_game_preference.preference if user_game_preference else None
+            latest_d20_transaction = (
+                await transaction.execute(
+                    select(UserEventD20Transaction)
+                    .where(UserEventD20Transaction.user_id == request.user.id)
+                    .where(UserEventD20Transaction.event_id == game.event_id)
+                    .order_by(UserEventD20Transaction.id.desc())
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
         else:
             preference = None
-
-        if game is None:
-            raise HTTPException(status_code=404, detail="Game not found")
+            latest_d20_transaction = None
 
         game_image_urls = [
             {
@@ -98,6 +108,7 @@ class GameController(Controller):
                 "game_image_urls": game_image_urls,
                 "preference": preference,
                 "scheduled_sessions": sorted(scheduled_sessions, key=lambda s: s.time_slot.start_time),
+                "has_d20": latest_d20_transaction is not None and latest_d20_transaction.current_balance > 0,
             },
         )
 
