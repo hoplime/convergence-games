@@ -89,6 +89,7 @@
                                         :game="game"
                                         :preference="preferences.get(game.id)"
                                         :all_party_members_over_18="all_party_members_over_18"
+                                        :scheduled_time_slot_ids="scheduled_time_slots.get(game.id, [])"
                                     />
                                 {% endfor %}
                             </div>

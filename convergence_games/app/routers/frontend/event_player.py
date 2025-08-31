@@ -106,7 +106,7 @@ async def get_event_approved_games_dep(
             selectinload(Game.game_requirement),
             selectinload(Game.genres),
             selectinload(Game.content_warnings),
-            selectinload(Game.event),
+            selectinload(Game.event).selectinload(Event.time_slots),
         )
         .order_by(Game.name)
         .where(
@@ -310,7 +310,7 @@ class EventPlayerController(Controller):
     @get(
         ["/event/{event_sqid:str}", "/event/{event_sqid:str}/games", "/games"],
         dependencies={
-            "event": event_with(),
+            "event": event_with(selectinload(Event.time_slots)),
             "query_params": Provide(event_games_query_from_params_dep),
             "games": Provide(get_event_approved_games_dep),
             "form_data": Provide(get_form_data_dep),
@@ -324,7 +324,16 @@ class EventPlayerController(Controller):
         games: Sequence[Game],
         preferences: dict[int, UserGamePreferenceValue],
         form_data: dict[str, MultiselectFormData],
+        transaction: AsyncSession,
     ) -> Template:
+        scheduled_time_slots_stmt = select(Session.game_id, Session.time_slot_id).where(Session.committed)
+        scheduled_time_slots = (await transaction.execute(scheduled_time_slots_stmt)).all()
+        scheduled_time_slots_dict: dict[int, list[int]] = {}
+        for r in scheduled_time_slots:
+            game_id, time_slot_id = r.tuple()
+            if game_id not in scheduled_time_slots_dict:
+                scheduled_time_slots_dict[game_id] = []
+            scheduled_time_slots_dict[game_id].append(time_slot_id)
         return HTMXBlockTemplate(
             template_name="pages/event_games.html.jinja",
             block_name=request.htmx.target,
@@ -333,6 +342,7 @@ class EventPlayerController(Controller):
                 "games": games,
                 "form_data": form_data,
                 "preferences": preferences,
+                "scheduled_time_slots": scheduled_time_slots_dict,
             },
         )
 
@@ -428,6 +438,14 @@ class EventPlayerController(Controller):
             )
 
         games_and_preferences = (await transaction.execute(games_and_preferences_this_time_slot_stmt)).all()
+        scheduled_time_slots_stmt = select(Session.game_id, Session.time_slot_id).where(Session.committed)
+        scheduled_time_slots = (await transaction.execute(scheduled_time_slots_stmt)).all()
+        scheduled_time_slots_dict: dict[int, list[int]] = {}
+        for r in scheduled_time_slots:
+            game_id, time_slot_id = r.tuple()
+            if game_id not in scheduled_time_slots_dict:
+                scheduled_time_slots_dict[game_id] = []
+            scheduled_time_slots_dict[game_id].append(time_slot_id)
 
         game_tier_dict: dict[TierValue, list[Game]] = {}
         preferences: dict[int, UserGamePreferenceValue] = {}
@@ -460,5 +478,6 @@ class EventPlayerController(Controller):
                 "preferences": preferences,
                 "party_leader": party_leader,
                 "all_party_members_over_18": all_party_members_over_18,
+                "scheduled_time_slots": scheduled_time_slots_dict,
             },
         )

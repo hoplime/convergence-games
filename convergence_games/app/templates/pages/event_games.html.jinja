@@ -35,7 +35,11 @@
             <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" id="game_list">
                 {% block game_list %}
                     {% for game in games %}
-                        <GameCard :game="game" :preference="preferences.get(game.id)" />
+                        <GameCard
+                            :game="game"
+                            :preference="preferences.get(game.id)"
+                            :scheduled_time_slot_ids="scheduled_time_slots.get(game.id, [])"
+                        />
                     {% endfor %}
                     {% if not games %}
                         <div class="card col-span-full rounded-box border border-base-300 bg-base-200">

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     # Feature Flags
     FLAG_PREFERENCES: bool = False
+    FLAG_PLANNER: bool = False
 
     @cached_property
     def RELEASE(self) -> str:  # noqa: N802

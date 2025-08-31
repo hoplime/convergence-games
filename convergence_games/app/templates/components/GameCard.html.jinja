@@ -2,6 +2,7 @@
     game: Game,
     preference: int | None = None,
     all_party_members_over_18: bool = True,
+    scheduled_time_slot_ids: list[int] = [],
 #}
 <div class="card rounded-box border border-base-300 bg-base-200">
     <a href="/game/{{ swim(game) }}" class="grow">
@@ -73,6 +74,17 @@
                     >
                 {% endif %}
             {% endif %}
+        </div>
+    {% endif %}
+    {% if SETTINGS.FLAG_PLANNER %}
+        <div class="absolute right-1 bottom-1 flex flex-row gap-[1px]">
+            {% for time_slot in game.event.time_slots %}
+                {% if time_slot.id in scheduled_time_slot_ids %}
+                    <div class="h-2 w-2 bg-primary in-[.text-error]:bg-error"></div>
+                {% else %}
+                    <div class="h-2 w-2 border border-primary in-[.text-error]:border-error"></div>
+                {% endif %}
+            {% endfor %}
         </div>
     {% endif %}
 </div>
