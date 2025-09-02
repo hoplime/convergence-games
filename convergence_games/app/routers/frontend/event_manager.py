@@ -16,7 +16,7 @@ from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, with_loader_criteria
+from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.alerts import Alert, AlertError
@@ -29,11 +29,14 @@ from convergence_games.db.models import (
     Event,
     Game,
     GameRequirement,
+    Party,
+    PartyUserLink,
     Room,
     Session,
     Table,
     TimeSlot,
     User,
+    UserCheckinStatus,
     UserEventCompensationTransaction,
     UserEventD20Transaction,
     UserEventRole,
@@ -603,6 +606,29 @@ class EventManagerController(Controller):
         )
         sessions = (await transaction.execute(sessions_stmt)).scalars().all()
 
+        party_subq = (
+            select(Party, PartyUserLink)
+            .join(Party, Party.id == PartyUserLink.party_id, isouter=True)
+            .where(Party.time_slot_id == time_slot.id)
+            .subquery()
+        )
+        party_alias = aliased(Party, party_subq)
+        party_user_link_alias = aliased(PartyUserLink, party_subq)
+
+        solo_players_and_leaders_stmt = (
+            select(User, party_alias, UserCheckinStatus)
+            .select_from(User)
+            .join(party_subq, (party_user_link_alias.user_id == User.id), isouter=True)
+            .join(
+                UserCheckinStatus,
+                (UserCheckinStatus.user_id == User.id) & (UserCheckinStatus.time_slot_id == time_slot.id),
+                isouter=True,
+            )
+            .where(party_user_link_alias.is_leader | (party_alias.id.is_(None)))
+            .options(selectinload(party_alias.members))
+        )
+        groups = [r.tuple() for r in (await transaction.execute(solo_players_and_leaders_stmt)).all()]
+
         return HTMXBlockTemplate(
             template_name="pages/event_manage_allocation.html.jinja",
             block_name=request.htmx.target,
@@ -610,5 +636,6 @@ class EventManagerController(Controller):
                 "event": event,
                 "selected_time_slot": time_slot,
                 "sessions": sessions,
+                "groups": groups,
             },
         )

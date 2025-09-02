@@ -7,9 +7,16 @@
                     <div class="overflow-y-scroll">
                         <div class="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                             {% for session in sessions %}
-                                <div>
+                                <div
+                                    class="session-holder border-collapse border"
+                                    data-current-players="0"
+                                    data-min-players="{{ session.game.player_count_minimum }}"
+                                    data-max-players="{{ session.game.player_count_maximum }}"
+                                >
                                     <div>{{ session.table.name }} | {{ session.game.name }}</div>
-                                    <div class="session-members min-h-32"></div>
+                                    <div class="session-gm min-h-8"></div>
+                                    <div class="session-member-list min-h-32"></div>
+                                    <div>0/X</div>
                                 </div>
                             {% endfor %}
                         </div>
@@ -50,13 +57,28 @@
                         <div
                             class="unallocated-parties scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
                         >
-                            {% for _ in range(10) %}
+                            {% for group_leader, party, checkin_status in groups %}
                                 <div
                                     class="relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
                                 >
-                                    {% for member_num in range(2) %}
-                                        <div>Member {{ member_num }}</div>
-                                    {% endfor %}
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex flex-row justify-between gap-2">
+                                            <div>
+                                                {{ group_leader.full_name }}
+                                                <span class="icon-[material-symbols--crown]"></span>
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                class="checkbox checkbox-xs"
+                                                {{ "checked" if checkin_status.checked_in }}
+                                            />
+                                        </div>
+                                        {% if party is not none %}
+                                            {% for member in party.members | sort(attribute="full_name") if member.id != group_leader.id %}
+                                                <div>{{ member.full_name }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
                                 </div>
                             {% endfor %}
                         </div>
