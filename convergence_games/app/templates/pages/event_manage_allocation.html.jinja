@@ -8,15 +8,14 @@
                         <div class="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                             {% for session in sessions %}
                                 <div
-                                    class="session-holder border-collapse border"
-                                    data-current-players="0"
+                                    class="session-slot border-collapse border"
                                     data-min-players="{{ session.game.player_count_minimum }}"
                                     data-max-players="{{ session.game.player_count_maximum }}"
                                 >
                                     <div>{{ session.table.name }} | {{ session.game.name }}</div>
                                     <div class="session-gm min-h-8"></div>
                                     <div class="session-member-list min-h-32"></div>
-                                    <div>0/X</div>
+                                    <div class="session-member-count">0/X</div>
                                 </div>
                             {% endfor %}
                         </div>
@@ -59,7 +58,8 @@
                         >
                             {% for group_leader, party, checkin_status in groups %}
                                 <div
-                                    class="relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
+                                    class="party relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
+                                    data-member-count="{{ party.members | length if party is not none else 1 }}"
                                 >
                                     <div class="flex flex-col gap-1">
                                         <div class="flex flex-row justify-between gap-2">
