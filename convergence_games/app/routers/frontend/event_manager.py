@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import itertools
 from collections.abc import Sequence
 from datetime import datetime, timezone
@@ -30,6 +31,8 @@ from convergence_games.db.models import (
     GameRequirement,
     Room,
     Session,
+    Table,
+    TimeSlot,
     User,
     UserEventCompensationTransaction,
     UserEventD20Transaction,
@@ -549,4 +552,63 @@ class EventManagerController(Controller):
             user_sqid=user_sqid,
             transaction=transaction,
             data=data,
+        )
+
+    @get(
+        path=[
+            "/event/{event_sqid:str}/manage-allocation",
+            "/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}",
+        ],
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(selectinload(Event.time_slots)),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def get_event_manage_allocation(
+        self,
+        request: Request,
+        transaction: AsyncSession,
+        event: Event,
+        permission: bool,
+        time_slot_sqid: Annotated[Sqid | None, Parameter()] = None,
+    ) -> Template:
+        time_slot: TimeSlot | None = None
+        if time_slot_sqid is not None:
+            time_slot_id = sink(time_slot_sqid)
+            time_slot = next(
+                (ts for ts in event.time_slots if ts.id == time_slot_id),
+                None,
+            )
+        if time_slot is None:
+            # Get the next upcoming time slot, or the last one if there are no upcoming slots
+            # TODO: Do this based on completed/upcoming status in time slots - logic TODO after allocation is done
+            # TODO: Also lock down changing party based on time slot status - UPCOMING (unlocked), ALLOCATING (locked), COMPLETED (locked)
+            sorted_event_time_slots = sorted(event.time_slots, key=lambda ts: ts.start_time)
+            # mock_time = datetime(2025, 9, 13, 15, 0, 0, tzinfo=zoneinfo.ZoneInfo(event.timezone))
+            time_slot = next(
+                (ts for ts in sorted_event_time_slots if ts.start_time > datetime.now(tz=dt.timezone.utc)),
+                sorted_event_time_slots[-1],
+            )
+
+        sessions_stmt = (
+            select(Session)
+            .where(Session.time_slot_id == time_slot.id, Session.committed)
+            .join(Table, Table.id == Session.table_id)
+            .options(
+                selectinload(Session.game),
+                selectinload(Session.table),
+            )
+            .order_by(Table.name)
+        )
+        sessions = (await transaction.execute(sessions_stmt)).scalars().all()
+
+        return HTMXBlockTemplate(
+            template_name="pages/event_manage_allocation.html.jinja",
+            block_name=request.htmx.target,
+            context={
+                "event": event,
+                "selected_time_slot": time_slot,
+                "sessions": sessions,
+            },
         )

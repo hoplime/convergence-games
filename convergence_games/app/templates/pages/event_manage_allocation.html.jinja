@@ -1,0 +1,68 @@
+<Page>
+    {% block content %}
+        <title>{{ event.name }} Manage Allocation - Convergence 2025</title>
+        <PageContainer size="max-w-full">
+            <Component name="event_manage_allocation" class="group">
+                <div class="full-screen grid h-screen grid-cols-[auto_max-content] gap-4">
+                    <div class="overflow-y-scroll">
+                        <div class="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                            {% for session in sessions %}
+                                <div>
+                                    <div>{{ session.table.name }} | {{ session.game.name }}</div>
+                                    <div class="session-members min-h-32"></div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="flex h-full max-w-80 flex-col gap-2 overflow-hidden">
+                        <FieldsetBase>
+                            <legend class="fieldset-legend">Display Settings</legend>
+                            <label class="label">
+                                <input type="checkbox" class="toggle toggle-primary" id="minimal-view" />
+                                <span class="label-text">Minimal View</span>
+                            </label>
+                        </FieldsetBase>
+                        <FieldsetBase>
+                            <legend class="fieldset-legend">Controls</legend>
+                            <form
+                                hx-get="/event/{{ swim(event) }}/manage-allocation/{time_slot_sqid}"
+                                hx-ext="path-params"
+                                hx-target="#content"
+                                hx-trigger="change"
+                                hx-replace-url="true"
+                            >
+                                <select class="select" name="time_slot_sqid">
+                                    {% for time_slot in event.time_slots %}
+                                        <option
+                                            value="{{ swim(time_slot) }}"
+                                            {{ "selected" if time_slot.id == selected_time_slot.id else "" }}
+                                        >
+                                            {{ time_slot.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                            <button class="save-button btn btn-primary">Save (Admin Draft)</button>
+                            <button class="commit-button btn btn-primary">Commit (Public)</button>
+                        </FieldsetBase>
+                        <h2 class="text-lg font-semibold">Unallocated Parties</h2>
+                        <div
+                            class="unallocated-parties scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
+                        >
+                            {% for _ in range(10) %}
+                                <div
+                                    class="relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
+                                >
+                                    {% for member_num in range(2) %}
+                                        <div>Member {{ member_num }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </Component>
+        </PageContainer>
+    {% endblock %}
+</Page>
