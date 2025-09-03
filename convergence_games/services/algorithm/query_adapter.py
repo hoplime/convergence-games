@@ -10,7 +10,7 @@ from ast import Continue
 from typing import cast
 
 from rich.pretty import pprint
-from sqlalchemy import URL, delete, exists, select
+from sqlalchemy import URL, Select, delete, exists, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 
@@ -50,20 +50,17 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
             Game.player_count_maximum,
             Gamemaster,
         )
+        # Include game and gamemaster of the session
         .join(Game, Game.id == Session.game_id)
         .join(Gamemaster, Gamemaster.id == Game.gamemaster_id)
-        .join(
-            UserEventCompensationTransaction,
-            (Gamemaster.id == UserEventCompensationTransaction.user_id),
-            isouter=True,
-        )
+        # Gamemaster is checked in
         .join(
             UserCheckinStatus,
             (Gamemaster.id == UserCheckinStatus.user_id) & (UserCheckinStatus.time_slot_id == time_slot_id),
-            isouter=True,
         )
-        .where(Session.time_slot_id == time_slot_id)
         .where(UserCheckinStatus.checked_in)
+        # This time slot
+        .where(Session.time_slot_id == time_slot_id)
         .options(
             selectinload(Gamemaster.latest_compensation_transaction),
             selectinload(Gamemaster.latest_d20_transaction),
@@ -79,70 +76,125 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
         r_game_id: r_session_id for r_session_id, r_game_id, *_ in session_results
     }
 
-    # Checked in users and their (personal) preferences for this session
-    PLinkThisUser = aliased(PartyUserLink)
-    PartyLeader = aliased(User)
+    gm_user_ids_this_session_subq = (
+        select(Game.gamemaster_id)
+        .select_from(Session)
+        .join(Game, (Session.time_slot_id == time_slot_id) & (Session.game_id == Game.id))
+    )
 
-    # TODO: Pop GMs from member lists so they're in parties by themselves?
-    checked_in_solo_or_leaders_stmt = (
-        select(User, Party, PartyLeader)
-        .select_from(User)
-        .where(
-            exists(UserCheckinStatus.id).where(
-                (UserCheckinStatus.user_id == User.id)
-                & (UserCheckinStatus.time_slot_id == time_slot_id)
-                & (UserCheckinStatus.checked_in)
+    # House Keeping - If there are any GMs in parties they need to be removed
+    # There hopefully shouldn't be any if we update the front end to prevent this!
+    delete_gms_in_parties_stmt = delete(PartyUserLink).where(
+        PartyUserLink.id.in_(
+            select(PartyUserLink.id)
+            .join(Party, Party.id == PartyUserLink.party_id)
+            .where(
+                PartyUserLink.user_id.in_(gm_user_ids_this_session_subq),
+                Party.time_slot_id == time_slot_id,
             )
         )
-        .join(
-            PLinkThisUser,
-            (PLinkThisUser.user_id == User.id) & (PLinkThisUser.party.has(time_slot_id=time_slot_id)),
-            isouter=True,
+    )
+    delete_empty_parties_stmt = delete(Party).where(
+        ~select(PartyUserLink).where(PartyUserLink.party_id == Party.id).exists()
+    )
+    aliased_party_user_link = aliased(PartyUserLink)
+    # TODO: Verify this last query actually works
+    party_links_to_reassign_leaders_stmt = (
+        update(PartyUserLink)
+        .where(
+            PartyUserLink.id.in_(
+                select(PartyUserLink.id)
+                .where(
+                    ~select(aliased_party_user_link)
+                    .where(
+                        PartyUserLink.party_id == aliased_party_user_link.party_id, aliased_party_user_link.is_leader
+                    )
+                    .exists()
+                )
+                .distinct(PartyUserLink.party_id)
+            )
         )
-        .join(Party, Party.id == PLinkThisUser.party_id, isouter=True)
-        # .join(PLinkAllInParty, PLinkAllInParty.party_id == Party.id, isouter=True)
-        .join(PartyLeader, (PartyLeader.party_user_links.any(party_id=Party.id, is_leader=True)), isouter=True)
-        .where((PartyLeader.id == User.id) | (PartyLeader.id.is_(None)))
-        .options(
-            selectinload(PartyLeader.game_preferences),
-            selectinload(User.game_preferences),
-            selectinload(User.latest_compensation_transaction),
-            selectinload(User.latest_d20_transaction),
-            selectinload(Party.members).options(
+        .values(is_leader=True)
+    )
+    _ = await transaction.execute(delete_gms_in_parties_stmt)
+    _ = await transaction.execute(delete_empty_parties_stmt)
+    _ = await transaction.execute(party_links_to_reassign_leaders_stmt)
+
+    # Get checked in party leaders and their preferences
+    party_subq = (
+        select(Party, PartyUserLink)
+        .join(Party, Party.id == PartyUserLink.party_id, isouter=True)
+        .where(Party.time_slot_id == time_slot.id)
+        .subquery()
+    )
+    party_alias = aliased(Party, party_subq)
+    party_user_link_alias = aliased(PartyUserLink, party_subq)
+
+    solo_players_and_leaders_stmt = cast(
+        Select[tuple[User, Party | None]],
+        (
+            select(User, party_alias)
+            .select_from(User)
+            .join(party_subq, (party_user_link_alias.user_id == User.id), isouter=True)
+            # Is checked in
+            .join(
+                UserCheckinStatus,
+                (UserCheckinStatus.user_id == User.id) & (UserCheckinStatus.time_slot_id == time_slot.id),
+            )
+            .where(UserCheckinStatus.checked_in)
+            # Leader or not in a party
+            .where(party_user_link_alias.is_leader | (party_alias.id.is_(None)))
+            # Not a GM
+            .where(~User.id.in_(gm_user_ids_this_session_subq))
+            .options(
+                selectinload(User.game_preferences),
                 selectinload(User.latest_compensation_transaction),
                 selectinload(User.latest_d20_transaction),
-            ),
-        )
+                selectinload(party_alias.members).options(
+                    selectinload(User.latest_compensation_transaction), selectinload(User.latest_d20_transaction)
+                ),
+            )
+        ),
     )
-    party_results: list[tuple[User, Party | None, User | None]] = [
-        r.tuple() for r in (await transaction.execute(checked_in_solo_or_leaders_stmt)).all()
+    party_results: list[tuple[User, Party | None]] = [
+        r.tuple() for r in (await transaction.execute(solo_players_and_leaders_stmt)).all()
     ]
 
     # Construct the final alg results
-    def _alg_party_from_party_query(user: User, party: Party | None, party_leader: User | None) -> AlgParty:
-        if party is not None and party_leader is not None:
+    def _alg_party_from_party_query(party_leader: User, party: Party | None) -> AlgParty:
+        preferences_to_use = party_leader.game_preferences
+        party_leader_id = ("USER", party_leader.id)
+        if party is not None:
             has_d20 = all(
                 member.latest_d20_transaction.current_balance > 0
                 if member.latest_d20_transaction is not None
                 else False
                 for member in party.members
             )
-            preferences_to_use = party_leader.game_preferences
-            party_leader_id = ("USER", party_leader.id)
+            total_compensation = sum(
+                member.latest_compensation_transaction.current_balance
+                if member.latest_compensation_transaction is not None
+                else 0
+                for member in party.members
+            )
             group_size = len(party.members)
         else:
-            has_d20 = user.latest_d20_transaction is not None and user.latest_d20_transaction.current_balance > 0
-            preferences_to_use = user.game_preferences
-            party_leader_id = ("USER", user.id)
+            has_d20 = (
+                party_leader.latest_d20_transaction is not None
+                and party_leader.latest_d20_transaction.current_balance > 0
+            )
+            total_compensation = (
+                party_leader.latest_compensation_transaction.current_balance
+                if party_leader.latest_compensation_transaction is not None
+                else 0
+            )
             group_size = 1
 
         return AlgParty(
             party_leader_id=party_leader_id,
             group_size=group_size,
             preferences=_user_preferences_to_alg_preferences(preferences_to_use, has_d20),
-            total_compensation=user.latest_compensation_transaction.current_balance
-            if user.latest_compensation_transaction is not None
-            else 0,
+            total_compensation=total_compensation,
         )
 
     def _user_preferences_to_alg_preferences(
@@ -153,9 +205,10 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                 gp.preference if has_d20 else min(UserGamePreferenceValue.D12, gp.preference)
             )
             for gp in preferences
+            if gp.game_id in game_id_session_id_map
         }
         alg_party_preferences = [
-            (cast(SessionID, r_session_id), preference_map.get(r_session_id, UserGamePreferenceValue.D6))
+            (r_session_id, preference_map.get(r_session_id, UserGamePreferenceValue.D6))
             for r_session_id, *_ in session_results
         ]
         return alg_party_preferences
@@ -200,10 +253,7 @@ async def adapt_results_to_database(
     print(alg_results)
     print(compensation)
 
-    existing_allocations_this_time_slot_stmt = delete(Allocation).where(
-        Allocation.session.has(time_slot_id=time_slot_id)
-    )
-    _ = await transaction.execute(existing_allocations_this_time_slot_stmt)
+    _ = await transaction.execute(delete(Allocation).where(Allocation.session.has(time_slot_id=time_slot_id)))
 
     new_allocations: list[Allocation] = []
     for alg_result in alg_results:

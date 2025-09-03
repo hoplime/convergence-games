@@ -468,7 +468,7 @@ class GameAllocator:
             print(f"Iteration {i + 1} of {self._max_iterations}")
             results = self._allocate_trial(sessions, parties)
             valid = is_valid_allocation(sessions, parties, results)
-            compensation = calculate_compensation(sessions, parties, results)
+            compensation: Compensation = calculate_compensation(sessions, parties, results)
             summaries.append(compensation.real_total)
             # pprint(results)
             print(f"Valid = {valid}")
