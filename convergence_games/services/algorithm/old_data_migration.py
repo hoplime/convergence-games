@@ -202,6 +202,7 @@ async def main(time_slot_id: int = 1) -> None:
             player_count_maximum=old_game.maximum_players,
             event=event,
             system=system,
+            submission_status="APPROVED",
         )
         new_objects.append(new_game)
 

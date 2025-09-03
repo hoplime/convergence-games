@@ -558,6 +558,21 @@ def calculate_compensation(
     #   and then double (?) the total points if the GM already had some compensation
 
     # 0. Data structures
+    sessions = sessions + [
+        AlgSession(
+            "OVERFLOW",
+            0,
+            0,
+            1_000_000,
+            0,
+            AlgParty(
+                party_id=("OVERFLOW", 0),
+                group_size=0,
+                preferences=[],
+                total_compensation=0,
+            ),
+        )
+    ]
     party_lookup = {party.party_id: party for party in parties} | {
         session.gm_party.party_id: AlgPartyP.from_alg_party(session.gm_party) for session in sessions
     }
@@ -616,6 +631,21 @@ def is_valid_allocation(sessions: list[AlgSession], parties: list[AlgPartyP], re
     success = True
 
     # 0. Data structures
+    sessions = sessions + [
+        AlgSession(
+            "OVERFLOW",
+            0,
+            0,
+            1_000_000,
+            0,
+            AlgParty(
+                party_id=("OVERFLOW", 0),
+                group_size=0,
+                preferences=[],
+                total_compensation=0,
+            ),
+        )
+    ]
     party_lookup = {party.party_id: party for party in parties} | {
         session.gm_party.party_id: AlgPartyP.from_alg_party(session.gm_party) for session in sessions
     }

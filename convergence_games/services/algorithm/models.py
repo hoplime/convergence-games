@@ -7,7 +7,7 @@ from convergence_games.db.enums import UserGamePreferenceValue as UGPV
 # so SessionID of "OVERFLOW" is the only valid string value - but we don't use Literal["OVERFLOW"] because of invariance
 type SessionID = int | str
 
-type PartyID = tuple[Literal["PARTY", "USER", "GM"], int]
+type PartyID = tuple[Literal["PARTY", "USER", "GM", "OVERFLOW"], int]
 
 
 @dataclass
