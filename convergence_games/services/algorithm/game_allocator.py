@@ -138,7 +138,9 @@ class GameAllocator:
         session_lookup = {session.session_id: session for session in sessions}
         free_party_ids: set[PartyLeaderID] = {party.party_leader_id for party in parties}
         current_allocations: dict[SessionID, CurrentAllocation] = {
-            session.session_id: CurrentAllocation(session=session) for session in sessions
+            session.session_id: CurrentAllocation(session=session)
+            for session in sessions
+            if session.session_id is not None
         }
         # TODO: Do we need to store if a party has been bumped down? We really shouldn't be bumping a group down
         # more than 1 tier from an original placement to accomodate player spread
@@ -438,12 +440,19 @@ class GameAllocator:
         print("Step 7 | Allocating Remaining Parties to Overflow")
         overflow_results = [AlgResult(party_leader_id=party_id, session_id=None) for party_id in free_party_ids]
 
-        allocated_results = [
+        allocated_player_results = [
             AlgResult(party_leader_id=party_id, session_id=session_id)
             for session_id, current_allocation in current_allocations.items()
             for party_id in (party.party_leader_id for party in current_allocation.parties)
         ]
-        return allocated_results + overflow_results
+
+        allocated_gm_results = [
+            AlgResult(party_leader_id=current_allocation.session.gm_party.party_leader_id, session_id=session_id)
+            for session_id, current_allocation in current_allocations.items()
+            if session_id not in actually_unfillable_session_ids
+        ]
+
+        return allocated_gm_results + allocated_player_results + overflow_results
 
     @overload
     def _allocate(
@@ -512,8 +521,8 @@ class GameAllocator:
 @dataclass(eq=False)
 class Compensation:
     party_compensations: dict[PartyLeaderID, int]
-    session_compensations: dict[SessionID, int]
-    session_virtual_compensations: dict[SessionID, int]
+    session_compensations: dict[SessionID | None, int]
+    session_virtual_compensations: dict[SessionID | None, int]
 
     @property
     def real_total(self) -> int:
@@ -560,7 +569,7 @@ def calculate_compensation(
     # 0. Data structures
     sessions = sessions + [
         AlgSession(
-            "OVERFLOW",
+            None,
             0,
             0,
             1_000_000,
@@ -635,7 +644,7 @@ def is_valid_allocation(sessions: list[AlgSession], parties: list[AlgPartyP], re
     # 0. Data structures
     sessions = sessions + [
         AlgSession(
-            "OVERFLOW",
+            None,
             0,
             0,
             1_000_000,

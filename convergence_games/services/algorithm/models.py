@@ -18,7 +18,7 @@ class AlgParty:
 
 @dataclass
 class AlgSession:
-    session_id: SessionID
+    session_id: SessionID | None
     min_players: int
     opt_players: int
     max_players: int
