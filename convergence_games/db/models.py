@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+from ast import For
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -514,6 +515,12 @@ class Session(Base):
     table: Mapped[Table] = relationship(back_populates="sessions", foreign_keys=table_id, lazy="noload")
     time_slot: Mapped[TimeSlot] = relationship(back_populates="sessions", foreign_keys=time_slot_id, lazy="noload")
     event: Mapped[Event] = relationship(back_populates="sessions", lazy="noload")
+    allocations: Mapped[list[Allocation]] = relationship(
+        back_populates="session",
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     __table_args__ = (
         # https://dba.stackexchange.com/a/58972
@@ -717,6 +724,9 @@ class User(Base):
     checkin_statuses: Mapped[list[UserCheckinStatus]] = relationship(
         back_populates="user", primaryjoin="User.id == UserCheckinStatus.user_id", lazy="noload"
     )
+    allocations: Mapped[list[Allocation]] = relationship(
+        back_populates="party_leader", primaryjoin="User.id == Allocation.party_leader_id", lazy="noload"
+    )
 
     @declared_attr.directive
     @classmethod
@@ -883,3 +893,17 @@ class UserEmailVerificationCode(Base):
         decoded_code = urlsafe_b64decode(magic_link_code.encode()).decode()
         code, email = decoded_code.split(":", 1)
         return code, email
+
+
+class Allocation(Base):
+    committed: Mapped[bool] = mapped_column(default=False, server_default="0", index=True)
+
+    # Foreign Keys
+    party_leader_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("session.id", ondelete="CASCADE"), index=True)
+
+    # Relationships
+    party_leader: Mapped[User] = relationship(back_populates="allocations", foreign_keys=party_leader_id, lazy="noload")
+    session: Mapped[Session] = relationship(back_populates="allocations", foreign_keys=session_id, lazy="noload")
+
+    __table_args__ = (UniqueConstraint("party_leader_id", "session_id"),)

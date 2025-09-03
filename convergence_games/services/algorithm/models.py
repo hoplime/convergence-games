@@ -1,20 +1,18 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from convergence_games.db.enums import UserGamePreferenceValue as UGPV
+from convergence_games.db.enums import UserGamePreferenceValue
 
-# Typing with lists of things is _weird_
-# so SessionID of "OVERFLOW" is the only valid string value - but we don't use Literal["OVERFLOW"] because of invariance
-type SessionID = int | str
+type SessionID = int
 
-type PartyID = tuple[Literal["PARTY", "USER", "GM", "OVERFLOW"], int]
+type PartyLeaderID = tuple[Literal["USER", "GM", "OVERFLOW"], int]
 
 
 @dataclass
 class AlgParty:
-    party_id: PartyID
+    party_leader_id: PartyLeaderID
     group_size: int
-    preferences: list[tuple[SessionID, UGPV]]
+    preferences: list[tuple[SessionID, UserGamePreferenceValue]]
     total_compensation: int
 
 
@@ -31,5 +29,5 @@ class AlgSession:
 
 @dataclass
 class AlgResult:
-    party_id: PartyID
+    party_leader_id: PartyLeaderID
     session_id: SessionID | None

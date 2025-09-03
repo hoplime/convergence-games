@@ -2,7 +2,7 @@ from random import Random
 from typing import cast, final, override
 
 from convergence_games.db.enums import UserGamePreferenceValue as UGPV
-from convergence_games.services.algorithm.models import AlgParty, AlgSession, PartyID, SessionID
+from convergence_games.services.algorithm.models import AlgParty, AlgSession, PartyLeaderID, SessionID
 
 
 @final
@@ -15,7 +15,7 @@ class MockDataGenerator:
             multitable_ids = []
         self._multitable_ids: list[SessionID] = multitable_ids
         self._session_ids = range(session_count)
-        self._party_ids = cast(list[PartyID], [("USER", i) for i in range(party_count)])
+        self._party_ids = cast(list[PartyLeaderID], [("USER", i) for i in range(party_count)])
 
     def _generate_session(self, session_id: SessionID) -> AlgSession:
         game_type = "MULTITABLE" if session_id in self._multitable_ids else "REGULAR"
@@ -37,7 +37,7 @@ class MockDataGenerator:
             ),
         )
 
-    def _generate_party(self, party_id: PartyID, force_group_size: int | None = None) -> AlgParty:
+    def _generate_party(self, party_id: PartyLeaderID, force_group_size: int | None = None) -> AlgParty:
         def preference_generator(has_d20: bool, session_id: SessionID) -> UGPV:
             choices = [UGPV.D0] * 5 + [UGPV.D4, UGPV.D6, UGPV.D8, UGPV.D10, UGPV.D12]
             if has_d20:
@@ -52,9 +52,9 @@ class MockDataGenerator:
 
         group_size = force_group_size if force_group_size is not None else self.r.choice([1] * 10 + [2, 3])
         if group_size > 1:
-            party_id = ("PARTY", party_id[1])
+            party_id = ("USER", party_id[1])
         party = AlgParty(
-            party_id=party_id,
+            party_leader_id=party_id,
             group_size=group_size,
             preferences=[
                 (

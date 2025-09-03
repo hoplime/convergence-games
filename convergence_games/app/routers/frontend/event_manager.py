@@ -4,7 +4,7 @@ import datetime as dt
 import itertools
 from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 import humanize
 from litestar import Controller, Response, get, post, put
@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.sql.selectable import Select
 
 from convergence_games.app.alerts import Alert, AlertError
 from convergence_games.app.app_config.template_config import catalog
@@ -26,6 +27,7 @@ from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
 from convergence_games.db.enums import SubmissionStatus
 from convergence_games.db.models import (
+    Allocation,
     Event,
     Game,
     GameRequirement,
@@ -617,19 +619,31 @@ class EventManagerController(Controller):
         party_alias = aliased(Party, party_subq)
         party_user_link_alias = aliased(PartyUserLink, party_subq)
 
-        solo_players_and_leaders_stmt = (
-            select(User, party_alias, UserCheckinStatus)
-            .select_from(User)
-            .join(party_subq, (party_user_link_alias.user_id == User.id), isouter=True)
-            .join(
-                UserCheckinStatus,
-                (UserCheckinStatus.user_id == User.id) & (UserCheckinStatus.time_slot_id == time_slot.id),
-                isouter=True,
-            )
-            .where(party_user_link_alias.is_leader | (party_alias.id.is_(None)))
-            .options(selectinload(party_alias.members))
+        solo_players_and_leaders_stmt = cast(
+            Select[tuple[User, Party | None, UserCheckinStatus | None, Allocation | None]],
+            (
+                select(User, party_alias, UserCheckinStatus, Allocation)
+                .select_from(User)
+                .join(party_subq, (party_user_link_alias.user_id == User.id), isouter=True)
+                .join(
+                    UserCheckinStatus,
+                    (UserCheckinStatus.user_id == User.id) & (UserCheckinStatus.time_slot_id == time_slot.id),
+                    isouter=True,
+                )
+                .join(
+                    Allocation,
+                    (Allocation.party_leader_id == User.id) & (Allocation.session.has(time_slot_id=time_slot.id)),
+                    isouter=True,
+                )
+                .where(party_user_link_alias.is_leader | (party_alias.id.is_(None)))
+                .options(selectinload(party_alias.members))
+            ),
         )
         groups = [r.tuple() for r in (await transaction.execute(solo_players_and_leaders_stmt)).all()]
+        group_dict: dict[int | None, list[tuple[User, Party | None, UserCheckinStatus | None]]] = {}
+        for user, party, user_checkin_status, allocation in groups:
+            session_id = None if allocation is None else allocation.session_id
+            group_dict.setdefault(session_id, []).append((user, party, user_checkin_status))
 
         return HTMXBlockTemplate(
             template_name="pages/event_manage_allocation.html.jinja",
@@ -638,7 +652,7 @@ class EventManagerController(Controller):
                 "event": event,
                 "selected_time_slot": time_slot,
                 "sessions": sessions,
-                "groups": groups,
+                "groups": group_dict,
             },
         )
 

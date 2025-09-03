@@ -6,15 +6,17 @@ and vice versa to reinsert.
 from __future__ import annotations
 
 import asyncio
+from ast import Continue
 from typing import cast
 
 from rich.pretty import pprint
-from sqlalchemy import URL, exists, select
+from sqlalchemy import URL, delete, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 
 from convergence_games.db.enums import UserGamePreferenceValue
 from convergence_games.db.models import (
+    Allocation,
     Game,
     Party,
     PartyUserLink,
@@ -126,16 +128,16 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                 for member in party.members
             )
             preferences_to_use = party_leader.game_preferences
-            party_id = ("PARTY", party.id)
+            party_leader_id = ("USER", party_leader.id)
             group_size = len(party.members)
         else:
             has_d20 = user.latest_d20_transaction is not None and user.latest_d20_transaction.current_balance > 0
             preferences_to_use = user.game_preferences
-            party_id = ("USER", user.id)
+            party_leader_id = ("USER", user.id)
             group_size = 1
 
         return AlgParty(
-            party_id=party_id,
+            party_leader_id=party_leader_id,
             group_size=group_size,
             preferences=_user_preferences_to_alg_preferences(preferences_to_use, has_d20),
             total_compensation=user.latest_compensation_transaction.current_balance
@@ -170,7 +172,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                 else 0
             ),
             gm_party=AlgParty(
-                party_id=("GM", r_gm.id),
+                party_leader_id=("GM", r_gm.id),
                 group_size=1,
                 preferences=_user_preferences_to_alg_preferences(
                     r_gm.game_preferences,
@@ -189,11 +191,41 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
 
 
 async def adapt_results_to_database(
-    transaction: AsyncSession, time_slot_id: int, alg_results: list[AlgResult], compensation: Compensation
+    transaction: AsyncSession,
+    time_slot_id: int,
+    alg_results: list[AlgResult],
+    compensation: Compensation,
 ) -> None:
     print(time_slot_id)
     print(alg_results)
     print(compensation)
+
+    existing_allocations_this_time_slot_stmt = delete(Allocation).where(
+        Allocation.session.has(time_slot_id=time_slot_id)
+    )
+    _ = await transaction.execute(existing_allocations_this_time_slot_stmt)
+
+    new_allocations: list[Allocation] = []
+    for alg_result in alg_results:
+        party_type, party_leader_id = alg_result.party_leader_id
+        if party_type == "OVERFLOW":
+            continue
+
+        if alg_result.session_id is None:
+            print("SOMEONE ENDED UP IN OVERFLOW TODO!")
+            continue
+
+        new_allocations.append(
+            Allocation(
+                committed=False,
+                party_leader_id=party_leader_id,
+                session_id=alg_result.session_id,
+            )
+        )
+
+    transaction.add_all(new_allocations)
+
+    # TODO: Compensation
     pass
 
 

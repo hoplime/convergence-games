@@ -13,8 +13,28 @@
                                     data-max-players="{{ session.game.player_count_maximum }}"
                                 >
                                     <div>{{ session.table.name }} | {{ session.game.name }}</div>
-                                    <div class="session-gm min-h-8"></div>
-                                    <div class="session-member-list min-h-32"></div>
+                                    <div class="session-gm min-h-8">
+                                        {% for group_leader, party, checkin_status in groups[session.id] %}
+                                            {% if group_leader.id == session.game.gamemaster_id %}
+                                                <AllocationPartyCard
+                                                    :group_leader="group_leader"
+                                                    :party="party"
+                                                    :checkin_status="checkin_status"
+                                                />
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <div class="session-member-list min-h-32">
+                                        {% for group_leader, party, checkin_status in groups[session.id] %}
+                                            {% if group_leader.id != session.game.gamemaster_id %}
+                                                <AllocationPartyCard
+                                                    :group_leader="group_leader"
+                                                    :party="party"
+                                                    :checkin_status="checkin_status"
+                                                />
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
                                     <div class="session-member-count">0/X</div>
                                 </div>
                             {% endfor %}
@@ -64,7 +84,7 @@
                         <div
                             class="unallocated-parties scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
                         >
-                            {% for group_leader, party, checkin_status in groups %}
+                            {% for group_leader, party, checkin_status in groups[None] %}
                                 <AllocationPartyCard
                                     :group_leader="group_leader"
                                     :party="party"
