@@ -6,18 +6,15 @@ and vice versa to reinsert.
 from __future__ import annotations
 
 import asyncio
-from os import pread
 from typing import cast
 
 from rich.pretty import pprint
 from sqlalchemy import URL, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
-from sqlalchemy.sql.functions import coalesce, count
 
 from convergence_games.db.enums import UserGamePreferenceValue
 from convergence_games.db.models import (
-    Event,
     Game,
     Party,
     PartyUserLink,
@@ -29,10 +26,11 @@ from convergence_games.db.models import (
     UserEventD20Transaction,
     UserGamePreference,
 )
-from convergence_games.services.algorithm.models import AlgParty, AlgSession, SessionID
+from convergence_games.services.algorithm.game_allocator import Compensation
+from convergence_games.services.algorithm.models import AlgParty, AlgResult, AlgSession, SessionID
 
 
-async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple[list[AlgParty], list[AlgSession]]:
+async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple[list[AlgSession], list[AlgParty]]:
     time_slot = (await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot_id))).scalar_one_or_none()
 
     if time_slot is None:
@@ -187,7 +185,16 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
     ]
     alg_parties = [_alg_party_from_party_query(*r) for r in party_results]
 
-    return alg_parties, alg_sessions
+    return alg_sessions, alg_parties
+
+
+async def adapt_results_to_database(
+    transaction: AsyncSession, time_slot_id: int, alg_results: list[AlgResult], compensation: Compensation
+) -> None:
+    print(time_slot_id)
+    print(alg_results)
+    print(compensation)
+    pass
 
 
 async def main() -> None:

@@ -49,7 +49,15 @@
                                     {% endfor %}
                                 </select>
                             </form>
-                            <button class="save-button btn btn-primary">Save (Admin Draft)</button>
+                            <button
+                                class="allocate-button btn btn-primary"
+                                hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/do-allocation"
+                                hx-target="#content"
+                                hx-trigger="click"
+                                hx-confirm="Are you sure you want to redo an allocation? This will rerun the algorithm."
+                            >
+                                Allocate
+                            </button>
                             <button class="commit-button btn btn-primary">Commit (Public)</button>
                         </FieldsetBase>
                         <h2 class="text-lg font-semibold">Unallocated Parties</h2>
@@ -57,29 +65,11 @@
                             class="unallocated-parties scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
                         >
                             {% for group_leader, party, checkin_status in groups %}
-                                <div
-                                    class="party relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
-                                    data-member-count="{{ party.members | length if party is not none else 1 }}"
-                                >
-                                    <div class="flex flex-col gap-1">
-                                        <div class="flex flex-row justify-between gap-2">
-                                            <div>
-                                                {{ group_leader.full_name }}
-                                                <span class="icon-[material-symbols--crown]"></span>
-                                            </div>
-                                            <input
-                                                type="checkbox"
-                                                class="checkbox checkbox-xs"
-                                                {{ "checked" if checkin_status.checked_in }}
-                                            />
-                                        </div>
-                                        {% if party is not none %}
-                                            {% for member in party.members | sort(attribute="full_name") if member.id != group_leader.id %}
-                                                <div>{{ member.full_name }}</div>
-                                            {% endfor %}
-                                        {% endif %}
-                                    </div>
-                                </div>
+                                <AllocationPartyCard
+                                    :group_leader="group_leader"
+                                    :party="party"
+                                    :checkin_status="checkin_status"
+                                />
                             {% endfor %}
                         </div>
                     </div>

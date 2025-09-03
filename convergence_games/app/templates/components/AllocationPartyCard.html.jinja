@@ -1,0 +1,28 @@
+{#def
+    group_leader: User,
+    party: Party,
+    checkin_status: UserCheckinStatus,
+#}
+<div
+    class="party relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
+    data-member-count="{{ party.members | length if party is not none else 1 }}"
+>
+    <div class="flex flex-col gap-1">
+        <div class="flex flex-row justify-between gap-2">
+            <div>
+                {{ group_leader.full_name }}
+                <span class="icon-[material-symbols--crown]"></span>
+            </div>
+            <input
+                type="checkbox"
+                class="checkbox checkbox-xs"
+                {{ "checked" if checkin_status is not none and checkin_status.checked_in }}
+            />
+        </div>
+        {% if party is not none %}
+            {% for member in party.members | sort(attribute="full_name") if member.id != group_leader.id %}
+                <div>{{ member.full_name }}</div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>

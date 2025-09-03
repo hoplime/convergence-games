@@ -7,11 +7,11 @@ from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 import humanize
-from litestar import Controller, Response, get, put
+from litestar import Controller, Response, get, post, put
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
 from litestar.params import Body, Parameter, RequestEncodingType
-from litestar.response import Template
+from litestar.response import Redirect, Template
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import select
@@ -43,6 +43,8 @@ from convergence_games.db.models import (
 )
 from convergence_games.db.ocean import Sqid, sink, swim
 from convergence_games.permissions import user_has_permission
+from convergence_games.services.algorithm.game_allocator import GameAllocator
+from convergence_games.services.algorithm.query_adapter import adapt_results_to_database, adapt_to_inputs
 
 # region Data Schema
 SqidInt = Annotated[int, BeforeValidator(sink)]
@@ -639,3 +641,28 @@ class EventManagerController(Controller):
                 "groups": groups,
             },
         )
+
+    @post(
+        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/do-allocation",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(selectinload(Event.time_slots)),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def post_event_do_allocation(
+        self,
+        request: Request,
+        transaction: AsyncSession,
+        event: Event,
+        permission: bool,
+        time_slot_sqid: Annotated[Sqid, Parameter()],
+    ) -> Redirect:
+        time_slot_id = sink(time_slot_sqid)
+
+        sessions, parties = await adapt_to_inputs(transaction, time_slot_id)
+        game_allocator = GameAllocator(max_iterations=1)
+        alg_results, compensation = game_allocator.allocate(sessions, parties, False)
+        await adapt_results_to_database(transaction, time_slot_id, alg_results, compensation)
+
+        return Redirect(f"/event/{swim(event)}/manage-allocation/{time_slot_sqid}")
