@@ -31,3 +31,4 @@ class AlgSession:
 class AlgResult:
     party_leader_id: PartyLeaderID
     session_id: SessionID | None
+    assignment_type: Literal["PLAYER", "GM"]

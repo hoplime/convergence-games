@@ -14,6 +14,7 @@ from litestar.params import Body, Parameter, RequestEncodingType
 from litestar.response import Redirect, Template
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
+from rich.pretty import pprint
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
@@ -675,8 +676,10 @@ class EventManagerController(Controller):
         time_slot_id = sink(time_slot_sqid)
 
         sessions, parties = await adapt_to_inputs(transaction, time_slot_id)
-        game_allocator = GameAllocator(max_iterations=1)
+        game_allocator = GameAllocator(max_iterations=5000, debug_print=False)
         alg_results, compensation = game_allocator.allocate(sessions, parties, False)
+        pprint(alg_results)
+        pprint(compensation)
         await adapt_results_to_database(transaction, time_slot_id, alg_results, compensation)
 
         return Redirect(f"/event/{swim(event)}/manage-allocation/{time_slot_sqid}")
