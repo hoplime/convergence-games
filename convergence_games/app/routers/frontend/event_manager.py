@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import itertools
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated, Literal, cast
 
 import humanize
@@ -590,12 +590,14 @@ class EventManagerController(Controller):
             )
         if time_slot is None:
             # Get the next upcoming time slot, or the last one if there are no upcoming slots
-            # TODO: Do this based on completed/upcoming status in time slots - logic TODO after allocation is done
-            # TODO: Also lock down changing party based on time slot status - UPCOMING (unlocked), ALLOCATING (locked), COMPLETED (locked)
+            # 30 minute buffer on top of start time in case allocation starts later than the start time
             sorted_event_time_slots = sorted(event.time_slots, key=lambda ts: ts.start_time)
-            # mock_time = datetime(2025, 9, 13, 15, 0, 0, tzinfo=zoneinfo.ZoneInfo(event.timezone))
             time_slot = next(
-                (ts for ts in sorted_event_time_slots if ts.start_time > datetime.now(tz=dt.timezone.utc)),
+                (
+                    ts
+                    for ts in sorted_event_time_slots
+                    if (ts.start_time + timedelta(minutes=30)) > datetime.now(tz=dt.timezone.utc)
+                ),
                 sorted_event_time_slots[-1],
             )
 
