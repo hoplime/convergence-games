@@ -77,7 +77,8 @@ async def user_is_gm_for_this_time_slot(
         await transaction.execute(
             select(Session.id)
             .join(Game, Session.game_id == Game.id)
-            .where(Session.time_slot_id == time_slot.id, Game.gamemaster_id == user.id)
+            .where(Session.time_slot_id == time_slot.id, Game.gamemaster_id == user.id, Session.committed)
+            .limit(1)
         )
     ).scalar_one_or_none() is not None
 
