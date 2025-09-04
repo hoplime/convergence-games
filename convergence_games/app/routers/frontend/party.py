@@ -17,8 +17,10 @@ from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import TimeSlotStatus
 from convergence_games.db.models import (
     Event,
+    Game,
     Party,
     PartyUserLink,
+    Session,
     TimeSlot,
     User,
     UserCheckinStatus,
@@ -66,6 +68,20 @@ def time_slot_with(*options: ExecutableOption, raise_404: bool = False) -> Provi
     return Provide(wrapper)
 
 
+async def user_is_gm_for_this_time_slot(
+    transaction: AsyncSession,
+    user: User,
+    time_slot: TimeSlot,
+) -> bool:
+    return (
+        await transaction.execute(
+            select(Session.id)
+            .join(Game, Session.game_id == Game.id)
+            .where(Session.time_slot_id == time_slot.id, Game.gamemaster_id == user.id)
+        )
+    ).scalar_one_or_none() is not None
+
+
 class PartyController(Controller):
     path = "/party"
     guards = [user_guard]
@@ -104,6 +120,7 @@ class PartyController(Controller):
                 .where(UserCheckinStatus.time_slot_id == time_slot.id)
             )
         ).scalar_one_or_none() or False
+        is_gm = await user_is_gm_for_this_time_slot(transaction, user, time_slot)
         if party is None:
             leader_id = None
         else:
@@ -120,6 +137,7 @@ class PartyController(Controller):
                 request=request,
                 max_party_size=max_party_size,
                 checked_in=checked_in,
+                is_gm=is_gm,
             )
         )
 
@@ -140,6 +158,11 @@ class PartyController(Controller):
 
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
+
+        is_gm = await user_is_gm_for_this_time_slot(transaction, user, time_slot)
+
+        if is_gm:
+            raise AlertError([Alert(alert_class="alert-error", message="GMs cannot host parties for their sessions.")])
 
         existing_party_for_time_slot = (
             await transaction.execute(
@@ -186,6 +209,11 @@ class PartyController(Controller):
 
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
+
+        is_gm = await user_is_gm_for_this_time_slot(transaction, user, time_slot)
+
+        if is_gm:
+            raise AlertError([Alert(alert_class="alert-error", message="GMs cannot join parties for their sessions.")])
 
         existing_party_user_link = (
             await transaction.execute(

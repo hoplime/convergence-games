@@ -4,6 +4,7 @@
     leader_id: int | None = None,
     max_party_size: int = 3,
     checked_in: bool = False,
+    is_gm: bool = False,
 #}
 <div {{ attrs.render(class="card-body party-overview p-0") }} hx-target="this">
     {% if time_slot.checkin_open_time and utcnow() < time_slot.checkin_open_time %}
@@ -48,6 +49,13 @@
                         </div>
                     </div>
                 </div>
+                {% if is_gm %}
+                    <span class="text-warning"
+                        >Woops, here be dragons! You somehow managed to get into a party as a GM this session! Maybe the
+                        schedule changed. Please remove yourself from this party, otherwise you will be removed from
+                        this party before allocations.</span
+                    >
+                {% endif %}
                 {% if time_slot.status == 'Allocating' %}
                     <span>Allocating - party changes are locked</span>
                 {% elif time_slot.status == 'Allocated' %}
@@ -114,6 +122,9 @@
                 </div>
             {% endif %}
         </div>
+    {% elif is_gm %}
+        <h2 class="card-title">GMing</h2>
+        <p>As a GM for this session, you are unable to party up with other players.</p>
     {% else %}
         <h2 class="card-title">Adventuring Solo</h2>
         {% if time_slot.status == 'Allocating' %}
