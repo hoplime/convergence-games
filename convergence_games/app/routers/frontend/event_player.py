@@ -12,7 +12,7 @@ from litestar.exceptions import HTTPException
 from litestar.params import Parameter
 from litestar.response import Template
 from pydantic import BaseModel, BeforeValidator
-from sqlalchemy import and_, exists, select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
@@ -56,6 +56,7 @@ class EventGamesQuery(BaseModel):
     bonus: list[int] = []
     content: list[SqidInt] = []
     preference: list[Literal["unrated", "rated"]] = []
+    session: list[SqidInt] = []
 
 
 @dataclass
@@ -137,6 +138,11 @@ async def get_event_approved_games_dep(
             stmt = stmt.join(UserGamePreference, UserGamePreference.game_id == Game.id).where(
                 UserGamePreference.user_id == request.user.id
             )
+    if query_params.session:
+        stmt = stmt.join(Session, Session.game_id == Game.id).where(
+            Session.time_slot_id.in_(query_params.session),
+            Session.committed,
+        )
     games = (await transaction.execute(stmt)).scalars().all()
     return games
 
@@ -148,6 +154,7 @@ async def event_games_query_from_params_dep(
     bonus: list[int] | None = None,
     content: list[Sqid] | None = None,
     preference: list[Literal["unrated", "rated"]] | None = None,
+    session: list[Sqid] | None = None,
 ) -> EventGamesQuery:
     return EventGamesQuery.model_validate(
         {
@@ -157,6 +164,7 @@ async def event_games_query_from_params_dep(
             "bonus": bonus or [],
             "content": content or [],
             "preference": preference or [],
+            "session": session or [],
         }
     )
 
@@ -282,7 +290,20 @@ async def get_form_data_dep(
                     selected="rated" in query_params.preference,
                 ),
             ],
-            description="Find games that you've not yet rated, or only games that you've rated.",
+            description="Find games that you've not yet rated, or only games that you've rated:",
+        ),
+        "session": MultiselectFormData(
+            label="Session",
+            name="session",
+            options=[
+                MultiselectFormDataOption(
+                    label=time_slot.name,
+                    value=swim(time_slot),
+                    selected=time_slot.id in query_params.session,
+                )
+                for time_slot in sorted(event.time_slots, key=lambda ts: ts.start_time)
+            ],
+            description="Find games scheduled for any of these session times:",
         ),
     }
 

@@ -15,6 +15,9 @@
                 <div class="inline-flex h-8 items-center justify-center text-sm">
                     <span class="icon-[mingcute--filter-fill]"></span>
                 </div>
+                {% if SETTINGS.FLAG_PLANNER %}
+                    <MultiselectTab :form_data="form_data.session" />
+                {% endif %}
                 <MultiselectTab :form_data="form_data.genre" />
                 <MultiselectTab :form_data="form_data.system" />
                 <MultiselectTab :form_data="form_data.tone" />
