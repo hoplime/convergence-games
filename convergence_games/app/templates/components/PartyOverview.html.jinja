@@ -8,25 +8,54 @@
 #}
 <div {{ attrs.render(class="card-body party-overview p-0") }} hx-target="this">
     {% if time_slot.checkin_open_time and utcnow() < time_slot.checkin_open_time %}
+        {# STATE = Check in closed #}
         <span>Check in opens @ <TimeDisplay :time="time_slot.checkin_open_time" :date="true" /></span>
-    {% elif checked_in %}
-        <span class="text-sm">Check in if you are available to play or GM in this session.</span>
-        <div class="card-actions items-center justify-start">
-            <button
-                class="btn btn-sm btn-error"
-                hx-post="/party/checkout/{{ swim(time_slot) }}"
-                hx-confirm="Are you sure you want to check out?"
-            >
-                Check Out
-            </button>
-            <span>You are checked in.</span>
-        </div>
     {% else %}
-        <span class="text-sm">Check in if you are available to play or GM in this session.</span>
-        <div class="card-actions items-center justify-start">
-            <button class="btn btn-sm btn-primary" hx-post="/party/checkin/{{ swim(time_slot) }}">Check In</button>
-            <span>You are not checked in.</span>
-        </div>
+        {# STATE = Check in closed #}
+        {% if party is not none and request.user.id != leader_id %}
+            {# STATE = In party, not leader #}
+            {# Determine if leader is checked in #}
+            {% set ns = namespace(leader_checked_in=false) %}
+            {% for member in party.members %}
+                {% if member.id == leader_id and member.checkin_statuses and member.checkin_statuses[0].checked_in %}
+                    {% set ns.leader_checked_in = true %}
+                {% endif %}
+            {% endfor %}
+            <span class="text-sm">Your party leader should check in if you are available to play this session.</span>
+            {% if ns.leader_checked_in %}
+                <span class="text-success"
+                    ><span class="icon-[material-symbols--check]"></span> Your party leader is checked in.</span
+                >
+            {% else %}
+                <span class="text-warning"
+                    ><span class="icon-[material-symbols--close]"></span> Your party leader is not checked in.</span
+                >
+            {% endif %}
+        {% elif checked_in %}
+            {# STATE = Solo or leader, checked in #}
+            <span class="text-sm">Check in if you are available to play {{ "or GM" if is_gm }} in this session.</span>
+            <div class="card-actions items-center justify-start">
+                <button
+                    class="btn btn-sm btn-error"
+                    hx-post="/party/checkout/{{ swim(time_slot) }}"
+                    hx-confirm="Are you sure you want to check out?"
+                >
+                    Check Out
+                </button>
+                <span class="text-success"
+                    ><span class="icon-[material-symbols--check]"></span> You are checked in.</span
+                >
+            </div>
+        {% else %}
+            {# STATE = Solo or leader, not checked in #}
+            <span class="text-sm">Check in if you are available to play {{ "or GM" if is_gm }} in this session.</span>
+            <div class="card-actions items-center justify-start">
+                <button class="btn btn-sm btn-primary" hx-post="/party/checkin/{{ swim(time_slot) }}">Check In</button>
+                <span class="text-warning"
+                    ><span class="icon-[material-symbols--close]"></span> You are not checked in.</span
+                >
+            </div>
+        {% endif %}
     {% endif %}
     <div class="divider m-0 divider-vertical"></div>
     {% if party %}
@@ -72,9 +101,6 @@
                                     {% endif %}
                                     {% if member.latest_d20_transaction is not none and member.latest_d20_transaction.current_balance > 0 %}
                                         <span class="icon-[mdi--dice-d20] bg-yellow-400"></span>
-                                    {% endif %}
-                                    {% if member.checkin_statuses and member.checkin_statuses[0].checked_in %}
-                                        <span class="icon-[material-symbols--check]"></span>
                                     {% endif %}
                                 </span>
                                 {% if time_slot.status == 'Pre-Allocation' and request.user.id == leader_id and request.user.id != member.id %}
