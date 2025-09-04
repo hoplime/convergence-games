@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import UserGamePreferenceValue
-from convergence_games.db.models import Game, Session, User, UserEventD20Transaction, UserGamePreference
+from convergence_games.db.models import Game, Session, Table, User, UserEventD20Transaction, UserGamePreference
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.services import ImageLoader
 
@@ -91,7 +91,7 @@ class GameController(Controller):
                         Session.committed,
                     )
                     .options(
-                        selectinload(Session.table),
+                        selectinload(Session.table).selectinload(Table.room),
                         selectinload(Session.time_slot),
                     )
                 )

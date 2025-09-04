@@ -112,11 +112,17 @@
                             <ul class="list-inside list-disc space-y-1">
                                 {% for session in scheduled_sessions %}
                                     <li>
-                                        Table {{ session.table.name }} - {{ session.time_slot.name }}
+                                        <span
+                                            >{{ session.table.room.name }}, Table {{ session.table.name }} -
+                                            {{ session.time_slot.name }}</span
+                                        >
                                         <span class="italic">
                                             <TimeDisplay :time="session.time_slot.start_time" /> -
                                             <TimeDisplay :time="session.time_slot.end_time" />
                                         </span>
+                                        {% if bitwise_and(session.table.room.facilities, 1) %}
+                                            <span class="badge">Quiet Room</span>
+                                        {% endif %}
                                     </li>
                                 {% endfor %}
                             </ul>
