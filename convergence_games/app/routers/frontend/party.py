@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from litestar import Controller, get, post, put
+from litestar import Controller, get, post
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
 from litestar.response import Redirect
@@ -479,6 +479,9 @@ class PartyController(Controller):
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
+        if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
+            return Redirect(f"/party/overview/{swim(time_slot)}")
+
         existing_checkin = (
             await transaction.execute(
                 select(UserCheckinStatus).where(
@@ -510,6 +513,9 @@ class PartyController(Controller):
     ) -> Template | Redirect:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
+
+        if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
+            return Redirect(f"/party/overview/{swim(time_slot)}")
 
         existing_checkin = (
             await transaction.execute(

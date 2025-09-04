@@ -35,13 +35,17 @@
             {# STATE = Solo or leader, checked in #}
             <span class="text-sm">Check in if you are available to play {{ "or GM" if is_gm }} in this session.</span>
             <div class="card-actions items-center justify-start">
-                <button
-                    class="btn btn-sm btn-error"
-                    hx-post="/party/checkout/{{ swim(time_slot) }}"
-                    hx-confirm="Are you sure you want to check out?"
-                >
-                    Check Out
-                </button>
+                {% if time_slot.status not in ['Allocating', 'Allocated'] %}
+                    <button
+                        class="btn btn-sm btn-error"
+                        hx-post="/party/checkout/{{ swim(time_slot) }}"
+                        hx-confirm="Are you sure you want to check out?"
+                    >
+                        Check Out
+                    </button>
+                {% else %}
+                    <button class="btn-disabled btn btn-sm" disabled>Check Out (Locked)</button>
+                {% endif %}
                 <span class="text-success"
                     ><span class="icon-[material-symbols--check]"></span> You are checked in.</span
                 >
@@ -50,7 +54,13 @@
             {# STATE = Solo or leader, not checked in #}
             <span class="text-sm">Check in if you are available to play {{ "or GM" if is_gm }} in this session.</span>
             <div class="card-actions items-center justify-start">
-                <button class="btn btn-sm btn-primary" hx-post="/party/checkin/{{ swim(time_slot) }}">Check In</button>
+                {% if time_slot.status not in ['Allocating', 'Allocated'] %}
+                    <button class="btn btn-sm btn-primary" hx-post="/party/checkin/{{ swim(time_slot) }}">
+                        Check In
+                    </button>
+                {% else %}
+                    <button class="btn-disabled btn btn-sm" disabled>Check In (Locked)</button>
+                {% endif %}
                 <span class="text-warning"
                     ><span class="icon-[material-symbols--close]"></span> You are not checked in.</span
                 >
