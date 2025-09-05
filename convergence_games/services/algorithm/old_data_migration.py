@@ -306,5 +306,19 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--time-slot-id", "-t", type=int, default=1)
+    parser.add_argument("--just-create", action="store_true")
     args = parser.parse_args()
-    asyncio.run(main(args.time_slot_id))
+
+    if args.just_create:
+        print("Just creating metadata...")
+
+        async def create_metadata_only() -> None:
+            async with new_engine.begin() as conn:
+                # await conn.run_sync(Base.metadata.drop_all)
+                await conn.run_sync(Base.metadata.create_all)
+            await new_engine.dispose()
+            print("Metadata creation complete.")
+
+        asyncio.run(create_metadata_only())
+    else:
+        asyncio.run(main(args.time_slot_id))
