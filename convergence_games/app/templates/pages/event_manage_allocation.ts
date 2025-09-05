@@ -177,11 +177,29 @@ const event_manage_allocation = (scope_id: string) => {
             const parentElement = party.closest(".session-slot") as SessionSlot | null;
             return {
                 leader: party.dataset.leader || "",
-                allocated_session: parentElement ? parentElement.session : null,
+                session: parentElement ? parentElement.session : null,
             };
         });
 
         console.log(allocations);
+
+        const bodyJson = {
+            allocations: allocations,
+            commit: commit,
+        };
+
+        fetch(window.location.href, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(bodyJson),
+        }).then((response) => {
+            if (!response.ok) {
+                console.error(`Failed to save state: ${response.status} ${response.statusText}`);
+            }
+            // TODO: lastSavedInput time?
+        });
     };
 
     // Add event listeners to the buttons

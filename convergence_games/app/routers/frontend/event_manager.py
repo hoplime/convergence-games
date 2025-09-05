@@ -16,7 +16,7 @@ from litestar.response import Redirect, Template
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
 from rich.pretty import pprint
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
@@ -82,6 +82,16 @@ class TierAsDict(TypedDict):
 class AllocationPartyMetadata(BaseModel):
     gm_of: list[Sqid] = []
     tiers: dict[Sqid, TierAsDict] = {}
+
+
+class PutEventManageAllocationSession(BaseModel):
+    leader: SqidInt
+    session: SqidInt | None
+
+
+class PutEventManageAllocationForm(BaseModel):
+    allocations: list[PutEventManageAllocationSession]
+    commit: bool = False
 
 
 # endregion
@@ -732,3 +742,61 @@ class EventManagerController(Controller):
         await adapt_results_to_database(transaction, time_slot_id, alg_results, compensation)
 
         return Redirect(f"/event/{swim(event)}/manage-allocation/{time_slot_sqid}")
+
+    @put(
+        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(selectinload(Event.time_slots)),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def put_event_manage_allocation(
+        self,
+        request: Request,
+        transaction: AsyncSession,
+        permission: bool,
+        time_slot_sqid: Annotated[Sqid, Parameter()],
+        data: Annotated[PutEventManageAllocationForm, Body(media_type=RequestEncodingType.JSON)],
+    ) -> Response[str]:
+        # Update the allocations to match the new data
+        new_allocations: list[Allocation] = []
+
+        for allocation_data in data.allocations:
+            if allocation_data.session is None:
+                # No session allocated, skip
+                # This'll go to overflow
+                continue
+
+            new_allocations.append(
+                Allocation(
+                    party_leader_id=allocation_data.leader,
+                    session_id=allocation_data.session,
+                    committed=False,
+                )
+            )
+
+            if data.commit:
+                # Also add a committed allocation for the party leader
+                new_allocations.append(
+                    Allocation(
+                        party_leader_id=allocation_data.leader,
+                        session_id=allocation_data.session,
+                        committed=True,
+                    )
+                )
+
+        # TODO ON COMMIT
+        # Compensation
+        # Spending D20s
+
+        # Remove existing allocations for this time slot
+        delete_existing_allocations_stmt = delete(Allocation).where(
+            Allocation.session.has(time_slot_id=sink(time_slot_sqid))
+        )
+        _ = await transaction.execute(delete_existing_allocations_stmt)
+
+        # Add new allocations
+        transaction.add_all(new_allocations)
+
+        return Response(content="", status_code=HTTP_204_NO_CONTENT)

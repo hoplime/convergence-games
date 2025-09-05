@@ -905,4 +905,4 @@ class Allocation(Base):
     party_leader: Mapped[User] = relationship(back_populates="allocations", foreign_keys=party_leader_id, lazy="noload")
     session: Mapped[Session] = relationship(back_populates="allocations", foreign_keys=session_id, lazy="noload")
 
-    __table_args__ = (UniqueConstraint("party_leader_id", "session_id"),)
+    __table_args__ = (UniqueConstraint("party_leader_id", "session_id", "committed"),)
