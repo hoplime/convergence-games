@@ -5,14 +5,18 @@
     metadata: AllocationPartyMetadata,
 #}
 <div
-    class="party relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
+    class="party group/party relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
     data-member-count="{{ party.members | length if party is not none else 1 }}"
     {{ "data-gm-of='" ~ dumps(metadata.gm_of) ~ "'" }}
     {{ "data-tiers='" ~ dumps(metadata.tiers) ~ "'" }}
 >
     <div class="flex flex-col gap-1">
         <div class="flex flex-row justify-between gap-2">
-            <div>{{ group_leader.full_name }} [{{ group_leader.id }}]</div>
+            <div>{{ group_leader.full_name }}</div>
+            <span
+                class="hidden group-not-[[data-gm-of='[]']]/party:block group-not-[[data-in-gm-game]]/party:text-red-500"
+                >GM</span
+            >
             <input
                 type="checkbox"
                 class="checkbox checkbox-xs"
@@ -21,7 +25,7 @@
         </div>
         {% if party is not none %}
             {% for member in party.members | sort(attribute="full_name") if member.id != group_leader.id %}
-                <div>{{ member.full_name }} [{{ member.id }}]</div>
+                <div>{{ member.full_name }}</div>
             {% endfor %}
         {% endif %}
     </div>
