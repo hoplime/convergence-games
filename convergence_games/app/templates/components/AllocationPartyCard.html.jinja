@@ -6,6 +6,7 @@
 #}
 <div
     class="party group/party relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
+    data-leader="{{ swim(group_leader) }}"
     data-member-count="{{ party.members | length if party is not none else 1 }}"
     {{ "data-gm-of='" ~ dumps(metadata.gm_of) ~ "'" }}
     {{ "data-tiers='" ~ dumps(metadata.tiers) ~ "'" }}

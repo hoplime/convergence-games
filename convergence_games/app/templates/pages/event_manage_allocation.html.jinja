@@ -66,13 +66,13 @@
                     </div>
 
                     <div class="flex h-full max-w-80 flex-col gap-2 overflow-hidden">
-                        <FieldsetBase>
+                        {# <FieldsetBase>
                             <legend class="fieldset-legend">Display Settings</legend>
                             <label class="label">
                                 <input type="checkbox" class="toggle toggle-primary" id="minimal-view" />
                                 <span class="label-text">Minimal View</span>
                             </label>
-                        </FieldsetBase>
+                        </FieldsetBase> #}
                         <FieldsetBase>
                             <legend class="fieldset-legend">Controls</legend>
                             <form
@@ -102,6 +102,7 @@
                             >
                                 Allocate
                             </button>
+                            <button class="save-button btn btn-primary">Save (Admin Draft)</button>
                             <button class="commit-button btn btn-primary">Commit (Public)</button>
                         </FieldsetBase>
                         <h2 class="text-lg font-semibold">Unallocated Parties</h2>

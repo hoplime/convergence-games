@@ -1,6 +1,7 @@
 import Sortable from "sortablejs";
 
 type SessionID = string;
+type UserID = string;
 
 type Tier = {
     is_d20: boolean;
@@ -8,6 +9,7 @@ type Tier = {
 };
 
 type Party = HTMLElement & {
+    leader: UserID;
     member_count: number;
     gm_of: [SessionID];
     tiers: { [key: SessionID]: Tier };
@@ -29,13 +31,13 @@ type SessionMemberList = HTMLElement & {
     session_slot: SessionSlot;
 };
 
-const is_session_member_list = (element: HTMLElement): element is SessionMemberList => {
+const isSessionMemberList = (element: HTMLElement): element is SessionMemberList => {
     return (element as SessionMemberList).typ === "member-list";
 };
 
 type SessionMemberCount = HTMLElement;
 
-const update_session_member_count_display = (sessionSlot: SessionSlot) => {
+const updateSessionMemberCountDisplay = (sessionSlot: SessionSlot) => {
     sessionSlot.session_member_count.textContent = `${sessionSlot.current_players}/${sessionSlot.min_players}-${sessionSlot.max_players}`;
     if (
         sessionSlot.current_players < sessionSlot.min_players ||
@@ -50,7 +52,6 @@ const update_session_member_count_display = (sessionSlot: SessionSlot) => {
 
     for (let i = 0; i < sessionSlot.session_member_count_displays.length; i++) {
         const display = sessionSlot.session_member_count_displays[i];
-        console.log(display);
         if (i < sessionSlot.current_players) {
             display.classList.add("enabled");
         } else {
@@ -70,17 +71,16 @@ const event_manage_allocation = (scope_id: string) => {
     const unallocatedPartiesElement = scope.querySelector(".unallocated-parties") as HTMLElement;
     const sessionSlotElements = scope.querySelectorAll(".session-slot") as NodeListOf<SessionSlot>;
     const partyElements = scope.querySelectorAll(".party") as NodeListOf<Party>;
+    const saveButton = scope.querySelector(".save-button") as HTMLButtonElement;
+    const commitButton = scope.querySelector(".commit-button") as HTMLButtonElement;
 
     const emplaceParty = (
         party: Party,
         fromElement: SessionMemberList | HTMLElement,
         toElement: SessionMemberList | HTMLElement,
     ) => {
-        console.log("Emplacing party");
-        console.log(party);
-
         // Deal with FROM
-        if (is_session_member_list(fromElement)) {
+        if (isSessionMemberList(fromElement)) {
             const sessionSlot = fromElement.session_slot;
 
             if (party.gm_of.includes(sessionSlot.session)) {
@@ -88,12 +88,12 @@ const event_manage_allocation = (scope_id: string) => {
             } else {
                 // We were a player of the session we just left
                 sessionSlot.current_players -= party.member_count;
-                update_session_member_count_display(sessionSlot);
+                updateSessionMemberCountDisplay(sessionSlot);
             }
         }
 
         // Deal with TO
-        if (is_session_member_list(toElement)) {
+        if (isSessionMemberList(toElement)) {
             const sessionSlot = toElement.session_slot;
 
             // If we are the GM, move to the top of the list
@@ -105,7 +105,7 @@ const event_manage_allocation = (scope_id: string) => {
             } else {
                 // We are a player of this session
                 sessionSlot.current_players += party.member_count;
-                update_session_member_count_display(sessionSlot);
+                updateSessionMemberCountDisplay(sessionSlot);
                 delete party.dataset.inGmGame;
                 party.dataset.tierValue = party.tiers[sessionSlot.session || ""]?.tier.toString() || "unknown";
             }
@@ -154,6 +154,7 @@ const event_manage_allocation = (scope_id: string) => {
     Sortable.create(unallocatedPartiesElement, options);
 
     for (const party of partyElements) {
+        party.leader = party.dataset.leader || "";
         party.member_count = parseInt(party.dataset.memberCount || "0", 10);
         party.gm_of = JSON.parse(party.dataset.gmOf || "[]");
         party.tiers = JSON.parse(party.dataset.tiers || "{}");
@@ -168,6 +169,34 @@ const event_manage_allocation = (scope_id: string) => {
         // Place "from" unallocatedPartiesElement since we are just doing initial placement
         emplaceParty(party, unallocatedPartiesElement, parentElement);
     }
+
+    const saveState = (commit: boolean) => {
+        console.log(`Saving state ${commit ? "with" : "without"} commit`);
+        // Gather state
+        const allocations = Array.from(partyElements).map((party) => {
+            const parentElement = party.closest(".session-slot") as SessionSlot | null;
+            return {
+                leader: party.dataset.leader || "",
+                allocated_session: parentElement ? parentElement.session : null,
+            };
+        });
+
+        console.log(allocations);
+    };
+
+    // Add event listeners to the buttons
+    saveButton.addEventListener("click", () => {
+        console.log("Save button clicked");
+        if (confirm("Are you sure you want to save the current allocation?")) {
+            saveState(false);
+        }
+    });
+    commitButton.addEventListener("click", () => {
+        console.log("Commit button clicked");
+        if (confirm("Are you sure you want to commit the current allocation?")) {
+            saveState(true);
+        }
+    });
 };
 
 export default event_manage_allocation;
