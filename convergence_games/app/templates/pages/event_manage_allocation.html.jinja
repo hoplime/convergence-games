@@ -8,13 +8,13 @@
                         <div class="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                             {% for session in sessions %}
                                 <div
-                                    class="session-slot flex border-collapse flex-col gap-2 border"
+                                    class="session-slot group/session flex border-collapse flex-col gap-2 border"
                                     data-min-players="{{ session.game.player_count_minimum }}"
                                     data-opt-players="{{ session.game.player_count_optimum }}"
                                     data-max-players="{{ session.game.player_count_maximum }}"
                                     data-session="{{ swim(session) }}"
                                 >
-                                    <div>{{ session.table.name }} | {{ session.game.name }} [{{ session.id }}]</div>
+                                    <div>{{ session.table.name }} | {{ session.game.name }}</div>
                                     <div class="session-member-list min-h-32 grow">
                                         {# Put the GM first! #}
                                         {% for group_leader, party, checkin_status, metadata in groups[session.id] %}
@@ -39,7 +39,15 @@
                                         {% endfor %}
                                     </div>
                                     <div class="flex flex-row items-end justify-between p-1">
-                                        <div class="session-member-count">0/X</div>
+                                        <div>
+                                            <span
+                                                class="icon-[material-symbols--check] hidden text-success group-has-[[data-in-gm-game]]/session:inline-block"
+                                            ></span>
+                                            <span
+                                                class="icon-[material-symbols--close] inline-block text-error group-has-[[data-in-gm-game]]/session:hidden"
+                                            ></span>
+                                            <span class="session-member-count">0/X</span>
+                                        </div>
                                         <div class="session-member-count-display flex flex-row gap-[1px]">
                                             {% for i in range(session.game.player_count_maximum) %}
                                                 {%

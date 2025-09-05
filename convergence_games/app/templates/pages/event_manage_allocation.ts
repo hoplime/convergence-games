@@ -41,10 +41,10 @@ const update_session_member_count_display = (sessionSlot: SessionSlot) => {
         sessionSlot.current_players < sessionSlot.min_players ||
         sessionSlot.current_players > sessionSlot.max_players
     ) {
-        sessionSlot.session_member_count.classList.add("text-warning");
+        sessionSlot.session_member_count.classList.add("text-error");
         sessionSlot.session_member_count.classList.remove("text-success");
     } else {
-        sessionSlot.session_member_count.classList.remove("text-warning");
+        sessionSlot.session_member_count.classList.remove("text-error");
         sessionSlot.session_member_count.classList.add("text-success");
     }
 
