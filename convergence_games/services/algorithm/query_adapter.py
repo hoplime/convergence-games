@@ -6,11 +6,10 @@ and vice versa to reinsert.
 from __future__ import annotations
 
 import asyncio
-from ast import Continue
-from typing import cast
+from typing import Any, cast
 
 from rich.pretty import pprint
-from sqlalchemy import URL, Select, delete, exists, select, update
+from sqlalchemy import URL, Select, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 
@@ -30,6 +29,28 @@ from convergence_games.db.models import (
 )
 from convergence_games.services.algorithm.game_allocator import Compensation
 from convergence_games.services.algorithm.models import AlgParty, AlgResult, AlgSession, SessionID
+
+
+def user_preferences_to_alg_preferences(
+    preferences: list[UserGamePreference],
+    has_d20: bool,
+    session_results: list[tuple[SessionID, int, *tuple[Any, ...]]],
+) -> list[tuple[SessionID, UserGamePreferenceValue]]:
+    game_id_session_id_map: dict[int, SessionID] = {
+        r_game_id: r_session_id for r_session_id, r_game_id, *_ in session_results
+    }
+    preference_map = {
+        game_id_session_id_map[gp.game_id]: (
+            gp.preference if has_d20 else min(UserGamePreferenceValue.D12, gp.preference)
+        )
+        for gp in preferences
+        if gp.game_id in game_id_session_id_map
+    }
+    alg_party_preferences = [
+        (r_session_id, preference_map.get(r_session_id, UserGamePreferenceValue.D6))
+        for r_session_id, *_ in session_results
+    ]
+    return alg_party_preferences
 
 
 async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple[list[AlgSession], list[AlgParty]]:
@@ -72,9 +93,6 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
         )
     )
     session_results = [r.tuple() for r in (await transaction.execute(session_stmt)).all()]
-    game_id_session_id_map: dict[int, SessionID] = {
-        r_game_id: r_session_id for r_session_id, r_game_id, *_ in session_results
-    }
 
     gm_user_ids_this_session_subq = (
         select(Game.gamemaster_id)
@@ -193,25 +211,9 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
         return AlgParty(
             party_leader_id=party_leader_id,
             group_size=group_size,
-            preferences=_user_preferences_to_alg_preferences(preferences_to_use, has_d20),
+            preferences=user_preferences_to_alg_preferences(preferences_to_use, has_d20, session_results),
             total_compensation=total_compensation,
         )
-
-    def _user_preferences_to_alg_preferences(
-        preferences: list[UserGamePreference], has_d20: bool
-    ) -> list[tuple[SessionID, UserGamePreferenceValue]]:
-        preference_map = {
-            game_id_session_id_map[gp.game_id]: (
-                gp.preference if has_d20 else min(UserGamePreferenceValue.D12, gp.preference)
-            )
-            for gp in preferences
-            if gp.game_id in game_id_session_id_map
-        }
-        alg_party_preferences = [
-            (r_session_id, preference_map.get(r_session_id, UserGamePreferenceValue.D6))
-            for r_session_id, *_ in session_results
-        ]
-        return alg_party_preferences
 
     alg_sessions = [
         AlgSession(
@@ -227,11 +229,12 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
             gm_party=AlgParty(
                 party_leader_id=("GM", r_gm.id),
                 group_size=1,
-                preferences=_user_preferences_to_alg_preferences(
+                preferences=user_preferences_to_alg_preferences(
                     r_gm.game_preferences,
                     r_gm.latest_d20_transaction.current_balance > 0
                     if r_gm.latest_d20_transaction is not None
                     else False,
+                    session_results,
                 ),
                 total_compensation=comp,
             ),

@@ -3,8 +3,9 @@ from __future__ import annotations
 import datetime as dt
 import itertools
 from collections.abc import Sequence
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Literal, cast
+from typing import Annotated, Literal, TypedDict, cast
 
 import humanize
 from litestar import Controller, Response, get, post, put
@@ -46,8 +47,12 @@ from convergence_games.db.models import (
 )
 from convergence_games.db.ocean import Sqid, sink, swim
 from convergence_games.permissions import user_has_permission
-from convergence_games.services.algorithm.game_allocator import GameAllocator
-from convergence_games.services.algorithm.query_adapter import adapt_results_to_database, adapt_to_inputs
+from convergence_games.services.algorithm.game_allocator import GameAllocator, Tier, generate_tier_list
+from convergence_games.services.algorithm.query_adapter import (
+    adapt_results_to_database,
+    adapt_to_inputs,
+    user_preferences_to_alg_preferences,
+)
 
 # region Data Schema
 SqidInt = Annotated[int, BeforeValidator(sink)]
@@ -67,6 +72,16 @@ class PutEventManageScheduleForm(BaseModel):
 class PutEventPlayerTransactionForm(BaseModel):
     expected_latest_sqid: SqidInt | None = None
     delta: int
+
+
+class TierAsDict(TypedDict):
+    is_d20: bool
+    tier: int
+
+
+class AllocationPartyMetadata(BaseModel):
+    gm_of: list[Sqid] = []
+    tiers: dict[Sqid, TierAsDict] = {}
 
 
 # endregion
@@ -613,6 +628,9 @@ class EventManagerController(Controller):
             .order_by(Table.name)
         )
         sessions = (await transaction.execute(sessions_stmt)).scalars().all()
+        sessions_by_gm_id: dict[int, list[Sqid]] = {}
+        for session in sessions:
+            sessions_by_gm_id.setdefault(session.game.gamemaster_id, []).append(swim(session))
 
         party_subq = (
             select(Party, PartyUserLink)
@@ -640,14 +658,42 @@ class EventManagerController(Controller):
                     isouter=True,
                 )
                 .where(party_user_link_alias.is_leader | (party_alias.id.is_(None)))
-                .options(selectinload(party_alias.members))
+                .options(
+                    selectinload(User.game_preferences),
+                    selectinload(User.latest_d20_transaction),
+                    selectinload(party_alias.members).options(selectinload(User.latest_d20_transaction)),
+                )
             ),
         )
         groups = [r.tuple() for r in (await transaction.execute(solo_players_and_leaders_stmt)).all()]
-        group_dict: dict[int | None, list[tuple[User, Party | None, UserCheckinStatus | None]]] = {}
+        group_dict: dict[
+            int | None, list[tuple[User, Party | None, UserCheckinStatus | None, AllocationPartyMetadata]]
+        ] = {}
         for user, party, user_checkin_status, allocation in groups:
-            session_id = None if allocation is None else allocation.session_id
-            group_dict.setdefault(session_id, []).append((user, party, user_checkin_status))
+            has_d20 = (
+                all(
+                    member.latest_d20_transaction.current_balance > 0
+                    if member.latest_d20_transaction is not None
+                    else False
+                    for member in party.members
+                )
+                if party is not None
+                else (user.latest_d20_transaction is not None and user.latest_d20_transaction.current_balance > 0)
+            )
+            allocated_session_id = None if allocation is None else allocation.session_id
+            tier_list = generate_tier_list(
+                user_preferences_to_alg_preferences(
+                    user.game_preferences, has_d20, [(s.id, s.game_id) for s in sessions]
+                )
+            )
+            tiers: dict[Sqid, TierAsDict] = {
+                swim("Session", session_id): cast(TierAsDict, asdict(tier))  # pyright: ignore[reportInvalidCast]
+                for tier, session_ids in tier_list
+                for session_id in session_ids
+            }
+            gm_of = sessions_by_gm_id.get(user.id, [])
+            metadata = AllocationPartyMetadata(gm_of=gm_of, tiers=tiers)
+            group_dict.setdefault(allocated_session_id, []).append((user, party, user_checkin_status, metadata))
 
         return HTMXBlockTemplate(
             template_name="pages/event_manage_allocation.html.jinja",

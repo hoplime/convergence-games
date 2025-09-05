@@ -11,26 +11,29 @@
                                     class="session-slot border-collapse border"
                                     data-min-players="{{ session.game.player_count_minimum }}"
                                     data-max-players="{{ session.game.player_count_maximum }}"
+                                    data-session="{{ swim(session) }}"
                                 >
                                     <div>{{ session.table.name }} | {{ session.game.name }} [{{ session.id }}]</div>
                                     <div class="session-gm min-h-8">
-                                        {% for group_leader, party, checkin_status in groups[session.id] %}
+                                        {% for group_leader, party, checkin_status, metadata in groups[session.id] %}
                                             {% if group_leader.id == session.game.gamemaster_id %}
                                                 <AllocationPartyCard
                                                     :group_leader="group_leader"
                                                     :party="party"
                                                     :checkin_status="checkin_status"
+                                                    :metadata="metadata"
                                                 />
                                             {% endif %}
                                         {% endfor %}
                                     </div>
                                     <div class="session-member-list min-h-32">
-                                        {% for group_leader, party, checkin_status in groups[session.id] %}
+                                        {% for group_leader, party, checkin_status, metadata in groups[session.id] %}
                                             {% if group_leader.id != session.game.gamemaster_id %}
                                                 <AllocationPartyCard
                                                     :group_leader="group_leader"
                                                     :party="party"
                                                     :checkin_status="checkin_status"
+                                                    :metadata="metadata"
                                                 />
                                             {% endif %}
                                         {% endfor %}
@@ -84,11 +87,12 @@
                         <div
                             class="unallocated-parties scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
                         >
-                            {% for group_leader, party, checkin_status in groups[None] %}
+                            {% for group_leader, party, checkin_status, metadata in groups[None] %}
                                 <AllocationPartyCard
                                     :group_leader="group_leader"
                                     :party="party"
                                     :checkin_status="checkin_status"
+                                    :metadata="metadata"
                                 />
                             {% endfor %}
                         </div>

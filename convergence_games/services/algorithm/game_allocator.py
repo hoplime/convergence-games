@@ -49,6 +49,16 @@ class Tier:
         return self < other
 
 
+def generate_tier_list(preferences: list[tuple[SessionID, UGPV]]) -> list[tuple[Tier, list[SessionID]]]:
+    # Order down from D20 to D0
+    ordered_preferences = sorted([p for p in preferences if p[1] != UGPV.D0], key=itemgetter(1), reverse=True)
+    tier_list: list[tuple[Tier, list[SessionID]]] = []
+    for i, (preference, group) in enumerate(groupby(ordered_preferences, key=itemgetter(1))):
+        preference: UGPV
+        tier_list.append((Tier(is_d20=preference == UGPV.D20, tier=i), [session_id for session_id, _ in group]))
+    return tier_list
+
+
 @dataclass
 class AlgPartyP:
     party_leader_id: PartyLeaderID
@@ -63,7 +73,7 @@ class AlgPartyP:
 
     @classmethod
     def from_alg_party(cls, party: AlgParty) -> Self:
-        tier_list = cls._init_tier_list(party.preferences)
+        tier_list = generate_tier_list(party.preferences)
         return cls(
             party_leader_id=party.party_leader_id,
             group_size=party.group_size,
@@ -71,16 +81,6 @@ class AlgPartyP:
             tier_list=tier_list,
             tier_by_session={session_id: tier for tier, session_ids in tier_list for session_id in session_ids},
         )
-
-    @staticmethod
-    def _init_tier_list(preferences: list[tuple[SessionID, UGPV]]) -> list[tuple[Tier, list[SessionID]]]:
-        # Order down from D20 to D0
-        ordered_preferences = sorted([p for p in preferences if p[1] != UGPV.D0], key=itemgetter(1), reverse=True)
-        tier_list: list[tuple[Tier, list[SessionID]]] = []
-        for i, (preference, group) in enumerate(groupby(ordered_preferences, key=itemgetter(1))):
-            preference: UGPV
-            tier_list.append((Tier(is_d20=preference == UGPV.D20, tier=i), [session_id for session_id, _ in group]))
-        return tier_list
 
 
 @dataclass

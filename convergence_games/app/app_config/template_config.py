@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -96,6 +97,7 @@ jinja_env.globals["SETTINGS"] = SETTINGS
 jinja_env.globals["zip"] = zip
 jinja_env.globals["utcnow"] = lambda: datetime.now(tz=timezone.utc)
 jinja_env.globals["now"] = datetime.now
+jinja_env.globals["dumps"] = lambda o: json.dumps(o, separators=(",", ":"))
 
 catalog = jinjax.Catalog(jinja_env=jinja_env)
 catalog.add_folder(COMPONENTS_DIR_PATH)
