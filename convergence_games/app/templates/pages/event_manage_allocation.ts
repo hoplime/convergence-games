@@ -1,26 +1,26 @@
 import Sortable from "sortablejs";
 
+type SessionID = string;
+
+type Tier = {
+    is_d20: boolean;
+    tier: number;
+};
+
 type Party = HTMLElement & {
     member_count: number;
+    gm_of: [SessionID];
+    tiers: { [key: SessionID]: Tier };
 };
 
 type SessionSlot = HTMLElement & {
     current_players: number;
     min_players: number;
     max_players: number;
-    session_gm: SessionGM;
+    session: SessionID;
     session_member_list: SessionMemberList;
     session_member_count: SessionMemberCount;
 };
-
-type SessionGM = HTMLElement & {
-    typ: "gm";
-    session_slot: SessionSlot;
-};
-
-// const is_session_gm = (element: HTMLElement): element is SessionGM => {
-//     return (element as SessionGM).typ === "gm";
-// };
 
 type SessionMemberList = HTMLElement & {
     typ: "member-list";
@@ -47,11 +47,12 @@ const event_manage_allocation = (scope_id: string) => {
 
     const emplaceParty = (
         party: Party,
-        fromElement: SessionGM | SessionMemberList | HTMLElement,
-        toElement: SessionGM | SessionMemberList | HTMLElement,
+        fromElement: SessionMemberList | HTMLElement,
+        toElement: SessionMemberList | HTMLElement,
+        evt: Sortable.SortableEvent | null = null,
     ) => {
+        console.log("Emplacing party");
         console.log(party);
-        console.log(`Emplacing party from ${fromElement} to ${toElement}`);
 
         // Deal with FROM
         if (is_session_member_list(fromElement)) {
@@ -65,6 +66,13 @@ const event_manage_allocation = (scope_id: string) => {
             const sessionSlot = toElement.session_slot;
             sessionSlot.current_players += party.member_count;
             sessionSlot.session_member_count.textContent = `${sessionSlot.current_players}/${sessionSlot.min_players}-${sessionSlot.max_players}`;
+            party.dataset.tierValue = party.tiers[sessionSlot.session || ""]?.tier.toString() || "unknown";
+
+            // If we are the GM, move to the top of the list
+            // It is already in place so just move it to the front
+            if (party.gm_of.includes(sessionSlot.session)) {
+                sessionSlot.session_member_list.prepend(party);
+            }
         }
     };
 
@@ -79,8 +87,8 @@ const event_manage_allocation = (scope_id: string) => {
             console.log(`Moved item from ${evt.oldIndex} to ${evt.newIndex}`);
 
             const party = evt.item as Party;
-            const fromElement = evt.from as SessionGM | SessionMemberList | HTMLElement;
-            const toElement = evt.to as SessionGM | SessionMemberList | HTMLElement;
+            const fromElement = evt.from as SessionMemberList | HTMLElement;
+            const toElement = evt.to as SessionMemberList | HTMLElement;
 
             emplaceParty(party, fromElement, toElement);
         },
@@ -88,22 +96,17 @@ const event_manage_allocation = (scope_id: string) => {
 
     // Do initial set up
     for (const sessionSlot of sessionSlotElements) {
-        const sessionGM = sessionSlot.querySelector(".session-gm") as SessionGM;
         const sessionMemberList = sessionSlot.querySelector(".session-member-list") as SessionMemberList;
         const sessionMemberCount = sessionSlot.querySelector(".session-member-count") as SessionMemberCount;
 
-        Sortable.create(sessionGM, options);
         Sortable.create(sessionMemberList, options);
 
         sessionSlot.current_players = 0;
         sessionSlot.min_players = parseInt(sessionSlot.dataset.minPlayers || "0", 10);
         sessionSlot.max_players = parseInt(sessionSlot.dataset.maxPlayers || "0", 10);
-        sessionSlot.session_gm = sessionGM;
+        sessionSlot.session = sessionSlot.dataset.session || "";
         sessionSlot.session_member_list = sessionMemberList;
         sessionSlot.session_member_count = sessionMemberCount;
-
-        sessionGM.typ = "gm";
-        sessionGM.session_slot = sessionSlot;
 
         sessionMemberList.typ = "member-list";
         sessionMemberList.session_slot = sessionSlot;
@@ -113,16 +116,14 @@ const event_manage_allocation = (scope_id: string) => {
 
     for (const party of partyElements) {
         party.member_count = parseInt(party.dataset.memberCount || "0", 10);
+        party.gm_of = JSON.parse(party.dataset.gmOf || "[]");
+        party.tiers = JSON.parse(party.dataset.tiers || "{}");
     }
 
     // Emplace all the parties in their initial locations
     for (const party of partyElements) {
-        const parentElement = (party.closest(".session-member-list") ?? party.closest(".session-gm")) as
-            | SessionGM
-            | SessionMemberList
-            | null;
+        const parentElement = party.closest(".session-member-list") as SessionMemberList | null;
         if (!parentElement) {
-            console.error(`Party ${party.id} has no parent element`);
             continue;
         }
         // Place "from" unallocatedPartiesElement since we are just doing initial placement

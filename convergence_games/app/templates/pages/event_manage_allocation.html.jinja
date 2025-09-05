@@ -14,7 +14,8 @@
                                     data-session="{{ swim(session) }}"
                                 >
                                     <div>{{ session.table.name }} | {{ session.game.name }} [{{ session.id }}]</div>
-                                    <div class="session-gm min-h-8">
+                                    <div class="session-member-list min-h-32">
+                                        {# Put the GM first! #}
                                         {% for group_leader, party, checkin_status, metadata in groups[session.id] %}
                                             {% if group_leader.id == session.game.gamemaster_id %}
                                                 <AllocationPartyCard
@@ -25,8 +26,6 @@
                                                 />
                                             {% endif %}
                                         {% endfor %}
-                                    </div>
-                                    <div class="session-member-list min-h-32">
                                         {% for group_leader, party, checkin_status, metadata in groups[session.id] %}
                                             {% if group_leader.id != session.game.gamemaster_id %}
                                                 <AllocationPartyCard
