@@ -590,13 +590,14 @@ class EventManagerController(Controller):
             )
         if time_slot is None:
             # Get the next upcoming time slot, or the last one if there are no upcoming slots
-            # 30 minute buffer on top of start time in case allocation starts later than the start time
+            # 60 minute buffer on top of start time in case allocation starts later than the start time
+            # And also so it's still the default time slot after the start time so people can see what game they are in
             sorted_event_time_slots = sorted(event.time_slots, key=lambda ts: ts.start_time)
             time_slot = next(
                 (
                     ts
                     for ts in sorted_event_time_slots
-                    if (ts.start_time + timedelta(minutes=30)) > datetime.now(tz=dt.timezone.utc)
+                    if (ts.start_time + timedelta(minutes=60)) > datetime.now(tz=dt.timezone.utc)
                 ),
                 sorted_event_time_slots[-1],
             )
