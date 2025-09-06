@@ -93,6 +93,25 @@
                                     {% endfor %}
                                 </select>
                             </form>
+                            <span id="time-slot-status">{{ selected_time_slot.status }}</span>
+                            <div class="flex flex-row gap-2">
+                                <button
+                                    class="btn grow btn-primary"
+                                    hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/lock"
+                                    hx-target="#time-slot-status"
+                                    hx-swap="innerHTML"
+                                >
+                                    Lock
+                                </button>
+                                <button
+                                    class="btn grow btn-primary"
+                                    hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/unlock"
+                                    hx-target="#time-slot-status"
+                                    hx-swap="innerHTML"
+                                >
+                                    Unlock
+                                </button>
+                            </div>
                             <button
                                 class="allocate-button group/allocate-button [.htmx-request]:btn-disabled btn btn-primary"
                                 hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/do-allocation"

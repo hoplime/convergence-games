@@ -27,7 +27,7 @@ from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
-from convergence_games.db.enums import SubmissionStatus
+from convergence_games.db.enums import SubmissionStatus, TimeSlotStatus
 from convergence_games.db.models import (
     Allocation,
     Event,
@@ -664,7 +664,8 @@ class EventManagerController(Controller):
                 )
                 .join(
                     Allocation,
-                    (Allocation.party_leader_id == User.id) & (Allocation.session.has(time_slot_id=time_slot.id)),
+                    (Allocation.party_leader_id == User.id)
+                    & (Allocation.session.has(time_slot_id=time_slot.id) & (~Allocation.committed)),
                     isouter=True,
                 )
                 .where(party_user_link_alias.is_leader | (party_alias.id.is_(None)))
@@ -743,6 +744,72 @@ class EventManagerController(Controller):
 
         return Redirect(f"/event/{swim(event)}/manage-allocation/{time_slot_sqid}")
 
+    @post(
+        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/unlock",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(selectinload(Event.time_slots)),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def post_event_unlock_allocation(
+        self,
+        transaction: AsyncSession,
+        permission: bool,
+        event: Event,
+        time_slot_sqid: Annotated[Sqid, Parameter()],
+    ) -> str:
+        time_slot_id = sink(time_slot_sqid)
+
+        # Set the time slot status
+        time_slot_id = sink(time_slot_sqid)
+        time_slot = next(
+            (ts for ts in event.time_slots if ts.id == time_slot_id),
+            None,
+        )
+
+        if time_slot is None:
+            raise HTTPException(status_code=404, detail="Time slot not found")
+
+        time_slot.status = TimeSlotStatus.PRE_ALLOCATION
+
+        transaction.add(time_slot)
+
+        return TimeSlotStatus.PRE_ALLOCATION.value
+
+    @post(
+        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/lock",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(selectinload(Event.time_slots)),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def post_event_lock_allocation(
+        self,
+        transaction: AsyncSession,
+        permission: bool,
+        event: Event,
+        time_slot_sqid: Annotated[Sqid, Parameter()],
+    ) -> str:
+        time_slot_id = sink(time_slot_sqid)
+
+        # Set the time slot status
+        time_slot_id = sink(time_slot_sqid)
+        time_slot = next(
+            (ts for ts in event.time_slots if ts.id == time_slot_id),
+            None,
+        )
+
+        if time_slot is None:
+            raise HTTPException(status_code=404, detail="Time slot not found")
+
+        time_slot.status = TimeSlotStatus.ALLOCATING
+
+        transaction.add(time_slot)
+
+        return TimeSlotStatus.ALLOCATING.value
+
     @put(
         path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}",
         guards=[user_guard],
@@ -756,9 +823,18 @@ class EventManagerController(Controller):
         request: Request,
         transaction: AsyncSession,
         permission: bool,
+        event: Event,
         time_slot_sqid: Annotated[Sqid, Parameter()],
         data: Annotated[PutEventManageAllocationForm, Body(media_type=RequestEncodingType.JSON)],
     ) -> Response[str]:
+        time_slot = next(
+            (ts for ts in event.time_slots if ts.id == sink(time_slot_sqid)),
+            None,
+        )
+
+        if time_slot is None:
+            raise HTTPException(status_code=404, detail="Time slot not found")
+
         # Update the allocations to match the new data
         new_allocations: list[Allocation] = []
 
@@ -789,6 +865,8 @@ class EventManagerController(Controller):
         # TODO ON COMMIT
         # Compensation
         # Spending D20s
+        time_slot.status = TimeSlotStatus.ALLOCATED if data.commit else TimeSlotStatus.ALLOCATING
+        transaction.add(time_slot)
 
         # Remove existing allocations for this time slot
         delete_existing_allocations_stmt = delete(Allocation).where(
