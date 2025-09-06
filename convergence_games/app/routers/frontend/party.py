@@ -160,6 +160,16 @@ class PartyController(Controller):
                     allocated_session_players.extend(allocated_party.members)
                 else:
                     allocated_session_players.append(allocation.party_leader)
+        gm_index = (
+            allocated_session_players.index(
+                [p for p in allocated_session_players if p.id == allocated_session.game.gamemaster_id][0]
+            )
+            if allocated_session
+            else None
+        )
+        if gm_index is not None:
+            # Move the GM to the front of the list
+            allocated_session_players.insert(0, allocated_session_players.pop(gm_index))
 
         return HTMXBlockTemplate(
             template_str=catalog.render(

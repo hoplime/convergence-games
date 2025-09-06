@@ -218,9 +218,13 @@
                     <h2 class="card-title">{{ allocated_session.game.name }}</h2>
                 </div>
                 <span>{{ allocated_session.table.room.name }}, {{ allocated_session.table.name }}</span>
-                <ul>
+                <ul class="list-inside list-disc space-y-1">
                     {% for player in allocated_session_players %}
-                        <li>{{ player.full_name }}</li>
+                        <li>
+                            {{ player.full_name }}{% if player.id == allocated_session.game.gamemaster_id %}
+                                <div class="badge">GM</div>
+                            {% endif %}
+                        </li>
                     {% endfor %}
                 </ul>
             </div>
