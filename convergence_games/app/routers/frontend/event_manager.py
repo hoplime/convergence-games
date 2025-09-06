@@ -706,6 +706,12 @@ class EventManagerController(Controller):
             metadata = AllocationPartyMetadata(gm_of=gm_of, tiers=tiers)
             group_dict.setdefault(allocated_session_id, []).append((user, party, user_checkin_status, metadata))
 
+        if None in group_dict:
+            # Sort the unallocated groups by checked in and then by user full name
+            group_dict[None] = sorted(
+                group_dict[None], key=lambda tup: (tup[2] is None or not tup[2].checked_in, tup[0].full_name)
+            )
+
         return HTMXBlockTemplate(
             template_name="pages/event_manage_allocation.html.jinja",
             block_name=request.htmx.target,
