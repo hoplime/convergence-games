@@ -94,13 +94,17 @@
                                 </select>
                             </form>
                             <button
-                                class="allocate-button btn btn-primary"
+                                class="allocate-button group/allocate-button [.htmx-request]:btn-disabled btn btn-primary"
                                 hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/do-allocation"
                                 hx-target="#content"
                                 hx-trigger="click"
                                 hx-confirm="Are you sure you want to redo an allocation? This will rerun the algorithm."
+                                hx-disabled-elt="this"
                             >
                                 Allocate
+                                <span
+                                    class="icon-[line-md--loading-twotone-loop] hidden group-[.htmx-request]/allocate-button:inline-block"
+                                ></span>
                             </button>
                             <button class="save-button btn btn-primary">Save (Admin Draft)</button>
                             <button class="commit-button btn btn-primary">Commit (Public)</button>
