@@ -145,7 +145,7 @@ class PartyController(Controller):
                 .selectinload(Allocation.party_leader)
                 .selectinload(User.parties)
                 .selectinload(Party.members),
-                selectinload(Session.game),
+                selectinload(Session.game).selectinload(Game.system),
                 selectinload(Session.table).selectinload(Table.room),
                 with_loader_criteria(Party, Party.time_slot_id == time_slot.id),
                 with_loader_criteria(Allocation, Allocation.committed),
