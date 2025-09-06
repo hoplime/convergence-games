@@ -9,6 +9,7 @@
     allocated_session_players: list[User] = [],
 #}
 <div {{ attrs.render(class="card-body party-overview p-0") }} hx-target="this">
+    {# Check In #}
     {% if time_slot.checkin_open_time and utcnow() < time_slot.checkin_open_time %}
         {# STATE = Check in closed #}
         <span>Check in opens @ <TimeDisplay :time="time_slot.checkin_open_time" :date="true" /></span>
@@ -69,6 +70,30 @@
             </div>
         {% endif %}
     {% endif %}
+
+    {# Allocated Session #}
+    {% if allocated_session is not none %}
+        <div class="divider m-0 divider-vertical"></div>
+        <div class="flex h-full flex-col gap-4">
+            <div>
+                <span>You are in...</span>
+                <h2 class="card-title">{{ allocated_session.game.name }}</h2>
+                <span>{{ allocated_session.game.system.name }}</span>
+            </div>
+            <span>{{ allocated_session.table.room.name }}, {{ allocated_session.table.name }}</span>
+            <ul class="list-inside list-disc space-y-1">
+                {% for player in allocated_session_players %}
+                    <li>
+                        {{ player.full_name }}{% if player.id == allocated_session.game.gamemaster_id %}
+                            <div class="badge">GM</div>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {# Party #}
     <div class="divider m-0 divider-vertical"></div>
     {% if party %}
         {% set invite_link = "/party/join/" ~ swim(time_slot) ~ "/" ~ swim_upper(party) %}
@@ -208,27 +233,5 @@
                 </dialog>
             </div>
         {% endif %}
-    {% endif %}
-    {% if allocated_session is not none %}
-        <div class="card-body p-0">
-            <div class="flex h-full flex-col gap-4">
-                <div class="divider m-0 divider-vertical"></div>
-                <div>
-                    <span>You are in...</span>
-                    <h2 class="card-title">{{ allocated_session.game.name }}</h2>
-                    <span>{{ allocated_session.game.system.name }}</span>
-                </div>
-                <span>{{ allocated_session.table.room.name }}, {{ allocated_session.table.name }}</span>
-                <ul class="list-inside list-disc space-y-1">
-                    {% for player in allocated_session_players %}
-                        <li>
-                            {{ player.full_name }}{% if player.id == allocated_session.game.gamemaster_id %}
-                                <div class="badge">GM</div>
-                            {% endif %}
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
     {% endif %}
 </div>
