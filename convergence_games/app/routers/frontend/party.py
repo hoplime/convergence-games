@@ -16,6 +16,7 @@ from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import TimeSlotStatus
 from convergence_games.db.models import (
+    Allocation,
     Event,
     Game,
     Party,
@@ -106,7 +107,8 @@ class PartyController(Controller):
                     selectinload(Party.time_slot),
                     selectinload(Party.party_user_links),
                     selectinload(Party.members).options(
-                        selectinload(User.checkin_statuses), selectinload(User.latest_d20_transaction)
+                        selectinload(User.checkin_statuses),
+                        selectinload(User.latest_d20_transaction),
                     ),
                     with_loader_criteria(UserCheckinStatus, UserCheckinStatus.time_slot_id == time_slot.id),
                     with_loader_criteria(
@@ -136,15 +138,28 @@ class PartyController(Controller):
             .where(
                 (Session.time_slot_id == time_slot.id)
                 & (Session.committed)
-                & (Session.allocations.any(party_leader_id=leader_id or user.id))
+                & (Session.allocations.any(party_leader_id=leader_id or user.id, committed=True))
             )
             .options(
-                selectinload(Session.allocations),
+                selectinload(Session.allocations)
+                .selectinload(Allocation.party_leader)
+                .selectinload(User.parties)
+                .selectinload(Party.members),
                 selectinload(Session.game),
                 selectinload(Session.table).selectinload(Table.room),
+                with_loader_criteria(Party, Party.time_slot_id == time_slot.id),
+                with_loader_criteria(Allocation, Allocation.committed),
             )
         )
         allocated_session = (await transaction.execute(allocated_session_stmt)).scalar_one_or_none()
+        allocated_session_players: list[User] = []
+        if allocated_session:
+            for allocation in allocated_session.allocations:
+                allocated_party = allocation.party_leader.parties[0] if allocation.party_leader.parties else None
+                if allocated_party:
+                    allocated_session_players.extend(allocated_party.members)
+                else:
+                    allocated_session_players.append(allocation.party_leader)
 
         return HTMXBlockTemplate(
             template_str=catalog.render(
@@ -157,6 +172,7 @@ class PartyController(Controller):
                 checked_in=checked_in,
                 is_gm=is_gm,
                 allocated_session=allocated_session,
+                allocated_session_players=allocated_session_players,
             )
         )
 

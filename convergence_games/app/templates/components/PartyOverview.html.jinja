@@ -6,6 +6,7 @@
     checked_in: bool = False,
     is_gm: bool = False,
     allocated_session: Session | None = None,
+    allocated_session_players: list[User] = [],
 #}
 <div {{ attrs.render(class="card-body party-overview p-0") }} hx-target="this">
     {% if time_slot.checkin_open_time and utcnow() < time_slot.checkin_open_time %}
@@ -217,7 +218,11 @@
                     <h2 class="card-title">{{ allocated_session.game.name }}</h2>
                 </div>
                 <span>{{ allocated_session.table.room.name }}, {{ allocated_session.table.name }}</span>
-                <span>Here's a list of players TODO LOL pretend this looks amazing - it's WIP</span>
+                <ul>
+                    {% for player in allocated_session_players %}
+                        <li>{{ player.full_name }}</li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
     {% endif %}

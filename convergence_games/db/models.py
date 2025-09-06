@@ -747,6 +747,7 @@ class User(Base):
             ),
             uselist=False,
             viewonly=True,
+            lazy="noload",
         )
 
         latest_compensation_transaction = relationship(
@@ -765,6 +766,7 @@ class User(Base):
             ),
             uselist=False,
             viewonly=True,
+            lazy="noload",
         )
 
         return {
