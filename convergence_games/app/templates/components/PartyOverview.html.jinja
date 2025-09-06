@@ -5,6 +5,7 @@
     max_party_size: int = 3,
     checked_in: bool = False,
     is_gm: bool = False,
+    allocated_session: Session | None = None,
 #}
 <div {{ attrs.render(class="card-body party-overview p-0") }} hx-target="this">
     {% if time_slot.checkin_open_time and utcnow() < time_slot.checkin_open_time %}
@@ -206,5 +207,18 @@
                 </dialog>
             </div>
         {% endif %}
+    {% endif %}
+    {% if allocated_session is not none %}
+        <div class="card-body p-0">
+            <div class="flex h-full flex-col gap-4">
+                <div class="divider m-0 divider-vertical"></div>
+                <div>
+                    <span>You are in...</span>
+                    <h2 class="card-title">{{ allocated_session.game.name }}</h2>
+                </div>
+                <span>{{ allocated_session.table.room.name }}, {{ allocated_session.table.name }}</span>
+                <span>Here's a list of players TODO LOL pretend this looks amazing - it's WIP</span>
+            </div>
+        </div>
     {% endif %}
 </div>

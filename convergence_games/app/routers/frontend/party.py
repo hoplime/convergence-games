@@ -21,6 +21,7 @@ from convergence_games.db.models import (
     Party,
     PartyUserLink,
     Session,
+    Table,
     TimeSlot,
     User,
     UserCheckinStatus,
@@ -129,6 +130,22 @@ class PartyController(Controller):
         max_party_size = (
             await transaction.execute(select(Event.max_party_size).where(Event.id == time_slot.event_id))
         ).scalar_one_or_none()
+
+        allocated_session_stmt = (
+            select(Session)
+            .where(
+                (Session.time_slot_id == time_slot.id)
+                & (Session.committed)
+                & (Session.allocations.any(party_leader_id=leader_id or user.id))
+            )
+            .options(
+                selectinload(Session.allocations),
+                selectinload(Session.game),
+                selectinload(Session.table).selectinload(Table.room),
+            )
+        )
+        allocated_session = (await transaction.execute(allocated_session_stmt)).scalar_one_or_none()
+
         return HTMXBlockTemplate(
             template_str=catalog.render(
                 "PartyOverview",
@@ -139,6 +156,7 @@ class PartyController(Controller):
                 max_party_size=max_party_size,
                 checked_in=checked_in,
                 is_gm=is_gm,
+                allocated_session=allocated_session,
             )
         )
 

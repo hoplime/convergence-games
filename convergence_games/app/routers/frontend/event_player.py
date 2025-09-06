@@ -38,6 +38,7 @@ from convergence_games.db.models import (
     PartyUserLink,
     Session,
     System,
+    Table,
     TimeSlot,
     User,
     UserEventD20Transaction,
