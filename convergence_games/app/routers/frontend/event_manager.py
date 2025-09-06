@@ -810,6 +810,48 @@ class EventManagerController(Controller):
 
         return TimeSlotStatus.ALLOCATING.value
 
+    @post(
+        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/{user_sqid:str}/checkin",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(selectinload(Event.time_slots)),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def post_event_checkin_player(
+        self,
+        transaction: AsyncSession,
+        permission: bool,
+        event: Event,
+        time_slot_sqid: Annotated[Sqid, Parameter()],
+        user_sqid: Annotated[Sqid, Parameter()],
+        data: Annotated[dict[Literal["checkin"], Literal["on"]], Body(media_type=RequestEncodingType.URL_ENCODED)],
+    ) -> str:
+        time_slot_id = sink(time_slot_sqid)
+        user_id = sink(user_sqid)
+
+        checkin_status = (
+            (
+                await transaction.execute(
+                    select(UserCheckinStatus).where(
+                        UserCheckinStatus.user_id == user_id, UserCheckinStatus.time_slot_id == time_slot_id
+                    )
+                )
+            )
+            .scalars()
+            .one_or_none()
+        )
+        should_checkin = data.get("checkin", "off") == "on"
+
+        if checkin_status is None:
+            checkin_status = UserCheckinStatus(user_id=user_id, time_slot_id=time_slot_id, checked_in=should_checkin)
+        else:
+            checkin_status.checked_in = should_checkin
+
+        transaction.add(checkin_status)
+
+        return "checked-in"
+
     @put(
         path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}",
         guards=[user_guard],

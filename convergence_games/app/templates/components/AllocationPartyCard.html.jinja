@@ -3,6 +3,7 @@
     party: Party,
     checkin_status: UserCheckinStatus,
     metadata: AllocationPartyMetadata,
+    checkin_hx_post: str,
 #}
 <div
     class="party group/party relative min-w-32 cursor-grab rounded-box border border-base-300 bg-base-200 p-1"
@@ -18,11 +19,14 @@
                 class="hidden group-not-[[data-gm-of='[]']]/party:block group-not-[[data-in-gm-game]]/party:text-red-500"
                 >GM</span
             >
-            <input
-                type="checkbox"
-                class="checkbox checkbox-xs"
-                {{ "checked" if checkin_status is not none and checkin_status.checked_in }}
-            />
+            <form hx-post="{{ checkin_hx_post }}" hx-trigger="change" hx-swap="none">
+                <input
+                    type="checkbox"
+                    class="checkbox checkbox-xs"
+                    name="checkin"
+                    {{ "checked" if checkin_status is not none and checkin_status.checked_in }}
+                />
+            </form>
         </div>
         {% if party is not none %}
             {% for member in party.members | sort(attribute="full_name") if member.id != group_leader.id %}

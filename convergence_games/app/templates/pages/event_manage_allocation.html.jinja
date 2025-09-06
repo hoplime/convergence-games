@@ -19,21 +19,25 @@
                                         {# Put the GM first! #}
                                         {% for group_leader, party, checkin_status, metadata in groups[session.id] %}
                                             {% if group_leader.id == session.game.gamemaster_id %}
+                                                {% set checkin_hx_post = "/event/" ~ swim(event) ~ "/manage-allocation/" ~ swim(selected_time_slot) ~ "/" ~ swim(group_leader) ~ "/checkin" %}
                                                 <AllocationPartyCard
                                                     :group_leader="group_leader"
                                                     :party="party"
                                                     :checkin_status="checkin_status"
                                                     :metadata="metadata"
+                                                    :checkin_hx_post="checkin_hx_post"
                                                 />
                                             {% endif %}
                                         {% endfor %}
                                         {% for group_leader, party, checkin_status, metadata in groups[session.id] %}
                                             {% if group_leader.id != session.game.gamemaster_id %}
+                                                {% set checkin_hx_post = "/event/" ~ swim(event) ~ "/manage-allocation/" ~ swim(selected_time_slot) ~ "/" ~ swim(group_leader) ~ "/checkin" %}
                                                 <AllocationPartyCard
                                                     :group_leader="group_leader"
                                                     :party="party"
                                                     :checkin_status="checkin_status"
                                                     :metadata="metadata"
+                                                    :checkin_hx_post="checkin_hx_post"
                                                 />
                                             {% endif %}
                                         {% endfor %}
@@ -133,11 +137,13 @@
                             class="unallocated-parties scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
                         >
                             {% for group_leader, party, checkin_status, metadata in groups[None] %}
+                                {% set checkin_hx_post = "/event/" ~ swim(event) ~ "/manage-allocation/" ~ swim(selected_time_slot) ~ "/" ~ swim(group_leader) ~ "/checkin" %}
                                 <AllocationPartyCard
                                     :group_leader="group_leader"
                                     :party="party"
                                     :checkin_status="checkin_status"
                                     :metadata="metadata"
+                                    :checkin_hx_post="checkin_hx_post"
                                 />
                             {% endfor %}
                         </div>
