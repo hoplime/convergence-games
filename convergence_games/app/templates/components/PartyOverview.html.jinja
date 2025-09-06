@@ -91,6 +91,14 @@
                 {% endfor %}
             </ul>
         </div>
+    {% elif allocated_session is none and time_slot.status == 'Allocated' %}
+        <div class="divider m-0 divider-vertical"></div>
+        <span class="text-warning">You were not allocated a game for this session.</span>
+        <div class="flex h-full flex-col gap-4">
+            <h2 class="card-title">You are in Overflow</h2>
+            <span>This was likely caused by everybody's preferences being impossible to satisfy by the algorithm.</span>
+            <span>Please see the event organisers, and we'll sort you out with a game.</span>
+        </div>
     {% endif %}
 
     {# Party #}
