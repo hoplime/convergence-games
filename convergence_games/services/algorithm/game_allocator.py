@@ -644,7 +644,7 @@ def calculate_compensation(
     result_player_counts = {session.session_id: 0 for session in sessions}
     opt_player_counts = {session.session_id: session.opt_players for session in sessions}
     for result in results:
-        if result.session_id is not None:
+        if result.session_id is not None and result.assignment_type == "PLAYER":
             result_player_counts[result.session_id] += party_lookup[result.party_leader_id].group_size
 
     # 2b. GM compensation

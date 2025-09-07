@@ -67,7 +67,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
             Session.id,
             Game.id,
             Game.player_count_minimum,
-            Game.player_count_maximum,
+            Game.player_count_optimum,
             Game.player_count_maximum,
             Gamemaster,
         )
