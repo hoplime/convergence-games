@@ -16,7 +16,8 @@ from litestar.response import Redirect, Template
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
 from rich.pretty import pprint
-from sqlalchemy import delete, select
+from sqlalchemy import bindparam, delete, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 from sqlalchemy.sql.base import ExecutableOption
@@ -24,6 +25,7 @@ from sqlalchemy.sql.selectable import Select
 
 from convergence_games.app.alerts import Alert, AlertError
 from convergence_games.app.app_config.template_config import catalog
+from convergence_games.app.context import user_id_ctx
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
@@ -44,6 +46,7 @@ from convergence_games.db.models import (
     UserEventCompensationTransaction,
     UserEventD20Transaction,
     UserEventRole,
+    UserGamePreference,
 )
 from convergence_games.db.ocean import Sqid, sink, swim
 from convergence_games.permissions import user_has_permission
@@ -670,7 +673,7 @@ class EventManagerController(Controller):
                 )
                 .where(party_user_link_alias.is_leader | (party_alias.id.is_(None)))
                 .options(
-                    selectinload(User.game_preferences),
+                    selectinload(User.current_game_preferences),
                     selectinload(User.latest_d20_transaction),
                     selectinload(party_alias.members).options(selectinload(User.latest_d20_transaction)),
                 )
@@ -694,7 +697,7 @@ class EventManagerController(Controller):
             allocated_session_id = None if allocation is None else allocation.session_id
             tier_list = generate_tier_list(
                 user_preferences_to_alg_preferences(
-                    user.game_preferences, has_d20, [(s.id, s.game_id) for s in sessions]
+                    user.current_game_preferences, has_d20, [(s.id, s.game_id) for s in sessions]
                 )
             )
             tiers: dict[Sqid, TierAsDict] = {
@@ -740,6 +743,36 @@ class EventManagerController(Controller):
         time_slot_sqid: Annotated[Sqid, Parameter()],
     ) -> Redirect:
         time_slot_id = sink(time_slot_sqid)
+
+        # Store all current user game preferences in the database, upserting as needed
+        # These are the inputs to the algorithm, frozen
+        insert_user_game_preferences_stmt = insert(UserGamePreference).from_select(
+            [
+                "preference",
+                "game_id",
+                "user_id",
+                "frozen_at_time_slot_id",
+            ],
+            select(
+                UserGamePreference.preference,
+                UserGamePreference.game_id,
+                UserGamePreference.user_id,
+                bindparam("frozen_at_time_slot_id", time_slot_id).label("frozen_at_time_slot_id"),
+            ).where(UserGamePreference.frozen_at_time_slot_id.is_(None)),
+        )
+        insert_user_game_preferences_update_stmt = insert_user_game_preferences_stmt.on_conflict_do_update(
+            index_elements=(
+                UserGamePreference.game_id,
+                UserGamePreference.user_id,
+                UserGamePreference.frozen_at_time_slot_id,
+            ),
+            set_={
+                UserGamePreference.preference: insert_user_game_preferences_stmt.excluded.preference,
+                UserGamePreference.updated_at: dt.datetime.now(tz=dt.timezone.utc),
+                UserGamePreference.updated_by: user_id_ctx.get(),
+            },
+        )
+        _ = await transaction.execute(insert_user_game_preferences_update_stmt)
 
         sessions, parties = await adapt_to_inputs(transaction, time_slot_id)
         game_allocator = GameAllocator(max_iterations=5000, debug_print=False)

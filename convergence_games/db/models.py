@@ -710,9 +710,13 @@ class User(Base):
     event_roles: Mapped[list[UserEventRole]] = relationship(
         back_populates="user", primaryjoin="User.id == UserEventRole.user_id", lazy="noload"
     )
-    game_preferences: Mapped[list[UserGamePreference]] = relationship(
-        back_populates="user",
+    current_game_preferences: Mapped[list[UserGamePreference]] = relationship(
         primaryjoin="and_(User.id == UserGamePreference.user_id, UserGamePreference.frozen_at_time_slot_id.is_(None))",
+        lazy="noload",
+    )
+    all_game_preferences: Mapped[list[UserGamePreference]] = relationship(
+        back_populates="user",
+        primaryjoin="User.id == UserGamePreference.user_id",
         lazy="noload",
     )
     parties: Mapped[list[Party]] = relationship(
@@ -841,7 +845,7 @@ class UserGamePreference(Base):
     # Relationships
     game: Mapped[Game] = relationship(back_populates="user_preferences", lazy="noload")
     user: Mapped[User] = relationship(
-        back_populates="game_preferences", primaryjoin="User.id == UserGamePreference.user_id", lazy="noload"
+        back_populates="all_game_preferences", primaryjoin="User.id == UserGamePreference.user_id", lazy="noload"
     )
     frozen_at_time_slot: Mapped[TimeSlot | None] = relationship(
         back_populates="frozen_game_preferences",
