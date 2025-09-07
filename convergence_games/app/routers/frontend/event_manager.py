@@ -1011,7 +1011,7 @@ class EventManagerController(Controller):
         party_alias = aliased(Party, party_subq)
         party_user_link_alias = aliased(PartyUserLink, party_subq)
         solo_players_and_leaders_stmt = cast(
-            Select[tuple[User, Party | None, Allocation | None, int]],
+            Select[tuple[User, Party | None, Allocation | None, int | None]],
             (
                 select(User, party_alias, Allocation, Game.gamemaster_id)
                 .select_from(User)
@@ -1031,8 +1031,8 @@ class EventManagerController(Controller):
                     isouter=True,
                 )
                 # Include game to get if is GM
-                .join(Session, Session.id == Allocation.session_id)
-                .join(Game, Game.id == Session.game_id)
+                .join(Session, Session.id == Allocation.session_id, isouter=True)
+                .join(Game, Game.id == Session.game_id, isouter=True)
                 .options(
                     selectinload(party_alias.members),
                 )
