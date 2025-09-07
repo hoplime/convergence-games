@@ -673,9 +673,12 @@ class EventManagerController(Controller):
                 )
                 .where(party_user_link_alias.is_leader | (party_alias.id.is_(None)))
                 .options(
-                    selectinload(User.current_game_preferences),
+                    selectinload(User.all_game_preferences),
                     selectinload(User.latest_d20_transaction),
                     selectinload(party_alias.members).options(selectinload(User.latest_d20_transaction)),
+                    with_loader_criteria(
+                        UserGamePreference, UserGamePreference.frozen_at_time_slot_id.in_([time_slot.id, None])
+                    ),
                 )
             ),
         )
@@ -695,9 +698,19 @@ class EventManagerController(Controller):
                 else (user.latest_d20_transaction is not None and user.latest_d20_transaction.current_balance > 0)
             )
             allocated_session_id = None if allocation is None else allocation.session_id
+            # game_id -> UserGamePreference
+            # We need to get the frozen preference for this time slot if it exists, otherwise the current preference
+            allocated_or_current_game_preferences: dict[int, UserGamePreference] = {}
+            for ugp in user.all_game_preferences:
+                if (
+                    ugp.frozen_at_time_slot_id == time_slot.id
+                    or ugp.game_id not in allocated_or_current_game_preferences
+                ):
+                    # Current preference
+                    allocated_or_current_game_preferences[ugp.game_id] = ugp
             tier_list = generate_tier_list(
                 user_preferences_to_alg_preferences(
-                    user.current_game_preferences, has_d20, [(s.id, s.game_id) for s in sessions]
+                    list(allocated_or_current_game_preferences.values()), has_d20, [(s.id, s.game_id) for s in sessions]
                 )
             )
             tiers: dict[Sqid, TierAsDict] = {

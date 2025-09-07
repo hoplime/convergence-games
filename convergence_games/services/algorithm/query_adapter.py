@@ -85,11 +85,12 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
         .options(
             selectinload(Gamemaster.latest_compensation_transaction),
             selectinload(Gamemaster.latest_d20_transaction),
-            selectinload(Gamemaster.current_game_preferences),
+            selectinload(Gamemaster.all_game_preferences),
             with_loader_criteria(
                 UserEventCompensationTransaction, UserEventCompensationTransaction.event_id == time_slot.event_id
             ),
             with_loader_criteria(UserEventD20Transaction, UserEventD20Transaction.event_id == time_slot.event_id),
+            with_loader_criteria(UserGamePreference, UserGamePreference.frozen_at_time_slot_id == time_slot.id),
         )
     )
     session_results = [r.tuple() for r in (await transaction.execute(session_stmt)).all()]
@@ -165,12 +166,17 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
             # Not a GM
             .where(~User.id.in_(gm_user_ids_this_session_subq))
             .options(
-                selectinload(User.current_game_preferences),
                 selectinload(User.latest_compensation_transaction),
                 selectinload(User.latest_d20_transaction),
+                selectinload(User.all_game_preferences),
                 selectinload(party_alias.members).options(
                     selectinload(User.latest_compensation_transaction), selectinload(User.latest_d20_transaction)
                 ),
+                with_loader_criteria(
+                    UserEventCompensationTransaction, UserEventCompensationTransaction.event_id == time_slot.event_id
+                ),
+                with_loader_criteria(UserEventD20Transaction, UserEventD20Transaction.event_id == time_slot.event_id),
+                with_loader_criteria(UserGamePreference, UserGamePreference.frozen_at_time_slot_id == time_slot.id),
             )
         ),
     )
@@ -180,7 +186,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
 
     # Construct the final alg results
     def _alg_party_from_party_query(party_leader: User, party: Party | None) -> AlgParty:
-        preferences_to_use = party_leader.current_game_preferences
+        preferences_to_use = party_leader.all_game_preferences
         party_leader_id = ("USER", party_leader.id)
         if party is not None:
             has_d20 = all(
@@ -230,7 +236,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                 party_leader_id=("GM", r_gm.id),
                 group_size=1,
                 preferences=user_preferences_to_alg_preferences(
-                    r_gm.current_game_preferences,
+                    r_gm.all_game_preferences,
                     r_gm.latest_d20_transaction.current_balance > 0
                     if r_gm.latest_d20_transaction is not None
                     else False,
