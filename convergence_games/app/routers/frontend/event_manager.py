@@ -795,7 +795,7 @@ class EventManagerController(Controller):
         _ = await transaction.execute(insert_user_game_preferences_update_stmt)
 
         sessions, parties = await adapt_to_inputs(transaction, time_slot_id)
-        game_allocator = GameAllocator(max_iterations=100, debug_print=True)
+        game_allocator = GameAllocator(max_iterations=5000, debug_print=False)
         alg_results, compensation = game_allocator.allocate(sessions, parties, False)
         pprint(alg_results)
         pprint(compensation)

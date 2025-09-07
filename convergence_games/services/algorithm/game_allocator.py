@@ -301,12 +301,17 @@ class GameAllocator:
             possible_table_subset_combinations: list[tuple[tuple[SessionID, AlgPartyP], ...]] = []
 
             # Considering any more than number_of_players_required_max groups to take is redundant
-            for n_groups in range(1, max(len(poachable_parties), number_of_players_required_max)):
+            for n_groups in range(1, min(len(poachable_parties), number_of_players_required_max)):
                 # Generate all combinations of poachable parties of size n_groups
                 for combination in itertools.combinations(poachable_parties, n_groups):
                     # Ensure it's at least the minimum player count
-                    if sum(p.group_size for _, p in combination) < number_of_players_required_min:
+                    combination_player_count = sum(p.group_size for _, p in combination)
+                    if combination_player_count < number_of_players_required_min:
                         continue
+                    # Ensure it's not over the maximum player count
+                    if combination_player_count > number_of_players_required_max:
+                        continue
+
                     # Ensure that it isn't taking too many players from each session it takes from
                     # Important if there are multiple groups being taken from a single session
                     players_taken_from_session_counts: dict[SessionID, int] = {}
@@ -513,7 +518,7 @@ class GameAllocator:
             self.print(f"Compensation Total = {compensation.total}")
             if best_compensation is None or compensation < best_compensation:
                 self.print("Better result :white_check_mark:")
-                print(f"Found better result at {i}")
+                print(f"Found better result at {i} - {compensation.real_total} (total {compensation.total})")
                 best_results = results
                 best_compensation = compensation
             self.print("")
