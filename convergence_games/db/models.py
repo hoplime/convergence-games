@@ -269,7 +269,11 @@ class Game(Base):
         lazy="noload",
         order_by=GameImageLink.sort_order,
     )
-    user_preferences: Mapped[list[UserGamePreference]] = relationship(back_populates="game", lazy="noload")
+    user_preferences: Mapped[list[UserGamePreference]] = relationship(
+        back_populates="game",
+        lazy="noload",
+        primaryjoin="and_(Game.id == UserGamePreference.game_id, UserGamePreference.frozen_at_time_slot_id.is_(None))",
+    )
 
     # Association Proxy Relationships
     genre_links: Mapped[list[GameGenreLink]] = relationship(back_populates="game", lazy="noload")
@@ -427,6 +431,9 @@ class TimeSlot(Base):
         lazy="noload",
     )
     checkin_statuses: Mapped[list[UserCheckinStatus]] = relationship(back_populates="time_slot", lazy="noload")
+    frozen_game_preferences: Mapped[list[UserGamePreference]] = relationship(
+        back_populates="frozen_at_time_slot", lazy="noload"
+    )
 
     # Association Proxy Relationships
     game_requirement_links: Mapped[list[GameRequirementTimeSlotLink]] = relationship(
@@ -704,7 +711,9 @@ class User(Base):
         back_populates="user", primaryjoin="User.id == UserEventRole.user_id", lazy="noload"
     )
     game_preferences: Mapped[list[UserGamePreference]] = relationship(
-        back_populates="user", primaryjoin="User.id == UserGamePreference.user_id", lazy="noload"
+        back_populates="user",
+        primaryjoin="and_(User.id == UserGamePreference.user_id, UserGamePreference.frozen_at_time_slot_id.is_(None))",
+        lazy="noload",
     )
     parties: Mapped[list[Party]] = relationship(
         back_populates="members",
@@ -825,14 +834,22 @@ class UserGamePreference(Base):
     # Foreign Keys
     game_id: Mapped[int] = mapped_column(ForeignKey("game.id"), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
+    frozen_at_time_slot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("time_slot.id"), index=True, nullable=True, default=None
+    )
 
     # Relationships
     game: Mapped[Game] = relationship(back_populates="user_preferences", lazy="noload")
     user: Mapped[User] = relationship(
         back_populates="game_preferences", primaryjoin="User.id == UserGamePreference.user_id", lazy="noload"
     )
+    frozen_at_time_slot: Mapped[TimeSlot | None] = relationship(
+        back_populates="frozen_game_preferences",
+        foreign_keys=frozen_at_time_slot_id,
+        lazy="noload",
+    )
 
-    __table_args__ = (UniqueConstraint("game_id", "user_id"),)
+    __table_args__ = (UniqueConstraint("game_id", "user_id", "frozen_at_time_slot_id"),)
 
 
 class UserCheckinStatus(Base):

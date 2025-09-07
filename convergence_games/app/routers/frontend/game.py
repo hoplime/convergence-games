@@ -57,6 +57,7 @@ class GameController(Controller):
                     select(UserGamePreference).where(
                         UserGamePreference.game_id == game_id,
                         UserGamePreference.user_id == request.user.id,
+                        UserGamePreference.frozen_at_time_slot_id.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -126,6 +127,7 @@ class GameController(Controller):
                 select(UserGamePreference).where(
                     UserGamePreference.game_id == game_id,
                     UserGamePreference.user_id == user.id,
+                    UserGamePreference.frozen_at_time_slot_id.is_(None),
                 )
             )
         ).scalar_one_or_none()

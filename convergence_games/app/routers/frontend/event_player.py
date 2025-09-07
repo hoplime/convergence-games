@@ -132,7 +132,11 @@ async def get_event_approved_games_dep(
             # Where not exists a UserGamePreference
             stmt = stmt.where(
                 ~select(UserGamePreference)
-                .where((UserGamePreference.game_id == Game.id) & (UserGamePreference.user_id == request.user.id))
+                .where(
+                    (UserGamePreference.game_id == Game.id)
+                    & (UserGamePreference.user_id == request.user.id)
+                    & (UserGamePreference.frozen_at_time_slot_id.is_(None))
+                )  # pyright: ignore[reportUnnecessaryComparison]  # We actually can get None from the outer join with no coalesce for default
                 .exists()
             )
         else:
@@ -319,6 +323,7 @@ async def get_user_game_preferences(
         select(UserGamePreference)
         .join(Game, UserGamePreference.game_id == Game.id)
         .where(UserGamePreference.user_id == request.user.id)
+        .where(UserGamePreference.frozen_at_time_slot_id.is_(None))
         .where(Game.event_id == event.id)
     )
     preferences = (await transaction.execute(stmt)).scalars().all()
@@ -488,7 +493,11 @@ class EventPlayerController(Controller):
             )
             .join(
                 ThisUserPreference,
-                and_(ThisUserPreference.game_id == Game.id, ThisUserPreference.user_id == user.id),
+                and_(
+                    ThisUserPreference.game_id == Game.id,
+                    ThisUserPreference.user_id == user.id,
+                    ThisUserPreference.frozen_at_time_slot_id.is_(None),
+                ),
                 isouter=True,
             )
         )
@@ -496,7 +505,11 @@ class EventPlayerController(Controller):
         if party_leader.id != user.id:
             games_and_preferences_this_time_slot_stmt = games_and_preferences_this_time_slot_stmt.join(
                 LeaderUserPreference,
-                and_(LeaderUserPreference.game_id == Game.id, LeaderUserPreference.user_id == party_leader.id),
+                and_(
+                    LeaderUserPreference.game_id == Game.id,
+                    LeaderUserPreference.user_id == party_leader.id,
+                    LeaderUserPreference.frozen_at_time_slot_id.is_(None),
+                ),
                 isouter=True,
             )
 
