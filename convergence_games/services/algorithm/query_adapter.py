@@ -82,6 +82,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
         .where(UserCheckinStatus.checked_in)
         # This time slot
         .where(Session.time_slot_id == time_slot_id)
+        .where(Session.committed)
         .options(
             selectinload(Gamemaster.latest_compensation_transaction),
             selectinload(Gamemaster.latest_d20_transaction),
@@ -98,7 +99,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
     gm_user_ids_this_session_subq = (
         select(Game.gamemaster_id)
         .select_from(Session)
-        .join(Game, (Session.time_slot_id == time_slot_id) & (Session.game_id == Game.id))
+        .join(Game, (Session.time_slot_id == time_slot_id) & (Session.game_id == Game.id) & (Session.committed))
     )
 
     # House Keeping - If there are any GMs in parties they need to be removed

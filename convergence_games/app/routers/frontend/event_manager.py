@@ -50,7 +50,14 @@ from convergence_games.db.models import (
 )
 from convergence_games.db.ocean import Sqid, sink, swim
 from convergence_games.permissions import user_has_permission
-from convergence_games.services.algorithm.game_allocator import GameAllocator, Tier, generate_tier_list
+from convergence_games.services.algorithm.game_allocator import (
+    AlgPartyP,
+    GameAllocator,
+    Tier,
+    calculate_compensation,
+    generate_tier_list,
+)
+from convergence_games.services.algorithm.models import AlgResult
 from convergence_games.services.algorithm.query_adapter import (
     adapt_results_to_database,
     adapt_to_inputs,
@@ -972,3 +979,84 @@ class EventManagerController(Controller):
         transaction.add_all(new_allocations)
 
         return Response(content="", status_code=HTTP_204_NO_CONTENT)
+
+    @put(
+        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/apply-compensation",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(selectinload(Event.time_slots)),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def put_event_apply_compensation(
+        self,
+        request: Request,
+        transaction: AsyncSession,
+        permission: bool,
+        event: Event,
+        time_slot_sqid: Annotated[Sqid, Parameter()],
+    ) -> str:
+        time_slot_id = sink(time_slot_sqid)
+
+        sessions, parties = await adapt_to_inputs(transaction, time_slot_id)
+        parties = [AlgPartyP.from_alg_party(p) for p in parties]
+
+        # TODO: Extract common functionality
+        party_subq = (
+            select(Party, PartyUserLink)
+            .join(Party, Party.id == PartyUserLink.party_id, isouter=True)
+            .where(Party.time_slot_id == time_slot_id)
+            .subquery()
+        )
+        party_alias = aliased(Party, party_subq)
+        party_user_link_alias = aliased(PartyUserLink, party_subq)
+        solo_players_and_leaders_stmt = cast(
+            Select[tuple[User, Party | None, Allocation | None, int]],
+            (
+                select(User, party_alias, Allocation, Game.gamemaster_id)
+                .select_from(User)
+                # Join party and user link, only leaders and solo players
+                .join(party_subq, (party_user_link_alias.user_id == User.id), isouter=True)
+                .where(party_user_link_alias.is_leader | (party_alias.id.is_(None)))
+                # Is checked in
+                .join(
+                    UserCheckinStatus,
+                    (UserCheckinStatus.user_id == User.id) & (UserCheckinStatus.time_slot_id == time_slot_id),
+                )
+                .where(UserCheckinStatus.checked_in)
+                .join(
+                    Allocation,
+                    (Allocation.party_leader_id == User.id)
+                    & (Allocation.session.has(time_slot_id=time_slot_id) & (~Allocation.committed)),
+                    isouter=True,
+                )
+                # Include game to get if is GM
+                .join(Session, Session.id == Allocation.session_id)
+                .join(Game, Game.id == Session.game_id)
+                .options(
+                    selectinload(party_alias.members),
+                )
+            ),
+        )
+        allocations = [r.tuple() for r in (await transaction.execute(solo_players_and_leaders_stmt)).all()]
+        gm_user_ids_this_session_stmt = (
+            select(Game.gamemaster_id)
+            .select_from(Session)
+            .join(Game, (Session.time_slot_id == time_slot_id) & (Session.game_id == Game.id) & (Session.committed))
+        )
+        gm_user_ids_this_session = [
+            r.tuple()[0] for r in (await transaction.execute(gm_user_ids_this_session_stmt)).all()
+        ]
+
+        results: list[AlgResult] = [
+            AlgResult(
+                party_leader_id=("GM" if party_leader.id in gm_user_ids_this_session else "USER", party_leader.id),
+                session_id=allocation.session_id if allocation is not None else None,
+                assignment_type="GM" if party_leader.id == gamemaster_id else "PLAYER",
+            )
+            for party_leader, _, allocation, gamemaster_id in allocations
+        ]
+        compensation = calculate_compensation(sessions, parties, results)
+        print(compensation)
+
+        return "Compensated"
