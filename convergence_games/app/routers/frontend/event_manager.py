@@ -735,12 +735,21 @@ class EventManagerController(Controller):
                 group_dict[None], key=lambda tup: (tup[2] is None or not tup[2].checked_in, tup[0].full_name)
             )
 
+        any_existing_compensation = (
+            await transaction.execute(
+                select(UserEventCompensationTransaction)
+                .where(UserEventCompensationTransaction.event_id == event.id)
+                .limit(1)
+            )
+        ).scalar_one_or_none() is not None
+
         return HTMXBlockTemplate(
             template_name="pages/event_manage_allocation.html.jinja",
             block_name=request.htmx.target,
             context={
                 "event": event,
                 "selected_time_slot": time_slot,
+                "compensated": "Compensated" if any_existing_compensation else "Uncompensated",
                 "sessions": sessions,
                 "groups": group_dict,
             },
