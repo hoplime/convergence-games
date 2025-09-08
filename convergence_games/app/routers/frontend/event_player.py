@@ -38,7 +38,6 @@ from convergence_games.db.models import (
     PartyUserLink,
     Session,
     System,
-    Table,
     TimeSlot,
     User,
     UserEventD20Transaction,
@@ -568,6 +567,7 @@ class EventPlayerController(Controller):
         downgraded_d20: bool = False
         for row in games_and_preferences:
             game, user_preference_value, leader_preference_value = row.tuple()
+
             # Get the personal preference
             preferences[game.id] = user_preference_value
 
@@ -575,8 +575,11 @@ class EventPlayerController(Controller):
             if leader_preference_value is None:  # pyright: ignore[reportUnnecessaryComparison]  # We actually can get None from the outer join with no coalesce for default
                 leader_preference_value = UserGamePreferenceValue.D6
             tier_value = TierValue(leader_preference_value)
+
             if game.gamemaster_id == user.id:
                 tier_value = TierValue.GM
+            elif game.id in any_party_member_has_played_and_wont_repeat:
+                tier_value = TierValue.ALREADY_PLAYED
             elif game.classification == GameClassification.R18 and not all_party_members_over_18:
                 tier_value = TierValue.AGE_RESTRICTED
             elif tier_value == TierValue.D20 and not all_party_members_have_d20:

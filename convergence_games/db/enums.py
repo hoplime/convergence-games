@@ -559,6 +559,8 @@ class TierValue(enum.IntEnum):
 
         if self == TierValue.AGE_RESTRICTED:
             return f"{common} bg-red-500 border px-6 rounded-box after:content-['R18']"
+        if self == TierValue.ALREADY_PLAYED:
+            return f"{common} bg-white border px-10 rounded-box after:content-['Played']"
         if self == TierValue.GM:
             return f"{common} bg-white border px-6 rounded-box after:content-['GM']"
 
