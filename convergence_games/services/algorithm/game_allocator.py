@@ -557,6 +557,7 @@ class Compensation:
     party_compensations: dict[PartyLeaderID, int]
     session_compensations: dict[SessionID | None, int]
     session_virtual_compensations: dict[SessionID | None, int]
+    d20s_spent: dict[PartyLeaderID, int]
 
     @property
     def real_total(self) -> int:
@@ -623,6 +624,7 @@ def calculate_compensation(
     party_compensations = dict.fromkeys(party_lookup, 0)
     session_compensations = dict.fromkeys(session_lookup, 0)
     session_virtual_compensations = dict.fromkeys(session_lookup, 0)
+    d20s_spent = dict.fromkeys(party_lookup, 0)
 
     # 1. Calculate party compensations
     for result in results:
@@ -639,6 +641,9 @@ def calculate_compensation(
         if result_tier.tier == 0:
             # Got first choice - reset compensation
             party_compensations[result.party_leader_id] = -party_lookup[result.party_leader_id].compensation
+            if result_tier.is_d20:
+                # Spent a D20
+                d20s_spent[result.party_leader_id] = 1
         else:
             # Didn't get first choice - grant compensation based on tier
             party_compensations[result.party_leader_id] += (
@@ -674,6 +679,7 @@ def calculate_compensation(
         party_compensations=party_compensations,
         session_compensations=session_compensations,
         session_virtual_compensations=session_virtual_compensations,
+        d20s_spent=d20s_spent,
     )
 
 

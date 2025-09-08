@@ -1051,7 +1051,10 @@ class EventManagerController(Controller):
             user.id: [member.id for member in party.members] if party is not None else [user.id]
             for user, party, *_ in allocations
         }
+        all_user_ids = list(itertools.chain.from_iterable(party_member_mapping.values()))
+        assert len(all_user_ids) == len(set(all_user_ids)), "Duplicate user IDs in party member mapping"
 
+        # SHARED INFORMATION - RESULTS AND COMPENSATION
         results: list[AlgResult] = [
             AlgResult(
                 party_leader_id=("GM" if party_leader.id in session_gm_id_map.values() else "USER", party_leader.id),
@@ -1062,9 +1065,33 @@ class EventManagerController(Controller):
         ]
         compensation = calculate_compensation(sessions, parties, results)
         print(compensation)
-        all_user_ids = list(itertools.chain.from_iterable(party_member_mapping.values()))
-        assert len(all_user_ids) == len(set(all_user_ids)), "Duplicate user IDs in party member mapping"
 
+        # SHARED INFORMATION - EXISTING TRANSACTIONS
+        transaction.expunge_all()
+        existing_compensations_and_d20_users = (
+            (
+                await transaction.execute(
+                    select(User)
+                    .where(User.id.in_(all_user_ids))
+                    .options(
+                        selectinload(User.latest_compensation_transaction),
+                        selectinload(User.latest_d20_transaction),
+                        with_loader_criteria(
+                            UserEventCompensationTransaction,
+                            UserEventCompensationTransaction.event_id == event.id,
+                        ),
+                        with_loader_criteria(
+                            UserEventD20Transaction,
+                            UserEventD20Transaction.event_id == event.id,
+                        ),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+        # COMPENSATION
         # TODO: Undo any existing compensation for this time slot?
         # Not critical if we only hit this once :)
         total_compensations: dict[int, int] = {}
@@ -1082,35 +1109,20 @@ class EventManagerController(Controller):
                 continue
             total_compensations[gm_id] += total_compensation
 
-        existing_compensations = (
-            (
-                await transaction.execute(
-                    select(User)
-                    .where(User.id.in_(all_user_ids))
-                    .options(
-                        selectinload(User.latest_compensation_transaction),
-                        with_loader_criteria(
-                            UserEventCompensationTransaction,
-                            UserEventCompensationTransaction.event_id == event.id,
-                        ),
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
-        existing_compensation_map = {user.id: user.latest_compensation_transaction for user in existing_compensations}
+        existing_compensation_map = {
+            user.id: user.latest_compensation_transaction for user in existing_compensations_and_d20_users
+        }
         new_compensations = [
             UserEventCompensationTransaction(
-                current_balance=comp.current_balance + total_compensation,
-                previous_balance=comp.current_balance,
+                current_balance=d20s.current_balance + total_compensation,
+                previous_balance=d20s.current_balance,
                 delta=total_compensation,
                 event_id=event.id,
                 user_id=user_id,
-                previous_transaction_id=comp.id,
+                previous_transaction_id=d20s.id,
                 associated_time_slot_id=time_slot_id,
             )
-            if user_id in existing_compensation_map and (comp := existing_compensation_map[user_id]) is not None
+            if user_id in existing_compensation_map and (d20s := existing_compensation_map[user_id]) is not None
             else UserEventCompensationTransaction(
                 current_balance=total_compensation,
                 previous_balance=0,
@@ -1125,5 +1137,37 @@ class EventManagerController(Controller):
         ]
 
         transaction.add_all(new_compensations)
+
+        # D20s
+        total_d20s_spent: dict[int, int] = {}
+        for result in results:
+            party_members = party_member_mapping[result.party_leader_id[1]]
+            for member_id in party_members:
+                total_d20s_spent[member_id] = compensation.d20s_spent.get(result.party_leader_id, 0)
+        existing_d20_map = {user.id: user.latest_d20_transaction for user in existing_compensations_and_d20_users}
+        new_d20s = [
+            UserEventD20Transaction(
+                current_balance=d20s.current_balance - total_d20s,
+                previous_balance=d20s.current_balance,
+                delta=-total_d20s,
+                event_id=event.id,
+                user_id=user_id,
+                previous_transaction_id=d20s.id,
+                associated_time_slot_id=time_slot_id,
+            )
+            if user_id in existing_d20_map and (d20s := existing_d20_map[user_id]) is not None
+            else UserEventD20Transaction(
+                current_balance=-total_d20s,
+                previous_balance=0,
+                delta=-total_d20s,
+                event_id=event.id,
+                user_id=user_id,
+                previous_transaction_id=None,
+                associated_time_slot_id=time_slot_id,
+            )
+            for user_id, total_d20s in total_d20s_spent.items()
+        ]
+
+        transaction.add_all(new_d20s)
 
         return "Compensated"
