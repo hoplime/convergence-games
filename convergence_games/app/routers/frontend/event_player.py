@@ -42,6 +42,7 @@ from convergence_games.db.models import (
     TimeSlot,
     User,
     UserEventD20Transaction,
+    UserGamePlayed,
     UserGamePreference,
 )
 from convergence_games.db.ocean import Sqid, sink, swim
@@ -330,6 +331,20 @@ async def get_user_game_preferences(
     return {preference.game_id: preference.preference for preference in preferences}
 
 
+async def get_user_game_playeds(request: Request, transaction: AsyncSession, event: Event) -> dict[int, UserGamePlayed]:
+    if request.user is None:
+        return {}
+
+    stmt = (
+        select(UserGamePlayed)
+        .join(Game, UserGamePlayed.game_id == Game.id)
+        .where(UserGamePlayed.user_id == request.user.id)
+        .where(Game.event_id == event.id)
+    )
+    user_game_playeds = (await transaction.execute(stmt)).scalars().all()
+    return {user_game_played.game_id: user_game_played for user_game_played in user_game_playeds}
+
+
 # endregion
 
 
@@ -343,6 +358,7 @@ class EventPlayerController(Controller):
             "games": Provide(get_event_approved_games_dep),
             "form_data": Provide(get_form_data_dep),
             "preferences": Provide(get_user_game_preferences),
+            "user_game_playeds": Provide(get_user_game_playeds),
         },
     )
     async def get_event_games(
@@ -351,6 +367,7 @@ class EventPlayerController(Controller):
         event: Event,
         games: Sequence[Game],
         preferences: dict[int, UserGamePreferenceValue],
+        user_game_playeds: dict[int, UserGamePlayed],
         form_data: dict[str, MultiselectFormData],
         transaction: AsyncSession,
     ) -> Template:
@@ -384,6 +401,7 @@ class EventPlayerController(Controller):
                 "games": games,
                 "form_data": form_data,
                 "preferences": preferences,
+                "user_game_playeds": user_game_playeds,
                 "scheduled_time_slots": scheduled_time_slots_dict,
                 "latest_d20_transaction": latest_d20_transaction,
             },

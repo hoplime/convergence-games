@@ -1,6 +1,7 @@
 {#def
     game: Game,
     preference: int | None = None,
+    user_game_played: UserGamePlayed | None = None,
     all_party_members_over_18: bool = True,
     scheduled_time_slot_ids: list[int] = [],
     display_d20: bool = False,
@@ -69,6 +70,12 @@
                     :hx_put_url="'/game/' + swim(game) + '/preference'"
                     :starting_value="preference"
                 />
+                {% if user_game_played is not none %}
+                    <AlreadyPlayed
+                        :hx_put_url="'/game/' + swim(game) + '/already-played'"
+                        :starting_value="user_game_played.allow_play_again"
+                    />
+                {% endif %}
                 {% if not all_party_members_over_18 and game.classification.value == "R18" %}
                     <span class="w-full text-center font-semibold"
                         >All party members must be 18 or older to play this game.</span

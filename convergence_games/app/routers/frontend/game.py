@@ -29,7 +29,7 @@ class RatingPutData(BaseModel):
 
 
 class AllowPlayAgainPutData(BaseModel):
-    allow_play_again: bool
+    allow_play_again: bool = False
 
 
 class GameController(Controller):
