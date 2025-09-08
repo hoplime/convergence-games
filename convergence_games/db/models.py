@@ -623,7 +623,11 @@ class UserEventD20Transaction(Base):
         # We need to make sure that all transactions in a chain point to the same event and user
         UniqueConstraint("event_id", "user_id", "id", name="uq_d20_transaction_event_user_id"),
         UniqueConstraint(
-            "event_id", "user_id", "previous_transaction_id", name="uq_d20_transaction_event_user_previous"
+            "event_id",
+            "user_id",
+            "previous_transaction_id",
+            name="uq_d20_transaction_event_user_previous",
+            postgresql_nulls_not_distinct=True,
         ),
         ForeignKeyConstraint(
             columns=["event_id", "user_id", "previous_transaction_id"],
@@ -680,7 +684,11 @@ class UserEventCompensationTransaction(Base):
         # We need to make sure that all transactions in a chain point to the same event and user
         UniqueConstraint("event_id", "user_id", "id", name="uq_compensation_transaction_event_user_id"),
         UniqueConstraint(
-            "event_id", "user_id", "previous_transaction_id", name="uq_compensation_transaction_event_user_previous"
+            "event_id",
+            "user_id",
+            "previous_transaction_id",
+            name="uq_compensation_transaction_event_user_previous",
+            postgresql_nulls_not_distinct=True,
         ),
         ForeignKeyConstraint(
             columns=["event_id", "user_id", "previous_transaction_id"],
@@ -745,6 +753,7 @@ class User(Base):
     @declared_attr.directive
     @classmethod
     def __mapper_args__(cls):
+        # TODO: These are BUGGED when it comes to further filtering by event ID etc - don't use
         # https://stackoverflow.com/a/73517812
         latest_d20_transaction = relationship(
             UserEventD20Transaction,
