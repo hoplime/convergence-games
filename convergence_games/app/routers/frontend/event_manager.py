@@ -5,7 +5,7 @@ import itertools
 from collections.abc import Sequence
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Literal, TypedDict, cast
+from typing import Annotated, Any, Literal, TypedDict, cast
 
 import humanize
 from litestar import Controller, Response, get, post, put
@@ -46,6 +46,7 @@ from convergence_games.db.models import (
     UserEventCompensationTransaction,
     UserEventD20Transaction,
     UserEventRole,
+    UserGamePlayed,
     UserGamePreference,
 )
 from convergence_games.db.ocean import Sqid, sink, swim
@@ -972,9 +973,6 @@ class EventManagerController(Controller):
                     )
                 )
 
-        # TODO ON COMMIT
-        # Compensation
-        # Spending D20s
         time_slot.status = TimeSlotStatus.ALLOCATED if data.commit else TimeSlotStatus.ALLOCATING
         transaction.add(time_slot)
 
@@ -1049,13 +1047,13 @@ class EventManagerController(Controller):
         )
         allocations = [r.tuple() for r in (await transaction.execute(solo_players_and_leaders_stmt)).all()]
         gm_user_ids_this_session_stmt = (
-            select(Session.id, Game.gamemaster_id)
+            select(Session.id, Session.game_id, Game.gamemaster_id)
             .select_from(Session)
             .join(Game, (Session.time_slot_id == time_slot_id) & (Session.game_id == Game.id) & (Session.committed))
         )
-        session_gm_id_map = {
-            r.tuple()[0]: r.tuple()[1] for r in (await transaction.execute(gm_user_ids_this_session_stmt)).all()
-        }
+        gm_user_ids_this_session = [r.tuple() for r in (await transaction.execute(gm_user_ids_this_session_stmt)).all()]
+        session_game_id_map = {r[0]: r[1] for r in gm_user_ids_this_session}
+        session_gm_id_map = {r[0]: r[2] for r in gm_user_ids_this_session}
         party_member_mapping: dict[int, list[int]] = {
             user.id: [member.id for member in party.members] if party is not None else [user.id]
             for user, party, *_ in allocations
@@ -1178,5 +1176,33 @@ class EventManagerController(Controller):
         ]
 
         transaction.add_all(new_d20s)
+
+        # Already played
+        new_user_game_playeds: list[dict[str, Any]] = []
+        for result in results:
+            party_members = party_member_mapping[result.party_leader_id[1]]
+            for member_id in party_members:
+                if result.session_id is None:
+                    continue
+                new_user_game_playeds.append(
+                    {
+                        "allow_play_again": False,
+                        "user_id": member_id,
+                        "game_id": session_game_id_map[result.session_id],
+                    }
+                )
+        insert_user_game_played_stmt = (
+            insert(UserGamePlayed)
+            .values(new_user_game_playeds)
+            .on_conflict_do_update(
+                index_elements=(UserGamePlayed.user_id, UserGamePlayed.game_id),
+                set_={
+                    UserGamePlayed.allow_play_again: False,
+                    UserGamePlayed.updated_at: dt.datetime.now(tz=dt.timezone.utc),
+                    UserGamePlayed.updated_by: user_id_ctx.get(),
+                },
+            )
+        )
+        _ = await transaction.execute(insert_user_game_played_stmt)
 
         return "Compensated"
