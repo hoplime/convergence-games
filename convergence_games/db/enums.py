@@ -541,6 +541,7 @@ class UserGamePreferenceValue(enum.IntEnum):
 class TierValue(enum.IntEnum):
     AGE_RESTRICTED = -2
     D0 = 0
+    ALREADY_PLAYED = 1
     D4 = 4
     D6 = 6
     D8 = 8

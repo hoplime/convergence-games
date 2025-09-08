@@ -103,7 +103,9 @@
                                     <GameCard
                                         :game="game"
                                         :preference="preferences.get(game.id)"
+                                        :user_game_played="user_game_playeds.get(game.id)"
                                         :all_party_members_over_18="all_party_members_over_18"
+                                        :any_party_member_has_played_and_wont_repeat="game.id in any_party_member_has_played_and_wont_repeat"
                                         :scheduled_time_slot_ids="scheduled_time_slots.get(game.id, [])"
                                         :display_d20="has_d20"
                                     />

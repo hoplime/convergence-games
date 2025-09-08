@@ -3,6 +3,7 @@
     preference: int | None = None,
     user_game_played: UserGamePlayed | None = None,
     all_party_members_over_18: bool = True,
+    any_party_member_has_played_and_wont_repeat: bool = False,
     scheduled_time_slot_ids: list[int] = [],
     display_d20: bool = False,
 #}
@@ -75,6 +76,10 @@
                         :hx_put_url="'/game/' + swim(game) + '/already-played'"
                         :starting_value="user_game_played.allow_play_again"
                     />
+                {% elif any_party_member_has_played_and_wont_repeat %}
+                    <span class="w-full text-center font-semibold"
+                        >Someone in your party has already played this game and does not want to repeat it.</span
+                    >
                 {% endif %}
                 {% if not all_party_members_over_18 and game.classification.value == "R18" %}
                     <span class="w-full text-center font-semibold"

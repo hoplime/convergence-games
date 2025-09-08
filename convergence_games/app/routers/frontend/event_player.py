@@ -541,6 +541,28 @@ class EventPlayerController(Controller):
                 scheduled_time_slots_dict[game_id] = []
             scheduled_time_slots_dict[game_id].append(time_slot_id)
 
+        all_party_members_game_playeds_stmt = (
+            select(UserGamePlayed)
+            .join(Game, UserGamePlayed.game_id == Game.id)
+            .where(
+                UserGamePlayed.user_id.in_([member.t[0].id for member in party_members] if party_members else [user.id])
+            )
+            .where(Game.event_id == event.id)
+        )
+        all_party_members_game_playeds = (
+            (await transaction.execute(all_party_members_game_playeds_stmt)).scalars().all()
+        )
+        user_game_playeds: dict[int, UserGamePlayed] = {
+            user_game_played.game_id: user_game_played
+            for user_game_played in all_party_members_game_playeds
+            if user_game_played.user_id == user.id
+        }
+        any_party_member_has_played_and_wont_repeat: set[int] = {
+            user_game_played.game_id
+            for user_game_played in all_party_members_game_playeds
+            if not user_game_played.allow_play_again
+        }
+
         game_tier_dict: dict[TierValue, list[Game]] = {}
         preferences: dict[int, UserGamePreferenceValue] = {}
         downgraded_d20: bool = False
@@ -576,11 +598,13 @@ class EventPlayerController(Controller):
                 "selected_time_slot": time_slot,
                 "game_tier_list": game_tier_list,
                 "preferences": preferences,
+                "user_game_playeds": user_game_playeds,
                 "party_leader": party_leader,
                 "all_party_members_over_18": all_party_members_over_18,
                 "scheduled_time_slots": scheduled_time_slots_dict,
                 "has_d20": latest_d20_transaction is not None and latest_d20_transaction.current_balance > 0,
                 "all_party_members_have_d20": all_party_members_have_d20,
+                "any_party_member_has_played_and_wont_repeat": any_party_member_has_played_and_wont_repeat,
                 "downgraded_d20": downgraded_d20,
             },
         )
