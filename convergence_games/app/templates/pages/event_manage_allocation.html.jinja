@@ -105,6 +105,7 @@
                                     hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/lock"
                                     hx-target="#time-slot-status"
                                     hx-swap="innerHTML"
+                                    hx-confirm="Are you sure you want to lock this time slot? This will prevent players from modifying parties etc."
                                 >
                                     Lock
                                 </button>
@@ -113,6 +114,7 @@
                                     hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/unlock"
                                     hx-target="#time-slot-status"
                                     hx-swap="innerHTML"
+                                    hx-confirm="Are you sure you want to unlock this time slot? This will allow players to modify parties etc."
                                 >
                                     Unlock
                                 </button>
@@ -137,6 +139,7 @@
                                 hx-put="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/apply-compensation"
                                 hx-target="#time-slot-compensation-status"
                                 hx-swap="innerHTML"
+                                hx-confirm="Are you sure you want to apply compensation? This will record game plays for all players in this time slot, given compensation and spend D20s."
                             >
                                 Apply Compensation
                             </button>
