@@ -274,6 +274,11 @@ class Game(Base):
         lazy="noload",
         primaryjoin="and_(Game.id == UserGamePreference.game_id, UserGamePreference.frozen_at_time_slot_id.is_(None))",
     )
+    players: Mapped[list[UserGamePlayed]] = relationship(
+        back_populates="game",
+        primaryjoin="Game.id == UserGamePlayed.game_id",
+        lazy="noload",
+    )
 
     # Association Proxy Relationships
     genre_links: Mapped[list[GameGenreLink]] = relationship(back_populates="game", lazy="noload")
@@ -749,6 +754,9 @@ class User(Base):
     allocations: Mapped[list[Allocation]] = relationship(
         back_populates="party_leader", primaryjoin="User.id == Allocation.party_leader_id", lazy="noload"
     )
+    games_played: Mapped[list[UserGamePlayed]] = relationship(
+        back_populates="user", primaryjoin="User.id == UserGamePlayed.user_id", lazy="noload"
+    )
 
     @declared_attr.directive
     @classmethod
@@ -868,6 +876,24 @@ class UserGamePreference(Base):
     )
 
     __table_args__ = (UniqueConstraint("game_id", "user_id", "frozen_at_time_slot_id"),)
+
+
+class UserGamePlayed(Base):
+    allow_play_again: Mapped[bool] = mapped_column(default=False, server_default="0", index=True)
+
+    # Foreign Keys
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
+    game_id: Mapped[int] = mapped_column(ForeignKey("game.id"), primary_key=True)
+
+    # Relationships
+    user: Mapped[User] = relationship(
+        back_populates="games_played", primaryjoin="User.id == UserGamePlayed.user_id", lazy="noload"
+    )
+    game: Mapped[Game] = relationship(
+        back_populates="players", primaryjoin="Game.id == UserGamePlayed.game_id", lazy="noload"
+    )
+
+    __table_args__ = (UniqueConstraint("user_id", "game_id"),)
 
 
 class UserCheckinStatus(Base):
