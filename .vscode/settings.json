@@ -69,6 +69,7 @@
                 "scope": [
                     "meta.tag.other.AdminSectionCard.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.AllocationPartyCard.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.AlreadyPlayed.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.Collapse.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.CollapseContent.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.CollapseTitle.html invalid.illegal.unrecognized-tag.html",

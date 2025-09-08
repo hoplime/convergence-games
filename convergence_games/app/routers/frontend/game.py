@@ -11,13 +11,25 @@ from sqlalchemy.orm import selectinload
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import UserGamePreferenceValue
-from convergence_games.db.models import Game, Session, Table, User, UserEventD20Transaction, UserGamePreference
+from convergence_games.db.models import (
+    Game,
+    Session,
+    Table,
+    User,
+    UserEventD20Transaction,
+    UserGamePlayed,
+    UserGamePreference,
+)
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.services import ImageLoader
 
 
 class RatingPutData(BaseModel):
     rating: UserGamePreferenceValue
+
+
+class AllowPlayAgainPutData(BaseModel):
+    allow_play_again: bool
 
 
 class GameController(Controller):
@@ -71,9 +83,17 @@ class GameController(Controller):
                     .limit(1)
                 )
             ).scalar_one_or_none()
+            user_game_played = (
+                await transaction.execute(
+                    select(UserGamePlayed).where(
+                        UserGamePlayed.user_id == request.user.id, UserGamePlayed.game_id == game_id
+                    )
+                )
+            ).scalar_one_or_none()
         else:
             preference = None
             latest_d20_transaction = None
+            user_game_played = None
 
         game_image_urls = [
             {
@@ -108,6 +128,7 @@ class GameController(Controller):
                 "game": game,
                 "game_image_urls": game_image_urls,
                 "preference": preference,
+                "user_game_played": user_game_played,
                 "scheduled_sessions": sorted(scheduled_sessions, key=lambda s: s.time_slot.start_time),
                 "has_d20": latest_d20_transaction is not None and latest_d20_transaction.current_balance > 0,
             },
@@ -135,4 +156,27 @@ class GameController(Controller):
             user_game_preference = UserGamePreference(game_id=game_id, user_id=user.id)
         user_game_preference.preference = data.rating
         transaction.add(user_game_preference)
+        return Response(content="", status_code=204)
+
+    @put(path="/{game_sqid:str}/already-played")
+    async def put_game_already_played(
+        self,
+        game_sqid: Sqid,
+        user: User,
+        transaction: AsyncSession,
+        data: Annotated[AllowPlayAgainPutData, Body(media_type=RequestEncodingType.URL_ENCODED)],
+    ) -> Response[str]:
+        game_id: int = sink(game_sqid)
+        user_game_played = (
+            await transaction.execute(
+                select(UserGamePlayed).where(
+                    UserGamePlayed.game_id == game_id,
+                    UserGamePlayed.user_id == user.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if user_game_played is None:
+            user_game_played = UserGamePlayed(game_id=game_id, user_id=user.id)
+        user_game_played.allow_play_again = data.allow_play_again
+        transaction.add(user_game_played)
         return Response(content="", status_code=204)

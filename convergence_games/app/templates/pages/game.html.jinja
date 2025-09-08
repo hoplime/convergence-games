@@ -169,6 +169,13 @@
                                 :hx_put_url="'/game/' + swim(game) + '/preference'"
                                 :starting_value="preference"
                             />
+                            {% if user_game_played is not none %}
+                                <AlreadyPlayed
+                                    :user_game_played="user_game_played"
+                                    :hx_put_url="'/game/' + swim(game) + '/already-played'"
+                                    :starting_value="user_game_played.allow_play_again"
+                                />
+                            {% endif %}
                         </div>
                     </div>
                 </div>

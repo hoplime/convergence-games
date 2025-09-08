@@ -1,0 +1,14 @@
+{#def
+    starting_value: bool = False,
+    hx_put_url: str = "",
+    name: str = "allow_play_again",
+#}
+<div {{ attrs.render(class="flex flex-col gap-2 items-center") }}>
+    <span class="w-full text-center font-semibold">You Have Already Played</span>
+    <form hx-swap="none" hx-put="{{ hx_put_url }}" hx-trigger="change">
+        <label class="label cursor-pointer gap-2">
+            <input type="checkbox" class="checkbox" name="{{ name }}" {% if starting_value %}checked{% endif %} />
+            <span class="label-text">Allow play again?</span>
+        </label>
+    </form>
+</div>
