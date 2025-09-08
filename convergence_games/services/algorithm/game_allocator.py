@@ -53,7 +53,7 @@ def generate_tier_list(preferences: list[tuple[SessionID, tuple[UGPV, bool]]]) -
     # Order down from D20 to D0
     # Ignore D0 and already_played
     ordered_preferences = sorted(
-        [(p[0], p[1][0]) for p in preferences if p[1][0] != UGPV.D0 or not p[1][1]],
+        [(p[0], p[1][0]) for p in preferences if p[1][0] != UGPV.D0 and not p[1][1]],
         key=itemgetter(1),
         reverse=True,
     )
