@@ -1040,17 +1040,21 @@ class EventManagerController(Controller):
         )
         allocations = [r.tuple() for r in (await transaction.execute(solo_players_and_leaders_stmt)).all()]
         gm_user_ids_this_session_stmt = (
-            select(Game.gamemaster_id)
+            select(Session.id, Game.gamemaster_id)
             .select_from(Session)
             .join(Game, (Session.time_slot_id == time_slot_id) & (Session.game_id == Game.id) & (Session.committed))
         )
-        gm_user_ids_this_session = [
-            r.tuple()[0] for r in (await transaction.execute(gm_user_ids_this_session_stmt)).all()
-        ]
+        session_gm_id_map = {
+            r.tuple()[0]: r.tuple()[1] for r in (await transaction.execute(gm_user_ids_this_session_stmt)).all()
+        }
+        party_member_mapping: dict[int, list[int]] = {
+            user.id: [member.id for member in party.members] if party is not None else [user.id]
+            for user, party, *_ in allocations
+        }
 
         results: list[AlgResult] = [
             AlgResult(
-                party_leader_id=("GM" if party_leader.id in gm_user_ids_this_session else "USER", party_leader.id),
+                party_leader_id=("GM" if party_leader.id in session_gm_id_map.values() else "USER", party_leader.id),
                 session_id=allocation.session_id if allocation is not None else None,
                 assignment_type="GM" if party_leader.id == gamemaster_id else "PLAYER",
             )
@@ -1058,5 +1062,68 @@ class EventManagerController(Controller):
         ]
         compensation = calculate_compensation(sessions, parties, results)
         print(compensation)
+        all_user_ids = list(itertools.chain.from_iterable(party_member_mapping.values()))
+        assert len(all_user_ids) == len(set(all_user_ids)), "Duplicate user IDs in party member mapping"
+
+        # TODO: Undo any existing compensation for this time slot?
+        # Not critical if we only hit this once :)
+        total_compensations: dict[int, int] = {}
+        for party_leader_id, total_compensation in compensation.party_compensations.items():
+            if party_leader_id[0] == "OVERFLOW":
+                continue
+            party_members = party_member_mapping[party_leader_id[1]]
+            for member_id in party_members:
+                total_compensations[member_id] = total_compensation // len(party_members)
+        for session_id, total_compensation in compensation.session_compensations.items():
+            if session_id is None:
+                continue
+            gm_id = session_gm_id_map.get(session_id)
+            if gm_id is None:
+                continue
+            total_compensations[gm_id] += total_compensation
+
+        existing_compensations = (
+            (
+                await transaction.execute(
+                    select(User)
+                    .where(User.id.in_(all_user_ids))
+                    .options(
+                        selectinload(User.latest_compensation_transaction),
+                        with_loader_criteria(
+                            UserEventCompensationTransaction,
+                            UserEventCompensationTransaction.event_id == event.id,
+                        ),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        existing_compensation_map = {user.id: user.latest_compensation_transaction for user in existing_compensations}
+        new_compensations = [
+            UserEventCompensationTransaction(
+                current_balance=comp.current_balance + total_compensation,
+                previous_balance=comp.current_balance,
+                delta=total_compensation,
+                event_id=event.id,
+                user_id=user_id,
+                previous_transaction_id=comp.id,
+                associated_time_slot_id=time_slot_id,
+            )
+            if user_id in existing_compensation_map and (comp := existing_compensation_map[user_id]) is not None
+            else UserEventCompensationTransaction(
+                current_balance=total_compensation,
+                previous_balance=0,
+                delta=total_compensation,
+                event_id=event.id,
+                user_id=user_id,
+                previous_transaction_id=None,
+                associated_time_slot_id=time_slot_id,
+            )
+            # for party_leader_id, members in party_member_mapping.items()
+            for user_id, total_compensation in total_compensations.items()
+        ]
+
+        transaction.add_all(new_compensations)
 
         return "Compensated"
