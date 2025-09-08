@@ -49,9 +49,14 @@ class Tier:
         return self < other
 
 
-def generate_tier_list(preferences: list[tuple[SessionID, UGPV]]) -> list[tuple[Tier, list[SessionID]]]:
+def generate_tier_list(preferences: list[tuple[SessionID, tuple[UGPV, bool]]]) -> list[tuple[Tier, list[SessionID]]]:
     # Order down from D20 to D0
-    ordered_preferences = sorted([p for p in preferences if p[1] != UGPV.D0], key=itemgetter(1), reverse=True)
+    # Ignore D0 and already_played
+    ordered_preferences = sorted(
+        [(p[0], p[1][0]) for p in preferences if p[1][0] != UGPV.D0 or not p[1][1]],
+        key=itemgetter(1),
+        reverse=True,
+    )
     tier_list: list[tuple[Tier, list[SessionID]]] = []
     for i, (preference, group) in enumerate(groupby(ordered_preferences, key=itemgetter(1))):
         preference: UGPV

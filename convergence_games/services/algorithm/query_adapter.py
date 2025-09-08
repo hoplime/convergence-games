@@ -35,19 +35,23 @@ def user_preferences_to_alg_preferences(
     preferences: list[UserGamePreference],
     has_d20: bool,
     session_results: list[tuple[SessionID, int, *tuple[Any, ...]]],
-) -> list[tuple[SessionID, UserGamePreferenceValue]]:
+    already_played_games: set[int] | None = None,
+) -> list[tuple[SessionID, tuple[UserGamePreferenceValue, bool]]]:
+    if already_played_games is None:
+        already_played_games = set()
     game_id_session_id_map: dict[int, SessionID] = {
         r_game_id: r_session_id for r_session_id, r_game_id, *_ in session_results
     }
     preference_map = {
         game_id_session_id_map[gp.game_id]: (
-            gp.preference if has_d20 else min(UserGamePreferenceValue.D12, gp.preference)
+            (gp.preference if has_d20 else min(UserGamePreferenceValue.D12, gp.preference)),
+            gp.game_id in already_played_games,
         )
         for gp in preferences
         if gp.game_id in game_id_session_id_map
     }
     alg_party_preferences = [
-        (r_session_id, preference_map.get(r_session_id, UserGamePreferenceValue.D6))
+        (r_session_id, preference_map.get(r_session_id, (UserGamePreferenceValue.D6, False)))
         for r_session_id, *_ in session_results
     ]
     return alg_party_preferences
@@ -87,6 +91,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
             selectinload(Gamemaster.latest_compensation_transaction),
             selectinload(Gamemaster.latest_d20_transaction),
             selectinload(Gamemaster.all_game_preferences),
+            selectinload(Gamemaster.games_played),
             with_loader_criteria(
                 UserEventCompensationTransaction, UserEventCompensationTransaction.event_id == time_slot.event_id
             ),
@@ -170,8 +175,11 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                 selectinload(User.latest_compensation_transaction),
                 selectinload(User.latest_d20_transaction),
                 selectinload(User.all_game_preferences),
+                selectinload(User.games_played),
                 selectinload(party_alias.members).options(
-                    selectinload(User.latest_compensation_transaction), selectinload(User.latest_d20_transaction)
+                    selectinload(User.latest_compensation_transaction),
+                    selectinload(User.latest_d20_transaction),
+                    selectinload(User.games_played),
                 ),
                 with_loader_criteria(
                     UserEventCompensationTransaction, UserEventCompensationTransaction.event_id == time_slot.event_id
@@ -214,11 +222,18 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                 else 0
             )
             group_size = 1
+        # Already played
+        already_played_games = {gp.game_id for gp in party_leader.games_played if not gp.allow_play_again}
+        if party is not None:
+            for member in party.members:
+                already_played_games.update({gp.game_id for gp in member.games_played if not gp.allow_play_again})
 
         return AlgParty(
             party_leader_id=party_leader_id,
             group_size=group_size,
-            preferences=user_preferences_to_alg_preferences(preferences_to_use, has_d20, session_results),
+            preferences=user_preferences_to_alg_preferences(
+                preferences_to_use, has_d20, session_results, already_played_games
+            ),
             total_compensation=total_compensation,
         )
 
@@ -242,6 +257,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                     if r_gm.latest_d20_transaction is not None
                     else False,
                     session_results,
+                    {gp.game_id for gp in r_gm.games_played if not gp.allow_play_again},
                 ),
                 total_compensation=comp,
             ),

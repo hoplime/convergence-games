@@ -683,7 +683,10 @@ class EventManagerController(Controller):
                 .options(
                     selectinload(User.all_game_preferences),
                     selectinload(User.latest_d20_transaction),
-                    selectinload(party_alias.members).options(selectinload(User.latest_d20_transaction)),
+                    selectinload(User.games_played),
+                    selectinload(party_alias.members).options(
+                        selectinload(User.latest_d20_transaction), selectinload(User.games_played)
+                    ),
                     with_loader_criteria(
                         UserGamePreference, UserGamePreference.frozen_at_time_slot_id.in_([time_slot.id, None])
                     ),
@@ -709,6 +712,7 @@ class EventManagerController(Controller):
             # game_id -> UserGamePreference
             # We need to get the frozen preference for this time slot if it exists, otherwise the current preference
             allocated_or_current_game_preferences: dict[int, UserGamePreference] = {}
+
             for ugp in user.all_game_preferences:
                 if (
                     ugp.frozen_at_time_slot_id == time_slot.id
@@ -716,9 +720,19 @@ class EventManagerController(Controller):
                 ):
                     # Current preference
                     allocated_or_current_game_preferences[ugp.game_id] = ugp
+
+            # Already played
+            already_played_games = {gp.game_id for gp in user.games_played if not gp.allow_play_again}
+            if party is not None:
+                for member in party.members:
+                    already_played_games.update({gp.game_id for gp in member.games_played if not gp.allow_play_again})
+
             tier_list = generate_tier_list(
                 user_preferences_to_alg_preferences(
-                    list(allocated_or_current_game_preferences.values()), has_d20, [(s.id, s.game_id) for s in sessions]
+                    list(allocated_or_current_game_preferences.values()),
+                    has_d20,
+                    [(s.id, s.game_id) for s in sessions],
+                    already_played_games,
                 )
             )
             tiers: dict[Sqid, TierAsDict] = {

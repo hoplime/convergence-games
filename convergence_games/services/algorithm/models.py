@@ -12,7 +12,7 @@ type PartyLeaderID = tuple[Literal["USER", "GM", "OVERFLOW"], int]
 class AlgParty:
     party_leader_id: PartyLeaderID
     group_size: int
-    preferences: list[tuple[SessionID, UserGamePreferenceValue]]
+    preferences: list[tuple[SessionID, tuple[UserGamePreferenceValue, bool]]]  # (preference, already_played)
     total_compensation: int
 
 
