@@ -29,7 +29,7 @@ from convergence_games.app.context import user_id_ctx
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
-from convergence_games.db.enums import SubmissionStatus, TimeSlotStatus
+from convergence_games.db.enums import GameClassification, SubmissionStatus, TimeSlotStatus
 from convergence_games.db.models import (
     Allocation,
     Event,
@@ -726,13 +726,17 @@ class EventManagerController(Controller):
             if party is not None:
                 for member in party.members:
                     already_played_games.update({gp.game_id for gp in member.games_played if not gp.allow_play_again})
+                over_18 = all(member.over_18 for member in party.members)
+            else:
+                over_18 = user.over_18
 
             tier_list = generate_tier_list(
                 user_preferences_to_alg_preferences(
                     list(allocated_or_current_game_preferences.values()),
                     has_d20,
-                    [(s.id, s.game_id) for s in sessions],
+                    [(s.id, s.game_id, s.game.classification == GameClassification.R18) for s in sessions],
                     already_played_games,
+                    over_18=over_18,
                 )
             )
             tiers: dict[Sqid, TierAsDict] = {

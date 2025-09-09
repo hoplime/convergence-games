@@ -13,7 +13,7 @@ from sqlalchemy import URL, Select, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 
-from convergence_games.db.enums import UserGamePreferenceValue
+from convergence_games.db.enums import GameClassification, UserGamePreferenceValue
 from convergence_games.db.models import (
     Allocation,
     Game,
@@ -34,17 +34,25 @@ from convergence_games.services.algorithm.models import AlgParty, AlgResult, Alg
 def user_preferences_to_alg_preferences(
     preferences: list[UserGamePreference],
     has_d20: bool,
-    session_results: list[tuple[SessionID, int, *tuple[Any, ...]]],
+    session_results: list[tuple[SessionID, int, *tuple[Any, ...], bool]],
     already_played_games: set[int] | None = None,
+    over_18: bool = True,
 ) -> list[tuple[SessionID, tuple[UserGamePreferenceValue, bool]]]:
     if already_played_games is None:
         already_played_games = set()
     game_id_session_id_map: dict[int, SessionID] = {
         r_game_id: r_session_id for r_session_id, r_game_id, *_ in session_results
     }
+    blocked_game_ids = {r_game_id for r_session_id, r_game_id, *_, r_r18 in session_results if r_r18 and not over_18}
     preference_map = {
         game_id_session_id_map[gp.game_id]: (
-            (gp.preference if has_d20 else min(UserGamePreferenceValue.D12, gp.preference)),
+            (
+                UserGamePreferenceValue.D0
+                if gp.game_id in blocked_game_ids
+                else gp.preference
+                if has_d20
+                else min(UserGamePreferenceValue.D12, gp.preference)
+            ),
             gp.game_id in already_played_games,
         )
         for gp in preferences
@@ -74,6 +82,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
             Game.player_count_optimum,
             Game.player_count_maximum,
             Gamemaster,
+            Game.classification == GameClassification.R18,
         )
         # Include game and gamemaster of the session
         .join(Game, Game.id == Session.game_id)
@@ -210,6 +219,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                 else 0
                 for member in party.members
             )
+            over_18 = all(member.over_18 for member in party.members)
             group_size = len(party.members)
         else:
             has_d20 = (
@@ -221,6 +231,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                 if party_leader.latest_compensation_transaction is not None
                 else 0
             )
+            over_18 = party_leader.over_18
             group_size = 1
         # Already played
         already_played_games = {gp.game_id for gp in party_leader.games_played if not gp.allow_play_again}
@@ -232,7 +243,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
             party_leader_id=party_leader_id,
             group_size=group_size,
             preferences=user_preferences_to_alg_preferences(
-                preferences_to_use, has_d20, session_results, already_played_games
+                preferences_to_use, has_d20, session_results, already_played_games, over_18
             ),
             total_compensation=total_compensation,
         )
@@ -262,7 +273,7 @@ async def adapt_to_inputs(transaction: AsyncSession, time_slot_id: int) -> tuple
                 total_compensation=comp,
             ),
         )
-        for r_session_id, r_game_id, r_min_players, r_opt_player, r_max_players, r_gm in session_results
+        for r_session_id, r_game_id, r_min_players, r_opt_player, r_max_players, r_gm, r_r18 in session_results
     ]
     alg_parties = [_alg_party_from_party_query(*r) for r in party_results]
 
