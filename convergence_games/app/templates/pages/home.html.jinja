@@ -80,14 +80,14 @@
                                 ("8:30am", "Welcome", ""),
                                 ("8:45am", "Session 4", "font-semibold"),
                                 ("12:00pm", "Lunch", ""),
-                                ("1:00pm", "Seminars", ""),
+                                ("1:00pm", "<a href=\"#seminars\" class=\"link\">Seminars</a>", ""),
                                 ("2:00pm", "Session 5", "font-semibold"),
                                 ("6:00pm-", "Social at Hotel Bar", ""),
                             ]
                         %}
                             <tr>
                                 <td class="w-20 border-r pr-2 text-right align-top">{{ time }}</td>
-                                <td class="{{ style }} pl-2 text-left align-top">{{ info }}</td>
+                                <td class="{{ style }} pl-2 text-left align-top">{{ info|safe }}</td>
                             </tr>
                         {% endfor %}
                     </table>
@@ -169,26 +169,47 @@
                     <h4 class="font-semibold">Seminars</h4>
                     <p>
                         On Sunday we'll be hosting a variety of entertaining and educational seminars with guest
-                        speakers from the wider community on a variety of topics - to be announced! These will be a
-                        great opportunity to learn more about what's going on in the TTRPG community, hear from experts,
-                        and have a chance to ask questions.
+                        speakers from the wider community on a variety of topics! These will be a great opportunity to
+                        learn more about what's going on in the TTRPG community, hear from experts, and have a chance to
+                        ask questions.
                     </p>
+                    <a href="#seminars" class="link">Click to view the seminars on offer!</a>
                     <h4 class="font-semibold">Socials</h4>
                     <p>
                         If that isn't enough we also have socials on Friday and Sunday night. Join us in the bar area of
                         The Distinction before and after the weekend to chill and chat about gaming.
                     </p>
-                    <h4 class="font-semibold">Help make it happen!</h4>
-                    <p>
-                        We need you! To be game masters who run games, or volunteers who help out in a variety of ways.
-                        Check out the links lower down on the page for all the information about these roles. We also
-                        love players - all you need to do is buy your ticket and turn up on the day, bringing dice if
-                        you have them.
-                    </p>
+                    <h4 class="font-semibold">Just Hang</h4>
                     <p>
                         If you aren't that sure about TTRPGs or want to check things out but not play then you can come
                         and spend time in the merchant area without a ticket, and can also come to the Sunday seminars
                         for free.
+                    </p>
+                </div>
+            </div>
+            <div class="collapse-plus collapse border border-base-300 bg-base-100" id="seminars">
+                <input type="checkbox" />
+                <div class="collapse-title font-semibold">
+                    <h3 id="seminars-list"><span class="italic">Seminars - </span> What seminars are running?</h3>
+                </div>
+                <div class="collapse-content flex flex-col gap-2">
+                    <p class="font-semibold">Room 4: Questbook</p>
+                    <p>The Future of Professional Storytelling</p>
+                    <p>
+                        Join Jak and Dion from Questbook as they talk through their vision for the future of
+                        professional storytelling.
+                    </p>
+                    <p class="font-semibold">Side Room (8): GRAIL - Shaun Garea</p>
+                    <p>
+                        Shaun Garea presents on the GRAIL gaming research project from the Massey University School of
+                        Psychology. See how TTRPG's can be integrated into your work in academia, hear the working
+                        hypotheses of ongoing projects, and get a first peek at the preliminary data that the project is
+                        bringing back.
+                    </p>
+                    <p class="font-semibold">Room 5: Nacho The Clown</p>
+                    <p>
+                        Join the guild's own Brook for an hour of comedy as nacho the clown, an escaped TTRPG character.
+                        A show you'll never forget but wish you did!
                     </p>
                 </div>
             </div>
@@ -321,33 +342,6 @@
                 <a href="/games" class="link">games page</a> to see what has been submitted so far.
             </p>
             <a href="/games" class="btn mx-auto btn-xl btn-primary">View All Games</a>
-            <h2 class="mt-4 text-xl">Want to be a Game Master?</h2>
-            {# TODO RESUBMISSIONS #}
-            <p>
-                The game submissions period has ended for Convergence 2025, and we cannot guarantee more GM spots until
-                closer to the event when we have a full picture of ticket sales and whether existing GMs will still be
-                available. As a result, we are not formally accepting more game submissions at this time, and will make
-                an announcement if and when submissions reopen.
-            </p>
-            <p>
-                A huge thanks to everyone who has submitted a game for this years Convergence - it's going to be the
-                biggest and best yet.
-            </p>
-            <a href="/submit-game" class="btn-disabled btn mx-auto btn-xl btn-primary">Sign Up To GM</a>
-            <h2 class="mt-4 text-xl">Keen to volunteer?</h2>
-            <p>
-                Convergence 2025 has a lot of moving parts and we need volunteers to help make sure that the convention
-                runs as smoothly as possible. We need volunteers to help attendees with using the game selection app,
-                keep an eye on the games being run and man the front desk.
-            </p>
-            <p>
-                In return for this we'll either give you a goodie bag or free entry to one day of the con (your choice).
-                Our goal is that each volunteer will be working for one game session and one break leaving you the rest
-                of the time to enjoy yourself!
-            </p>
-            <a class="btn mx-auto btn-xl btn-primary" href="https://forms.gle/8qtaj1gQ2g5Bykq1A" target="_blank">
-                Sign Up To Volunteer
-            </a>
             <h2 class="mt-4 text-xl">Got another question?</h2>
             <p>If it's not answered on this page, it might be answered in the FAQ.</p>
             <a href="/faq" class="btn mx-auto btn-xl btn-primary">View The FAQ</a>
