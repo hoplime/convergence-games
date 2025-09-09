@@ -133,6 +133,7 @@ class PartyController(Controller):
             await transaction.execute(select(Event.max_party_size).where(Event.id == time_slot.event_id))
         ).scalar_one_or_none()
 
+        transaction.expunge_all()
         allocated_session_stmt = (
             select(Session)
             .where(
