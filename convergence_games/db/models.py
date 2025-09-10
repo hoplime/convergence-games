@@ -875,7 +875,14 @@ class UserGamePreference(Base):
         lazy="noload",
     )
 
-    __table_args__ = (UniqueConstraint("game_id", "user_id", "frozen_at_time_slot_id"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "game_id",
+            "user_id",
+            "frozen_at_time_slot_id",
+            postgresql_nulls_not_distinct=True,
+        ),
+    )
 
 
 class UserGamePlayed(Base):
