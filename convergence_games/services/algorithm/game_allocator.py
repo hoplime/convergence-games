@@ -561,7 +561,7 @@ class GameAllocator:
 class Compensation:
     party_compensations: dict[PartyLeaderID, int]
     session_compensations: dict[SessionID | None, int]
-    session_virtual_compensations: dict[SessionID | None, int]
+    session_virtual_compensations: dict[SessionID | None, float]
     d20s_spent: dict[PartyLeaderID, int]
 
     @property
@@ -573,7 +573,7 @@ class Compensation:
         return (
             sum(self.party_compensations.values())
             + sum(self.session_compensations.values())
-            + sum(self.session_virtual_compensations.values())
+            + int(sum(self.session_virtual_compensations.values()))
         )
 
     @override
@@ -628,7 +628,7 @@ def calculate_compensation(
     session_lookup = {session.session_id: session for session in sessions}
     party_compensations = dict.fromkeys(party_lookup, 0)
     session_compensations = dict.fromkeys(session_lookup, 0)
-    session_virtual_compensations = dict.fromkeys(session_lookup, 0)
+    session_virtual_compensations = dict.fromkeys(session_lookup, 0.0)
     d20s_spent = dict.fromkeys(party_lookup, 0)
 
     # 1. Calculate party compensations
@@ -677,7 +677,7 @@ def calculate_compensation(
                     session_compensations[session_id] *= 2
         else:
             # Session ran, but not at optimal player count, grant virtual compensation
-            difference = abs(result_count - opt_player_counts[session_id])
+            difference: int = max(abs(result_count - opt_player_counts[session_id]) - 1, 0)
             session_virtual_compensations[session_id] += difference
 
     return Compensation(
