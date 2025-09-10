@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import URL, create_engine, text
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from convergence_games.db.enums import UserGamePreferenceValue
@@ -89,6 +91,79 @@ class OldUserGamePreference:
 class OldPartyUserLink:
     party_id: int  # adventuring_group_id
     user_id: int  # person_id
+
+
+async def set_preferences(time_slot_id: int = 1) -> None:
+    # Grab the old preferences:
+    with old_engine.connect() as conn:
+        old_user_game_preferences = [
+            OldUserGamePreference(preference=row[0], party_id=row[1], session_id=row[2])
+            for row in conn.execute(
+                text(
+                    "SELECT preference, adventuring_group_id, table_allocation_id FROM sessionpreference JOIN adventuringgroup ON sessionpreference.adventuring_group_id = adventuringgroup.id WHERE adventuringgroup.time_slot_id = :tsid"
+                ),
+                {"tsid": time_slot_id},
+            )
+        ]
+        old_parties_which_used_d20s_in_this_time_slot: set[int] = {
+            row[0]
+            for row in conn.execute(
+                text(
+                    "SELECT DISTINCT adventuring_group_id FROM sessionpreference JOIN tableallocation ON sessionpreference.table_allocation_id = tableallocation.id WHERE tableallocation.time_slot_id = :tsid AND sessionpreference.preference = 20"
+                ),
+                {"tsid": time_slot_id},
+            )
+        }
+        old_party_user_links = [
+            OldPartyUserLink(party_id=row[0], user_id=row[1])
+            for row in conn.execute(text("SELECT adventuring_group_id, member_id FROM personadventuringgrouplink"))
+        ]
+        old_sessions = [
+            OldSession(id=row[0], time_slot_id=row[1], game_id=row[2], table_id=row[3])
+            for row in conn.execute(text("SELECT id, time_slot_id, game_id, table_id FROM tableallocation"))
+        ]
+
+    new_user_preferences: list[dict[str, Any]] = []
+
+    session_game_map = {old_session.id: old_session.game_id for old_session in old_sessions}
+    # Adding preferences to all party members, though only solos or the leaders should matter
+    for old_user_game_preference in old_user_game_preferences:
+        party_members = [
+            link.user_id for link in old_party_user_links if link.party_id == old_user_game_preference.party_id
+        ]
+        for party_member in party_members:
+            new_user_game_preference = {
+                "user_id": party_member,
+                "game_id": session_game_map[old_user_game_preference.session_id],
+                "preference": UserGamePreferenceValue(
+                    {
+                        0: 0,
+                        1: 4,
+                        2: 6,
+                        3: 8,
+                        4: 10,
+                        5: 12,
+                        20: 20,
+                    }[old_user_game_preference.preference]
+                ),
+            }
+            new_user_preferences.append(new_user_game_preference)
+
+    upsert_stmt = insert(UserGamePreference).values(new_user_preferences)
+    upsert_with_conflict_stmt = upsert_stmt.on_conflict_do_update(
+        index_elements=["user_id", "game_id", "frozen_at_time_slot_id"],
+        set_={
+            "preference": upsert_stmt.excluded.preference,
+            UserGamePreference.updated_at: datetime.now(timezone.utc),
+        },
+    )
+    # print(upsert_with_conflict_stmt.compile())
+    async with AsyncSession(new_engine) as session:
+        async with session.begin():
+            await session.execute(upsert_with_conflict_stmt)
+            await session.commit()
+
+    await new_engine.dispose()
 
 
 async def main(time_slot_id: int = 1) -> None:
@@ -305,8 +380,9 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--time-slot-id", "-t", type=int, default=1)
-    parser.add_argument("--just-create", action="store_true")
+    _ = parser.add_argument("--time-slot-id", "-t", type=int, default=1)
+    _ = parser.add_argument("--just-set-preferences", action="store_true")
+    _ = parser.add_argument("--just-create", action="store_true")
     args = parser.parse_args()
 
     if args.just_create:
@@ -320,5 +396,8 @@ if __name__ == "__main__":
             print("Metadata creation complete.")
 
         asyncio.run(create_metadata_only())
+    elif args.just_set_preferences:
+        print("Just setting preferences...")
+        asyncio.run(set_preferences(args.time_slot_id))
     else:
         asyncio.run(main(args.time_slot_id))
