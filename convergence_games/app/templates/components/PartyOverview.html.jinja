@@ -91,7 +91,7 @@
                 {% endfor %}
             </ul>
         </div>
-    {% elif allocated_session is none and time_slot.status == 'Allocated' %}
+    {% elif allocated_session is none and time_slot.status == 'Allocated' and checked_in %}
         <div class="divider m-0 divider-vertical"></div>
         <span class="text-warning">You were not allocated a game for this session.</span>
         <div class="flex h-full flex-col gap-4">
