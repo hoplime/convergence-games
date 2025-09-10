@@ -758,6 +758,7 @@ class EventManagerController(Controller):
             await transaction.execute(
                 select(UserEventCompensationTransaction)
                 .where(UserEventCompensationTransaction.event_id == event.id)
+                .where(UserEventCompensationTransaction.associated_time_slot_id == time_slot.id)
                 .limit(1)
             )
         ).scalar_one_or_none() is not None
@@ -1115,6 +1116,9 @@ class EventManagerController(Controller):
             .scalars()
             .all()
         )
+        existing_compensation_map = {
+            user.id: user.latest_compensation_transaction for user in existing_compensations_and_d20_users
+        }
 
         # COMPENSATION
         # TODO: Undo any existing compensation for this time slot?
@@ -1125,7 +1129,12 @@ class EventManagerController(Controller):
                 continue
             party_members = party_member_mapping[party_leader_id[1]]
             for member_id in party_members:
-                total_compensations[member_id] = total_compensation // len(party_members)
+                if total_compensation >= 0:
+                    total_compensations[member_id] = total_compensation // len(party_members)
+                else:
+                    # Negative compensation, reset everyone to zero
+                    current_comp = existing_compensation_map.get(member_id)
+                    total_compensations[member_id] = -current_comp.current_balance if current_comp is not None else 0
         for session_id, total_compensation in compensation.session_compensations.items():
             if session_id is None:
                 continue
@@ -1134,9 +1143,6 @@ class EventManagerController(Controller):
                 continue
             total_compensations[gm_id] += total_compensation
 
-        existing_compensation_map = {
-            user.id: user.latest_compensation_transaction for user in existing_compensations_and_d20_users
-        }
         new_compensations = [
             UserEventCompensationTransaction(
                 current_balance=d20s.current_balance + total_compensation,
