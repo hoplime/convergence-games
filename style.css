@@ -23,7 +23,95 @@
 
 @plugin "daisyui/theme" {
     name: "convergence_light";
-    default: true; /* set as default */
+    default: true;
+    prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+    color-scheme: light; /* color of browser-provided UI */
+
+    --color-base-100: oklch(100% 0 0);
+    --color-base-200: oklch(97.466% 0.011 259.822);
+    --color-base-300: oklch(93.268% 0.016 262.751);
+    --color-base-content: #22575f;
+    --color-primary: oklch(0.4714 0.0629 208.65);
+    --color-primary-content: oklch(98% 0.014 180.72);
+    --color-secondary: oklch(0.731 0.096 207.49);
+    --color-secondary-content: oklch(98% 0.019 200.873);
+    --color-accent: #2e7b84;
+    --color-accent-content: oklch(98% 0.019 200.873);
+    --color-neutral: oklch(0.2416 0.0201 206.92);
+    --color-neutral-content: oklch(98% 0.019 200.873);
+    --color-info: oklch(0.7885 0.08 206.92);
+    --color-info-content: oklch(17.625% 0.017 214.515);
+    --color-success: oklch(80.494% 0.077 197.823);
+    --color-success-content: oklch(16.098% 0.015 197.823);
+    --color-warning: oklch(89.172% 0.045 71.47);
+    --color-warning-content: oklch(17.834% 0.009 71.47);
+    --color-error: oklch(73.092% 0.11 20.076);
+    --color-error-content: oklch(14.618% 0.022 20.076);
+
+    /* border radius */
+    --radius-selector: 1rem;
+    --radius-field: 0.5rem;
+    --radius-box: 1rem;
+
+    /* base sizes */
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+
+    /* border size */
+    --border: 1px;
+
+    /* effects */
+    --depth: 0;
+    --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+    name: "convergence_dark";
+    default: true;
+    prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+    color-scheme: dark; /* color of browser-provided UI */
+
+    --color-base-100: oklch(0.1837 0.0118 238.24);
+    --color-base-200: oklch(0.2487 0.0118 238.24);
+    --color-base-300: oklch(27% 0.041 260.031);
+    --color-base-content: oklch(96% 0.007 247.896);
+    --color-primary: oklch(0.7885 0.08 206.92);
+    --color-primary-content: oklch(0.1837 0.0118 238.24);
+    --color-secondary: oklch(0.7407 0.0874 205.91);
+    --color-secondary-content: oklch(97% 0.013 17.38);
+    --color-accent: oklch(0.5397 0.0752 205.96);
+    --color-accent-content: oklch(98% 0.014 180.72);
+    --color-neutral: oklch(27% 0.041 260.031);
+    --color-neutral-content: oklch(98% 0.003 247.858);
+    --color-info: oklch(60% 0.126 221.723);
+    --color-info-content: oklch(97% 0.014 254.604);
+    --color-success: oklch(70% 0.14 182.503);
+    --color-success-content: oklch(98% 0.014 180.72);
+    --color-warning: oklch(66% 0.179 58.318);
+    --color-warning-content: oklch(98% 0.026 102.212);
+    --color-error: oklch(58% 0.253 17.585);
+    --color-error-content: oklch(97% 0.014 343.198);
+
+    /* border radius */
+    --radius-selector: 0.25rem;
+    --radius-field: 0.25rem;
+    --radius-box: 1rem;
+
+    /* base sizes */
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+
+    /* border size */
+    --border: 1px;
+
+    /* effects */
+    --depth: 0;
+    --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+    name: "convergence_light_2025";
+    default: false;
     prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
     color-scheme: light; /* color of browser-provided UI */
 
@@ -66,8 +154,8 @@
 }
 
 @plugin "daisyui/theme" {
-    name: "convergence_dark";
-    default: true; /* set as default */
+    name: "convergence_dark_2025";
+    default: false;
     prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
     color-scheme: dark; /* color of browser-provided UI */
 
