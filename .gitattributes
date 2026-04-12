@@ -1,0 +1,7 @@
+# Mark vendored JS dependencies as linguist-vendored to exclude from GitHub language stats
+convergence_games/app/static/js/htmx.js linguist-vendored
+convergence_games/app/static/js/htmx.min.js linguist-vendored
+convergence_games/app/static/js/_hyperscript.min.js linguist-vendored
+convergence_games/app/static/js/qrcode.min.js linguist-vendored
+convergence_games/app/static/js/preload.js linguist-vendored
+convergence_games/app/static/js/path-params.js linguist-vendored
