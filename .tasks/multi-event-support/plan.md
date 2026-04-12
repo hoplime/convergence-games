@@ -84,12 +84,12 @@ Home page content will be replaced with 2026 content manually when ready -- not 
 
 ### Phase 4: My submissions improvements
 
-- [ ] **Update my_submissions query** (`convergence_games/app/routers/frontend/my_submissions.py`)
+- [x] **Update my_submissions query** (`convergence_games/app/routers/frontend/my_submissions.py`)
   - Add `selectinload(Game.event)` to the query
-  - Order by event `start_date` descending, then game name
-  - Group games by event in template context
+  - Join on Event, order by `Event.start_date` descending, then `Game.name`
+  - Group games by event using `itertools.groupby` (safe because query is pre-sorted)
 
-- [ ] **Update my_submissions template** (`convergence_games/app/templates/pages/my_submissions.html.jinja`)
+- [x] **Update my_submissions template** (`convergence_games/app/templates/pages/my_submissions.html.jinja`)
   - Show games grouped by event with event name as section header
   - Most recent event first
 

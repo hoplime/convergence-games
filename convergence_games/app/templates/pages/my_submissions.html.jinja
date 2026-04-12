@@ -4,25 +4,28 @@
         <PageContainer>
             <div>My Submissions</div>
             <div class="flex flex-col gap-4">
-                {% if games %}
-                    <ul class="list bg-base-200 rounded-box">
-                        {% for game in games %}
-                            <li class="list-row items-center">
-                                <div>{{ game.name }}</div>
-                                <div></div>
-                                <div class="{{ game.submission_status.color_classes }}">
-                                    {{ game.submission_status }}
-                                </div>
-                                <div>
-                                    ({{ game.game_requirement.times_to_run }}<span class="hidden md:inline-block">
-                                        &nbsp;sessions</span
-                                    >)
-                                </div>
-                                <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral">View</a>
-                                <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral">Edit</a>
-                            </li>
-                        {% endfor %}
-                    </ul>
+                {% if games_by_event %}
+                    {% for event, games in games_by_event %}
+                        <h2 class="text-lg font-semibold">{{ event.name }}</h2>
+                        <ul class="list bg-base-200 rounded-box">
+                            {% for game in games %}
+                                <li class="list-row items-center">
+                                    <div>{{ game.name }}</div>
+                                    <div></div>
+                                    <div class="{{ game.submission_status.color_classes }}">
+                                        {{ game.submission_status }}
+                                    </div>
+                                    <div>
+                                        ({{ game.game_requirement.times_to_run }}<span class="hidden md:inline-block">
+                                            &nbsp;sessions</span
+                                        >)
+                                    </div>
+                                    <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral">View</a>
+                                    <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral">Edit</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endfor %}
                     <button
                         class="btn btn-xl btn-primary mx-auto"
                         hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"
