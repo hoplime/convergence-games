@@ -8,18 +8,17 @@ from typing import Annotated, Literal
 
 from litestar import Controller, get
 from litestar.di import Provide
-from litestar.exceptions import HTTPException
 from litestar.params import Parameter
 from litestar.response import Template
 from pydantic import BaseModel, BeforeValidator
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
-from sqlalchemy.sql.base import ExecutableOption
 
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
+from convergence_games.app.routers.frontend.common import event_with
 from convergence_games.db.enums import (
     GameClassification,
     GameKSP,
@@ -79,21 +78,6 @@ class MultiselectFormData:
 
 
 # region Dependencies
-def event_with(*options: ExecutableOption):
-    async def wrapper(
-        transaction: AsyncSession,
-        event_sqid: Sqid | None = None,
-    ) -> Event:
-        event_id: int = sink(event_sqid) if event_sqid is not None else 1
-        stmt = select(Event).options(*options).where(Event.id == event_id)
-        event = (await transaction.execute(stmt)).scalar_one_or_none()
-        if event is None:
-            raise HTTPException(status_code=404, detail="Event not found")
-        return event
-
-    return Provide(wrapper)
-
-
 async def get_event_approved_games_dep(
     event: Event,
     transaction: AsyncSession,

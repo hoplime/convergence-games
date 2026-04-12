@@ -20,7 +20,6 @@ from sqlalchemy import bindparam, delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
-from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.selectable import Select
 
 from convergence_games.app.alerts import Alert, AlertError
@@ -29,6 +28,7 @@ from convergence_games.app.context import user_id_ctx
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
+from convergence_games.app.routers.frontend.common import event_with
 from convergence_games.db.enums import GameClassification, SubmissionStatus, TimeSlotStatus
 from convergence_games.db.models import (
     Allocation,
@@ -54,7 +54,6 @@ from convergence_games.permissions import user_has_permission
 from convergence_games.services.algorithm.game_allocator import (
     AlgPartyP,
     GameAllocator,
-    Tier,
     calculate_compensation,
     generate_tier_list,
 )
@@ -109,21 +108,6 @@ class PutEventManageAllocationForm(BaseModel):
 
 
 # region Dependencies
-def event_with(*options: ExecutableOption):
-    async def wrapper(
-        transaction: AsyncSession,
-        event_sqid: Sqid | None = None,
-    ) -> Event:
-        event_id: int = sink(event_sqid) if event_sqid is not None else 1
-        stmt = select(Event).options(*options).where(Event.id == event_id)
-        event = (await transaction.execute(stmt)).scalar_one_or_none()
-        if event is None:
-            raise HTTPException(status_code=404, detail="Event not found")
-        return event
-
-    return Provide(wrapper)
-
-
 async def get_event_games_dep(
     event: Event,  # This forces the dependencies to be in a chain, meaning the transaction isn't closed yet
     transaction: AsyncSession,

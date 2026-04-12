@@ -19,6 +19,16 @@ class Settings(BaseSettings):
     LAST_UPDATED: AwareDatetime | None = None
     USE_CACHE_BUSTED_FILES: bool = False
 
+    # Event
+    DEFAULT_EVENT_ID: int = 1
+
+    @cached_property
+    def DEFAULT_EVENT_SQID(self) -> str:  # noqa: N802
+        """Get the default event's sqid for use in URLs."""
+        from convergence_games.db.ocean import swim
+
+        return swim("Event", self.DEFAULT_EVENT_ID)
+
     # Feature Flags
     FLAG_PREFERENCES: bool = False
     FLAG_PLANNER: bool = False

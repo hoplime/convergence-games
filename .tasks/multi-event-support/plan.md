@@ -31,12 +31,12 @@ Home page content will be replaced with 2026 content manually when ready -- not 
 
 ### Phase 1: Settings and shared infrastructure
 
-- [ ] **Add `DEFAULT_EVENT_ID` to Settings** (`convergence_games/settings.py`)
+- [x] **Add `DEFAULT_EVENT_ID` to Settings** (`convergence_games/settings.py`)
   - Add `DEFAULT_EVENT_ID: int = 1`
   - Add `DEFAULT_EVENT_SQID` as `@cached_property` using deferred `swim("Event", self.DEFAULT_EVENT_ID)` import to avoid circular dep with `ocean.py`
 
-- [ ] **Consolidate `event_with()` dependency** (`convergence_games/app/app_config/dependencies.py`)
-  - Move `event_with()` from `event_player.py` and `event_manager.py` into shared dependencies
+- [x] **Consolidate `event_with()` dependency** (`convergence_games/app/routers/frontend/common.py` -- new file)
+  - Move `event_with()` from `event_player.py` and `event_manager.py` into shared `common.py`
   - Replace hardcoded `1` with `SETTINGS.DEFAULT_EVENT_ID`
   - Update imports in `event_player.py` and `event_manager.py`
 
@@ -119,7 +119,7 @@ Home page content will be replaced with 2026 content manually when ready -- not 
 | File                                                       | Change                                             |
 | ---------------------------------------------------------- | -------------------------------------------------- |
 | `convergence_games/settings.py`                            | Add `DEFAULT_EVENT_ID` and `DEFAULT_EVENT_SQID`    |
-| `convergence_games/app/app_config/dependencies.py`         | Add shared `event_with()`                          |
+| `convergence_games/app/routers/frontend/common.py`         | **Create** -- shared `event_with()`                |
 | `convergence_games/app/routers/frontend/redirects.py`      | **Create** -- redirect handlers                    |
 | `convergence_games/app/routers/frontend/__init__.py`       | Register redirects controller                      |
 | `convergence_games/app/routers/frontend/event_player.py`   | Remove local `event_with()`, remove shortcut paths |
