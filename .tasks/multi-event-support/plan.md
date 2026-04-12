@@ -62,23 +62,25 @@ Home page content will be replaced with 2026 content manually when ready -- not 
 
 ### Phase 3: Template updates
 
-- [ ] **NavBar** (`convergence_games/app/templates/components/NavBar.html.jinja`)
-  - Line 41: `hx-get="/games"` -> `hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games"`
-  - Line 53: `hx-get="/planner"` -> `hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/planner"`
+- [x] **NavBar** (`convergence_games/app/templates/components/NavBar.html.jinja`)
+  - `hx-get="/games"` -> `hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games"`
+  - `hx-get="/planner"` -> `hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/planner"`
 
-- [ ] **Event games page** (`convergence_games/app/templates/pages/event_games.html.jinja`)
-  - Line 3: Title `Convergence 2025` -> `{{ event.name }}`
-  - Line 8: Filter form `hx-get="/games"` -> `hx-get="/event/{{ swim(event) }}/games"` (uses current event, not default)
+- [x] **Event games page** (`convergence_games/app/templates/pages/event_games.html.jinja`)
+  - Title: removed hardcoded `- Convergence 2025` suffix
+  - Filter form `hx-get="/games"` -> `hx-get="/event/{{ swim(event) }}/games"` (uses current event, not default)
 
-- [ ] **My submissions page** (`convergence_games/app/templates/pages/my_submissions.html.jinja`)
-  - Line 28: `hx-get="/submit-game"` -> `hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"`
-  - Line 36: `href="/submit-game"` -> `href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"`
+- [x] **My submissions page** (`convergence_games/app/templates/pages/my_submissions.html.jinja`)
+  - `hx-get="/submit-game"` -> `hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"`
+  - `href="/submit-game"` -> `href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"`
 
-- [ ] **Home page** (`convergence_games/app/templates/pages/home.html.jinja`)
-  - Line 342, 344: `href="/games"` -> `href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games"`
+- [x] **Home page** (`convergence_games/app/templates/pages/home.html.jinja`)
+  - `href="/games"` -> `href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games"`
 
-- [ ] **FAQ page** (`convergence_games/app/templates/pages/faq.html.jinja`)
-  - Line 450: `href="/games"` -> `href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games"`
+- [x] **FAQ page** (`convergence_games/app/templates/pages/faq.html.jinja`)
+  - `href="/games"` -> `href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games"`
+
+**Follow-up task**: Extract hardcoded "Convergence 2025" from `<title>` tags across all page templates into a setting/constant.
 
 ### Phase 4: My submissions improvements
 

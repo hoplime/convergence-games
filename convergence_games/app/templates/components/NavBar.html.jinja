@@ -38,7 +38,7 @@
     <div class="flex gap-2">
         <div class="dropdown dropdown-end">
             <div
-                hx-get="/games"
+                hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games"
                 hx-target="#content"
                 hx-push-url="true"
                 class="btn rounded-full bg-base-300 text-lg btn-ghost"
@@ -50,7 +50,7 @@
             </div>
             {% if SETTINGS.FLAG_PLANNER and request.user %}
                 <div
-                    hx-get="/planner"
+                    hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/planner"
                     hx-target="#content"
                     hx-push-url="true"
                     class="btn rounded-full bg-base-300 text-lg btn-ghost"

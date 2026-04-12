@@ -1,11 +1,11 @@
 <Page>
     {% block content %}
-        <title>{{ event.name }} Games - Convergence 2025</title>
+        <title>{{ event.name }} Games</title>
         <PageContainer size="max-w-screen-2xl">
             <h2 class="text-xl">{{ event.name }} Games</h2>
             {# Game Filters #}
             <form
-                hx-get="/games"
+                hx-get="/event/{{ swim(event) }}/games"
                 hx-target="#game_list"
                 hx-push-url="true"
                 hx-trigger="change delay:100ms, reset delay:10ms"

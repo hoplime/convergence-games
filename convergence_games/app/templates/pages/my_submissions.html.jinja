@@ -25,7 +25,7 @@
                     </ul>
                     <button
                         class="btn btn-xl btn-primary mx-auto"
-                        hx-get="/submit-game"
+                        hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"
                         hx-target="#content"
                         hx-push-url="true"
                     >
@@ -33,8 +33,8 @@
                     </button>
                 {% else %}
                     <p>You haven't submitted anything yet.</p>
-                    <a class="btn btn-xl btn-primary mx-auto" href="/submit-game">
-                        Submit a Game to Convergence 2025
+                    <a class="btn btn-xl btn-primary mx-auto" href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game">
+                        Submit a Game
                     </a>
                     {# TODO: RESUBMISSIONS #}
                     <p>Note that submissions are currently closed</p>
