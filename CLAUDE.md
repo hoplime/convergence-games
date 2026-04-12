@@ -27,7 +27,7 @@ npm install                                  # Node dependencies
 
 ### Running
 ```bash
-uv run litestar run --reload                 # Dev server (port 8000)
+uv run litestar --app convergence_games.app:app run --reload  # Dev server (port 8000)
 npm run tailwind:watch                       # CSS rebuild on change
 npm run build:tsc                            # TypeScript compile + Vite bundle
 npm run build                                # Full frontend build (TS + CSS)
@@ -43,8 +43,8 @@ npx tsc --noEmit                             # TypeScript type checking
 
 ### Database Migrations
 ```bash
-uv run litestar database upgrade             # Run migrations
-uv run litestar database make-migrations -m "description"  # Generate migration (uses Advanced Alchemy CLI)
+uv run litestar --app convergence_games.app:app database upgrade             # Run migrations
+uv run litestar --app convergence_games.app:app database make-migrations -m "description"  # Generate migration (uses Advanced Alchemy CLI)
 ```
 Migrations live in `convergence_games/migrations/versions/`. Alembic post-write hooks auto-run ruff on generated files.
 

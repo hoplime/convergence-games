@@ -41,6 +41,10 @@ Common alias: `import datetime as dt`.
 
 - Logging is not yet formally set up. When it is, it will use a library (likely loguru). For now, `print()` and `rich.pretty.pprint()` are acceptable for local debugging.
 
+## Scripts
+
+- Use `argparse` for CLI argument parsing in scripts (not raw `sys.argv`).
+
 ## Async
 
 - All route handlers and database operations are `async def`.
