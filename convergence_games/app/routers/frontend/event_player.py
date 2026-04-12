@@ -334,7 +334,7 @@ async def get_user_game_playeds(request: Request, transaction: AsyncSession, eve
 class EventPlayerController(Controller):
     # Event viewing
     @get(
-        ["/event/{event_sqid:str}", "/event/{event_sqid:str}/games", "/games"],
+        ["/event/{event_sqid:str}", "/event/{event_sqid:str}/games"],
         dependencies={
             "event": event_with(selectinload(Event.time_slots)),
             "query_params": Provide(event_games_query_from_params_dep),
@@ -391,7 +391,7 @@ class EventPlayerController(Controller):
         )
 
     @get(
-        ["/event/{event_sqid:str}/planner", "/event/{event_sqid:str}/planner/{time_slot_sqid:str}", "/planner"],
+        ["/event/{event_sqid:str}/planner", "/event/{event_sqid:str}/planner/{time_slot_sqid:str}"],
         dependencies={"event": event_with(selectinload(Event.time_slots))},
         guards=[user_guard],
     )

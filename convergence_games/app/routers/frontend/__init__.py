@@ -18,6 +18,7 @@ from .my_submissions import MySubmissionsController
 from .oauth import OAuthController
 from .party import PartyController
 from .profile import ProfileController
+from .redirects import RedirectsController
 from .search import SearchController
 from .settings import SettingsController
 from .submit_game import SubmitGameController
@@ -53,6 +54,7 @@ router = Router(
         OAuthController,
         PartyController,
         ProfileController,
+        RedirectsController,
         SearchController,
         SettingsController,
         SubmitGameController,

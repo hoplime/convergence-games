@@ -42,22 +42,22 @@ Home page content will be replaced with 2026 content manually when ready -- not 
 
 ### Phase 2: Route restructuring
 
-- [ ] **Create redirect handlers** (`convergence_games/app/routers/frontend/redirects.py` -- new file)
+- [x] **Create redirect handlers** (`convergence_games/app/routers/frontend/redirects.py` -- new file)
   - `GET /games` -> 302 to `/event/{DEFAULT_EVENT_SQID}/games`
   - `GET /planner` -> 302 to `/event/{DEFAULT_EVENT_SQID}/planner`
   - `GET /submit-game` -> 302 to `/event/{DEFAULT_EVENT_SQID}/submit-game`
 
-- [ ] **Register redirects controller** (`convergence_games/app/routers/frontend/__init__.py`)
+- [x] **Register redirects controller** (`convergence_games/app/routers/frontend/__init__.py`)
   - Import and add `RedirectsController` to the router's `route_handlers`
 
-- [ ] **Remove shortcut paths from event_player routes** (`convergence_games/app/routers/frontend/event_player.py`)
-  - Line 353: Remove `/games` from route list -> `["/event/{event_sqid:str}", "/event/{event_sqid:str}/games"]`
-  - Line 410: Remove `/planner` from route list -> `["/event/{event_sqid:str}/planner", "/event/{event_sqid:str}/planner/{time_slot_sqid:str}"]`
+- [x] **Remove shortcut paths from event_player routes** (`convergence_games/app/routers/frontend/event_player.py`)
+  - Remove `/games` from route list -> `["/event/{event_sqid:str}", "/event/{event_sqid:str}/games"]`
+  - Remove `/planner` from route list -> `["/event/{event_sqid:str}/planner", "/event/{event_sqid:str}/planner/{time_slot_sqid:str}"]`
 
-- [ ] **Make submit-game event-scoped** (`convergence_games/app/routers/frontend/submit_game.py`)
-  - `get_submit_game`: path `/submit-game` -> `/event/{event_sqid:str}/submit-game`, use shared `event_with()`
-  - `post_game`: path `/game` -> `/event/{event_sqid:str}/game`, use shared `event_with()` instead of `event_id = 1`
-  - Remove hardcoded `event_id = 1` at lines 347 and 435
+- [x] **Make submit-game event-scoped** (`convergence_games/app/routers/frontend/submit_game.py`)
+  - `get_submit_game`: path `/event/{event_sqid:str}/submit-game`, uses shared `event_with()`
+  - `post_game`: path `/event/{event_sqid:str}/game`, uses shared `event_with()`
+  - Template form `hx-post` updated to `/event/{{ swim(event) }}/game`
   - `put_game` and `put_game_submission_status` unchanged (get event from existing game)
 
 ### Phase 3: Template updates

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Annotated, Callable, Literal, cast
 from uuid import uuid4
 
-from litestar import Controller, Response, get, post, put
+from litestar import Controller, get, post, put
 from litestar.datastructures import UploadFile
 from litestar.di import Provide
 from litestar.exceptions import HTTPException, NotFoundException, ValidationException
@@ -28,6 +28,7 @@ from convergence_games.app.app_config.template_config import catalog
 from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
+from convergence_games.app.routers.frontend.common import event_with
 from convergence_games.db.enums import (
     GameActivityRequirement,
     GameClassification,
@@ -341,17 +342,12 @@ def game_with(*options: ExecutableOption):
 
 # region Submit Game Controller
 class SubmitGameController(Controller):
-    @get(path="/submit-game", guards=[user_guard])
-    async def get_submit_game(self, request: Request, transaction: AsyncSession) -> Template:
-        # TODO 2026: Variable event ID to submit a game to
-        event_id = 1
-        event = (
-            await transaction.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
-        ).scalar_one_or_none()
-
-        if not event:
-            raise NotFoundException(detail="Event not found")
-
+    @get(
+        path="/event/{event_sqid:str}/submit-game",
+        guards=[user_guard],
+        dependencies={"event": event_with(selectinload(Event.time_slots))},
+    )
+    async def get_submit_game(self, request: Request, event: Event) -> Template:
         return HTMXBlockTemplate(
             template_name="pages/submit_game.html.jinja",
             block_name=request.htmx.target,
@@ -416,8 +412,9 @@ class SubmitGameController(Controller):
         )
 
     @post(
-        path="/game",
+        path="/event/{event_sqid:str}/game",
         guards=[user_guard],
+        dependencies={"event": event_with(selectinload(Event.time_slots))},
         exception_handlers={
             ValidationException: handle_submit_game_form_validation_error,
             HTTP_413_REQUEST_ENTITY_TOO_LARGE: handle_request_entity_too_large_error,
@@ -428,18 +425,10 @@ class SubmitGameController(Controller):
         self,
         request: Request,
         transaction: AsyncSession,
+        event: Event,
         image_loader: ImageLoader,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
-        # TODO 2026: Variable event ID to submit a game to
-        event_id = 1
-        event = (
-            await transaction.execute(select(Event).options(selectinload(Event.time_slots)).where(Event.id == event_id))
-        ).scalar_one_or_none()
-
-        if not event:
-            raise NotFoundException(detail="Event not found")
-
         system_kwarg = (
             {"system_id": data.system}
             if isinstance(data.system, int)
@@ -460,7 +449,7 @@ class SubmitGameController(Controller):
             ksps=data.ksp,
             **system_kwarg,
             gamemaster=request.user,
-            event_id=event_id,
+            event_id=event.id,
             game_requirement=GameRequirement(
                 times_to_run=data.times_to_run,
                 scheduling_notes=data.scheduling_notes,

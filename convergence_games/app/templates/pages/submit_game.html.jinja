@@ -784,7 +784,7 @@
                     {% if editing %}
                         hx-put="/game/{{ swim(game) }}"
                     {% else %}
-                        hx-post="/game"
+                        hx-post="/event/{{ swim(event) }}/game"
                     {% endif %}
                     hx-target="#content"
                     hx-encoding="multipart/form-data"
