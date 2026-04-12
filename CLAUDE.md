@@ -27,7 +27,7 @@ npm install                                  # Node dependencies
 
 ### Running
 ```bash
-uv run litestar --app convergence_games.app:app run --reload  # Dev server (port 8000)
+litestar --app convergence_games.app:app run --reload  # Dev server (port 8000)
 npm run tailwind:watch                       # CSS rebuild on change
 npm run build:tsc                            # TypeScript compile + Vite bundle
 npm run build                                # Full frontend build (TS + CSS)
@@ -35,24 +35,24 @@ npm run build                                # Full frontend build (TS + CSS)
 
 ### Linting & Type Checking
 ```bash
-uv run ruff check                            # Python lint
-uv run ruff format                           # Python format
-uv run basedpyright                          # Python type checking
+ruff check                                   # Python lint
+ruff format                                  # Python format
+basedpyright                                 # Python type checking
 npx tsc --noEmit                             # TypeScript type checking
 ```
 
 ### Database Migrations
 ```bash
-uv run litestar --app convergence_games.app:app database upgrade             # Run migrations
-uv run litestar --app convergence_games.app:app database make-migrations -m "description"  # Generate migration (uses Advanced Alchemy CLI)
+litestar --app convergence_games.app:app database upgrade             # Run migrations
+litestar --app convergence_games.app:app database make-migrations -m "description"  # Generate migration (uses Advanced Alchemy CLI)
 ```
 Migrations live in `convergence_games/migrations/versions/`. Alembic post-write hooks auto-run ruff on generated files.
 
 ### Tests
 ```bash
-uv run pytest                                # Run all tests
-uv run pytest path/to/test.py                # Run single test file
-uv run pytest -k "test_name"                 # Run specific test
+pytest                                       # Run all tests
+pytest path/to/test.py                       # Run single test file
+pytest -k "test_name"                        # Run specific test
 ```
 
 ## Architecture

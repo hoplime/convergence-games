@@ -12,14 +12,14 @@ Local development needs a realistic event to work against. Currently the only op
 
 ## Requirements
 
-- Script at `scripts/create_mock_event.py`, runnable via `PYTHONPATH=. uv run python scripts/create_mock_event.py`
+- Script at `scripts/create_mock_event.py`, runnable via `PYTHONPATH=. python scripts/create_mock_event.py`
 - Creates a "Convergence 2026" event with dates Sep 12–13 2026, timezone `Pacific/Auckland`
 - Creates 11 rooms mirroring the 2025 layout (same names, descriptions, facilities)
 - Creates 35 tables mirroring the 2025 layout (same numbering, sizes, facilities, room assignments)
 - Creates 5 time slots mirroring the 2025 schedule structure (same names, durations), shifted to Sep 2026 dates
 - Idempotent: if an event named "Convergence 2026" already exists, skip all creation and report the existing event ID
 - Prints suggested `.env` changes (`DEFAULT_EVENT_ID`, `SITE_TITLE`) for the user to apply manually
-- Passes `uv run ruff check` and `uv run basedpyright`
+- Passes `ruff check` and `basedpyright`
 
 ## Technical Design
 
@@ -103,10 +103,10 @@ Suggested .env changes:
 
 #### Phase 1 verification
 
-- [ ] `uv run ruff check scripts/create_mock_event.py` — no errors
-- [ ] `uv run ruff format --check scripts/create_mock_event.py` — no changes needed
-- [ ] `uv run basedpyright scripts/create_mock_event.py` — no new errors
-- [ ] Run: `PYTHONPATH=. uv run python scripts/create_mock_event.py`
+- [ ] `ruff check scripts/create_mock_event.py` — no errors
+- [ ] `ruff format --check scripts/create_mock_event.py` — no changes needed
+- [ ] `basedpyright scripts/create_mock_event.py` — no new errors
+- [ ] Run: `PYTHONPATH=. python scripts/create_mock_event.py`
   - Event created with correct name and dates
   - 11 rooms created
   - 35 tables created with correct room assignments
@@ -116,8 +116,8 @@ Suggested .env changes:
 
 ## Acceptance Criteria
 
-- [ ] `uv run ruff check` — no new errors
-- [ ] `uv run basedpyright` — no new errors
+- [ ] `ruff check` — no new errors
+- [ ] `basedpyright` — no new errors
 - [ ] Script creates event + 11 rooms + 35 tables + 5 time slots matching 2025 layout
 - [ ] Script is idempotent (second run reports existing event, no duplicate data)
 - [ ] Prints suggested `.env` changes with `DEFAULT_EVENT_ID` and `SITE_TITLE`

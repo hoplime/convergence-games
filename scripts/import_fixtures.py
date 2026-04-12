@@ -1,7 +1,7 @@
 """Import JSON fixture files into the database.
 
 Usage:
-    uv run python scripts/import_fixtures.py [fixture_dir]
+    python scripts/import_fixtures.py [fixture_dir]
 
 Defaults to fixtures/local_db_backup if no directory is specified.
 Expects the database to already have the schema (run migrations first).

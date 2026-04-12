@@ -2,9 +2,9 @@
 
 ## Framework
 
-- pytest, run via `uv run pytest`.
-- Run a single file: `uv run pytest path/to/test_file.py`
-- Run a specific test: `uv run pytest -k "test_name"`
+- pytest, run via `pytest`.
+- Run a single file: `pytest path/to/test_file.py`
+- Run a specific test: `pytest -k "test_name"`
 
 ## Test Layout
 

@@ -32,6 +32,6 @@
 ## Migrations
 
 - Managed via Alembic through Advanced Alchemy's Litestar integration.
-- Generate: `uv run litestar --app convergence_games.app:app database make-migrations -m "description"`
-- Apply: `uv run litestar --app convergence_games.app:app database upgrade`
+- Generate: `litestar --app convergence_games.app:app database make-migrations -m "description"`
+- Apply: `litestar --app convergence_games.app:app database upgrade`
 - Files in `convergence_games/migrations/versions/`, auto-formatted by ruff post-write hook.

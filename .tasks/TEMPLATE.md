@@ -31,8 +31,8 @@ status: draft
 
 #### Phase 1 verification
 
-- [ ] `uv run basedpyright` — no new errors
-- [ ] `uv run ruff check` — no new errors
+- [ ] `basedpyright` — no new errors
+- [ ] `ruff check` — no new errors
 
 ### Phase 2: <Phase name>
 
@@ -47,8 +47,8 @@ status: draft
 
 <!-- How to confirm the task is fully complete. Include both automated checks and manual verification steps. -->
 
-- [ ] Type checking passes (`uv run basedpyright`)
-- [ ] Linting passes (`uv run ruff check`)
+- [ ] Type checking passes (`basedpyright`)
+- [ ] Linting passes (`ruff check`)
 - [ ] Dev server starts without errors
 - [ ] <Feature-specific manual checks>
 

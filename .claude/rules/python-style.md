@@ -2,10 +2,10 @@
 
 ## Tooling
 
-- **Package manager**: uv (not pip/poetry). Use `uv run` to execute commands, `uv sync` for dependencies.
+- **Package manager**: uv (not pip/poetry). Use `uv sync` for dependencies.
 - **Linter/formatter**: ruff. Line length 120. See `pyproject.toml [tool.ruff]` for enabled rules.
-- **Type checker**: basedpyright. Run with `uv run basedpyright`.
-- **Testing**: pytest. Run with `uv run pytest`.
+- **Type checker**: basedpyright. Run with `basedpyright`.
+- **Testing**: pytest. Run with `pytest`.
 
 ## Naming
 
