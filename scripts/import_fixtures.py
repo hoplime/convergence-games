@@ -126,13 +126,14 @@ async def import_fixtures(fixture_dir: Path) -> None:
         for table_name in TABLE_ORDER:
             await import_table(conn, table_name, fixture_dir)
 
-        # Reset sequences so new rows get correct auto-increment IDs
+        # Reset sequences so new rows get correct auto-increment IDs.
+        # Advanced Alchemy uses standalone Sequence objects named {table}_id_seq
+        # (not column-owned serials), so pg_get_serial_sequence won't find them.
         for table_name in TABLE_ORDER:
             if table_name in Base.metadata.tables:
+                seq_name = f"{table_name}_id_seq"
                 _ = await conn.execute(
-                    text(
-                        f"""SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), COALESCE((SELECT MAX(id) FROM "{table_name}"), 1))"""
-                    )
+                    text(f"""SELECT setval('{seq_name}', COALESCE((SELECT MAX(id) FROM "{table_name}"), 1))""")
                 )
         print("  Sequences reset")
 
