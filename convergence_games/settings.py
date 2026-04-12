@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     # Website
     BASE_DOMAIN: str = "http://localhost:8000"
+    SITE_TITLE: str = "Convergence 2025"
 
     # General
     DEBUG: bool = False

@@ -28,11 +28,21 @@ from convergence_games.utils.time_utils import nice_time_format, time_range_form
 
 
 def extract_title(text: jinjax.catalog.CallerWrapper) -> str:
-    title_start = text.find("<title>")
-    if not title_start:
+    raw_text = repr(text)
+
+    # Check for <PageTitle> first (JinjaX component, not yet expanded at this point)
+    title_start = raw_text.find("<PageTitle>")
+    if title_start != -1:
+        title_end = raw_text.find("</PageTitle>", title_start)
+        page_title = raw_text[title_start + 11 : title_end]
+        return f"{page_title} - {SETTINGS.SITE_TITLE}"
+
+    # Fall back to raw <title> tag (e.g., home page)
+    title_start = raw_text.find("<title>")
+    if title_start == -1:
         return ""
-    title_end = text.find("</title>", title_start)
-    return text._content[title_start + 7 : title_end]
+    title_end = raw_text.find("</title>", title_start)
+    return raw_text[title_start + 7 : title_end]
 
 
 def debug(text: Any) -> Any:

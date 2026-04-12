@@ -1,6 +1,6 @@
 <Page>
     {% block content %}
-        <title>Profile - Convergence 2025</title>
+        <PageTitle>Profile</PageTitle>
         <PageContainer>
             <div>Profile for {{ request.user.first_name }} {{ request.user.last_name }}</div>
             <form class="flex flex-col gap-4" id="profile-form" hx-post="/profile" hx-target="#content">
