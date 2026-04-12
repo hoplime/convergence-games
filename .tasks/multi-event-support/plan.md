@@ -95,16 +95,18 @@ Home page content will be replaced with 2026 content manually when ready -- not 
 
 ### Phase 5: Verification
 
-- [ ] `uv run basedpyright` passes
-- [ ] `uv run ruff check` passes
-- [ ] Dev server starts without errors
-- [ ] `/games` redirects to `/event/{sqid}/games`
-- [ ] `/planner` redirects to `/event/{sqid}/planner`
-- [ ] `/submit-game` redirects to `/event/{sqid}/submit-game`
-- [ ] Filter form on games page stays within event context (no redirect loop)
-- [ ] NavBar buttons navigate to event-scoped URLs
-- [ ] My Submissions shows games grouped by event
-- [ ] Game submission creates game under correct event
+- [x] `uv run basedpyright` passes (no new errors — 313 pre-existing)
+- [x] `uv run ruff check` passes (no new errors — 53 pre-existing)
+- [x] No hardcoded `event_id = 1` remaining in application code
+- [x] No un-scoped `/games`, `/planner`, `/submit-game` links remaining in templates
+- [x] Dev server starts without errors
+- [x] `/games` redirects to `/event/{sqid}/games`
+- [x] `/planner` redirects to `/event/{sqid}/planner`
+- [x] `/submit-game` redirects to `/event/{sqid}/submit-game`
+- [x] Filter form on games page stays within event context (no redirect loop)
+- [x] NavBar buttons navigate to event-scoped URLs
+- [x] My Submissions shows games grouped by event
+- [x] Game submission creates game under correct event
 
 ---
 
