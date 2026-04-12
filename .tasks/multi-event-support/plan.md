@@ -1,3 +1,9 @@
+---
+title: Multi-Event Support
+created: 2026-04-12
+status: complete
+---
+
 # Multi-Event Support
 
 ## Context
