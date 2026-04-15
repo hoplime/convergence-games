@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+paths: **/*.py
+---
+
 # Python Testing Conventions
 
 ## Framework

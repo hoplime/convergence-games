@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+paths: **/*.py
+---
+
 # Litestar Framework Conventions
 
 ## Route Handlers

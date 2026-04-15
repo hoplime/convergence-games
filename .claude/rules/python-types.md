@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+paths: **/*.py
+---
+
 # Python Type Annotation Conventions
 
 ## General
