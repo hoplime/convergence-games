@@ -93,7 +93,7 @@ Suggested .env changes:
 
 ### Phase 1: Create the script
 
-- [ ] **Create `scripts/create_mock_event.py`**
+- [x] **Create `scripts/create_mock_event.py`**
   - Define `async def create_mock_event(session: AsyncSession) -> Event` following the pattern in `convergence_games/db/create_mock_data.py`
   - Query for existing "Convergence 2026" event first; if found, return it
   - Build the `Event` with nested `time_slots` and `rooms` (rooms with nested `tables` via the `tables` relationship)
@@ -103,22 +103,22 @@ Suggested .env changes:
 
 #### Phase 1 verification
 
-- [ ] `ruff check scripts/create_mock_event.py` — no errors
-- [ ] `ruff format --check scripts/create_mock_event.py` — no changes needed
-- [ ] `basedpyright scripts/create_mock_event.py` — no new errors
-- [ ] Run: `PYTHONPATH=. python scripts/create_mock_event.py`
+- [x] `ruff check scripts/create_mock_event.py` — no errors
+- [x] `ruff format --check scripts/create_mock_event.py` — no changes needed
+- [x] `basedpyright scripts/create_mock_event.py` — no new errors
+- [x] Run: `PYTHONPATH=. python scripts/create_mock_event.py`
   - Event created with correct name and dates
   - 11 rooms created
   - 35 tables created with correct room assignments
   - 5 time slots created with correct times
   - Prints suggested `.env` changes with correct event ID
-- [ ] Run again — idempotent: prints "already exists", no duplicate rows
+- [x] Run again — idempotent: prints "already exists", no duplicate rows
 
 ## Acceptance Criteria
 
-- [ ] `ruff check` — no new errors
-- [ ] `basedpyright` — no new errors
-- [ ] Script creates event + 11 rooms + 35 tables + 5 time slots matching 2025 layout
-- [ ] Script is idempotent (second run reports existing event, no duplicate data)
-- [ ] Prints suggested `.env` changes with `DEFAULT_EVENT_ID` and `SITE_TITLE`
-- [ ] Dev server starts and uses the new event as default after manually applying `.env` changes
+- [x] `ruff check` — no new errors
+- [x] `basedpyright` — no new errors
+- [x] Script creates event + 11 rooms + 35 tables + 5 time slots matching 2025 layout
+- [x] Script is idempotent (second run reports existing event, no duplicate data)
+- [x] Prints suggested `.env` changes with `DEFAULT_EVENT_ID` and `SITE_TITLE`
+- [x] Dev server starts and uses the new event as default after manually applying `.env` changes
