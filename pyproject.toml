@@ -40,6 +40,8 @@ homepage = "https://convergence.waikatorpg.co.nz"
 [dependency-groups]
 dev = [
     "basedpyright>=1.31.0",
+    "markdown-it-py>=3.0.0",
+    "mdit-py-plugins>=0.4.2",
     "pytest>=8.3.4",
     "ruff>=0.12.7",
 ]
