@@ -11,16 +11,7 @@
                 {# Event Information #}
                 <FieldsetBase>
                     <legend class="fieldset-legend">Event Information</legend>
-                    <p>Thanks for choosing to submit a game to Convergence 2025!</p>
-                    {# TODO RESUBMISSIONS #}
-                    {% if not game %}
-                        <p class="alert alert-warning italic">
-                            Note that submissions have been closed since the 6th of June, but this form remains open. We
-                            cannot guarantee that a game submitted after this date will be accepted, though we may
-                            reopen submissions closer to the event depending on ticket sales and GM numbers. You can
-                            still freely edit your existing game submissions.
-                        </p>
-                    {% endif %}
+                    <p>Thanks for choosing to submit a game to {{ event.name }}!</p>
                     <p>
                         If your game is accepted you'll be eligible for free tickets to Convergence, and goodie bags, so
                         don't buy a ticket just yet - look out for an email.
@@ -34,12 +25,21 @@
                                 your game submissions.
                             </p>
                             <ul class="flex list-disc flex-col gap-2 pl-4">
-                                <li><b>One Session</b> - free day ticket, mini goodie bag</li>
-                                <li><b>Two Sessions</b> - free weekend ticket, mini goodie bag</li>
-                                <li><b>Three Sessions</b> - free weekend ticket, premium goodie bag</li>
                                 <li>
-                                    <b>Four Sessions</b> - free weekend ticket, premium goodie bag, a Convergence 2025
-                                    T-shirt,
+                                    <b>One Session</b> - free day ticket, goodie bag, discount on Convergence 2026
+                                    T-shirt
+                                </li>
+                                <li>
+                                    <b>Two Sessions</b> - free day ticket, goodie bag, discount on Convergence 2026
+                                    T-shirt
+                                </li>
+                                <li>
+                                    <b>Three Sessions</b> - free weekend ticket, premium goodie bag, discount on
+                                    Convergence 2026 T-shirt
+                                </li>
+                                <li>
+                                    <b>Four Sessions</b> - free weekend ticket, premium goodie bag, discount on
+                                    Convergence 2026 T-shirt,
                                     <Tooltip align="top">
                                         <label>a Golden D20 <TooltipIcon class="inline-block" /></label>
                                         <TooltipContent
@@ -49,8 +49,8 @@
                                     </Tooltip>
                                 </li>
                                 <li>
-                                    <b>Five Sessions</b> - free weekend ticket, premium goodie bag, a Convergence 2025
-                                    T-shirt, a handshake from the Guild Master
+                                    <b>Five Sessions</b> - free weekend ticket, premium goodie bag, free Convergence
+                                    2026 T-shirt, honoured at the Queen's Carpet ceremony
                                 </li>
                             </ul>
                         </CollapseContent>
@@ -68,7 +68,7 @@
                             <p>
                                 With our new game selection system coupled with a robust feedback system, Convergence
                                 2024 was the year of data analytics. We took feedback from GMs, players and expert
-                                writers to give YOU the best shot at running a spectacular game at Convergence 2025
+                                writers to give YOU the best shot at running a spectacular game at Convergence 2026
                             </p>
                             <p>
                                 There are 3 main reasons players choose a game: GM reputation; it's something
@@ -257,6 +257,7 @@
                             </p>
                         </TooltipContent>
                     </Tooltip>
+                    <span>This is what potential players will read - give it some flavour!</span>
                     <TipTap form_input_name="description" :initial_content_json="game.description if editing else ''" />
                     <ErrorHolder name="description" />
 
@@ -800,15 +801,6 @@
                     <ErrorHolder name="agree_to_use_safety_tools" />
                 </FieldsetBase>
 
-                {# TODO RESUBMISSIONS #}
-                {% if not game %}
-                    <p class="alert alert-warning italic">
-                        Note that submissions have been closed since the 6th of June, but this form remains open. We
-                        cannot guarantee that a game submitted after this date will be accepted, though we may reopen
-                        submissions closer to the event depending on ticket sales and GM numbers. You can still freely
-                        edit your existing game submissions.
-                    </p>
-                {% endif %}
                 {# Submit #}
                 <ErrorHolder name="form" />
                 <button
