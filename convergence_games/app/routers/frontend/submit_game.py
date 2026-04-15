@@ -148,6 +148,9 @@ class SubmitGameForm(BaseModel):
     agree_to_use_safety_tools: Annotated[
         Literal["on"] | None, Field(title="Agree to Use Safety Tools", validate_default=True)
     ] = None
+    no_content_warnings_needed: Annotated[
+        Literal["on"] | None, Field(title="No Content Warnings Needed", validate_default=True)
+    ] = None
 
     @property
     def player_count_minimum_prop(self) -> int:
@@ -198,6 +201,19 @@ class SubmitGameForm(BaseModel):
     def validate_agree_to_use_safety_tools(cls, value: bool) -> bool:
         if not value:
             raise PydanticCustomError("", "You must agree to use the X-Card and Open Table Policy.")
+        return value
+
+    @field_validator("no_content_warnings_needed", mode="after")
+    @classmethod
+    def validate_no_content_warnings_needed(
+        cls, value: Literal["on"] | None, info: ValidationInfo
+    ) -> Literal["on"] | None:
+        content_warnings = info.data.get("content_warning", [])
+        if not content_warnings and not value:
+            raise PydanticCustomError(
+                "",
+                "You must either add at least one content warning or confirm that none are needed.",
+            )
         return value
 
 

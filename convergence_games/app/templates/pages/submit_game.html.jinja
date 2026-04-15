@@ -360,6 +360,38 @@
                     </forms.search_checks.SearchCheckContainer>
                     <ErrorHolder name="content_warning" />
 
+                    {# Client-side only: force explicit confirmation when no content warnings set #}
+                    <label
+                        id="no-content-warnings-label"
+                        class="hidden items-center gap-2 font-semibold"
+                        _="on load or htmx:afterSettle from previous <div.search-container/>
+                               or click from previous <div.search-container/>
+                           wait 20ms
+                           set container to the previous <div.search-container/>
+                           set selected to <input[name='content_warning']:checked/> in container
+                           if selected.length > 0
+                               add .hidden to me
+                               remove .flex from me
+                               set #no-content-warnings.checked to false
+                               set #no-content-warnings.required to false
+                           else
+                               remove .hidden from me
+                               add .flex to me
+                               set #no-content-warnings.required to true
+                           end"
+                    >
+                        <input
+                            type="checkbox"
+                            class="checkbox"
+                            id="no-content-warnings"
+                            name="no_content_warnings_needed"
+                            {{ "checked" if editing and not game.content_warnings }}
+                            title="Required"
+                        />
+                        <span>No content warnings needed - my game is appropriate for kids</span>
+                    </label>
+                    <ErrorHolder name="no_content_warnings_needed" />
+
                     {# Crunch/weight #}
                     <Tooltip class="w-fit">
                         <label class="fieldset-label font-semibold">Complexity <TooltipIcon /></label>
