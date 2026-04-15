@@ -289,12 +289,12 @@ class GameTableSizeRequirement(Requirement):
     LARGE = 2
 
     __notes__ = {
-        SMALL: "Small table",
+        SMALL: "Standard table",
         LARGE: "Large table",
     }
 
     __form_notes__ = {
-        SMALL: "Small circular table",
+        SMALL: "Standard circular table",
         LARGE: "Large square table",
     }
 
