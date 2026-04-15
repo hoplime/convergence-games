@@ -65,7 +65,7 @@ If in doubt, please ask us in the Discord.
 
 ## Ticket Questions
 
-{#attendance}
+{#tickets}
 ### When are tickets available?
 
 General ticket sales will open on Friday 11th July. General sale will include single-day tickets (Saturday or Sunday), and concession tickets. Be warned that we have been selling out earlier each year, so do not assume tickets will be available on the day. We do ask that you let us know if you can no longer make it so we can offer tickets to the waiting list.

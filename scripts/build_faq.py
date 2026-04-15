@@ -183,6 +183,31 @@ def parse_markdown(src: str) -> str:
     return _render_tokens(tokens)
 
 
+_HASH_OPEN_SCRIPT = """\
+            <script>
+                // Open the DaisyUI checkbox-collapse whose subtree contains the URL
+                // fragment target, so /faq#refunds lands on an open panel rather than
+                // a closed one with invisible content.
+                (function () {
+                    function openCollapseFromHash() {
+                        const hash = window.location.hash.slice(1);
+                        if (!hash) return;
+                        const target = document.getElementById(decodeURIComponent(hash));
+                        if (!target) return;
+                        const collapse = target.closest(".collapse");
+                        if (collapse) {
+                            const input = collapse.querySelector(':scope > input[type="checkbox"]');
+                            if (input && !input.checked) input.checked = true;
+                        }
+                        target.scrollIntoView({ block: "start" });
+                    }
+                    window.addEventListener("DOMContentLoaded", openCollapseFromHash);
+                    window.addEventListener("hashchange", openCollapseFromHash);
+                })();
+            </script>
+"""
+
+
 def build_page(body: str) -> str:
     """Wrap a rendered body fragment in the static page shell."""
     indented_lines = ("                " + line if line.strip() else "" for line in body.splitlines())
@@ -197,6 +222,7 @@ def build_page(body: str) -> str:
         '                <h1 class="text-xl">Frequently Asked Questions</h1>\n'
         f"{indented}\n"
         "            </div>\n"
+        f"{_HASH_OPEN_SCRIPT}"
         "        </PageContainer>\n"
         "    {% endblock %}\n"
         "</Page>\n"
