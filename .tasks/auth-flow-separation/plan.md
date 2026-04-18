@@ -324,16 +324,17 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 ### Phase 8: Cleanup, tests, manual QA
 
 - [ ] **Remove the `/email_sign_in` shim routes** once the new flows are confirmed working (a follow-up commit, not blocking — keep them through one deploy if you want a clean rollout).
-- [ ] **Add unit tests** under `tests/app/common/test_auth.py`
-  - `find_user_by_email` returns the right user across providers and casings.
-  - `authorize_flow(SIGN_UP)` raises on duplicate.
-  - `authorize_flow(SIGN_IN)` raises on miss.
-  - `authorize_flow(LINK)` is idempotent and rejects cross-user link.
-- [ ] **Add unit tests** under `tests/utils/test_email.py`
-  - `normalize_email` handles whitespace, case, mixed-case, empty input.
+- [x] **Add unit tests** under `tests/app/common/test_auth.py`
+  - `find_user_by_email`: returns None on miss, matches provider_email, matches EMAIL provider_user_id, case-insensitive, prefers EMAIL-provider user on ambiguity.
+  - `authorize_flow(SIGN_UP)`: creates user; raises `AccountAlreadyExistsError` on duplicate.
+  - `authorize_flow(SIGN_IN)`: succeeds for existing; raises `NoAccountForSignInError` on miss.
+  - `authorize_flow(LINK)`: attaches new login; idempotent for same user; rejects cross-user with 403.
+  - Uses SQLite+aiosqlite in-memory DB. Added `pytest-asyncio` and `aiosqlite` dev deps.
+- [x] **Add unit tests** under `tests/utils/test_email.py`
+  - `normalize_email`: lowercase, strip, combined, already-normalized, empty, whitespace-only.
 - [ ] **Manual end-to-end run-through**
   - Sign up with a fresh email — works.
-  - Sign up with an email that already has any login — blocked, redirects to sign-in with email prefilled.
+  - Sign up with an email that already has any login — blocked, renders AccountExists.
   - Sign in with a known email — works.
   - Sign in with an unknown email — verify code → NoAccountFound → create user OR link via OAuth.
   - Google sign-in to an email matching an existing email-only account — silent link.
@@ -343,9 +344,9 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 
 #### Phase 8 verification
 
-- [ ] `pytest` — all tests pass
-- [ ] `basedpyright` — clean
-- [ ] `ruff check` — clean
+- [x] `pytest` — 28 passed
+- [x] `basedpyright` — 0 errors (warnings only on argparse Any + test internals)
+- [x] `ruff check` — clean
 - [ ] `npx tsc --noEmit` — clean
 
 ## Acceptance Criteria
