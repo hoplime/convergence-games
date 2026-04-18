@@ -207,25 +207,27 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 
 ### Phase 3: Cross-provider linking infrastructure
 
-- [ ] **Extend `OAuthRedirectState`** (`convergence_games/app/common/auth.py:100`)
+- [x] **Extend `OAuthRedirectState`** (`convergence_games/app/common/auth.py:100`)
   - Add `mode: AuthIntent | None = None` and `pending_verified_email: str | None = None`. Both round-trip via the existing fernet encode/decode.
-- [ ] **Add pending-OAuth-link payload model** (same file)
-  - `PendingOAuthLink` `BaseModel` with `provider`, `provider_user_id`, `provider_email`, `user_first_name`, `user_last_name`, `user_profile_picture`, `candidate_user_id`. `encode/decode` via fernet (same pattern).
-- [ ] **Wire `find_user_by_email` into OAuth callback** (`convergence_games/app/routers/frontend/oauth.py:get_provider_auth_authorize`)
+- [x] **Add pending-OAuth-link payload model** (same file)
+  - `PendingOAuthLink` `BaseModel` with `provider`, `provider_user_id`, `provider_email`, `user_first_name`, `user_last_name`, `user_profile_picture`, `candidate_user_id`. `encode/decode` via fernet (same pattern). Also carries `redirect_path` for post-link return.
+- [x] **Wire `find_user_by_email` into OAuth callback** (`convergence_games/app/routers/frontend/oauth.py:get_provider_auth_authorize`)
   - When intent would be `SIGN_UP` (no `linking_account_id`, no `pending_verified_email`):
-    - If `provider == GOOGLE` and `payload["email_verified"]` is true and `find_user_by_email` returns a user → call `authorize_flow(intent=LINK, linking_account_id=user.id, ...)`.
-    - Else if `provider in (DISCORD, FACEBOOK)` and `find_user_by_email` returns a user → encode a `PendingOAuthLink` and redirect to `GET /oauth2/link_confirm?payload=<token>` (which renders `LinkOAuthAccount`).
-    - Else → call `authorize_flow(intent=SIGN_UP, ...)`.
-  - When `pending_verified_email` is set in state → after OAuth user is resolved (either matched login or freshly created), also create an `EMAIL` `UserLogin(provider=EMAIL, provider_user_id=email, provider_email=email)` attached to that user if one does not already exist.
-- [ ] **Plumb Google's `email_verified` into `ProfileInfo`** (`convergence_games/app/routers/frontend/oauth.py:GoogleOAuthProvider.get_profile_info`)
+    - If `provider == GOOGLE` and `payload["email_verified"]` is true and `find_user_by_email` returns a user → call `authorize_flow(intent=LINK, linking_account_id=user.id, ...)`. **Done.**
+    - Else if `provider in (DISCORD, FACEBOOK)` and `find_user_by_email` returns a user → encode a `PendingOAuthLink` and redirect to `GET /oauth2/link_confirm?payload=<token>` (which renders `LinkOAuthAccount`). **Deferred to Phase 6** (route does not exist yet); for now Discord/Facebook misses still fall through to `SIGN_UP`. Marked with `TODO(auth-flow-separation)` in the handler.
+    - Else → call `authorize_flow(intent=SIGN_UP, ...)`. **Done.**
+- [x] **Symmetric: EMAIL sign-in matching an existing GOOGLE account auto-links** (`convergence_games/app/routers/frontend/email_auth.py:login_with_email_and_code`)
+  - On `NoAccountForSignInError` for the EMAIL provider, run `find_user_by_email`. If the matched user has any `GOOGLE` `UserLogin` whose `provider_email` matches, attach the EMAIL login via `authorize_flow(intent=LINK, linking_account_id=matched.id)`. Other matched-only providers (Discord/Facebook) fall through to the temporary SIGN_UP fallback until Phase 5/6 wires the explicit prompt.
+  - When `pending_verified_email` is set in state → after OAuth user is resolved (either matched login or freshly created), also create an `EMAIL` `UserLogin(provider=EMAIL, provider_user_id=email, provider_email=email)` attached to that user if one does not already exist. **Done** via new `extra_email_to_link` parameter on `authorize_flow` and helper `_attach_email_login_if_missing`.
+- [x] **Plumb Google's `email_verified` into `ProfileInfo`** (`convergence_games/app/routers/frontend/oauth.py:GoogleOAuthProvider.get_profile_info`)
   - Add `email_verified: bool = False` field to `ProfileInfo` (`convergence_games/app/common/auth.py:ProfileInfo`). Populate from `payload.get("email_verified", False)`.
   - Discord/Facebook: leave `False` (we do not trust those for silent link).
 
 #### Phase 3 verification
 
-- [ ] `basedpyright` — clean
-- [ ] `ruff check` — clean
-- [ ] Manual: in dev, with an existing email-only account, complete Google sign-in for the same Gmail address; confirm a single `User` ends up with both `EMAIL` and `GOOGLE` logins.
+- [x] `basedpyright` — clean (only pre-existing `BaseOAuth2` generic warning)
+- [x] `ruff check` — clean
+- [x] Manual: in dev, with an existing email-only account, complete Google sign-in for the same Gmail address; confirm a single `User` ends up with both `EMAIL` and `GOOGLE` logins. Also tested the reverse direction (existing Google-only account, email sign-in) — both link to the same user.
 
 ### Phase 4: Combined sign-up / sign-in UI
 

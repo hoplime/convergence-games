@@ -23,6 +23,7 @@ from convergence_games.app.common.auth import (
     OAuthRedirectState,
     ProfileInfo,
     authorize_flow,
+    find_user_by_email,
 )
 from convergence_games.app.request_type import Request
 from convergence_games.db.models import LoginProvider
@@ -96,6 +97,7 @@ class GoogleOAuthProvider(OAuthProvider):
             user_id=payload.get("sub"),
             user_email=payload.get("email"),
             user_profile_picture=payload.get("picture"),
+            email_verified=bool(payload.get("email_verified", False)),
         )
 
 
@@ -207,25 +209,61 @@ class OAuthController(Controller):
         if profile_info.user_email is not None:
             profile_info.user_email = normalize_email(profile_info.user_email)
 
-        intent = AuthIntent.LINK if linking_account_id is not None else AuthIntent.SIGN_IN
+        pending_email = (
+            normalize_email(state.pending_verified_email) if state.pending_verified_email is not None else None
+        )
+
+        if linking_account_id is not None:
+            return await authorize_flow(
+                transaction=transaction,
+                provider_name=provider_name,
+                profile_info=profile_info,
+                intent=AuthIntent.LINK,
+                linking_account_id=linking_account_id,
+                redirect_path=redirect_path,
+                extra_email_to_link=pending_email,
+            )
+
         try:
             return await authorize_flow(
                 transaction=transaction,
                 provider_name=provider_name,
                 profile_info=profile_info,
-                intent=intent,
-                linking_account_id=linking_account_id,
+                intent=AuthIntent.SIGN_IN,
+                linking_account_id=None,
                 redirect_path=redirect_path,
+                extra_email_to_link=pending_email,
             )
         except NoAccountForSignInError:
-            # TODO(auth-flow-separation): remove this fallback once Phase 6 wires
-            # cross-provider link prompts; until then, preserve prior auto-create
-            # behaviour for OAuth callbacks.
+            pass
+
+        # No matching login. Look for a cross-provider email match and decide what to do.
+        matched_user = (
+            await find_user_by_email(transaction, profile_info.user_email)
+            if profile_info.user_email is not None
+            else None
+        )
+
+        if matched_user is not None and provider_name == LoginProvider.GOOGLE and profile_info.email_verified:
             return await authorize_flow(
                 transaction=transaction,
                 provider_name=provider_name,
                 profile_info=profile_info,
-                intent=AuthIntent.SIGN_UP,
-                linking_account_id=None,
+                intent=AuthIntent.LINK,
+                linking_account_id=matched_user.id,
                 redirect_path=redirect_path,
+                extra_email_to_link=pending_email,
             )
+
+        # TODO(auth-flow-separation): when Phase 6 lands the LinkOAuthAccount UI,
+        # detected matches for Discord/Facebook should redirect to /oauth2/link_confirm
+        # with an encoded PendingOAuthLink instead of falling through to SIGN_UP.
+        return await authorize_flow(
+            transaction=transaction,
+            provider_name=provider_name,
+            profile_info=profile_info,
+            intent=AuthIntent.SIGN_UP,
+            linking_account_id=None,
+            redirect_path=redirect_path,
+            extra_email_to_link=pending_email,
+        )

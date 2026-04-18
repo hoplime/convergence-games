@@ -8,7 +8,8 @@ from litestar import Controller, get, post
 from litestar.exceptions import HTTPException
 from litestar.params import Body, Parameter, RequestEncodingType
 from litestar.response import Redirect
-from sqlalchemy import select
+from sqlalchemy import String, func, select
+from sqlalchemy import cast as sql_cast
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.app.common.auth import (
@@ -17,9 +18,10 @@ from convergence_games.app.common.auth import (
     OAuthRedirectState,
     ProfileInfo,
     authorize_flow,
+    find_user_by_email,
 )
 from convergence_games.db.enums import LoginProvider
-from convergence_games.db.models import UserEmailVerificationCode
+from convergence_games.db.models import UserEmailVerificationCode, UserLogin
 from convergence_games.db.ocean import sink
 from convergence_games.utils.email import normalize_email
 
@@ -63,19 +65,44 @@ async def login_with_email_and_code(
             redirect_path=state.redirect_path,
         )
     except NoAccountForSignInError:
-        # TODO(auth-flow-separation): remove this fallback once Phase 5 wires the
-        # NoAccountFound UI; until then, preserve the prior auto-create behaviour
-        # for the existing email-sign-in route.
-        if intent is not None:
-            raise
-        return await authorize_flow(
-            transaction=transaction,
-            provider_name=LoginProvider.EMAIL,
-            profile_info=profile_info,
-            intent=AuthIntent.SIGN_UP,
-            linking_account_id=None,
-            redirect_path=state.redirect_path,
-        )
+        pass
+
+    # No EMAIL login for this address. Look for a cross-provider match the email-code
+    # owner can be safely linked into. Google verifies emails before issuing tokens, so
+    # any GOOGLE login with a matching email is treated as proof both parties own it.
+    matched_user = await find_user_by_email(transaction, email)
+    if matched_user is not None:
+        has_google_login = (
+            await transaction.execute(
+                select(UserLogin)
+                .where(UserLogin.user_id == matched_user.id)
+                .where(sql_cast(UserLogin.provider, String) == LoginProvider.GOOGLE.name)
+                .where(func.lower(UserLogin.provider_email) == email)
+            )
+        ).scalar_one_or_none() is not None
+        if has_google_login:
+            return await authorize_flow(
+                transaction=transaction,
+                provider_name=LoginProvider.EMAIL,
+                profile_info=profile_info,
+                intent=AuthIntent.LINK,
+                linking_account_id=matched_user.id,
+                redirect_path=state.redirect_path,
+            )
+
+    # TODO(auth-flow-separation): remove this fallback once Phase 5 wires the
+    # NoAccountFound UI; until then, preserve the prior auto-create behaviour
+    # for the existing email-sign-in route.
+    if intent is not None:
+        raise NoAccountForSignInError(provider=LoginProvider.EMAIL, email=email)
+    return await authorize_flow(
+        transaction=transaction,
+        provider_name=LoginProvider.EMAIL,
+        profile_info=profile_info,
+        intent=AuthIntent.SIGN_UP,
+        linking_account_id=None,
+        redirect_path=state.redirect_path,
+    )
 
 
 @dataclass
