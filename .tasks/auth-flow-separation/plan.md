@@ -265,26 +265,29 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 
 ### Phase 5: Post-verification branching for sign-in misses
 
-- [ ] **Add `components/NoAccountFound.html.jinja`**
-  - Inputs: `email`, `pending_state_token` (encoded `OAuthRedirectState` with `pending_verified_email=email`).
-  - Renders the verified email + "Create a new account" button (`POST /sign-up/from-verified-email` with the token) and three OAuth-link buttons that point at `/oauth2/{provider}/login?state=<pending_state_token>` so the verified email survives the round-trip.
-- [ ] **Update `EmailAuthController.post_verify_code`** (`convergence_games/app/routers/frontend/email_auth.py:70`)
-  - Read `mode` from form data (added in Phase 4).
-  - Pass `intent=AuthIntent[mode.upper()]` to `login_with_email_and_code`.
-  - Catch `NoAccountForSignInError`; render `NoAccountFound` with a freshly issued state token (`OAuthRedirectState(pending_verified_email=email, redirect_path=...)`).
-  - Catch `AccountAlreadyExistsError`; render `AccountExists`.
-- [ ] **Update `EmailAuthController.get_magic_link`** similarly
-  - Magic links treat default mode as `SIGN_IN` (matches their use).
-- [ ] **Add `POST /sign-up/from-verified-email`** (`convergence_games/app/routers/frontend/profile.py`)
-  - Decode the token, re-validate it has `pending_verified_email`, create user with EMAIL login, log in via `jwt_cookie_auth.login`, redirect to profile setup.
-- [ ] **Update `login_with_email_and_code`** (`convergence_games/app/routers/frontend/email_auth.py:20`)
-  - Accept `intent` param; pass through to `authorize_flow`.
+- [x] **Add `components/NoAccountFound.html.jinja`** + page wrapper `pages/no_account_found.html.jinja`
+  - Component takes `email` and `state_token` (encoded `OAuthRedirectState` with `pending_verified_email=email`).
+  - Renders "Create a new account" button (`POST /sign-up/from-verified-email` with the token) and OAuth-link buttons that point at `/oauth2/{provider}/login?state=<pending_state_token>` so the verified email survives the round-trip via the existing `extra_email_to_link` plumbing in `authorize_flow`.
+  - Page wrapper used because `VerifyCode` form is non-HTMX (full page submit). Same wrapper pattern added for `pages/account_exists.html.jinja`.
+- [x] **Update `EmailAuthController.post_verify_code`** (`convergence_games/app/routers/frontend/email_auth.py:101`)
+  - Read `mode` from form data; resolve to `AuthIntent`, falling back to `state.mode`.
+  - Pass intent to `login_with_email_and_code`.
+  - Catch `NoAccountForSignInError`; render `pages/no_account_found.html.jinja` with a freshly issued state token (`OAuthRedirectState(pending_verified_email=email, redirect_path=...)`).
+  - Catch `AccountAlreadyExistsError`; render `pages/account_exists.html.jinja`.
+- [x] **Update `EmailAuthController.get_magic_link`** similarly
+  - Magic links pass `intent=AuthIntent.SIGN_IN` explicitly. Same outcome rendering.
+- [x] **Add `POST /sign-up/from-verified-email`** (`convergence_games/app/routers/frontend/profile.py`)
+  - Decode the token, re-validate it has `pending_verified_email`, then call `authorize_flow(SIGN_UP, EMAIL, ...)` which creates the user and signs them in.
+- [x] **Update `OAuthController.get_provider_auth_login`** (`convergence_games/app/routers/frontend/oauth.py:159`)
+  - Accept a raw `state` query parameter; if present, use it verbatim as the OAuth state (lets `NoAccountFound`'s OAuth-link buttons forward the encoded `pending_verified_email` token through Google/Discord).
+- [x] **Update `login_with_email_and_code`** (`convergence_games/app/routers/frontend/email_auth.py:28`)
+  - Already accepts `intent` (added in Phase 2). The temporary `intent is None` SIGN_UP fallback stays in place to keep the legacy `/email_sign_in` route (still used by the profile-page linking flow with `intent=None`) working until Phase 8 deletes that route.
 
 #### Phase 5 verification
 
-- [ ] `basedpyright` — clean
-- [ ] `ruff check` — clean
-- [ ] Manual: in dev, with no `User` rows, attempt sign-in to a fresh email; verify the code; confirm `NoAccountFound` is rendered. From there, click "Create a new account" → user is created, redirected to profile setup. Repeat: sign-in to a fresh email, verify, click "Sign in with Google" → after Google auth, the new Google user is created with both Google and EMAIL logins.
+- [x] `basedpyright` — clean (only the pre-existing `BaseOAuth2` generic warning)
+- [x] `ruff check` — clean
+- [x] Manual: in dev, with no `User` rows, attempt sign-in to a fresh email; verify the code; confirm `NoAccountFound` is rendered. From there, click "Create a new account" → user is created, redirected to profile setup. Repeat: sign-in to a fresh email, verify, click "Sign in with Google" → after Google auth, the new Google user is created with both Google and EMAIL logins.
 
 ### Phase 6: OAuth Discord/Facebook link-confirm UI
 

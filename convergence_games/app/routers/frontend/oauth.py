@@ -173,6 +173,7 @@ class OAuthController(Controller):
         linking_account_sqid: Sqid | None = None,
         redirect_path: str | None = None,
         mode: AuthIntent | None = None,
+        state_query: Annotated[str | None, Parameter(query="state")] = None,
     ) -> Redirect:
         linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
         if linking_account_id is not None and (request.user is None or linking_account_id != request.user.id):
@@ -181,12 +182,17 @@ class OAuthController(Controller):
         provider = get_oauth_provider(provider_name)
         redirect_uri = build_redirect_uri(provider_name)
 
-        state = OAuthRedirectState(
-            linking_account_sqid=linking_account_sqid,
-            redirect_path=redirect_path,
-            mode=mode,
-        )
-        auth_url = await provider.client.get_authorization_url(redirect_uri=redirect_uri, state=state.encode())
+        if state_query is not None:
+            # Caller supplied a pre-built signed state token (e.g. NoAccountFound's
+            # OAuth-link buttons that carry pending_verified_email). Use it as-is.
+            encoded_state = state_query
+        else:
+            encoded_state = OAuthRedirectState(
+                linking_account_sqid=linking_account_sqid,
+                redirect_path=redirect_path,
+                mode=mode,
+            ).encode()
+        auth_url = await provider.client.get_authorization_url(redirect_uri=redirect_uri, state=encoded_state)
         return Redirect(path=auth_url)
 
     @get(path="/{provider_name:str}/authorize")

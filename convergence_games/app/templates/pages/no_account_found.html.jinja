@@ -1,0 +1,14 @@
+{#def
+    email: str,
+    state_token: str,
+#}
+<Page>
+    {% block content %}
+        <PageTitle>No Account Found</PageTitle>
+        <PageContainer size="max-w-screen-sm">
+            <div class="m-auto grid w-full max-w-96 gap-4">
+                <NoAccountFound :email="email" :state_token="state_token" />
+            </div>
+        </PageContainer>
+    {% endblock %}
+</Page>

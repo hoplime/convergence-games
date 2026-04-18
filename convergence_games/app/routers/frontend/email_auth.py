@@ -13,6 +13,7 @@ from sqlalchemy import cast as sql_cast
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.app.common.auth import (
+    AccountAlreadyExistsError,
     AuthIntent,
     NoAccountForSignInError,
     OAuthRedirectState,
@@ -20,6 +21,7 @@ from convergence_games.app.common.auth import (
     authorize_flow,
     find_user_by_email,
 )
+from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import UserEmailVerificationCode, UserLogin
 from convergence_games.db.ocean import sink
@@ -109,6 +111,37 @@ async def login_with_email_and_code(
 class PostVerifyCodeForm:
     email: str
     code: str
+    mode: str | None = None
+
+
+def _resolve_intent_from_mode(mode: str | None) -> AuthIntent | None:
+    if mode is None:
+        return None
+    try:
+        return AuthIntent(mode)
+    except ValueError:
+        return None
+
+
+def _render_outcome_after_verify(
+    outcome: NoAccountForSignInError | AccountAlreadyExistsError,
+    fallback_email: str,
+    state: OAuthRedirectState,
+) -> Template:
+    email = normalize_email(outcome.email or fallback_email)
+    if isinstance(outcome, AccountAlreadyExistsError):
+        return HTMXBlockTemplate(
+            template_name="pages/account_exists.html.jinja",
+            context={"email": email},
+        )
+    new_state = OAuthRedirectState(
+        redirect_path=state.redirect_path,
+        pending_verified_email=email,
+    )
+    return HTMXBlockTemplate(
+        template_name="pages/no_account_found.html.jinja",
+        context={"email": email, "state_token": new_state.encode()},
+    )
 
 
 class EmailAuthController(Controller):
@@ -120,10 +153,15 @@ class EmailAuthController(Controller):
         magic_link_code: Annotated[str, Parameter(query="code")],
         transaction: AsyncSession,
         state_query: Annotated[str | None, Parameter(query="state")] = None,
-    ) -> Redirect:
+    ) -> Redirect | Template:
         state = OAuthRedirectState.decode(state_query) if state_query is not None else OAuthRedirectState()
         code, email = UserEmailVerificationCode.decode_magic_link_code(magic_link_code)
-        return await login_with_email_and_code(email, code, transaction, state=state)
+        try:
+            return await login_with_email_and_code(
+                email, code, transaction, state=state, intent=AuthIntent.SIGN_IN
+            )
+        except (NoAccountForSignInError, AccountAlreadyExistsError) as outcome:
+            return _render_outcome_after_verify(outcome, fallback_email=email, state=state)
 
     @post(path="/verify_code")
     async def post_verify_code(
@@ -131,6 +169,12 @@ class EmailAuthController(Controller):
         data: Annotated[PostVerifyCodeForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
         transaction: AsyncSession,
         state_query: Annotated[str | None, Parameter(query="state")] = None,
-    ) -> Redirect:
+    ) -> Redirect | Template:
         state = OAuthRedirectState.decode(state_query) if state_query is not None else OAuthRedirectState()
-        return await login_with_email_and_code(data.email, data.code, transaction, state=state)
+        intent = _resolve_intent_from_mode(data.mode) or state.mode
+        try:
+            return await login_with_email_and_code(
+                data.email, data.code, transaction, state=state, intent=intent
+            )
+        except (NoAccountForSignInError, AccountAlreadyExistsError) as outcome:
+            return _render_outcome_after_verify(outcome, fallback_email=data.email, state=state)

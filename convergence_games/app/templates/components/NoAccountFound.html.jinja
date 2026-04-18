@@ -1,0 +1,24 @@
+{#def
+    email: str,
+    state_token: str,
+#}
+<div class="flex flex-col gap-4">
+    <div class="alert alert-info">
+        <p>
+            No account found for <strong>{{ email }}</strong>. Choose how to continue.
+        </p>
+    </div>
+    <form method="POST" action="/sign-up/from-verified-email" class="flex flex-col gap-2">
+        <input type="hidden" name="state" value="{{ state_token }}" />
+        <button class="btn btn-primary" type="submit">Create a new account for this email</button>
+    </form>
+    <div class="divider my-0">or sign in to an existing account to link this email</div>
+    <a class="btn btn-ghost" href="/oauth2/google/login?state={{ state_token }}">
+        <img src="static/icons/logos/google.svg" class="h-8" alt="Google Logo" />
+        <span>Sign in with Google</span>
+    </a>
+    <a class="btn btn-ghost" href="/oauth2/discord/login?state={{ state_token }}">
+        <img src="static/icons/logos/discord.svg" class="h-8" alt="Discord Logo" />
+        <span>Sign in with Discord</span>
+    </a>
+</div>

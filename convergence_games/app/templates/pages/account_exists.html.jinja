@@ -1,0 +1,13 @@
+{#def
+    email: str,
+#}
+<Page>
+    {% block content %}
+        <PageTitle>Account Already Exists</PageTitle>
+        <PageContainer size="max-w-screen-sm">
+            <div class="m-auto grid w-full max-w-96 gap-4">
+                <AccountExists :email="email" />
+            </div>
+        </PageContainer>
+    {% endblock %}
+</Page>

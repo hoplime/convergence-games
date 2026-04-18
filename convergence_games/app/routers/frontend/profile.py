@@ -10,7 +10,13 @@ from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.common.auth import AuthIntent, OAuthRedirectState, find_user_by_email
+from convergence_games.app.common.auth import (
+    AuthIntent,
+    OAuthRedirectState,
+    ProfileInfo,
+    authorize_flow,
+    find_user_by_email,
+)
 from convergence_games.app.events import EVENT_EMAIL_SIGN_IN
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
@@ -30,6 +36,11 @@ class PostEmailSignInForm:
 class PostAuthEmailForm:
     email: str
     redirect_path: str | None = None
+
+
+@dataclass
+class PostFromVerifiedEmailForm:
+    state: str
 
 
 @dataclass
@@ -149,6 +160,24 @@ class ProfileController(Controller):
         return HTMXBlockTemplate(
             template_name="components/VerifyCode.html.jinja",
             context={"email": email, "state": state.encode(), "mode": "sign_in"},
+        )
+
+    @post(path="/sign-up/from-verified-email")
+    async def post_sign_up_from_verified_email(
+        self,
+        data: Annotated[PostFromVerifiedEmailForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        transaction: AsyncSession,
+    ) -> Redirect:
+        state = OAuthRedirectState.decode(data.state)
+        if state.pending_verified_email is None:
+            raise HTTPException(status_code=400, detail="State token missing verified email")
+        email = normalize_email(state.pending_verified_email)
+        return await authorize_flow(
+            transaction=transaction,
+            provider_name=LoginProvider.EMAIL,
+            profile_info=ProfileInfo(user_id=email, user_email=email),
+            intent=AuthIntent.SIGN_UP,
+            redirect_path=state.redirect_path,
         )
 
     @get(path="/email_sign_in")
