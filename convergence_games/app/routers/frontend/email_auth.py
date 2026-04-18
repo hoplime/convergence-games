@@ -15,6 +15,7 @@ from convergence_games.app.common.auth import OAuthRedirectState, ProfileInfo, a
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import UserEmailVerificationCode
 from convergence_games.db.ocean import sink
+from convergence_games.utils.email import normalize_email
 
 
 async def login_with_email_and_code(
@@ -23,6 +24,7 @@ async def login_with_email_and_code(
     transaction: AsyncSession,
     state: OAuthRedirectState,
 ) -> Redirect:
+    email = normalize_email(email)
     user_email_verification_code = (
         await transaction.execute(
             select(UserEmailVerificationCode)

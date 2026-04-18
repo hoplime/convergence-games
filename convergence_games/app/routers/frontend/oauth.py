@@ -22,6 +22,7 @@ from convergence_games.app.request_type import Request
 from convergence_games.db.models import LoginProvider
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.settings import SETTINGS
+from convergence_games.utils.email import normalize_email
 
 
 class OAuthProvider(ABC):
@@ -197,6 +198,8 @@ class OAuthController(Controller):
 
         oauth2_token = await provider.client.get_access_token(code=code, redirect_uri=redirect_uri)
         profile_info = await provider.get_profile_info(oauth2_token)
+        if profile_info.user_email is not None:
+            profile_info.user_email = normalize_email(profile_info.user_email)
 
         return await authorize_flow(
             transaction=transaction,

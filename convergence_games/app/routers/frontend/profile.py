@@ -16,6 +16,7 @@ from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import UserLogin
 from convergence_games.db.ocean import Sqid, sink
+from convergence_games.utils.email import normalize_email
 
 
 @dataclass
@@ -105,20 +106,21 @@ class ProfileController(Controller):
         if linking_account_id is not None and (request.user is None or linking_account_id != request.user.id):
             raise HTTPException(detail="Invalid linking account ID", status_code=403)
 
+        email = normalize_email(data.email)
         state = OAuthRedirectState(
             linking_account_sqid=linking_account_sqid,
             redirect_path=redirect_path,
         )
         request.app.emit(
             EVENT_EMAIL_SIGN_IN,
-            email=data.email,
+            email=email,
             state=state,
             transaction=transaction,
         )
         return HTMXBlockTemplate(
             template_name="components/VerifyCode.html.jinja",
             context={
-                "email": data.email,
+                "email": email,
                 "state": state.encode(),
             },
         )
