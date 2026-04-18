@@ -17,7 +17,13 @@ from litestar.response import Redirect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
-from convergence_games.app.common.auth import OAuthRedirectState, ProfileInfo, authorize_flow
+from convergence_games.app.common.auth import (
+    AuthIntent,
+    NoAccountForSignInError,
+    OAuthRedirectState,
+    ProfileInfo,
+    authorize_flow,
+)
 from convergence_games.app.request_type import Request
 from convergence_games.db.models import LoginProvider
 from convergence_games.db.ocean import Sqid, sink
@@ -201,10 +207,25 @@ class OAuthController(Controller):
         if profile_info.user_email is not None:
             profile_info.user_email = normalize_email(profile_info.user_email)
 
-        return await authorize_flow(
-            transaction=transaction,
-            provider_name=provider_name,
-            profile_info=profile_info,
-            linking_account_id=linking_account_id,
-            redirect_path=redirect_path,
-        )
+        intent = AuthIntent.LINK if linking_account_id is not None else AuthIntent.SIGN_IN
+        try:
+            return await authorize_flow(
+                transaction=transaction,
+                provider_name=provider_name,
+                profile_info=profile_info,
+                intent=intent,
+                linking_account_id=linking_account_id,
+                redirect_path=redirect_path,
+            )
+        except NoAccountForSignInError:
+            # TODO(auth-flow-separation): remove this fallback once Phase 6 wires
+            # cross-provider link prompts; until then, preserve prior auto-create
+            # behaviour for OAuth callbacks.
+            return await authorize_flow(
+                transaction=transaction,
+                provider_name=provider_name,
+                profile_info=profile_info,
+                intent=AuthIntent.SIGN_UP,
+                linking_account_id=None,
+                redirect_path=redirect_path,
+            )

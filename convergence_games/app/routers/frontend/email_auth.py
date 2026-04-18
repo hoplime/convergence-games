@@ -11,7 +11,13 @@ from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.common.auth import OAuthRedirectState, ProfileInfo, authorize_flow
+from convergence_games.app.common.auth import (
+    AuthIntent,
+    NoAccountForSignInError,
+    OAuthRedirectState,
+    ProfileInfo,
+    authorize_flow,
+)
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import UserEmailVerificationCode
 from convergence_games.db.ocean import sink
@@ -23,6 +29,7 @@ async def login_with_email_and_code(
     code: str,
     transaction: AsyncSession,
     state: OAuthRedirectState,
+    intent: AuthIntent | None = None,
 ) -> Redirect:
     email = normalize_email(email)
     user_email_verification_code = (
@@ -37,16 +44,38 @@ async def login_with_email_and_code(
     if user_email_verification_code is None:
         raise HTTPException(status_code=401, detail="Invalid code or code expired")
 
-    return await authorize_flow(
-        transaction=transaction,
-        provider_name=LoginProvider.EMAIL,
-        profile_info=ProfileInfo(
-            user_id=email,
-            user_email=email,
-        ),
-        linking_account_id=sink(state.linking_account_sqid) if state.linking_account_sqid is not None else None,
-        redirect_path=state.redirect_path,
-    )
+    linking_account_id = sink(state.linking_account_sqid) if state.linking_account_sqid is not None else None
+    if linking_account_id is not None:
+        resolved_intent = AuthIntent.LINK
+    elif intent is not None:
+        resolved_intent = intent
+    else:
+        resolved_intent = AuthIntent.SIGN_IN
+
+    profile_info = ProfileInfo(user_id=email, user_email=email)
+    try:
+        return await authorize_flow(
+            transaction=transaction,
+            provider_name=LoginProvider.EMAIL,
+            profile_info=profile_info,
+            intent=resolved_intent,
+            linking_account_id=linking_account_id,
+            redirect_path=state.redirect_path,
+        )
+    except NoAccountForSignInError:
+        # TODO(auth-flow-separation): remove this fallback once Phase 5 wires the
+        # NoAccountFound UI; until then, preserve the prior auto-create behaviour
+        # for the existing email-sign-in route.
+        if intent is not None:
+            raise
+        return await authorize_flow(
+            transaction=transaction,
+            provider_name=LoginProvider.EMAIL,
+            profile_info=profile_info,
+            intent=AuthIntent.SIGN_UP,
+            linking_account_id=None,
+            redirect_path=state.redirect_path,
+        )
 
 
 @dataclass

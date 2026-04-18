@@ -174,17 +174,17 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 
 - [x] `ruff check` — no new errors
 - [x] `basedpyright` — no new errors
-- [ ] Manual: enter `Foo@Example.com  ` in current sign-in form (dev env), confirm verification code lookup succeeds end-to-end and the resulting `UserLogin.provider_user_id` is `foo@example.com`.
+- [x] Manual: enter `Foo@Example.com  ` in current sign-in form (dev env), confirm verification code lookup succeeds end-to-end and the resulting `UserLogin.provider_user_id` is `foo@example.com`.
 
 ### Phase 2: Refactor `authorize_flow` and add intent
 
-- [ ] **Add `AuthIntent` enum** (`convergence_games/app/common/auth.py`)
+- [x] **Add `AuthIntent` enum** (`convergence_games/app/common/auth.py`)
   - `StrEnum` with `SIGN_UP`, `SIGN_IN`, `LINK`. Place near `ProfileInfo`.
-- [ ] **Add outcome exception types** (same file)
+- [x] **Add outcome exception types** (same file)
   - `AccountAlreadyExistsError`, `NoAccountForSignInError`, `LinkConfirmationRequiredError`. Each carries the data the controller needs to render the next screen (matched provider; verified email; candidate user id + pending OAuth payload).
-- [ ] **Add `find_user_by_email`** (`convergence_games/app/common/auth.py`)
+- [x] **Add `find_user_by_email`** (`convergence_games/app/common/auth.py`)
   - Async helper; queries `UserLogin` joining `User`, on lowercased `provider_email` or `provider_user_id` for `EMAIL` provider; returns first matching `User` (preferring the one with an `EMAIL` login then earliest `created_at`); prints a warning if multiple users match.
-- [ ] **Refactor `authorize_flow` signature** (same file)
+- [x] **Refactor `authorize_flow` signature** (same file)
   - Add `intent: AuthIntent` (required; no default).
   - Remove the silent-create branch when `linking_account_id is None and user_login is None`.
   - Behaviour matrix:
@@ -195,15 +195,15 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
     - `LINK` (with `linking_account_id`) + login does not exist → attach to specified user (current `linking_account_id` branch).
     - `LINK` + login exists for the same user → no-op redirect (idempotent).
     - `LINK` + login exists for a *different* user → raise `HTTPException(403)` (current "another account already linked" message, retained).
-- [ ] **Update all call sites of `authorize_flow`** so each passes an explicit intent
-  - `convergence_games/app/routers/frontend/email_auth.py:login_with_email_and_code` — accept and forward intent.
-  - `convergence_games/app/routers/frontend/oauth.py:get_provider_auth_authorize` — derive intent from the new `state.mode` (default `SIGN_UP` if absent — pre-existing OAuth login link buttons must always be re-issued from the new pages).
+- [x] **Update all call sites of `authorize_flow`** so each passes an explicit intent
+  - `convergence_games/app/routers/frontend/email_auth.py:login_with_email_and_code` — accept and forward intent. Temporary fallback: if no explicit `intent` is provided, default to `SIGN_IN` and on `NoAccountForSignInError` retry as `SIGN_UP`. Removed once Phase 5 wires the `NoAccountFound` UI.
+  - `convergence_games/app/routers/frontend/oauth.py:get_provider_auth_authorize` — pick `LINK` when `linking_account_id` is set, otherwise `SIGN_IN` with the same `NoAccountForSignInError → SIGN_UP` fallback. Removed once Phase 6 wires cross-provider link confirmation.
 
 #### Phase 2 verification
 
-- [ ] `basedpyright` — clean
-- [ ] `ruff check` — clean
-- [ ] Manual: trigger each branch in dev (sign-in to existing account: success; sign-in to unknown email: confirm exception lands somewhere visible — full UX comes in Phase 4/5).
+- [x] `basedpyright` — clean (1 pre-existing `BaseOAuth2` generic warning unrelated)
+- [x] `ruff check` — clean
+- [x] Manual: trigger each branch in dev (sign-in to existing account: success; sign-in to unknown email: still creates account via the temporary fallback — full UX comes in Phase 4/5).
 
 ### Phase 3: Cross-provider linking infrastructure
 
