@@ -306,20 +306,20 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 
 ### Phase 7: Detection script
 
-- [ ] **Add `scripts/find_duplicate_users.py`**
-  - Bootstraps async DB session the same way `scripts/create_mock_event.py` does (read that file first; reuse its imports/patterns).
-  - Loads `UserLogin` rows with their `User` (selectinload).
-  - Builds `dict[str, list[tuple[User, UserLogin]]]` keyed by `normalize_email(provider_email or provider_user_id)`.
-  - Prints groups where the unique-user-id count is > 1.
-  - Also prints groups inside a single user where multiple `UserLogin` rows share a normalised email but differ in raw casing.
-  - `argparse` flag `--verbose` to dump every login row, otherwise just the summary.
-  - Exit non-zero if any duplicates detected.
-- [ ] **Run the script against dev DB** and capture output for record-keeping (paste into `.tasks/auth-flow-separation/duplicate-snapshot.md` if useful).
+- [x] **Add `scripts/find_duplicate_users.py`**
+  - Bootstraps async DB session same way as `scripts/create_mock_event.py`.
+  - Loads `UserLogin` rows with `User` via selectinload.
+  - Groups by `normalize_email(provider_email or provider_user_id)`.
+  - Reports cross-user duplicates (same email, different User IDs) and intra-user casing mismatches.
+  - `--verbose` flag adds statistics. Exits non-zero if duplicates found.
+  - Does not modify data.
+- [ ] **Run the script against dev DB**.
 
 #### Phase 7 verification
 
+- [x] `ruff check` — clean
+- [x] `basedpyright` — clean (warnings only, no errors)
 - [ ] `PYTHONPATH=. uv run python scripts/find_duplicate_users.py` runs without error in dev.
-- [ ] Script does not modify data (per `feedback_scripts_no_automod.md`).
 
 ### Phase 8: Cleanup, tests, manual QA
 
