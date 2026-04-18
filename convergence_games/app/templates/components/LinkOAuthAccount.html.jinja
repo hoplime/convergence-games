@@ -1,0 +1,22 @@
+{#def
+    email: str,
+    provider_label: str,
+    payload_token: str,
+#}
+<div class="flex flex-col gap-4">
+    <div class="alert alert-info">
+        <p>
+            We found an existing account for <strong>{{ email }}</strong>.
+            Would you like to link your {{ provider_label }} account to it?
+        </p>
+    </div>
+    <form method="POST" action="/oauth2/link_confirm" class="flex flex-col gap-2">
+        <input type="hidden" name="payload" value="{{ payload_token }}" />
+        <button class="btn btn-primary" type="submit" name="link" value="true">
+            Yes, link my {{ provider_label }} account
+        </button>
+        <button class="btn btn-ghost" type="submit" name="link" value="false">
+            No, create a separate account
+        </button>
+    </form>
+</div>

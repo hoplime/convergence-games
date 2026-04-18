@@ -1,0 +1,15 @@
+{#def
+    email: str,
+    provider_label: str,
+    payload_token: str,
+#}
+<Page>
+    {% block content %}
+        <PageTitle>Link Account?</PageTitle>
+        <PageContainer size="max-w-screen-sm">
+            <div class="m-auto grid w-full max-w-96 gap-4">
+                <LinkOAuthAccount :email="email" :provider_label="provider_label" :payload_token="payload_token" />
+            </div>
+        </PageContainer>
+    {% endblock %}
+</Page>

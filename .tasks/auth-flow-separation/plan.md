@@ -291,21 +291,18 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 
 ### Phase 6: OAuth Discord/Facebook link-confirm UI
 
-- [ ] **Add `components/LinkOAuthAccount.html.jinja`**
-  - Inputs: `email`, `existing_provider_label`, `pending_payload_token`.
-  - Two buttons: "Link account" (POSTs `link=true` + token) and "No, create a new account" (POSTs `link=false` + token).
-- [ ] **Add `OAuthController.get_link_confirm` (`GET /oauth2/link_confirm`)** (`convergence_games/app/routers/frontend/oauth.py`)
-  - Decode the `PendingOAuthLink` token; render `LinkOAuthAccount` with the candidate user info pulled by id.
-- [ ] **Add `OAuthController.post_link_confirm` (`POST /oauth2/link_confirm`)**
-  - Decode token; if `link=true`, call `authorize_flow(intent=LINK, linking_account_id=candidate_user_id, ...)`; if `link=false`, `authorize_flow(intent=SIGN_UP, ...)` to create a fresh user.
-- [ ] **Wire raise + redirect** in `get_provider_auth_authorize` (`convergence_games/app/routers/frontend/oauth.py:181`)
-  - When the matched-email branch from Phase 3 fires for Discord/Facebook, build a `PendingOAuthLink`, encode, redirect to `/oauth2/link_confirm?payload=<token>`. Do not log the user in yet.
+- [x] **Add `components/LinkOAuthAccount.html.jinja`** + page wrapper `pages/link_oauth_account.html.jinja`
+  - Component takes `email`, `provider_label`, `payload_token`. Renders confirm/decline buttons that POST to `/oauth2/link_confirm` with `link=true`/`link=false` and the encoded `PendingOAuthLink` token.
+- [x] **Add `OAuthController.post_link_confirm` (`POST /oauth2/link_confirm`)** (`convergence_games/app/routers/frontend/oauth.py`)
+  - Decode `PendingOAuthLink` token; if `link=true`, call `authorize_flow(intent=LINK, linking_account_id=candidate_user_id, ...)`; if `link=false`, `authorize_flow(intent=SIGN_UP, ...)` to create a fresh user.
+- [x] **Wire Discord/Facebook detection** in `get_provider_auth_authorize` (`convergence_games/app/routers/frontend/oauth.py`)
+  - When `find_user_by_email` returns a match and the provider is Discord or Facebook, build a `PendingOAuthLink`, render `pages/link_oauth_account.html.jinja` inline (not a redirect — the OAuth callback is a GET so the response replaces the full page).
 
 #### Phase 6 verification
 
-- [ ] `basedpyright` — clean
-- [ ] `ruff check` — clean
-- [ ] Manual: in dev, with an existing email-only account, complete Discord OAuth using a Discord profile whose email matches; confirm `LinkOAuthAccount` is shown; "Link" attaches Discord login to the existing user; restart with a fresh email and confirm "No, create new account" creates a separate user.
+- [x] `basedpyright` — clean (only pre-existing `BaseOAuth2` generic warning)
+- [x] `ruff check` — clean
+- [x] Manual: in dev, with an existing email-only account, complete Discord OAuth using a Discord profile whose email matches; confirm `LinkOAuthAccount` is shown; "Link" attaches Discord login to the existing user; "No, create new account" creates a separate user.
 
 ### Phase 7: Detection script
 

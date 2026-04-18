@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from functools import cached_property
 from typing import Annotated, Any, cast
 
@@ -12,7 +13,7 @@ from httpx_oauth.clients.google import GoogleOAuth2
 from httpx_oauth.oauth2 import BaseOAuth2, OAuth2Token
 from litestar import Controller, get, post
 from litestar.exceptions import HTTPException
-from litestar.params import Parameter
+from litestar.params import Body, Parameter, RequestEncodingType
 from litestar.response import Redirect
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,11 +22,13 @@ from convergence_games.app.common.auth import (
     AuthIntent,
     NoAccountForSignInError,
     OAuthRedirectState,
+    PendingOAuthLink,
     ProfileInfo,
     authorize_flow,
     find_user_by_email,
 )
 from convergence_games.app.request_type import Request
+from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.models import LoginProvider
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.settings import SETTINGS
@@ -202,8 +205,7 @@ class OAuthController(Controller):
         provider_name: LoginProvider,
         transaction: AsyncSession,
         state_query: Annotated[str | None, Parameter(query="state")] = None,
-    ) -> Redirect:
-        # Handle state query parameter
+    ) -> Redirect | Template:
         state = OAuthRedirectState.decode(state_query) if state_query is not None else OAuthRedirectState()
         linking_account_sqid = cast(Sqid, state.linking_account_sqid)
         linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
@@ -245,7 +247,6 @@ class OAuthController(Controller):
         except NoAccountForSignInError:
             pass
 
-        # No matching login. Look for a cross-provider email match and decide what to do.
         matched_user = (
             await find_user_by_email(transaction, profile_info.user_email)
             if profile_info.user_email is not None
@@ -263,9 +264,26 @@ class OAuthController(Controller):
                 extra_email_to_link=pending_email,
             )
 
-        # TODO(auth-flow-separation): when Phase 6 lands the LinkOAuthAccount UI,
-        # detected matches for Discord/Facebook should redirect to /oauth2/link_confirm
-        # with an encoded PendingOAuthLink instead of falling through to SIGN_UP.
+        if matched_user is not None and provider_name in (LoginProvider.DISCORD, LoginProvider.FACEBOOK):
+            pending_link = PendingOAuthLink(
+                provider=provider_name,
+                provider_user_id=profile_info.user_id or "",
+                provider_email=profile_info.user_email,
+                user_first_name=profile_info.user_first_name,
+                user_last_name=profile_info.user_last_name,
+                user_profile_picture=profile_info.user_profile_picture,
+                candidate_user_id=matched_user.id,
+                redirect_path=redirect_path,
+            )
+            return HTMXBlockTemplate(
+                template_name="pages/link_oauth_account.html.jinja",
+                context={
+                    "email": profile_info.user_email or "",
+                    "provider_label": provider_name.value.capitalize(),
+                    "payload_token": pending_link.encode(),
+                },
+            )
+
         return await authorize_flow(
             transaction=transaction,
             provider_name=provider_name,
@@ -275,3 +293,40 @@ class OAuthController(Controller):
             redirect_path=redirect_path,
             extra_email_to_link=pending_email,
         )
+
+    @post(path="/link_confirm")
+    async def post_link_confirm(
+        self,
+        data: Annotated[PostLinkConfirmForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        transaction: AsyncSession,
+    ) -> Redirect:
+        pending = PendingOAuthLink.decode(data.payload)
+        profile_info = ProfileInfo(
+            user_id=pending.provider_user_id,
+            user_email=pending.provider_email,
+            user_first_name=pending.user_first_name,
+            user_last_name=pending.user_last_name,
+            user_profile_picture=pending.user_profile_picture,
+        )
+        if data.link == "true":
+            return await authorize_flow(
+                transaction=transaction,
+                provider_name=pending.provider,
+                profile_info=profile_info,
+                intent=AuthIntent.LINK,
+                linking_account_id=pending.candidate_user_id,
+                redirect_path=pending.redirect_path,
+            )
+        return await authorize_flow(
+            transaction=transaction,
+            provider_name=pending.provider,
+            profile_info=profile_info,
+            intent=AuthIntent.SIGN_UP,
+            redirect_path=pending.redirect_path,
+        )
+
+
+@dataclass
+class PostLinkConfirmForm:
+    payload: str
+    link: str = "false"
