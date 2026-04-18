@@ -231,37 +231,37 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 
 ### Phase 4: Combined sign-up / sign-in UI
 
-- [ ] **Create `pages/auth.html.jinja`** (`convergence_games/app/templates/pages/auth.html.jinja`)
-  - Accepts `mode`, `email_prefill`, `invalid_action_path`, `redirect_path`.
-  - Renders title, sign-in buttons (with `mode`), and the "switch mode" link preserving entered email via query string.
-- [ ] **Update sign-in button components** (`convergence_games/app/templates/components/forms/sign_in_buttons/{Email,Google,Discord}.html.jinja`)
-  - Add `mode` prop. URL becomes `/sign-up/email` or `/sign-in/email` (Email button); `/oauth2/google/login?mode=sign_up` etc.
-  - Label flips by mode. Linking-variant unchanged.
-- [ ] **Add `components/AccountExists.html.jinja`**
-  - Inputs: `email`, optional list of providers already linked. Renders the message + "Sign in instead" button that GETs `/sign-in?email=<...>`.
-- [ ] **Extend `components/VerifyCode.html.jinja`**
-  - Accept `mode` prop, include as hidden form field; verify endpoint reads it from form data.
-- [ ] **Add new mode-aware routes** (`convergence_games/app/routers/frontend/profile.py`)
+- [x] **Create `pages/auth.html.jinja`** (`convergence_games/app/templates/pages/auth.html.jinja`)
+  - Accepts `mode`, `invalid_action_path`, `redirect_path`. Embeds the email form directly + Google/Discord buttons + a plain anchor toggle (no JS, no email preservation across toggle — user opted to keep it simple). `redirect_path` is propagated through the toggle URL (path-only, not the email).
+- [x] **Update sign-in button components** (`convergence_games/app/templates/components/forms/sign_in_buttons/{Google,Discord}.html.jinja`)
+  - Add `mode` and `redirect_path` props. URL becomes `/oauth2/{provider}/login?mode=sign_up` etc. Label flips by mode. Linking-variant unchanged. (`Email.html.jinja` left untouched — only the linking flow uses it; the auth page embeds the email form inline.)
+- [x] **Add `components/AccountExists.html.jinja`**
+  - Inputs: `email`. Renders an info alert + "Go to Sign In" button that GETs `/sign-in`.
+- [x] **Extend `components/VerifyCode.html.jinja`**
+  - Accept `mode` prop, include as hidden form field; submit-button label flips between "Sign In" and "Sign Up".
+- [x] **Add new mode-aware routes** (`convergence_games/app/routers/frontend/profile.py`)
   - `GET /sign-up`, `GET /sign-in` — render `pages/auth.html.jinja`.
-  - `POST /sign-up/email` — pre-check `find_user_by_email`; on hit render `AccountExists`; on miss emit `EVENT_EMAIL_SIGN_IN` and render `VerifyCode` with `mode=sign_up`.
+  - `POST /sign-up/email` — pre-check `find_user_by_email`; on hit render `AccountExists`; on miss emit `EVENT_EMAIL_SIGN_IN` (state carries `mode=SIGN_UP`) and render `VerifyCode` with `mode=sign_up`.
   - `POST /sign-in/email` — always emit (no enumeration); render `VerifyCode` with `mode=sign_in`.
-  - Keep `GET /email_sign_in` and `POST /email_sign_in` as redirect shims to `/sign-in` / `POST /sign-in/email` for the duration of one release, then delete.
-- [ ] **Update `render_profile`** (`convergence_games/app/routers/frontend/profile.py:38`)
-  - Render `pages/auth.html.jinja` (mode `sign_up`) instead of `pages/register.html.jinja`.
+  - `GET/POST /email_sign_in` left intact for the linking flow (used from `pages/profile.html.jinja`'s "Link Email" button). Removal deferred to Phase 8 once the new routes have soaked.
+- [x] **Update `render_profile`** (`convergence_games/app/routers/frontend/profile.py:38`)
+  - Render `pages/auth.html.jinja` (mode `sign_up`) instead of `pages/register.html.jinja`. Subsequently changed: anonymous-user branch removed; `get_profile` now redirects unauthenticated requests to `/sign-up` (using `litestar.plugins.htmx.ClientRedirect` for HTMX requests, plain `Redirect` otherwise) so the URL bar always reflects the rendered auth state. Avoids a partial-render bug where the auth page mode looked mismatched after navigating to `/profile` via the navbar.
+- [x] **Update navbar "Login" entry** (`convergence_games/app/templates/components/NavBar.html.jinja:92`)
+  - Replaced the single `Login → /profile` link (when anonymous) with two entries: `Sign Up → /sign-up` and `Sign In → /sign-in`. Anonymous users hit the right page directly.
 - [ ] **Update `before_request_handler`** (`convergence_games/app/routers/frontend/__init__.py:27`)
-  - Add `/sign-up`, `/sign-in`, `/sign-up/from-verified-email`, `/oauth2/link_confirm` to the path allow-list so unfinished-profile users can still reach auth pages.
-- [ ] **Update `OAuthController.get_provider_auth_login`** (`convergence_games/app/routers/frontend/oauth.py:159`)
+  - Not required — the existing handler only redirects authenticated-but-unset-up users away from non-`/profile` GETs. New auth paths are anonymous-only, so the handler never affects them. Skipped.
+- [x] **Update `OAuthController.get_provider_auth_login`** (`convergence_games/app/routers/frontend/oauth.py:159`)
   - Accept `mode` query parameter; encode into `OAuthRedirectState.mode` for the round-trip.
-- [ ] **Delete obsolete templates**
+- [x] **Delete obsolete templates**
   - `pages/register.html.jinja` — gone after `render_profile` is switched.
-  - `pages/email_sign_in.html.jinja` — gone after the shim removal.
+  - `pages/email_sign_in.html.jinja` — kept (linking flow). Plan revisits removal in Phase 8.
 
 #### Phase 4 verification
 
-- [ ] `basedpyright` — clean
-- [ ] `ruff check` — clean
+- [x] `basedpyright` — clean (only pre-existing `BaseOAuth2` generic warning)
+- [x] `ruff check` — clean
 - [ ] `npx tsc --noEmit` — clean (in case of any TypeScript that referenced the old paths)
-- [ ] Manual: load the app unauthenticated, confirm sign-up is the default page, mode toggle preserves the email field, sign-up flow with a brand-new email reaches `VerifyCode`, sign-up flow with an existing email shows `AccountExists`.
+- [x] Manual: load the app unauthenticated, confirm sign-up is the default page, sign-up flow with a brand-new email reaches `VerifyCode`, sign-up flow with an existing email shows `AccountExists`, sign-in flow continues to work (still falls through to legacy auto-create on miss until Phase 5 wires `NoAccountFound`). Also: navigating to `/profile` while anonymous now redirects to `/sign-up` (no mode-mismatch). Bug was `{% set %}` statements above `{% block content %}` in `auth.html.jinja` not running on HTMX block-only renders — fixed by moving them inside the block.
 
 ### Phase 5: Post-verification branching for sign-in misses
 

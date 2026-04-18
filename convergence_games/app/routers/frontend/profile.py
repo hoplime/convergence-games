@@ -5,10 +5,12 @@ from litestar import Controller, get, post
 from litestar.datastructures import Cookie
 from litestar.exceptions import HTTPException
 from litestar.params import Body, Parameter, RequestEncodingType
+from litestar.plugins.htmx import ClientRedirect
+from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.common.auth import OAuthRedirectState
+from convergence_games.app.common.auth import AuthIntent, OAuthRedirectState, find_user_by_email
 from convergence_games.app.events import EVENT_EMAIL_SIGN_IN
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
@@ -22,6 +24,12 @@ from convergence_games.utils.email import normalize_email
 @dataclass
 class PostEmailSignInForm:
     email: str
+
+
+@dataclass
+class PostAuthEmailForm:
+    email: str
+    redirect_path: str | None = None
 
 
 @dataclass
@@ -39,17 +47,9 @@ class PostProfileEditForm:
 async def render_profile(
     request: Request,
     transaction: AsyncSession,
-    invalid_action_path: str = "/profile",
 ) -> Template:
+    assert request.user is not None
     cookies = [Cookie(key="invalid-action-path", max_age=0)]
-
-    if request.user is None:
-        return HTMXBlockTemplate(
-            template_name="pages/register.html.jinja",
-            block_name=request.htmx.target,
-            context={"invalid_action_path": invalid_action_path},
-            cookies=cookies,
-        )
 
     if not request.user.is_profile_setup:
         return HTMXBlockTemplate(
@@ -75,6 +75,82 @@ async def render_profile(
 
 
 class ProfileController(Controller):
+    @get(path="/sign-up")
+    async def get_sign_up(
+        self,
+        request: Request,
+        invalid_action_path: Annotated[str, Parameter(cookie="invalid-action-path")] = "/profile",
+        redirect_path: str | None = None,
+    ) -> Template:
+        cookies = [Cookie(key="invalid-action-path", max_age=0)]
+        return HTMXBlockTemplate(
+            template_name="pages/auth.html.jinja",
+            block_name=request.htmx.target,
+            headers={"HX-Replace-Url": "/sign-up"},
+            context={
+                "mode": "sign_up",
+                "invalid_action_path": invalid_action_path,
+                "redirect_path": redirect_path,
+            },
+            cookies=cookies,
+        )
+
+    @get(path="/sign-in")
+    async def get_sign_in(
+        self,
+        request: Request,
+        invalid_action_path: Annotated[str, Parameter(cookie="invalid-action-path")] = "/profile",
+        redirect_path: str | None = None,
+    ) -> Template:
+        cookies = [Cookie(key="invalid-action-path", max_age=0)]
+        return HTMXBlockTemplate(
+            template_name="pages/auth.html.jinja",
+            block_name=request.htmx.target,
+            headers={"HX-Replace-Url": "/sign-in"},
+            context={
+                "mode": "sign_in",
+                "invalid_action_path": invalid_action_path,
+                "redirect_path": redirect_path,
+            },
+            cookies=cookies,
+        )
+
+    @post(path="/sign-up/email")
+    async def post_sign_up_email(
+        self,
+        request: Request,
+        data: Annotated[PostAuthEmailForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        transaction: AsyncSession,
+    ) -> Template:
+        email = normalize_email(data.email)
+        matched = await find_user_by_email(transaction, email)
+        if matched is not None:
+            return HTMXBlockTemplate(
+                template_name="components/AccountExists.html.jinja",
+                context={"email": email},
+            )
+        state = OAuthRedirectState(redirect_path=data.redirect_path, mode=AuthIntent.SIGN_UP)
+        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state, transaction=transaction)
+        return HTMXBlockTemplate(
+            template_name="components/VerifyCode.html.jinja",
+            context={"email": email, "state": state.encode(), "mode": "sign_up"},
+        )
+
+    @post(path="/sign-in/email")
+    async def post_sign_in_email(
+        self,
+        request: Request,
+        data: Annotated[PostAuthEmailForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        transaction: AsyncSession,
+    ) -> Template:
+        email = normalize_email(data.email)
+        state = OAuthRedirectState(redirect_path=data.redirect_path, mode=AuthIntent.SIGN_IN)
+        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state, transaction=transaction)
+        return HTMXBlockTemplate(
+            template_name="components/VerifyCode.html.jinja",
+            context={"email": email, "state": state.encode(), "mode": "sign_in"},
+        )
+
     @get(path="/email_sign_in")
     async def get_email_sign_in(
         self, request: Request, linking_account_sqid: Sqid | None = None, redirect_path: str | None = None
@@ -130,9 +206,12 @@ class ProfileController(Controller):
         self,
         request: Request,
         transaction: AsyncSession,
-        invalid_action_path: Annotated[str, Parameter(cookie="invalid-action-path")] = "/profile",
-    ) -> Template:
-        return await render_profile(request, transaction, invalid_action_path=invalid_action_path)
+    ) -> Template | ClientRedirect | Redirect:
+        if request.user is None:
+            if request.htmx:
+                return ClientRedirect("/sign-up")
+            return Redirect(path="/sign-up")
+        return await render_profile(request, transaction)
 
     @post(path="/profile", guards=[user_guard])
     async def post_profile(

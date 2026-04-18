@@ -1,0 +1,57 @@
+{#def
+    mode: str = "sign_up",
+    invalid_action_path: str | None = None,
+    redirect_path: str | None = None,
+#}
+<Page>
+    {% block content %}
+        {% set is_sign_up = mode == "sign_up" %}
+        {% set toggle_query = ("?redirect_path=" ~ redirect_path) if redirect_path is not none else "" %}
+        {% if is_sign_up %}
+            <PageTitle>Create an Account</PageTitle>
+        {% else %}
+            <PageTitle>Sign In</PageTitle>
+        {% endif %}
+        <PageContainer size="max-w-screen-sm">
+            <div id="auth-content" class="m-auto grid w-full max-w-96 gap-4">
+                {% if invalid_action_path is not none and invalid_action_path != "/profile" %}
+                    <div class="alert alert-warning">You need to sign in to complete that action</div>
+                {% endif %}
+
+                <form
+                    id="auth-email-form"
+                    hx-post="{{ '/sign-up/email' if is_sign_up else '/sign-in/email' }}"
+                    hx-target="#auth-content"
+                    hx-swap="innerHTML"
+                    class="flex flex-col gap-4"
+                >
+                    <FieldsetBase>
+                        <legend class="fieldset-legend">
+                            {{ 'Sign up with Email' if is_sign_up else 'Sign in with Email' }}
+                        </legend>
+                        <input type="email" class="input w-full" placeholder="Email" name="email" required />
+                    </FieldsetBase>
+                    {% if redirect_path is not none %}
+                        <input type="hidden" name="redirect_path" value="{{ redirect_path }}" />
+                    {% endif %}
+                    <button class="btn btn-primary" type="submit">{{ 'Sign up' if is_sign_up else 'Sign in' }}</button>
+                </form>
+
+                <div class="divider my-0">or</div>
+
+                <forms.sign_in_buttons.Google :mode="mode" :redirect_path="redirect_path" />
+                <forms.sign_in_buttons.Discord :mode="mode" :redirect_path="redirect_path" />
+
+                <p class="text-center text-sm">
+                    {% if is_sign_up %}
+                        Already have an account?
+                        <a class="link" href="/sign-in{{ toggle_query }}" hx-boost="true">Sign in</a>
+                    {% else %}
+                        Don't have an account?
+                        <a class="link" href="/sign-up{{ toggle_query }}" hx-boost="true">Sign up</a>
+                    {% endif %}
+                </p>
+            </div>
+        </PageContainer>
+    {% endblock %}
+</Page>

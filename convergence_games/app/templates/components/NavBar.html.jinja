@@ -89,7 +89,10 @@
                 {% else %}
                     <li class="menu-title">Not Logged In</li>
                     <li>
-                        <a hx-get="/profile" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Login</a>
+                        <a hx-get="/sign-up" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Sign Up</a>
+                    </li>
+                    <li>
+                        <a hx-get="/sign-in" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Sign In</a>
                     </li>
                 {% endif %}
             </ul>

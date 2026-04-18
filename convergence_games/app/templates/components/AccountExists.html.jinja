@@ -1,0 +1,11 @@
+{#def
+    email: str,
+#}
+<div class="flex flex-col gap-4">
+    <div class="alert alert-info">
+        <p>
+            An account already exists for <strong>{{ email }}</strong>. Sign in to that account instead.
+        </p>
+    </div>
+    <a class="btn btn-primary" href="/sign-in" hx-boost="true">Go to Sign In</a>
+</div>

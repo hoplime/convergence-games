@@ -1,11 +1,15 @@
 {#def
     email: str,
     state: str,
+    mode: str | None = None,
 #}
 {% set query = "?state=" ~ state %}
 {% set href = "/email_auth/verify_code" ~ query %}
 <form class="flex flex-col gap-4" action="{{ href }}" method="POST">
     <input type="hidden" name="email" value="{{ email }}" />
+    {% if mode is not none %}
+        <input type="hidden" name="mode" value="{{ mode }}" />
+    {% endif %}
     <FieldsetBase>
         <legend class="fieldset-legend">Verify Code</legend>
         <p>Please enter the code sent to {{ email }}</p>
@@ -20,5 +24,7 @@
         />
         <p class="border-l-base-content border-l-4 pl-4 italic">Make sure to check your spam folder!</p>
     </FieldsetBase>
-    <button class="btn btn-primary" type="submit">Sign In</button>
+    <button class="btn btn-primary" type="submit">
+        {{ 'Sign Up' if mode == 'sign_up' else 'Sign In' }}
+    </button>
 </form>

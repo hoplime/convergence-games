@@ -172,6 +172,7 @@ class OAuthController(Controller):
         request: Request,
         linking_account_sqid: Sqid | None = None,
         redirect_path: str | None = None,
+        mode: AuthIntent | None = None,
     ) -> Redirect:
         linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
         if linking_account_id is not None and (request.user is None or linking_account_id != request.user.id):
@@ -183,6 +184,7 @@ class OAuthController(Controller):
         state = OAuthRedirectState(
             linking_account_sqid=linking_account_sqid,
             redirect_path=redirect_path,
+            mode=mode,
         )
         auth_url = await provider.client.get_authorization_url(redirect_uri=redirect_uri, state=state.encode())
         return Redirect(path=auth_url)

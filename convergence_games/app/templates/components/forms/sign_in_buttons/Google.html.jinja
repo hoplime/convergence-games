@@ -1,6 +1,8 @@
 {#def
     linking_account_sqid: str | None = None,
     invalid_action_path: str | None = None,
+    redirect_path: str | None = None,
+    mode: str | None = None,
 #}
 {# TODO: Proper query building #}
 {% set query = "" %}
@@ -9,9 +11,21 @@
 {% endif %}
 {% if invalid_action_path is not none %}
     {% set query = query ~ ("&" if query else "?") ~ "redirect_path=" ~ invalid_action_path %}
+{% elif redirect_path is not none %}
+    {% set query = query ~ ("&" if query else "?") ~ "redirect_path=" ~ redirect_path %}
+{% endif %}
+{% if mode is not none and linking_account_sqid is none %}
+    {% set query = query ~ ("&" if query else "?") ~ "mode=" ~ mode %}
 {% endif %}
 {% set href = "/oauth2/google/login" ~ query %}
+{% if linking_account_sqid is not none %}
+    {% set verb = "Link" %}
+{% elif mode == "sign_up" %}
+    {% set verb = "Sign up with" %}
+{% else %}
+    {% set verb = "Sign in with" %}
+{% endif %}
 <a href="{{ href }}" class="btn btn-ghost">
     <img src="static/icons/logos/google.svg" class="h-8" alt="Google Logo" />
-    <span>{{ 'Link' if linking_account_sqid is not none else 'Sign in with' }} Google</span>
+    <span>{{ verb }} Google</span>
 </a>
