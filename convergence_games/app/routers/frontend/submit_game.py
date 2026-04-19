@@ -148,6 +148,9 @@ class SubmitGameForm(BaseModel):
     agree_to_use_safety_tools: Annotated[
         Literal["on"] | None, Field(title="Agree to Use Safety Tools", validate_default=True)
     ] = None
+    agree_to_hygiene: Annotated[
+        Literal["on"] | None, Field(title="Agree to Hygiene", validate_default=True)
+    ] = None
     no_content_warnings_needed: Annotated[
         Literal["on"] | None, Field(title="No Content Warnings Needed", validate_default=True)
     ] = None
@@ -201,6 +204,13 @@ class SubmitGameForm(BaseModel):
     def validate_agree_to_use_safety_tools(cls, value: bool) -> bool:
         if not value:
             raise PydanticCustomError("", "You must agree to use the X-Card and Open Table Policy.")
+        return value
+
+    @field_validator("agree_to_hygiene", mode="after")
+    @classmethod
+    def validate_agree_to_hygiene(cls, value: bool) -> bool:
+        if not value:
+            raise PydanticCustomError("", "You must agree to meet convention hygiene expectations.")
         return value
 
     @field_validator("no_content_warnings_needed", mode="after")
