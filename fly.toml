@@ -1,23 +1,28 @@
-app = "convergence-games-dev"
-primary_region = "syd"
+# fly.toml app configuration file generated for convergence-games-dev on 2026-04-19T21:02:27+12:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'convergence-games-dev'
+primary_region = 'syd'
 
 [build]
 
 [http_service]
   internal_port = 8000
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
 [checks]
   [checks.health]
-    type = "http"
     port = 8000
-    path = "/health"
-    interval = "30s"
-    timeout = "5s"
+    type = 'http'
+    interval = '30s'
+    timeout = '5s'
+    path = '/health'
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
+  size = 'shared-cpu-1x'
+  memory = '512mb'
