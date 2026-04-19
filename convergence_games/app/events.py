@@ -3,11 +3,11 @@ import random
 
 import httpx
 from litestar.events import listener
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from convergence_games.app.app_config.template_config import jinja_env
 from convergence_games.app.common.auth import OAuthRedirectState
 from convergence_games.db.models import UserEmailVerificationCode
-from convergence_games.db.session import session_factory
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
 from convergence_games.utils.time_utils import nice_time_format
@@ -17,7 +17,11 @@ EVENT_EMAIL_SIGN_IN = "event_email_sign_in"
 
 @listener(EVENT_EMAIL_SIGN_IN)
 async def event_email_sign_in(
-    email: str, state: OAuthRedirectState, tz: dt.tzinfo | None = None, **kwargs: object
+    email: str,
+    state: OAuthRedirectState,
+    session_factory: async_sessionmaker[AsyncSession],
+    tz: dt.tzinfo | None = None,
+    **kwargs: object,
 ) -> None:
     email = normalize_email(email)
     code = "".join([random.choice("0123456789") for _ in range(6)])
