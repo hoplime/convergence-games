@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only --app convergence-games-dev --build-secret npmrc="${NPMRC}" --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      - run: flyctl deploy --remote-only --app convergence-games-dev --build-secret npmrc="${NPMRC}" --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) --label "sha-${GITHUB_SHA::7}"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           NPMRC: ${{ secrets.NPMRC }}
