@@ -3,11 +3,11 @@ import random
 
 import httpx
 from litestar.events import listener
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.app.app_config.template_config import jinja_env
 from convergence_games.app.common.auth import OAuthRedirectState
 from convergence_games.db.models import UserEmailVerificationCode
+from convergence_games.db.session import session_factory
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
 from convergence_games.utils.time_utils import nice_time_format
@@ -17,7 +17,7 @@ EVENT_EMAIL_SIGN_IN = "event_email_sign_in"
 
 @listener(EVENT_EMAIL_SIGN_IN)
 async def event_email_sign_in(
-    email: str, state: OAuthRedirectState, transaction: AsyncSession, tz: dt.tzinfo | None = None, **kwargs
+    email: str, state: OAuthRedirectState, tz: dt.tzinfo | None = None, **kwargs: object
 ) -> None:
     email = normalize_email(email)
     code = "".join([random.choice("0123456789") for _ in range(6)])
@@ -26,9 +26,10 @@ async def event_email_sign_in(
         code=code,
         email=email,
     )
-    transaction.add(user_email_verification_code)
-    await transaction.commit()
-    await transaction.refresh(user_email_verification_code)
+    async with session_factory() as session:
+        session.add(user_email_verification_code)
+        await session.commit()
+        await session.refresh(user_email_verification_code)
 
     print(f"event_email_sign_in, email: {email}, new_code: {code}")
     magic_link_code = UserEmailVerificationCode.generate_magic_link_code(code, email)

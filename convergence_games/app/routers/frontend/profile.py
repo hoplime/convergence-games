@@ -141,7 +141,7 @@ class ProfileController(Controller):
                 context={"email": email},
             )
         state = OAuthRedirectState(redirect_path=data.redirect_path, mode=AuthIntent.SIGN_UP)
-        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state, transaction=transaction)
+        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state)
         return HTMXBlockTemplate(
             template_name="components/VerifyCode.html.jinja",
             context={"email": email, "state": state.encode(), "mode": "sign_up"},
@@ -156,7 +156,7 @@ class ProfileController(Controller):
     ) -> Template:
         email = normalize_email(data.email)
         state = OAuthRedirectState(redirect_path=data.redirect_path, mode=AuthIntent.SIGN_IN)
-        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state, transaction=transaction)
+        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state)
         return HTMXBlockTemplate(
             template_name="components/VerifyCode.html.jinja",
             context={"email": email, "state": state.encode(), "mode": "sign_in"},
@@ -220,7 +220,6 @@ class ProfileController(Controller):
             EVENT_EMAIL_SIGN_IN,
             email=email,
             state=state,
-            transaction=transaction,
         )
         return HTMXBlockTemplate(
             template_name="components/VerifyCode.html.jinja",

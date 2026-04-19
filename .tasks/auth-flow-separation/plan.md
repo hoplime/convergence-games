@@ -332,15 +332,25 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
   - Uses SQLite+aiosqlite in-memory DB. Added `pytest-asyncio` and `aiosqlite` dev deps.
 - [x] **Add unit tests** under `tests/utils/test_email.py`
   - `normalize_email`: lowercase, strip, combined, already-normalized, empty, whitespace-only.
-- [ ] **Manual end-to-end run-through**
-  - Sign up with a fresh email — works.
-  - Sign up with an email that already has any login — blocked, renders AccountExists.
-  - Sign in with a known email — works.
-  - Sign in with an unknown email — verify code → NoAccountFound → create user OR link via OAuth.
-  - Google sign-in to an email matching an existing email-only account — silent link.
-  - Discord sign-in to an email matching an existing account — confirm screen, both confirm and decline branches work.
-  - Magic link still works (treated as sign-in).
-  - Linking flow from `/profile` (existing logged-in user adds a provider) still works.
+- [x] **Manual end-to-end run-through**
+  1. Sign up fresh email — **pass**.
+  2. Sign up existing email — **pass** (renders AccountExists). NOTE: exposes email enumeration; Phase 9 changes to require verify-first.
+  3. Sign in known email — **pass**.
+  4. Sign in unknown email → NoAccountFound — **pass**.
+  5. Create from NoAccountFound — **pass**.
+  6. Link via OAuth from NoAccountFound — **pass**.
+  7. Google auto-link (Google → existing email) — **pass**.
+  8. Google auto-link (email → existing Google) — **pass** but auto-creates instead of prompting. Phase 9 fixes to show NoAccountFound when no Google match (only auto-link when there IS a matching Google account).
+  9. Discord cross-provider prompt — **pass**.
+  10. Discord decline creates separate — **pass**.
+  11. Magic link — **pass**.
+  12. Profile linking flow — **pass**.
+  13. Nav bar — **pass**.
+- [ ] **Issues found in testing (addressed in Phase 9)**
+  - Static logos use relative paths (`src="static/icons/..."`) and 404 on `/email_auth/verify_code` because the path resolves relative to the page URL.
+  - Linking an already-linked provider returns raw JSON 403 instead of a friendly error page.
+  - Sign-up pre-check exposes email enumeration (blocks before code is sent).
+  - Email sign-in with unknown email auto-creates when there's no Google auto-link match — should prompt via NoAccountFound instead.
 
 #### Phase 8 verification
 
@@ -348,6 +358,19 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 - [x] `basedpyright` — 0 errors (warnings only on argparse Any + test internals)
 - [x] `ruff check` — clean
 - [ ] `npx tsc --noEmit` — clean
+
+### Phase 9: Fix issues found in manual testing
+
+- [ ] **Fix static logo paths** — `NoAccountFound.html.jinja` and any other templates that inline OAuth button images use `src="static/icons/logos/..."` (relative). On pages under `/email_auth/verify_code`, this resolves to `/email_auth/static/...` and 404s. Change to absolute paths `src="/static/icons/logos/..."` (leading `/`). Audit all templates that reference logo images.
+- [ ] **Friendly error for already-linked provider** — When `authorize_flow(LINK)` raises `HTTPException(403, "Another account is already linked...")`, the profile linking flow shows raw JSON. Catch this in `OAuthController.get_provider_auth_authorize` and render a user-friendly error page instead. Could reuse a generic error component or a dedicated `pages/link_error.html.jinja`.
+- [ ] **Remove sign-up email enumeration** — Currently `POST /sign-up/email` does a `find_user_by_email` pre-check and blocks before sending a code, revealing whether an email is registered. Change: always send the code (same as sign-in), then catch `AccountAlreadyExistsError` at verify-code time and render `AccountExists`. The pre-check is removed.
+- [ ] **Remove email-sign-in auto-create fallback** — The temporary `intent is None → SIGN_UP` fallback in `login_with_email_and_code` causes email sign-in to unknown addresses to auto-create accounts when there's no Google auto-link match. Remove the fallback: when intent is explicitly `SIGN_IN` and no Google match exists, raise `NoAccountForSignInError` so the controller renders `NoAccountFound`. The bridge code marked `TODO(auth-flow-separation)` in `login_with_email_and_code` is the target.
+
+#### Phase 9 verification
+
+- [ ] `basedpyright` — clean
+- [ ] `ruff check` — clean
+- [ ] Manual: logos render on `/email_auth/verify_code`. Linking already-linked provider shows friendly page. Sign-up with existing email still sends code + blocks at verify. Email sign-in to unknown address prompts NoAccountFound (no auto-create).
 
 ## Acceptance Criteria
 
