@@ -1,7 +1,7 @@
 ---
 title: Separate sign-up and sign-in flows + fix email handling
 created: 2026-04-18
-status: in-progress
+status: complete
 ---
 
 # Separate sign-up and sign-in flows + fix email handling
