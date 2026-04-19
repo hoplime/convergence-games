@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     DATABASE_PORT: int = 5432
     DATABASE_NAME: str = ""
     DATABASE_ECHO: bool = False
+    DATABASE_POOL_RECYCLE: int = 300
 
     @property
     def DATABASE_URL(self) -> URL:  # noqa: N802

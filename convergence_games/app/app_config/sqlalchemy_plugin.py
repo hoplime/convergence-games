@@ -10,6 +10,8 @@ config = SQLAlchemyAsyncConfig(
     before_send_handler="autocommit",
     engine_config=EngineConfig(
         echo=SETTINGS.DATABASE_ECHO,
+        pool_pre_ping=True,
+        pool_recycle=SETTINGS.DATABASE_POOL_RECYCLE,
     ),
     alembic_config=AlembicAsyncConfig(
         script_location="convergence_games/migrations",
