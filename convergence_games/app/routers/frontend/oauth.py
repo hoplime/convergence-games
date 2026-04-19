@@ -224,15 +224,23 @@ class OAuthController(Controller):
         )
 
         if linking_account_id is not None:
-            return await authorize_flow(
-                transaction=transaction,
-                provider_name=provider_name,
-                profile_info=profile_info,
-                intent=AuthIntent.LINK,
-                linking_account_id=linking_account_id,
-                redirect_path=redirect_path,
-                extra_email_to_link=pending_email,
-            )
+            try:
+                return await authorize_flow(
+                    transaction=transaction,
+                    provider_name=provider_name,
+                    profile_info=profile_info,
+                    intent=AuthIntent.LINK,
+                    linking_account_id=linking_account_id,
+                    redirect_path=redirect_path,
+                    extra_email_to_link=pending_email,
+                )
+            except HTTPException as exc:
+                if exc.status_code == 403:
+                    return HTMXBlockTemplate(
+                        template_name="pages/link_error.html.jinja",
+                        context={"detail": exc.detail},
+                    )
+                raise
 
         try:
             return await authorize_flow(

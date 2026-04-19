@@ -15,7 +15,6 @@ from convergence_games.app.common.auth import (
     OAuthRedirectState,
     ProfileInfo,
     authorize_flow,
-    find_user_by_email,
 )
 from convergence_games.app.events import EVENT_EMAIL_SIGN_IN
 from convergence_games.app.guards import user_guard
@@ -131,15 +130,8 @@ class ProfileController(Controller):
         self,
         request: Request,
         data: Annotated[PostAuthEmailForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
-        transaction: AsyncSession,
     ) -> Template:
         email = normalize_email(data.email)
-        matched = await find_user_by_email(transaction, email)
-        if matched is not None:
-            return HTMXBlockTemplate(
-                template_name="components/AccountExists.html.jinja",
-                context={"email": email},
-            )
         state = OAuthRedirectState(redirect_path=data.redirect_path, mode=AuthIntent.SIGN_UP)
         request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state)
         return HTMXBlockTemplate(

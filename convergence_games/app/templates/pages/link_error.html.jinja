@@ -1,0 +1,16 @@
+{#def
+    detail: str,
+#}
+<Page>
+    {% block content %}
+        <PageTitle>Cannot Link Account</PageTitle>
+        <PageContainer size="max-w-screen-sm">
+            <div class="m-auto grid w-full max-w-96 gap-4">
+                <div class="alert alert-error">
+                    <p>{{ detail }}</p>
+                </div>
+                <a class="btn btn-primary" href="/profile">Back to Profile</a>
+            </div>
+        </PageContainer>
+    {% endblock %}
+</Page>

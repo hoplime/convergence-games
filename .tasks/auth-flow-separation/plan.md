@@ -361,16 +361,17 @@ No schema changes. `UserLogin.provider_user_id` and `UserLogin.provider_email` k
 
 ### Phase 9: Fix issues found in manual testing
 
-- [ ] **Fix static logo paths** — `NoAccountFound.html.jinja` and any other templates that inline OAuth button images use `src="static/icons/logos/..."` (relative). On pages under `/email_auth/verify_code`, this resolves to `/email_auth/static/...` and 404s. Change to absolute paths `src="/static/icons/logos/..."` (leading `/`). Audit all templates that reference logo images.
-- [ ] **Friendly error for already-linked provider** — When `authorize_flow(LINK)` raises `HTTPException(403, "Another account is already linked...")`, the profile linking flow shows raw JSON. Catch this in `OAuthController.get_provider_auth_authorize` and render a user-friendly error page instead. Could reuse a generic error component or a dedicated `pages/link_error.html.jinja`.
-- [ ] **Remove sign-up email enumeration** — Currently `POST /sign-up/email` does a `find_user_by_email` pre-check and blocks before sending a code, revealing whether an email is registered. Change: always send the code (same as sign-in), then catch `AccountAlreadyExistsError` at verify-code time and render `AccountExists`. The pre-check is removed.
-- [ ] **Remove email-sign-in auto-create fallback** — The temporary `intent is None → SIGN_UP` fallback in `login_with_email_and_code` causes email sign-in to unknown addresses to auto-create accounts when there's no Google auto-link match. Remove the fallback: when intent is explicitly `SIGN_IN` and no Google match exists, raise `NoAccountForSignInError` so the controller renders `NoAccountFound`. The bridge code marked `TODO(auth-flow-separation)` in `login_with_email_and_code` is the target.
+- [x] **Fix static logo paths** — Changed all `src="static/icons/logos/..."` to `src="/static/icons/logos/..."` (absolute) in: `NoAccountFound.html.jinja`, `Google.html.jinja`, `Discord.html.jinja`, `Email.html.jinja`, `profile.html.jinja`.
+- [x] **Friendly error for already-linked provider** — `get_provider_auth_authorize` now catches `HTTPException(403)` from the LINK intent path and renders `pages/link_error.html.jinja` with the detail message and a "Back to Profile" button.
+- [x] **Remove sign-up email enumeration** — `POST /sign-up/email` no longer calls `find_user_by_email` pre-check. Always sends code. `AccountAlreadyExistsError` is caught at verify-code time and renders `AccountExists`.
+- [x] **Remove email-sign-in auto-create fallback** — Deleted the `intent is None → SIGN_UP` bridge in `login_with_email_and_code`. When no Google auto-link match exists, `NoAccountForSignInError` is raised unconditionally. Controllers render `NoAccountFound`.
 
 #### Phase 9 verification
 
-- [ ] `basedpyright` — clean
-- [ ] `ruff check` — clean
-- [ ] Manual: logos render on `/email_auth/verify_code`. Linking already-linked provider shows friendly page. Sign-up with existing email still sends code + blocks at verify. Email sign-in to unknown address prompts NoAccountFound (no auto-create).
+- [x] `basedpyright` — clean (only pre-existing `BaseOAuth2` generic warning)
+- [x] `ruff check` — clean
+- [x] `pytest` — 28 passed
+- [x] Manual: logos render on `/email_auth/verify_code`. Linking already-linked provider shows friendly page. Sign-up with existing email sends code + blocks at verify. Email sign-in to unknown address prompts NoAccountFound.
 
 ## Acceptance Criteria
 

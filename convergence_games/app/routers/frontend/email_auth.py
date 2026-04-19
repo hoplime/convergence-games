@@ -92,19 +92,7 @@ async def login_with_email_and_code(
                 redirect_path=state.redirect_path,
             )
 
-    # TODO(auth-flow-separation): remove this fallback once Phase 5 wires the
-    # NoAccountFound UI; until then, preserve the prior auto-create behaviour
-    # for the existing email-sign-in route.
-    if intent is not None:
-        raise NoAccountForSignInError(provider=LoginProvider.EMAIL, email=email)
-    return await authorize_flow(
-        transaction=transaction,
-        provider_name=LoginProvider.EMAIL,
-        profile_info=profile_info,
-        intent=AuthIntent.SIGN_UP,
-        linking_account_id=None,
-        redirect_path=state.redirect_path,
-    )
+    raise NoAccountForSignInError(provider=LoginProvider.EMAIL, email=email)
 
 
 @dataclass

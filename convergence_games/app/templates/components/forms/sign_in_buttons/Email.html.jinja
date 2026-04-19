@@ -12,6 +12,6 @@
 {% endif %}
 {% set href = "/email_sign_in" ~ query %}
 <a href="{{ href }}" hx-boost="true" class="btn btn-ghost">
-    <img src="static/icons/logos/email.svg" class="h-8" alt="Email Logo" />
+    <img src="/static/icons/logos/email.svg" class="h-8" alt="Email Logo" />
     <span>{{ 'Link' if linking_account_sqid is not none else 'Sign in with' }} Email</span>
 </a>
