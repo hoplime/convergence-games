@@ -2,7 +2,7 @@
     {% block content %}
         <PageTitle>Profile</PageTitle>
         <PageContainer>
-            <div>Profile for {{ request.user.first_name }} {{ request.user.last_name }}</div>
+            <div>Profile for {{ profile_user.first_name }} {{ profile_user.last_name }}</div>
             <form class="flex flex-col gap-4" id="profile-form" hx-post="/profile" hx-target="#content">
                 <button type="submit" disabled class="hidden" aria-hidden="true"></button>
                 <FieldsetBase>
@@ -15,7 +15,7 @@
                             class="input"
                             placeholder="First"
                             name="first_name"
-                            value="{{ request.user.first_name }}"
+                            value="{{ profile_user.first_name }}"
                             required
                         />
                         <input
@@ -23,12 +23,12 @@
                             class="input"
                             placeholder="Last"
                             name="last_name"
-                            value="{{ request.user.last_name }}"
+                            value="{{ profile_user.last_name }}"
                         />
                     </div>
                     {# Bio #}
                     <label class="fieldset-label">Bio</label>
-                    <TipTap form_input_name="description" :initial_content_json="request.user.description" />
+                    <TipTap form_input_name="description" :initial_content_json="profile_user.description" />
                 </FieldsetBase>
                 <FieldsetBase>
                     <legend class="fieldset-legend">Private Information</legend>
@@ -38,7 +38,7 @@
                             type="checkbox"
                             class="checkbox"
                             name="over_18"
-                            {{ "checked" if request.user.over_18 }}
+                            {{ "checked" if profile_user.over_18 }}
                         />
                         <span>I am 18+</span>
                     </label>

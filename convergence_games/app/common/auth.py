@@ -12,9 +12,9 @@ from sqlalchemy import cast as sql_cast
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
+from convergence_games.app.app_config.jwt_cookie_auth import build_token_extras, jwt_cookie_auth
 from convergence_games.db.enums import LoginProvider
-from convergence_games.db.models import User, UserLogin
+from convergence_games.db.models import User, UserEventRole, UserLogin
 from convergence_games.db.ocean import Sqid
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
@@ -69,18 +69,22 @@ async def find_user_by_email(transaction: AsyncSession, email: str) -> User | No
     """
     email_lower = normalize_email(email)
     rows = (
-        await transaction.execute(
-            select(UserLogin)
-            .where(
-                or_(
-                    func.lower(UserLogin.provider_email) == email_lower,
-                    (sql_cast(UserLogin.provider, String) == LoginProvider.EMAIL.name)
-                    & (func.lower(UserLogin.provider_user_id) == email_lower),
+        (
+            await transaction.execute(
+                select(UserLogin)
+                .where(
+                    or_(
+                        func.lower(UserLogin.provider_email) == email_lower,
+                        (sql_cast(UserLogin.provider, String) == LoginProvider.EMAIL.name)
+                        & (func.lower(UserLogin.provider_user_id) == email_lower),
+                    )
                 )
+                .options(selectinload(UserLogin.user))
             )
-            .options(selectinload(UserLogin.user))
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     if not rows:
         return None
@@ -184,7 +188,11 @@ async def authorize_flow(
 
     await transaction.flush()
     user_id = user.id
-    login = jwt_cookie_auth.login(str(user_id))
+
+    event_roles = list(
+        (await transaction.execute(select(UserEventRole).where(UserEventRole.user_id == user_id))).scalars().all()
+    )
+    login = jwt_cookie_auth.login(str(user_id), token_extras=build_token_extras(user, event_roles))
     redirect_path = redirect_path or "/profile"
     return Redirect(path=redirect_path, headers={"HX-Push-Url": redirect_path}, cookies=login.cookies)
 

@@ -10,6 +10,7 @@ from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from convergence_games.app.app_config.jwt_cookie_auth import build_token_extras, jwt_cookie_auth
 from convergence_games.app.common.auth import (
     AuthIntent,
     OAuthRedirectState,
@@ -21,7 +22,7 @@ from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import LoginProvider
-from convergence_games.db.models import UserLogin
+from convergence_games.db.models import User, UserEventRole, UserLogin
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.utils.email import normalize_email
 
@@ -57,19 +58,23 @@ class PostProfileEditForm:
 async def render_profile(
     request: Request,
     transaction: AsyncSession,
+    user_override: User | None = None,
 ) -> Template:
-    assert request.user is not None
+    user = user_override or request.user
+    assert user is not None
     cookies = [Cookie(key="invalid-action-path", max_age=0)]
 
-    if not request.user.is_profile_setup:
+    if not user.is_profile_setup:
         return HTMXBlockTemplate(
             template_name="pages/more_info.html.jinja",
             block_name=request.htmx.target,
             cookies=cookies,
         )
 
+    profile_user = user_override or (await transaction.execute(select(User).where(User.id == user.id))).scalar_one()
+
     user_logins: Sequence[UserLogin] = (
-        (await transaction.execute(select(UserLogin).where(UserLogin.user_id == request.user.id))).scalars().all()
+        (await transaction.execute(select(UserLogin).where(UserLogin.user_id == user.id))).scalars().all()
     )
     user_login_dict: dict[LoginProvider, list[UserLogin]] = {}
     for login in user_logins:
@@ -79,7 +84,7 @@ async def render_profile(
     return HTMXBlockTemplate(
         template_name="pages/profile.html.jinja",
         block_name=request.htmx.target,
-        context={"user_logins": user_login_dict},
+        context={"profile_user": profile_user, "user_logins": user_login_dict},
         cookies=cookies,
     )
 
@@ -242,12 +247,22 @@ class ProfileController(Controller):
     ) -> Template:
         assert request.user is not None
 
-        user = request.user
-        user.first_name = data.first_name.strip()
-        user.last_name = data.last_name.strip()
+        db_user = (await transaction.execute(select(User).where(User.id == request.user.id))).scalar_one()
+        db_user.first_name = data.first_name.strip()
+        db_user.last_name = data.last_name.strip()
         if data.description is not None:
-            user.description = data.description
-        user.over_18 = data.is_over_18
-        transaction.add(user)
+            db_user.description = data.description
+        db_user.over_18 = data.is_over_18
+        await transaction.flush()
 
-        return await render_profile(request, transaction)
+        event_roles = list(
+            (await transaction.execute(select(UserEventRole).where(UserEventRole.user_id == db_user.id)))
+            .scalars()
+            .all()
+        )
+        login_response = jwt_cookie_auth.login(str(db_user.id), token_extras=build_token_extras(db_user, event_roles))
+
+        response = await render_profile(request, transaction, user_override=db_user)
+        for cookie in login_response.cookies:
+            response.cookies.append(cookie)
+        return response
