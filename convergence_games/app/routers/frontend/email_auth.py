@@ -133,9 +133,9 @@ def _render_outcome_after_verify(
 
 
 class EmailAuthController(Controller):
-    path = "/email_auth"
+    path = "/email-auth"
 
-    @get(path="/magic_link")
+    @get(path="/magic-link")
     async def get_magic_link(
         self,
         magic_link_code: Annotated[str, Parameter(query="code")],
@@ -151,7 +151,7 @@ class EmailAuthController(Controller):
         except (NoAccountForSignInError, AccountAlreadyExistsError) as outcome:
             return _render_outcome_after_verify(outcome, fallback_email=email, state=state)
 
-    @post(path="/verify_code")
+    @post(path="/verify-code")
     async def post_verify_code(
         self,
         data: Annotated[PostVerifyCodeForm, Body(media_type=RequestEncodingType.URL_ENCODED)],

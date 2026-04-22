@@ -26,7 +26,7 @@
     </div>
     <div
         id="{{ name }}-search-results"
-        hx-get="/search/{{ name }}/results"
+        hx-get="/search/{{ name | replace('_', '-') }}/results"
         hx-vals="js:{search: encodeURIComponent(document.getElementById('{{ name }}-search').value)}"
         hx-trigger="{{ 'click from:previous input#' ~ name ~ '-search, ' if suggested_on_empty }}keyup from:previous input#{{ name }}-search, changed from:previous input#{{ name }}-search"
         hx-swap="innerHTML"

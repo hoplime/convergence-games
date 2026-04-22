@@ -8,7 +8,7 @@
     {% for result in results %}
         <li
             class="list-row hover:bg-accent cursor-pointer"
-            hx-get="/search/{{ name }}/select?sqid={{ swim(result.result) }}"
+            hx-get="/search/{{ name | replace('_', '-') }}/select?sqid={{ swim(result.result) }}"
             hx-trigger="click, keyup[key=='Enter']"
             {% if mode == "select" %}
                 hx-target="closest .search-container" hx-swap="outerHTML"
@@ -28,7 +28,7 @@
     {% if search %}
         <li
             class="list-row hover:bg-accent cursor-pointer"
-            hx-get="/search/{{ name }}/new?selected_name={{ search }}"
+            hx-get="/search/{{ name | replace('_', '-') }}/new?selected_name={{ search }}"
             hx-trigger="click, keyup[key=='Enter']"
             {% if mode == "select" %}
                 hx-target="closest .search-container"

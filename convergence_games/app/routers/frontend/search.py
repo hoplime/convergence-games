@@ -106,6 +106,7 @@ class SearchController(Controller):
 
     @get(path="/{name:str}")
     async def get_search(self, name: str) -> Template:
+        field_name = name.replace("-", "_")
         placeholders: dict[str, str] = {
             "system": "Search for a system...",
             "genre": "Search for genres...",
@@ -113,7 +114,7 @@ class SearchController(Controller):
         }
         return HTMXBlockTemplate(
             template_name="components/forms/search/SearchContainer.html.jinja",
-            context={"name": name, "placholder": placeholders.get(name, "Search...")},
+            context={"name": field_name, "placholder": placeholders.get(field_name, "Search...")},
         )
 
     @get(path="/system/results")
@@ -204,7 +205,7 @@ class SearchController(Controller):
             },
         )
 
-    @get(path="/content_warning/results")
+    @get(path="/content-warning/results")
     async def get_content_warning_search_results(
         self, request: Request, transaction: AsyncSession, search: str
     ) -> Template:
@@ -225,7 +226,7 @@ class SearchController(Controller):
             },
         )
 
-    @get(path="/content_warning/select")
+    @get(path="/content-warning/select")
     async def get_content_warning_search_selected(self, transaction: AsyncSession, sqid: Sqid) -> Template:
         content_warning = await transaction.get(ContentWarning, sink(sqid))
 
@@ -241,7 +242,7 @@ class SearchController(Controller):
             },
         )
 
-    @get(path="/content_warning/new")
+    @get(path="/content-warning/new")
     async def get_content_warning_search_new(self, selected_name: str) -> Template:
         return HTMXBlockTemplate(
             template_name="components/forms/search_checks/SearchCheckChip.html.jinja",

@@ -8,7 +8,7 @@
     <input type="hidden" name="{{ name }}" value="{{ value }}" />
     <span
         class="icon-[system-uicons--cross-circle] size-5 cursor-pointer"
-        hx-get="/search/{{ name }}"
+        hx-get="/search/{{ name | replace('_', '-') }}"
         hx-target="closest .search-container"
         hx-swap="outerHTML"
     ></span>

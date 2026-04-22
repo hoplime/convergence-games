@@ -302,7 +302,7 @@ class OAuthController(Controller):
             extra_email_to_link=pending_email,
         )
 
-    @post(path="/link_confirm")
+    @post(path="/link-confirm")
     async def post_link_confirm(
         self,
         data: Annotated[PostLinkConfirmForm, Body(media_type=RequestEncodingType.URL_ENCODED)],

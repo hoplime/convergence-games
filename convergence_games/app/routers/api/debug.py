@@ -13,12 +13,12 @@ from convergence_games.services import ImageLoader
 
 
 class DebugController(Controller):
-    @post(path="/create_mock_data")
+    @post(path="/create-mock-data")
     async def create_mock_data(self, transaction: AsyncSession) -> Response:
         await create_mock_data(transaction)
         return Response(content="", status_code=HTTP_204_NO_CONTENT)
 
-    @post(path="/upload_image")
+    @post(path="/upload-image")
     async def upload_image(
         self, data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)], image_loader: ImageLoader
     ) -> Response:

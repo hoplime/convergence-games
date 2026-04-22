@@ -177,7 +177,7 @@ class ProfileController(Controller):
             redirect_path=state.redirect_path,
         )
 
-    @get(path="/email_sign_in")
+    @get(path="/email-sign-in")
     async def get_email_sign_in(
         self, request: Request, linking_account_sqid: Sqid | None = None, redirect_path: str | None = None
     ) -> Template:
@@ -188,14 +188,14 @@ class ProfileController(Controller):
         return HTMXBlockTemplate(
             template_name="pages/email_sign_in.html.jinja",
             block_name=request.htmx.target,
-            headers={"HX-Replace-Url": "/email_sign_in"},
+            headers={"HX-Replace-Url": "/email-sign-in"},
             context={
                 "linking_account_sqid": linking_account_sqid,
                 "redirect_path": redirect_path,
             },
         )
 
-    @post(path="/email_sign_in")
+    @post(path="/email-sign-in")
     async def post_email_sign_in(
         self,
         request: Request,
