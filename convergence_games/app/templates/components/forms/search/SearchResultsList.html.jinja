@@ -41,7 +41,7 @@
             {% endif %}
             tabindex="0"
         >
-            <span>Create new {{ name }} "{{ search | unquote }}"</span>
+            <span>Create new {{ name | replace('_', ' ') }} "{{ search | unquote }}"</span>
             <span class="icon-[mdi--plus-circle-outline] size-6"></span>
         </li>
     {% endif %}
