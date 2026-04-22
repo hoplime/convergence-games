@@ -170,7 +170,7 @@ If you miss out on your first choice, don't worry! There are plenty of games and
 
 Make sure to rank your choices as fairly as you can, especially for your top handful of choices, and don't try to game the system by ranking one game as a d12 and all others as d0 - that's a surefire way to not get into a game at all!
 
-As for how to prioritise all the awesome games, well, that's up to you! <L href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games" target="_self">Check them out</L> now and have a look to find what interests you.
+As for how to prioritise all the awesome games, well, that's up to you! <L :href="'/event/' ~ SETTINGS.DEFAULT_EVENT_SQID ~ '/games'" target="_self">Check them out</L> now and have a look to find what interests you.
 
 {#friend-groups}
 ### Can I play with my friends on the same table?
