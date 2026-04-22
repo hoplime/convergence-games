@@ -107,11 +107,11 @@
                                     people love to support you and give it a go.
                                 </li>
                                 <li>
-                                    <b>The Future is Here</b> - Offering a 'hot' title of 2024 like Shadowdark, Eat the
-                                    Reich, Triangle Agency, and Mythic Basionland, is more likely to draw players over
-                                    long standing classics like Monster of the Week, and Blades in the Dark. Players
-                                    only get to play a finite number of games at Convergence, and given the option, they
-                                    gravitate towards new, interesting and rare games.
+                                    <b>The Future is Here</b> - Offering a 'hot' recent title like Mythic Bastionland,
+                                    Daggerheart, Draw Steel, Cosmere RPG, and Starfinder 2e is more likely to draw
+                                    players over long standing classics like Blades in the Dark. Players only get to
+                                    play a finite number of games at Convergence, and given the option, they gravitate
+                                    towards new, interesting, and rare games.
                                 </li>
                                 <li>
                                     <b>Light over Dark</b> — In something of a paradox, GMs at Convergence often want to
@@ -753,7 +753,15 @@
                     <ErrorHolder name="activity_notes" />
 
                     {# Room Requirements #}
-                    <label class="fieldset-label font-semibold">Room Requirements</label>
+                    <Tooltip class="w-fit">
+                        <label class="fieldset-label font-semibold">Room Requirements</label>
+                        <TooltipContent class="text-left">
+                            <p>
+                                Only a few rooms are available. Please use the box below to explain why you should be
+                                considered for the use of this space.
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
                     <FlagCheckboxes
                         :flag_enum="room_requirements"
                         name="room_requirement"

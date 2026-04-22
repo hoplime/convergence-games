@@ -7,7 +7,7 @@ For a simple $10 a year you get access to pre-sales and the sought-after Golden 
 
 Membership is pro-rated through the year - sign up before the end of June and pay $7.50, or for $5 during July-September.
 
-[Membership Registration Form](https://forms.gle/8Qraftky6WtTMxoT9)
+[Membership Registration Form](https://www.waikatorpg.co.nz/join-the-society/)
 
 {#cant-bring}
 ### What can't I bring to the event?
