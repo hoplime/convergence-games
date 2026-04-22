@@ -266,4 +266,5 @@ class ProfileController(Controller):
         response = await render_profile(request, transaction, user_override=db_user)
         for cookie in login_response.cookies:
             response.cookies.append(cookie)
+        response.headers["HX-Refresh"] = "true"
         return response
