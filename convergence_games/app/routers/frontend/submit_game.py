@@ -455,6 +455,8 @@ class SubmitGameController(Controller):
         image_loader: ImageLoader,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
+        assert request.user is not None
+
         system_kwarg = (
             {"system_id": data.system}
             if isinstance(data.system, int)
@@ -474,7 +476,7 @@ class SubmitGameController(Controller):
             player_count_maximum=data.player_count_maximum_prop,
             ksps=data.ksp,
             **system_kwarg,
-            gamemaster=request.user,
+            gamemaster_id=request.user.id,
             event_id=event.id,
             game_requirement=GameRequirement(
                 times_to_run=data.times_to_run,
