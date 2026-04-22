@@ -1,6 +1,5 @@
 {#def
 #}
-{% set blur_on_click = '_="on click js document.activeElement.blur()"' %}
 <nav {{ attrs.render(class="navbar") }}>
     <div class="flex flex-1 flex-row">
         <a class="btn text-xl normal-case btn-ghost" href="/">
@@ -31,31 +30,20 @@
         </a>
     </div>
     <div class="flex gap-2">
-        <div class="dropdown dropdown-end">
-            <div
-                hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games"
-                hx-target="#content"
-                hx-push-url="true"
+        <a href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/games" class="btn rounded-full bg-base-300 text-lg btn-ghost">
+            <span class="icon-[bi--dice-6-fill]"></span>
+            <span class="hidden xs:block">Games</span>
+        </a>
+        {% if SETTINGS.FLAG_PLANNER and request.user %}
+            <a
+                href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/planner"
                 class="btn rounded-full bg-base-300 text-lg btn-ghost"
-                {{ blur_on_click }}
-                preload="mousedown"
             >
-                <span class="icon-[bi--dice-6-fill]"></span>
-                <span class="hidden xs:block">Games</span>
-            </div>
-            {% if SETTINGS.FLAG_PLANNER and request.user %}
-                <div
-                    hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/planner"
-                    hx-target="#content"
-                    hx-push-url="true"
-                    class="btn rounded-full bg-base-300 text-lg btn-ghost"
-                    {{ blur_on_click }}
-                    preload="mousedown"
-                >
-                    <span class="icon-[mdi--calendar]"></span>
-                    <span class="hidden xs:block">Planner</span>
-                </div>
-            {% endif %}
+                <span class="icon-[mdi--calendar]"></span>
+                <span class="hidden xs:block">Planner</span>
+            </a>
+        {% endif %}
+        <div class="dropdown dropdown-end">
             <div tabindex="0" class="btn avatar btn-circle btn-ghost">
                 <div class="w-10 rounded-full bg-base-300 p-1">
                     <span class="icon-[iconamoon--profile-fill] size-full"></span>
@@ -65,29 +53,25 @@
                 {% if request.user %}
                     <li class="menu-title">{{ request.user.full_name }}</li>
                     <li>
-                        <a hx-get="/profile" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Profile</a>
+                        <a href="/profile">Profile</a>
                     </li>
                     <li>
-                        <a hx-get="/my-submissions" hx-target="#content" hx-push-url="true" {{ blur_on_click }}
-                            >My Submissions</a
-                        >
+                        <a href="/my-submissions">My Submissions</a>
                     </li>
                     <li>
-                        <a hx-get="/settings" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Settings</a>
+                        <a href="/settings">Settings</a>
                     </li>
                     <li></li>
                     <li>
-                        <a hx-post="/oauth2/logout" hx-target="#content" hx-push-url="true" {{ blur_on_click }}
-                            >Logout</a
-                        >
+                        <a hx-post="/oauth2/logout" hx-target="#content" hx-push-url="true">Logout</a>
                     </li>
                 {% else %}
                     <li class="menu-title">Not Logged In</li>
                     <li>
-                        <a hx-get="/sign-up" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Sign Up</a>
+                        <a href="/sign-up">Sign Up</a>
                     </li>
                     <li>
-                        <a hx-get="/sign-in" hx-target="#content" hx-push-url="true" {{ blur_on_click }}>Sign In</a>
+                        <a href="/sign-in">Sign In</a>
                     </li>
                 {% endif %}
             </ul>
