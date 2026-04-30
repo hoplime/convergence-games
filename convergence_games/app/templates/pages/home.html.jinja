@@ -2,16 +2,299 @@
     {% block content %}
         <title>{{ SETTINGS.SITE_TITLE }}</title>
         <PageContainer>
-            <div class="flex flex-col items-center gap-6 py-12 text-center">
-                <h1 class="text-4xl font-bold">Convergence</h1>
-                <p class="text-lg text-base-content/70">
-                    Site under construction. More details coming soon.
-                </p>
-                <div class="flex flex-col gap-4 w-full max-w-sm">
+            <p>
+                The Waikato Role-Playing Guild's biggest event of the year -
+                <span class="font-semibold">Convergence</span> - returns this September 12th and 13th!
+            </p>
+            <p>
+                Get ready for an epic weekend of role-playing, giveaways, and plenty of banter, all wrapped up with a
+                social gathering on Sunday evening!
+            </p>
+            <p>
+                For news and updates, select Going on the
+                <a href="https://www.facebook.com/events/4438315176389589" target="_blank" class="link">
+                    Facebook event</a
+                >, join our <a href="https://discord.gg/4wBtAG2rjt" target="_blank" class="link">Discord server</a> or
+                browse our links on
+                <a href="https://linktr.ee/waikatoroleplayingguild" target="_blank" class="link">Linktree.</a>
+            </p>
+            <p>
+                Keep an eye out for more updates including game submissions, ticket sales, and sneak peeks of what's in
+                store.
+            </p>
+            <div class="card my-4 border-2 border-primary bg-primary/10 p-6 text-center">
+                <h2 class="text-2xl font-bold">We want YOU to GM at Convergence 2026</h2>
+                <p class="mt-2">We're looking for game masters to run one-shots at Convergence!</p>
+                <p>Submissions are open until the 19th of June.</p>
+                <div class="mt-4">
                     <a href="/submit-game" class="btn btn-xl btn-primary">Submit a Game</a>
-                    <a href="/sign-up" class="btn btn-xl btn-secondary">Sign Up</a>
-                    <a href="/faq" class="btn btn-xl btn-ghost">FAQ</a>
                 </div>
+            </div>
+            <h2 class="text-xl">Venue</h2>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-[2fr_1fr]">
+                <div style="max-width:100%;list-style:none; transition: none;overflow:hidden;" class="grow">
+                    <div id="g-mapdisplay" style="height:100%; width:100%;max-width:100%;">
+                        <iframe
+                            style="height:100%;width:100%;border:0;"
+                            frameborder="0"
+                            src="https://www.google.com/maps/embed/v1/place?q=the+distinction+hotel+and+conference+centre+hamilton&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"
+                        ></iframe>
+                    </div>
+                    <style>
+                        #g-mapdisplay img {
+                            max-height: none;
+                            max-width: none !important;
+                            background: none !important;
+                        }
+                    </style>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <p>The Distinction Hamilton Hotel & Conference Centre, 100 Garnett Avenue, Hamilton.</p>
+                    <p>The Conference Centre is at the rear of the hotel.</p>
+                </div>
+            </div>
+            <h2 class="text-xl">Timetable</h2>
+            <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+                <div class="flex flex-col gap-2">
+                    <h3 class="text-lg">Saturday 12th</h3>
+                    <table>
+                        {%
+                            for time, info, style in [
+                                ("8:00am", "Doors Open", ""),
+                                ("8:45am", "Welcome", ""),
+                                ("9:30am", "Session 1", "font-semibold"),
+                                ("12:30pm", "Lunch", ""),
+                                ("1:45pm", "Session 2", "font-semibold"),
+                                ("4:45pm", "Dinner", ""),
+                                ("6:00pm", "Session 3", "font-semibold"),
+                                ("10:00pm", "End of Day", ""),
+                            ]
+                        %}
+                            <tr>
+                                <td class="w-20 border-r pr-2 text-right align-top">{{ time }}</td>
+                                <td class="{{ style }} pl-2 text-left align-top">{{ info }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <h3 class="text-lg">Sunday 13th</h3>
+                    <table>
+                        {%
+                            for time, info, style in [
+                                ("8:00am", "Doors Open", ""),
+                                ("8:45am", "Welcome", ""),
+                                ("9:00am", "Session 4", "font-semibold"),
+                                ("12:00pm", "Lunch", ""),
+                                ("1:00pm", "Seminars", ""),
+                                ("2:30pm", "Session 5", "font-semibold"),
+                                ("6:30pm-", "Social at Hotel Bar", ""),
+                                ("7:00pm", "Battle of the Alexs", ""),
+                            ]
+                        %}
+                            <tr>
+                                <td class="w-20 border-r pr-2 text-right align-top">{{ time }}</td>
+                                <td class="{{ style }} pl-2 text-left align-top">{{ info|safe }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+            <div class="divider divider-vertical"></div>
+            <Collapse class="collapse-plus border border-base-300 bg-base-100">
+                <input type="checkbox" />
+                <CollapseTitle class="font-semibold">
+                    <h3 id="ttrpg">What is a TTRPG?</h3>
+                </CollapseTitle>
+                <CollapseContent class="flex flex-col gap-2">
+                    <p>
+                        Tabletop role-playing games (TTRPGs) are a form of collaborative storytelling, Typically played
+                        with pen, paper, and dice, these games let you take on any role imaginable. While Dungeons &
+                        Dragons might be the most famous, there are thousands of systems ranging from the quirky (like
+                        raccoon drag-racing) to the epic (think eldritch horrors or fantasy realms). TTRPGs rely on
+                        creativity and collaboration to bring stories to life.
+                    </p>
+                </CollapseContent>
+            </Collapse>
+            <Collapse class="collapse-plus border border-base-300 bg-base-100">
+                <input type="checkbox" />
+                <CollapseTitle class="font-semibold">
+                    <h3 id="ttrpg">What is Convergence?</h3>
+                </CollapseTitle>
+                <CollapseContent class="flex flex-col gap-2">
+                    <p>
+                        Convergence is a 2 day games convention based in Kirikiriroa, Hamilton. The aim is to give new
+                        and experienced players a chance to meet like-minded people, make new friends, try new games and
+                        have a blast doing so. The name comes from the idea of all the different game systems coming
+                        together in one space. There will be 5 gaming sessions over the weekend, so plenty of chances
+                        for you to try new systems, or the same systems with new people.
+                    </p>
+                </CollapseContent>
+            </Collapse>
+            <Collapse class="collapse-plus border border-base-300 bg-base-100">
+                <input type="checkbox" />
+                <CollapseTitle class="font-semibold">
+                    <h3 id="ttrpg">What's on at Convergence?</h3>
+                </CollapseTitle>
+                <CollapseContent class="flex flex-col gap-2">
+                    <h4 class="font-semibold">TTRPG One-shots</h4>
+                    <p>
+                        The games will run in 3 and 4-hour sessions. All the games will be run as "one-shots" meaning it
+                        will be a self-contained adventure within the time slot, with pre-generated characters provided
+                        where needed. There will be games for newbies and experienced players alike. We'll make sure you
+                        have everything you need to hit the ground running and have a fantastic weekend. All you need to
+                        bring is yourself and some enthusiasm. You can bring your own favourite dice to show off if you
+                        wish, but if you don't have your own dice we have you covered.
+                    </p>
+                    <h4 class="font-semibold">Merchants and Artists</h4>
+                    <p>
+                        Our merchants can also help you out, as we will have a market area for you to peruse. Go
+                        straight from your table to buy your new favourite game, collect dice or adore the artists
+                        alley.
+                    </p>
+                    <h4 class="font-semibold">Mini Painting, Cosplay, Board Games & More</h4>
+                    <p>
+                        If you want to try something other than TTRPGs during the weekend we will have a miniature
+                        painting area, a cosplay parade, board games corner and more to be announced!
+                    </p>
+                    <h4 class="font-semibold">Seminars</h4>
+                    <p>
+                        On Sunday we'll be hosting a variety of entertaining and educational seminars with guest
+                        speakers from the wider community on a variety of topics! These will be a great opportunity to
+                        learn more about what's going on in the TTRPG community, hear from experts, and have a chance to
+                        ask questions.
+                    </p>
+                    <h4 class="font-semibold">Socials</h4>
+                    <p>
+                        If that isn't enough we also have socials on Friday and Sunday night. Join us in the bar area of
+                        The Distinction before and after the weekend to chill and chat about gaming.
+                    </p>
+                    <h4 class="font-semibold">Just Hang</h4>
+                    <p>
+                        If you aren't that sure about TTRPGs or want to check things out but not play then you can come
+                        and spend time in the merchant area without a ticket, and can also come to the Sunday seminars
+                        for free.
+                    </p>
+                </CollapseContent>
+            </Collapse>
+            <Collapse class="collapse-plus border border-base-300 bg-base-100">
+                <input type="checkbox" />
+                <CollapseTitle class="font-semibold">
+                    <h3 id="photographs"><span class="italic">Ticket Prices -</span> What are the ticket prices?</h3>
+                </CollapseTitle>
+                <CollapseContent class="flex flex-col gap-2">
+                    <p>Ticket sales open on the 6th of July.</p>
+                    <div class="flex flex-row flex-wrap gap-8">
+                        <div>
+                            <h3 class="text-lg">General Admission</h3>
+                            <ul class="flex list-disc flex-col gap-2 pl-4">
+                                <li>Weekend Ticket: $50</li>
+                                <li>Saturday Day Ticket: $30</li>
+                                <li>Sunday Day Ticket: $25</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-lg">
+                                <Tooltip align="bottom">
+                                    <span>Concession <TooltipIcon /></span>
+                                    <TooltipContent>(Under 18, Student, Community Services Card Holder)</TooltipContent>
+                                </Tooltip>
+                            </h3>
+                            <ul class="flex list-disc flex-col gap-2 pl-4">
+                                <li>Weekend Ticket: $40</li>
+                                <li>Saturday Day Ticket: $25</li>
+                                <li>Sunday Day Ticket: $20</li>
+                            </ul>
+                        </div>
+                    </div>
+                </CollapseContent>
+            </Collapse>
+            <Collapse class="collapse-plus border border-base-300 bg-base-100">
+                <input type="checkbox" />
+                <CollapseTitle class="font-semibold">
+                    <h3 id="parking"><span class="italic">Parking -</span> Where is the best parking available?</h3>
+                </CollapseTitle>
+                <CollapseContent class="flex flex-col gap-2">
+                    <p>
+                        The best entrance to use is the Conference Centre entrance which is right next to a lovely big
+                        car park. From the entrance of the hotel, drive straight past the hotel buildings until you get
+                        to an open area for parking. The entrance should be clearly visible from here, to the left.
+                    </p>
+                </CollapseContent>
+            </Collapse>
+            <!-- TODO: Update accommodation discount code and pricing for 2026 -->
+            <Collapse class="collapse-plus border border-base-300 bg-base-100">
+                <input type="checkbox" />
+                <CollapseTitle class="font-semibold">
+                    <h3 id="accommodation">
+                        <span class="italic">Accommodation -</span> I'm from out of town, where can I stay? Are there
+                        discounts?
+                    </h3>
+                </CollapseTitle>
+                <CollapseContent class="flex flex-col gap-2">
+                    <p>For those traveling to Hamilton, The Distinction Hotel will have a discount code.</p>
+                </CollapseContent>
+            </Collapse>
+            <Collapse class="collapse-plus border border-base-300 bg-base-100">
+                <input type="checkbox" />
+                <CollapseTitle class="font-semibold">
+                    <h3 id="food"><span class="italic">Food and Drink -</span> Where can I get food during event?</h3>
+                </CollapseTitle>
+                <CollapseContent class="flex flex-col gap-2">
+                    <p>
+                        Unfortunately, we are not able to organise food for attendees. There are plenty of options
+                        available, however. You are welcome to bring your own food in, as a packed lunch or take away
+                        from a restaurant. There is a bakery around 5 minutes walk away, as well as several cafes. We
+                        will have a list and map for these available on the website in the near future. Feel free to eat
+                        your own food at a free gaming table but please be mindful of GMs setting up for the next
+                        session.
+                    </p>
+                    <p>We'll have a coffee cart available for you to get your caffeine fix.</p>
+                    <p>During the social on Sunday, dinner and drinks will be available from the hotel bar!</p>
+                </CollapseContent>
+            </Collapse>
+            <Collapse class="collapse-plus border border-base-300 bg-base-100">
+                <input type="checkbox" />
+                <CollapseTitle class="font-semibold">
+                    <h3 id="photographs">
+                        <span class="italic">Photography -</span> Will I be photographed? Do I have permission to take
+                        photographs?
+                    </h3>
+                </CollapseTitle>
+                <CollapseContent class="flex flex-col gap-2">
+                    <p>
+                        We'll be taking photographs throughout the event to record the fun that everyone is having. Some
+                        of those will probably be used in our promotional material or social media spaces. If you don't
+                        wish to have your photograph taken, please speak to one of our staff members on the day and
+                        we'll make sure you're kept out of any snaps we take.
+                    </p>
+                    <p>
+                        Feel free to take your own photographs and to share them on social media but please ensure you
+                        have permission to do so from anyone who features in your photos.
+                    </p>
+                </CollapseContent>
+            </Collapse>
+            <Collapse class="collapse-plus border border-base-300 bg-base-100">
+                <input type="checkbox" />
+                <CollapseTitle class="font-semibold">
+                    <h3 id="ages"><span class="italic">Age Restrictions -</span> What ages can come to Convergence?</h3>
+                </CollapseTitle>
+                <CollapseContent class="flex flex-col gap-2">
+                    <p>
+                        TTRPGs can be great for kids - they improve social skills, promote teamwork and involve maths!
+                        Children ages 13-15 are welcome to play, however, a parent/guardian needs to attend with them.
+                        Unfortunately, we cannot host under-13s at this event, but you can bring them to our merchants
+                        area and Sunday seminars. Other WRPG events are child friendly, such as Dice & Districts.
+                    </p>
+                    <p>
+                        Parents are welcome to bring very young children with them. We have had attendees GM and play
+                        with babies strapped to their chest!
+                    </p>
+                </CollapseContent>
+            </Collapse>
+            <h2 class="text-xl">Got another question?</h2>
+            <div class="flex w-full max-w-sm flex-col gap-4">
+                <a href="/faq" class="btn btn-xl btn-primary">View the FAQ</a>
             </div>
         </PageContainer>
     {% endblock %}
