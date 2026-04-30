@@ -826,10 +826,10 @@
                         />
                         <span>
                             I agree to meet
-                            <Tooltip class="inline" align="top">
+                            <Tooltip class="inline" align="top" :fallback="{{ false }}">
                                 <span class="underline decoration-dotted">convention hygiene expectations</span>
                                 <TooltipIcon />
-                                <TooltipContent class="text-left font-normal">
+                                <TooltipContent class="text-left font-normal" :fallback="false">
                                     <p>
                                         Please ensure you shower the night or morning before Convergence, apply
                                         deodorant, brush teeth and wear clean clothing. By ticking this box, you agree
