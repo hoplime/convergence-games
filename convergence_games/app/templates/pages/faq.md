@@ -3,9 +3,9 @@
 {#society-member}
 ### I am a society member, what does that get me?
 
-For a simple $10 a year you get access to pre-sales and the sought-after Golden D20. A Golden D20 is a single-use token that will be added to your online account (make sure you use the same email for your Convergence website account and your membership), that can be used to show your strong desire to play a particular game. You rank all games with d12 to d0, a d20 will give the game the highest ranking and make it much more likely for you to get your first choice.
+Paid society members get access to pre-sales and the sought-after Golden D20. A Golden D20 is a single-use token that will be added to your online account (make sure you use the same email for your Convergence website account and your membership), that can be used to show your strong desire to play a particular game. You rank all games with d12 to d0, a d20 will give the game the highest ranking and make it much more likely for you to get your first choice.
 
-Membership is pro-rated through the year - sign up before the end of June and pay $7.50, or for $5 during July-September.
+**Members who join the society after 01st June 2026 will not be entitled to a Golden d20**
 
 [Membership Registration Form](https://www.waikatorpg.co.nz/join-the-society/)
 
@@ -33,19 +33,19 @@ The Distinction has a seating area towards the front desk that is generally quie
 {#on-the-day}
 ### If I have a question or need help on the day, what should I do?
 
-There should be people around wearing red lanyards and hi-vis vests that will be a mix of volunteers and organising committee members. They should be able to help or point you in the right direction.
+There should be people around wearing hi-vis vests that will be a mix of volunteers and organising committee members. They should be able to help or point you in the right direction.
 
 {#first-aid}
 ### Are first aiders available?
 
-Yes, we should have first aiders available all weekend.
+Yes, we will have first aiders available all weekend. If you require a first aider, please report to the guild help desk or flag down a volunteer in a hivis vest.
 
 {#complaints}
 ### I have a problem with someone/a game submission/something, how do I formally complain/bring it to the organising committee's attention?
 
 Hopefully you have a great time, but if not we want to know! Before and after the event the best way to get in touch is by email to [waikatoroleplayingguild@gmail.com](mailto:waikatoroleplayingguild@gmail.com). You can also message us via our [Facebook Profile](https://www.facebook.com/waikatoroleplayingguild/) or [Instagram](https://instagram.com/waikatorpguild).
 
-If there is an issue during the event then the best way is to approach one of the people wearing a red lanyard. These will be a mix of volunteers and committee members, who will be able to help or direct you to someone who can. If there is something serious you may be asked to follow up with an email afterwards.
+If there is an issue during the event then the best way is to approach one of the people wearing a hivis vest. These will be a mix of volunteers and committee members, who will be able to help or direct you to someone who can. If there is something serious you may be asked to follow up with an email afterwards.
 
 {#contact}
 ### I have a question that is not answered here, how can I contact you?
@@ -68,7 +68,7 @@ If in doubt, please ask us in the Discord.
 {#tickets}
 ### When are tickets available?
 
-General ticket sales will open on Friday 11th July. General sale will include single-day tickets (Saturday or Sunday), and concession tickets. Be warned that we have been selling out earlier each year, so do not assume tickets will be available on the day. We do ask that you let us know if you can no longer make it so we can offer tickets to the waiting list.
+General ticket sales will open on Monday 6th July. General sale will include single-day tickets (Saturday or Sunday), and concession tickets. Be warned that we have been selling out earlier each year, so do not assume tickets will be available on the day. We do ask that you let us know if you can no longer make it so we can offer tickets to the waiting list.
 
 {#part-time}
 ### What about if I can only attend for some of the time/only a session or two?
@@ -143,11 +143,11 @@ If it fits in your game, absolutely yes. One GM runs an OSE and tries to beat hi
 
 We ask that you provide print outs where needed - pre-generated characters, rules reference sheets, maps - but if this is something you are struggling with then let us know. Things happen, drinks get spilled, printers break down the night before and we can help you with this. Send us an email with the attached documents, let a committee member know you have done so and we will get them to you.
 
-Please provide any dice that you will be using, especially if they are game specific dice, like Genesys dice. It can also be helpful to have extras for players, though all beginners should be given a standard polyhedral set at the door, and there's plenty to go around!
+Please provide any dice that you will be using, especially if they are game specific dice, like Genesys dice. It can also be helpful to have extras for players, though there will be vendors with dice for sale as well as spare sets available at the guild desk.
 
 You do not need to provide miniatures or terrain, but you can if you wish. We recommend requesting a larger table in your submission if you wish to set this up.
 
-Pencils, erasers and notepads will be on the table. Water is available from fountains.
+Pencils, erasers and notepads will be on the table. Water is available from coolers in the main area.
 
 {#didnt-run}
 ### My game didn't run, what will I do?
