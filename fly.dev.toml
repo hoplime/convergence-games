@@ -1,0 +1,63 @@
+# fly.toml app configuration file generated for convergence-games-dev on 2026-04-19T21:02:27+12:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'convergence-games-dev'
+primary_region = 'syd'
+
+[build]
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+[checks]
+  [checks.health]
+    port = 8000
+    type = 'http'
+    interval = '30s'
+    timeout = '5s'
+    path = '/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512mb'
+
+[env]
+  # AZURE_CLIENT_ID = 'SECRET'
+  # AZURE_CLIENT_SECRET = 'SECRET'
+  # AZURE_TENANT_ID = 'SECRET'
+  # DATABASE_USERNAME = 'SECRET'
+  # DATABASE_PASSWORD = 'SECRET'
+  # DATABASE_HOST = 'SECRET'
+  DATABASE_PORT = '5432'
+  # DATABASE_NAME = 'SECRET'
+  DEBUG = 'true'
+  ENVIRONMENT = 'development'
+  BASE_DOMAIN = 'https://dev.convergence.waikatorpg.co.nz'
+  BASE_REDIRECT_URI = 'https://dev.convergence.waikatorpg.co.nz'
+  SITE_TITLE = 'Convergence 2026'
+  DEFAULT_EVENT_ID = '2'
+  FLAG_PREFERENCES = 'true'
+  FLAG_PLANNER = 'true'
+  WEB_CONCURRENCY = '2'
+  IMAGE_STORAGE_MODE = 'blob'
+  IMAGE_STORAGE_BLOB_CONTAINER = 'uploads'
+  IMAGE_STORAGE_BLOB_ACCOUNT_NAME = 'stconvergencedev'
+  # SIGNING_KEY = 'SECRET'
+  # TOKEN_SECRET = 'SECRET'
+  # GOOGLE_CLIENT_ID = 'SECRET'
+  # GOOGLE_CLIENT_SECRET = 'SECRET'
+  # DISCORD_CLIENT_ID = 'SECRET'
+  # DISCORD_CLIENT_SECRET = 'SECRET'
+  # BREVO_API_KEY = 'SECRET'
+  # SENTRY_DSN = 'SECRET'
+  # SENTRY_LOADER_SRC = 'SECRET'
+  SENTRY_TRACES_SAMPLE_RATE = '1.0'
+  SENTRY_PROFILES_SAMPLE_RATE = '1.0'
+  SENTRY_REPLAYS_SESSION_SAMPLE_RATE = '1.0'
+  SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE = '1.0'
