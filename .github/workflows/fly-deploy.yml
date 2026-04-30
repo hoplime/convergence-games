@@ -10,6 +10,7 @@ jobs:
     name: Deploy to dev
     runs-on: ubuntu-latest
     concurrency: deploy-dev
+    environment: development
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
