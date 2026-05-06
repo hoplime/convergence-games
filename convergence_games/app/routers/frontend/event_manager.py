@@ -30,7 +30,7 @@ from convergence_games.app.guards import permission_check, user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
 from convergence_games.app.routers.frontend.common import event_with
-from convergence_games.db.enums import GameClassification, SubmissionStatus, TimeSlotStatus
+from convergence_games.db.enums import AttendanceSource, GameClassification, SubmissionStatus, TimeSlotStatus
 from convergence_games.db.models import (
     Allocation,
     Event,
@@ -64,6 +64,7 @@ from convergence_games.services.algorithm.query_adapter import (
     adapt_to_inputs,
     user_preferences_to_alg_preferences,
 )
+from convergence_games.services.attendance import sync_attendance_for_timeslot
 
 # region Data Schema
 SqidInt = Annotated[int, BeforeValidator(sink)]
@@ -1018,6 +1019,17 @@ class EventManagerController(Controller):
 
         time_slot.status = TimeSlotStatus.ALLOCATED if data.commit else TimeSlotStatus.ALLOCATING
         transaction.add(time_slot)
+
+        # On commit, snapshot the committed allocation set into SessionAttendance
+        # so the historical record survives any later schedule or allocation edits.
+        if data.commit:
+            await transaction.flush()
+            await sync_attendance_for_timeslot(
+                transaction,
+                time_slot_id=time_slot_id,
+                event_id=event.id,
+                source=AttendanceSource.COMMIT,
+            )
 
         return Response(content="", status_code=HTTP_204_NO_CONTENT)
 
