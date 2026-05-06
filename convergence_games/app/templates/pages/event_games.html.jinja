@@ -15,7 +15,7 @@
                 <div class="inline-flex h-8 items-center justify-center text-sm">
                     <span class="icon-[mingcute--filter-fill]"></span>
                 </div>
-                {% if SETTINGS.FLAG_PLANNER %}
+                {% if event.is_planner_open() %}
                     <MultiselectTab :form_data="form_data.session" />
                 {% endif %}
                 <MultiselectTab :form_data="form_data.genre" />
@@ -23,7 +23,7 @@
                 <MultiselectTab :form_data="form_data.tone" />
                 <MultiselectTab :form_data="form_data.bonus" />
                 <MultiselectTab :form_data="form_data.content" />
-                {% if request.user is not none and SETTINGS.FLAG_PREFERENCES %}
+                {% if request.user is not none and event.is_preferences_open() %}
                     <MultiselectTab :form_data="form_data.preference" />
                 {% endif %}
             </form>

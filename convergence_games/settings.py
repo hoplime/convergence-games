@@ -30,10 +30,6 @@ class Settings(BaseSettings):
 
         return swim("Event", self.DEFAULT_EVENT_ID)
 
-    # Feature Flags
-    FLAG_PREFERENCES: bool = False
-    FLAG_PLANNER: bool = False
-
     @cached_property
     def RELEASE(self) -> str:  # noqa: N802
         """Get the release version from the last updated date."""

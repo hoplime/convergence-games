@@ -34,7 +34,7 @@
             <span class="icon-[bi--dice-6-fill]"></span>
             <span class="hidden xs:block">Games</span>
         </a>
-        {% if SETTINGS.FLAG_PLANNER and request.user %}
+        {% if request.user %}
             <a
                 href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/planner"
                 class="btn rounded-full bg-base-300 text-lg btn-ghost"

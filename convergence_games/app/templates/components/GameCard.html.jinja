@@ -58,7 +58,7 @@
             {% endif %}
         </div>
     </a>
-    {% if SETTINGS.FLAG_PREFERENCES and request.user %}
+    {% if game.event.is_preferences_open() and request.user %}
         <div class="mt-auto flex flex-col items-center gap-2 pb-6">
             {% if request.user.id == game.gamemaster_id %}
                 <span class="w-full text-center font-semibold">You are GMing this game.</span>
@@ -89,7 +89,7 @@
             {% endif %}
         </div>
     {% endif %}
-    {% if SETTINGS.FLAG_PLANNER %}
+    {% if game.event.is_planner_open() %}
         <div class="absolute right-1 bottom-1 flex flex-row gap-[1px]">
             {% for time_slot in game.event.time_slots %}
                 {% if time_slot.id in scheduled_time_slot_ids %}
