@@ -11,10 +11,7 @@
                 <div class="drawer-content flex flex-col gap-2">
                     {# Filter toggle + active pills #}
                     <div class="flex flex-wrap items-center gap-2">
-                        <label
-                            for="filter_drawer"
-                            class="drawer-button btn btn-outline"
-                        >
+                        <label for="filter_drawer" class="drawer-button btn btn-outline">
                             <span class="icon-[mingcute--filter-fill]"></span>
                             <span
                                 id="filter_drawer_label"
@@ -27,7 +24,8 @@
                                     set my textContent to 'Filters'
                                 end
                                 "
-                            >Filters</span>
+                                >Filters</span
+                            >
                         </label>
                     </div>
 
@@ -78,7 +76,7 @@
                             <span class="text-lg font-bold">Filters</span>
                             <button
                                 type="button"
-                                class="btn btn-outline btn-error btn-xs"
+                                class="btn btn-outline btn-xs btn-error"
                                 _="on click call #filter_form.reset() then send change to #filter_form"
                             >
                                 <span class="icon-[mdi--filter-off-outline]"></span>
@@ -101,14 +99,26 @@
                         {# Active filter pills #}
                         <div
                             id="active_filter_pills"
-                            class="flex flex-wrap gap-1"
+                            class="flex flex-wrap gap-2"
                             _="
                             on load or change from #filter_form
                                 set checkedCbs to #filter_form.querySelectorAll('input[type=checkbox][name]:checked')
                                 set my innerHTML to ''
                                 for cb in checkedCbs
-                                    make a <span.badge.badge-sm.badge-primary.gap-1.cursor-pointer/>
-                                    set it.textContent to cb.parentElement.textContent.trim() + ' ×'
+                                    make a <span.badge.badge-md.gap-1.cursor-pointer/>
+                                    if cb.name is 'session'
+                                        add .badge-info to it
+                                    else if cb.name is 'content'
+                                        add .badge-warning to it
+                                        set it.textContent to 'Exclude: ' + cb.parentElement.textContent.trim() + ' ×'
+                                    else if cb.name is 'preference'
+                                        add .badge-secondary to it
+                                    else
+                                        add .badge-primary to it
+                                    end
+                                    if it.textContent is ''
+                                        set it.textContent to cb.parentElement.textContent.trim() + ' ×'
+                                    end
                                     set it's @data-name to cb.name
                                     set it's @data-value to cb.value
                                     put it at end of me
