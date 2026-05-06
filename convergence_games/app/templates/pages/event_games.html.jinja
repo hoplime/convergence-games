@@ -4,20 +4,20 @@
         <PageContainer size="max-w-screen-2xl">
             <h2 class="text-xl">{{ event.name }} Games</h2>
 
-            <div class="drawer lg:drawer-open">
+            <div class="drawer">
                 <input id="filter_drawer" type="checkbox" class="drawer-toggle" />
 
                 {# Main content #}
                 <div class="drawer-content flex flex-col gap-2">
-                    {# Mobile filter toggle + active pills #}
-                    <div class="flex flex-wrap items-center gap-2 lg:hidden">
+                    {# Filter toggle + active pills #}
+                    <div class="flex flex-wrap items-center gap-2">
                         <label
                             for="filter_drawer"
                             class="drawer-button btn btn-outline btn-sm"
                             id="filter_drawer_button"
                             _="
                             on load or change from #filter_form
-                            set count to #filter_form.querySelectorAll('input[type=checkbox]:checked').length
+                            set count to #filter_form.querySelectorAll('input[type=checkbox][name]:checked').length
                             if count > 0
                                 set my textContent to 'Filters (' + count + ')'
                             else
@@ -29,39 +29,8 @@
                         </label>
                     </div>
 
-                    {# Active filter pills (visible when sidebar is hidden on mobile) #}
-                    <div
-                        id="active_filter_pills_mobile"
-                        class="flex flex-wrap gap-1 lg:hidden"
-                        _="
-                        on load or change from #filter_form
-                            log 'pills_mobile: rebuilding pills'
-                            set checkedCbs to #filter_form.querySelectorAll('input[type=checkbox]:checked')
-                            log `pills_mobile: found ${checkedCbs.length} checked`
-                            set my innerHTML to ''
-                            for cb in checkedCbs
-                                log `pills_mobile: pill for ${cb.name}=${cb.value} id=${cb.id}`
-                                make a <button.badge.badge-sm.badge-primary.gap-1.cursor-pointer/>
-                                set it.textContent to cb.parentElement.textContent.trim() + ' ×'
-                                set it's @data-cb to cb.id
-                                put it at end of me
-                            end
-                        end
-
-                        on click
-                            log `pills_mobile: click on ${target.tagName} data-cb=${target.dataset.cb}`
-                            if target.dataset.cb
-                                set cb to #{target.dataset.cb}
-                                log `pills_mobile: unchecking ${cb.id}`
-                                set cb.checked to false
-                                send change to cb
-                            end
-                        end
-                        "
-                    ></div>
-
                     {# Game grid #}
-                    <div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" id="game_list">
+                    <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" id="game_list">
                         {% block game_list %}
                             {% for game in games %}
                                 <GameCard
@@ -91,7 +60,7 @@
                     {% endif %}
                 </div>
 
-                {# Filter sidebar / drawer #}
+                {# Filter drawer #}
                 <div class="drawer-side z-20">
                     <label for="filter_drawer" aria-label="close sidebar" class="drawer-overlay"></label>
                     <form
@@ -126,18 +95,15 @@
                             <FilterSection :form_data="form_data.preference" />
                         {% endif %}
 
-                        {# Active filter pills in sidebar #}
+                        {# Active filter pills #}
                         <div
                             id="active_filter_pills"
                             class="flex flex-wrap gap-1"
                             _="
                             on load or change from #filter_form
-                                log 'pills_sidebar: rebuilding pills'
-                                set checkedCbs to #filter_form.querySelectorAll('input[type=checkbox]:checked')
-                                log `pills_sidebar: found ${checkedCbs.length} checked`
+                                set checkedCbs to #filter_form.querySelectorAll('input[type=checkbox][name]:checked')
                                 set my innerHTML to ''
                                 for cb in checkedCbs
-                                    log `pills_sidebar: pill for ${cb.name}=${cb.value} id=${cb.id}`
                                     make a <button.badge.badge-sm.badge-primary.gap-1.cursor-pointer/>
                                     set it.textContent to cb.parentElement.textContent.trim() + ' ×'
                                     set it's @data-cb to cb.id
@@ -146,10 +112,8 @@
                             end
 
                             on click
-                                log `pills_sidebar: click on ${target.tagName} data-cb=${target.dataset.cb}`
                                 if target.dataset.cb
                                     set cb to #{target.dataset.cb}
-                                    log `pills_sidebar: unchecking ${cb.id}`
                                     set cb.checked to false
                                     send change to cb
                                 end
