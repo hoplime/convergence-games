@@ -84,18 +84,6 @@
                             </button>
                         </div>
 
-                        {% if event.is_planner_open() %}
-                            <FilterSection :form_data="form_data.session" />
-                        {% endif %}
-                        <FilterSection :form_data="form_data.genre" :searchable="true" />
-                        <FilterSection :form_data="form_data.system" :searchable="true" />
-                        <FilterSection :form_data="form_data.tone" />
-                        <FilterSection :form_data="form_data.bonus" />
-                        <FilterSection :form_data="form_data.content" :searchable="true" />
-                        {% if request.user is not none and event.is_preferences_open() %}
-                            <FilterSection :form_data="form_data.preference" />
-                        {% endif %}
-
                         {# Active filter pills #}
                         <div
                             id="active_filter_pills"
@@ -137,6 +125,19 @@
                             end
                             "
                         ></div>
+
+                        {% if event.is_planner_open() %}
+                            <FilterSection :form_data="form_data.session" />
+                        {% endif %}
+                        <FilterSection :form_data="form_data.genre" :searchable="true" />
+                        <FilterSection :form_data="form_data.system" :searchable="true" />
+                        <FilterSection :form_data="form_data.tone" />
+                        <FilterSection :form_data="form_data.bonus" />
+                        <FilterSection :form_data="form_data.content" :searchable="true" />
+                        {% if request.user is not none and event.is_preferences_open() %}
+                            <FilterSection :form_data="form_data.preference" />
+                        {% endif %}
+
                     </form>
                 </div>
             </div>
