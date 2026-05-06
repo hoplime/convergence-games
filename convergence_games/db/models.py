@@ -23,6 +23,8 @@ from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relatio
 
 from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
+    AttendanceRole,
+    AttendanceSource,
     GameActivityRequirement,
     GameClassification,
     GameCoreActivity,
@@ -1004,10 +1006,47 @@ class Allocation(Base):
 
     # Foreign Keys
     party_leader_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
-    session_id: Mapped[int] = mapped_column(ForeignKey("session.id", ondelete="CASCADE"), index=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("session.id", ondelete="RESTRICT"), index=True)
 
     # Relationships
     party_leader: Mapped[User] = relationship(back_populates="allocations", foreign_keys=party_leader_id, lazy="noload")
     session: Mapped[Session] = relationship(back_populates="allocations", foreign_keys=session_id, lazy="noload")
 
     __table_args__ = (UniqueConstraint("party_leader_id", "session_id", "committed"),)
+
+
+class SessionAttendance(Base):
+    """Immutable per-(event, time_slot, user) record of who played or ran which game.
+
+    Decouples the historical fact (Alice played Foo at slot 2 of event 2026) from
+    the volatile planning rows in `session` and `allocation`, so that schedule
+    edits or allocation rewrites cannot destroy game-played history. Populated by
+    `convergence_games.services.attendance.sync_attendance_for_timeslot` when
+    allocations are committed; backfilled once from existing committed allocations
+    by the migration that introduced this table.
+    """
+
+    role: Mapped[AttendanceRole] = mapped_column(Enum(AttendanceRole), index=True)
+    source: Mapped[AttendanceSource] = mapped_column(Enum(AttendanceSource))
+
+    # Foreign Keys (durable entities only -- no FK to volatile Session/Allocation)
+    event_id: Mapped[int] = mapped_column(ForeignKey("event.id"), index=True)
+    time_slot_id: Mapped[int] = mapped_column(ForeignKey("time_slot.id"), index=True)
+    game_id: Mapped[int] = mapped_column(ForeignKey("game.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    table_id: Mapped[int | None] = mapped_column(ForeignKey("table.id"), nullable=True, default=None)
+    # Plain int -- the Allocation row may later be deleted; this is a debugging breadcrumb.
+    source_allocation_id: Mapped[int | None] = mapped_column(default=None)
+
+    # Relationships
+    event: Mapped[Event] = relationship(foreign_keys=event_id, lazy="noload")
+    time_slot: Mapped[TimeSlot] = relationship(foreign_keys=time_slot_id, lazy="noload")
+    game: Mapped[Game] = relationship(foreign_keys=game_id, lazy="noload")
+    user: Mapped[User] = relationship(foreign_keys=user_id, lazy="noload")
+    table: Mapped[Table | None] = relationship(foreign_keys=table_id, lazy="noload")
+
+    __table_args__ = (
+        UniqueConstraint("event_id", "time_slot_id", "user_id"),
+        foreign_key_constraint_with_event("session_attendance", "time_slot"),
+        foreign_key_constraint_with_event("session_attendance", "game"),
+    )

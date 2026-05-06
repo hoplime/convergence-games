@@ -92,6 +92,16 @@ class GameClassification(enum.StrEnum):
         return 0
 
 
+class AttendanceRole(enum.StrEnum):
+    PLAYER = "Player"
+    GAMEMASTER = "Gamemaster"
+
+
+class AttendanceSource(enum.StrEnum):
+    COMMIT = "Commit"
+    BACKFILL = "Backfill"
+
+
 class FlagWithNotes(enum.IntFlag):
     _ignore_ = ["__notes__"]
     __notes__: ClassVar[dict[int, str]] = {}
