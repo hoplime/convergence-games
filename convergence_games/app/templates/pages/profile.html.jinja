@@ -2,37 +2,33 @@
     {% block content %}
         <PageTitle>Profile</PageTitle>
         <PageContainer>
-            <div>Profile for {{ profile_user.first_name }} {{ profile_user.last_name }}</div>
             <form class="flex flex-col gap-4" id="profile-form" hx-post="/profile" hx-target="#content">
                 <button type="submit" disabled class="hidden" aria-hidden="true"></button>
                 <FieldsetBase>
                     <legend class="fieldset-legend">Public Information</legend>
-                    {# Title #}
-                    <label class="fieldset-label">Name</label>
-                    <div>
-                        <input
-                            type="text"
-                            class="input"
-                            placeholder="First"
-                            name="first_name"
-                            value="{{ profile_user.first_name }}"
-                            required
-                        />
-                        <input
-                            type="text"
-                            class="input"
-                            placeholder="Last"
-                            name="last_name"
-                            value="{{ profile_user.last_name }}"
-                        />
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="fieldset-label">First name</label>
+                            <input
+                                type="text"
+                                class="input w-full"
+                                name="first_name"
+                                value="{{ profile_user.first_name }}"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label class="fieldset-label">Last name</label>
+                            <input
+                                type="text"
+                                class="input w-full"
+                                name="last_name"
+                                value="{{ profile_user.last_name }}"
+                            />
+                        </div>
                     </div>
-                    {# Bio #}
                     <label class="fieldset-label">Bio</label>
                     <TipTap form_input_name="description" :initial_content_json="profile_user.description" />
-                </FieldsetBase>
-                <FieldsetBase>
-                    <legend class="fieldset-legend">Private Information</legend>
-                    {# Over 18 #}
                     <label class="flex items-center gap-2">
                         <input
                             type="checkbox"
@@ -41,6 +37,7 @@
                             {{ "checked" if profile_user.over_18 }}
                         />
                         <span>I am 18+</span>
+                        <span class="text-sm text-base-content/50">(required to join R18 games)</span>
                     </label>
                 </FieldsetBase>
                 <div
@@ -55,26 +52,63 @@
             </form>
             <FieldsetBase>
                 <legend class="fieldset-legend">Accounts</legend>
-                <div class="grid max-w-96 gap-4">
+                <ul class="list">
                     {% for key in ['email', 'discord', 'google'] %}
                         {% if key in user_logins %}
                             {% for user_login in user_logins[key] %}
-                                <button class="btn pointer-events-none btn-ghost">
+                                <li class="list-row flex items-center gap-3">
                                     <img
                                         src="/static/icons/logos/{{ key }}.svg"
-                                        class="h-8"
+                                        class="size-8 shrink-0"
                                         alt="{{ key.capitalize() }} Logo"
                                     />
-                                    <span>{{ key.capitalize() }} - {{ user_login.provider_email }}</span>
-                                </button>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="font-medium">{{ key.capitalize() }}</div>
+                                        <div class="truncate text-sm text-base-content/70">
+                                            {{ user_login.provider_email }}
+                                        </div>
+                                    </div>
+                                    <div class="badge shrink-0 badge-success">Connected</div>
+                                </li>
                             {% endfor %}
                         {% else %}
-                            {{ catalog.irender("forms.sign_in_buttons." ~ key.capitalize(), linking_account_sqid=swim(request.user)) }}
+                            <li class="list-row flex items-center gap-3">
+                                <img
+                                    src="/static/icons/logos/{{ key }}.svg"
+                                    class="size-8 shrink-0 opacity-40"
+                                    alt="{{ key.capitalize() }} Logo"
+                                />
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-medium text-base-content/50">{{ key.capitalize() }}</div>
+                                </div>
+                                {% if key == 'email' %}
+                                    <a
+                                        href="/email-sign-in?linking_account_sqid={{ swim(request.user) }}"
+                                        hx-boost="true"
+                                        class="btn shrink-0 btn-sm btn-primary"
+                                        >Link</a
+                                    >
+                                {% elif key == 'discord' %}
+                                    <a
+                                        href="/oauth2/discord/login?linking_account_sqid={{ swim(request.user) }}"
+                                        class="btn shrink-0 btn-sm btn-primary"
+                                        >Link</a
+                                    >
+                                {% elif key == 'google' %}
+                                    <a
+                                        href="/oauth2/google/login?linking_account_sqid={{ swim(request.user) }}"
+                                        class="btn shrink-0 btn-sm btn-primary"
+                                        >Link</a
+                                    >
+                                {% endif %}
+                            </li>
                         {% endif %}
                     {% endfor %}
-                </div>
+                </ul>
+                <button class="btn self-start btn-sm btn-error" hx-post="/oauth2/logout" hx-target="#content">
+                    Logout
+                </button>
             </FieldsetBase>
-            <button class="btn btn-error" hx-post="/oauth2/logout" hx-target="#content">Logout</button>
         </PageContainer>
     {% endblock %}
 </Page>
