@@ -10,7 +10,9 @@
         id="{{ section_id }}_title"
         _="
         on load or change from #{{ section_id }}
-        set count to <input[name={{ form_data.name }}]:checked in #{{ section_id }}/>'s length
+        log 'FilterSection {{ form_data.name }}: change detected'
+        set count to #{{ section_id }}.querySelectorAll('input[name={{ form_data.name }}]:checked').length
+        log `FilterSection {{ form_data.name }}: ${count} checked`
         if count > 0
             set my textContent to '{{ form_data.label }} (' + count + ')'
         else
@@ -62,14 +64,24 @@
             <button
                 type="button"
                 class="btn btn-outline btn-xs btn-primary"
-                _="on click set <input[name={{ form_data.name }}] in #{{ section_id }}/>'s checked to true then trigger change on <input[name={{ form_data.name }}] in #{{ section_id }}/>"
+                _="on click
+                    for cb in #{{ section_id }}.querySelectorAll('input[name={{ form_data.name }}]')
+                        set cb.checked to true
+                    end
+                    send change to the first <input[name={{ form_data.name }}]/> in #{{ section_id }}
+                "
             >
                 All
             </button>
             <button
                 type="button"
                 class="btn btn-outline btn-xs btn-secondary"
-                _="on click set <input[name={{ form_data.name }}] in #{{ section_id }}/>'s checked to false then trigger change on <input[name={{ form_data.name }}] in #{{ section_id }}/>"
+                _="on click
+                    for cb in #{{ section_id }}.querySelectorAll('input[name={{ form_data.name }}]')
+                        set cb.checked to false
+                    end
+                    send change to the first <input[name={{ form_data.name }}]/> in #{{ section_id }}
+                "
             >
                 None
             </button>

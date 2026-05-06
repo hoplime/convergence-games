@@ -13,11 +13,11 @@
                     <div class="flex flex-wrap items-center gap-2 lg:hidden">
                         <label
                             for="filter_drawer"
-                            class="btn btn-sm btn-outline drawer-button"
+                            class="drawer-button btn btn-outline btn-sm"
                             id="filter_drawer_button"
                             _="
                             on load or change from #filter_form
-                            set count to <input[type=checkbox]:checked in #filter_form/>'s length
+                            set count to #filter_form.querySelectorAll('input[type=checkbox]:checked').length
                             if count > 0
                                 set my textContent to 'Filters (' + count + ')'
                             else
@@ -35,15 +35,27 @@
                         class="flex flex-wrap gap-1 lg:hidden"
                         _="
                         on load or change from #filter_form
-                        set my innerHTML to ''
-                        for cb in <input[type=checkbox]:checked in #filter_form/>
-                            set pill to document.createElement('button')
-                            set pill.type to 'button'
-                            set pill.className to 'badge badge-sm badge-primary gap-1 cursor-pointer'
-                            set pill.textContent to cb.parentElement.textContent.trim() + ' ×'
-                            set pill@data-target to cb.id
-                            set pill.onclick to () => { cb.checked = false; cb.dispatchEvent(new Event('change', {bubbles: true})) }
-                            append pill to me
+                            log 'pills_mobile: rebuilding pills'
+                            set checkedCbs to #filter_form.querySelectorAll('input[type=checkbox]:checked')
+                            log `pills_mobile: found ${checkedCbs.length} checked`
+                            set my innerHTML to ''
+                            for cb in checkedCbs
+                                log `pills_mobile: pill for ${cb.name}=${cb.value} id=${cb.id}`
+                                make a <button.badge.badge-sm.badge-primary.gap-1.cursor-pointer/>
+                                set it.textContent to cb.parentElement.textContent.trim() + ' ×'
+                                set it's @data-cb to cb.id
+                                put it at end of me
+                            end
+                        end
+
+                        on click
+                            log `pills_mobile: click on ${target.tagName} data-cb=${target.dataset.cb}`
+                            if target.dataset.cb
+                                set cb to #{target.dataset.cb}
+                                log `pills_mobile: unchecking ${cb.id}`
+                                set cb.checked to false
+                                send change to cb
+                            end
                         end
                         "
                     ></div>
@@ -120,15 +132,27 @@
                             class="flex flex-wrap gap-1"
                             _="
                             on load or change from #filter_form
-                            set my innerHTML to ''
-                            for cb in <input[type=checkbox]:checked in #filter_form/>
-                                set pill to document.createElement('button')
-                                set pill.type to 'button'
-                                set pill.className to 'badge badge-sm badge-primary gap-1 cursor-pointer'
-                                set pill.textContent to cb.parentElement.textContent.trim() + ' ×'
-                                set pill@data-target to cb.id
-                                set pill.onclick to () => { cb.checked = false; cb.dispatchEvent(new Event('change', {bubbles: true})) }
-                                append pill to me
+                                log 'pills_sidebar: rebuilding pills'
+                                set checkedCbs to #filter_form.querySelectorAll('input[type=checkbox]:checked')
+                                log `pills_sidebar: found ${checkedCbs.length} checked`
+                                set my innerHTML to ''
+                                for cb in checkedCbs
+                                    log `pills_sidebar: pill for ${cb.name}=${cb.value} id=${cb.id}`
+                                    make a <button.badge.badge-sm.badge-primary.gap-1.cursor-pointer/>
+                                    set it.textContent to cb.parentElement.textContent.trim() + ' ×'
+                                    set it's @data-cb to cb.id
+                                    put it at end of me
+                                end
+                            end
+
+                            on click
+                                log `pills_sidebar: click on ${target.tagName} data-cb=${target.dataset.cb}`
+                                if target.dataset.cb
+                                    set cb to #{target.dataset.cb}
+                                    log `pills_sidebar: unchecking ${cb.id}`
+                                    set cb.checked to false
+                                    send change to cb
+                                end
                             end
                             "
                         ></div>
