@@ -17,7 +17,7 @@ from litestar.response import Redirect, Template
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
 from rich.pretty import pprint
-from sqlalchemy import bindparam, delete, select
+from sqlalchemy import bindparam, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
@@ -972,44 +972,52 @@ class EventManagerController(Controller):
         if time_slot is None:
             raise HTTPException(status_code=404, detail="Time slot not found")
 
-        # Update the allocations to match the new data
-        new_allocations: list[Allocation] = []
+        time_slot_id = sink(time_slot_sqid)
 
-        for allocation_data in data.allocations:
-            if allocation_data.session is None:
-                # No session allocated, skip
-                # This'll go to overflow
-                continue
+        # Diff-based update: reuse existing Allocation rows so committed history
+        # survives a draft save. Key: (committed, party_leader_id, session_id).
+        # Saving an uncommitted draft only touches uncommitted allocations; a
+        # commit ensures both committed and uncommitted variants exist.
+        existing_allocations_stmt = (
+            select(Allocation)
+            .join(Session, Allocation.session_id == Session.id)
+            .where(Session.time_slot_id == time_slot_id)
+        )
+        existing_allocations = list((await transaction.execute(existing_allocations_stmt)).scalars().all())
 
-            new_allocations.append(
+        existing_by_key: dict[tuple[bool, int, int], Allocation] = {
+            (a.committed, a.party_leader_id, a.session_id): a for a in existing_allocations
+        }
+
+        desired_committed_flags: tuple[bool, ...] = (False, True) if data.commit else (False,)
+
+        desired_keys: set[tuple[bool, int, int]] = {
+            (committed, allocation_data.leader, allocation_data.session)
+            for allocation_data in data.allocations
+            if allocation_data.session is not None
+            for committed in desired_committed_flags
+        }
+
+        for key in desired_keys - existing_by_key.keys():
+            committed, leader_id, session_id = key
+            transaction.add(
                 Allocation(
-                    party_leader_id=allocation_data.leader,
-                    session_id=allocation_data.session,
-                    committed=False,
+                    party_leader_id=leader_id,
+                    session_id=session_id,
+                    committed=committed,
                 )
             )
 
-            if data.commit:
-                # Also add a committed allocation for the party leader
-                new_allocations.append(
-                    Allocation(
-                        party_leader_id=allocation_data.leader,
-                        session_id=allocation_data.session,
-                        committed=True,
-                    )
-                )
+        for key, allocation in existing_by_key.items():
+            committed_flag = key[0]
+            if committed_flag not in desired_committed_flags:
+                continue  # not in scope (e.g., committed allocations during a draft save)
+            if key in desired_keys:
+                continue  # reused
+            await transaction.delete(allocation)
 
         time_slot.status = TimeSlotStatus.ALLOCATED if data.commit else TimeSlotStatus.ALLOCATING
         transaction.add(time_slot)
-
-        # Remove existing allocations for this time slot
-        delete_existing_allocations_stmt = delete(Allocation).where(
-            Allocation.session.has(time_slot_id=sink(time_slot_sqid))
-        )
-        _ = await transaction.execute(delete_existing_allocations_stmt)
-
-        # Add new allocations
-        transaction.add_all(new_allocations)
 
         return Response(content="", status_code=HTTP_204_NO_CONTENT)
 
