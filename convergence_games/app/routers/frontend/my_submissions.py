@@ -44,8 +44,21 @@ class MySubmissionsController(Controller):
             await transaction.execute(select(Event).where(Event.id == SETTINGS.DEFAULT_EVENT_ID))
         ).scalar_one_or_none()
 
+        default_event_games: list[Game] = []
+        other_events: list[tuple[Event, list[Game]]] = []
+        for event, event_games in games_by_event:
+            if event.id == SETTINGS.DEFAULT_EVENT_ID:
+                default_event = event
+                default_event_games = event_games
+            else:
+                other_events.append((event, event_games))
+
         return HTMXBlockTemplate(
             template_name="pages/my_submissions.html.jinja",
             block_name=request.htmx.target,
-            context={"games_by_event": games_by_event, "default_event": default_event},
+            context={
+                "default_event": default_event,
+                "default_event_games": default_event_games,
+                "other_events": other_events,
+            },
         )

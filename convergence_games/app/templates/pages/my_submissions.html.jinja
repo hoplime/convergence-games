@@ -4,62 +4,71 @@
         <PageContainer>
             <div>My Submissions</div>
             <div class="flex flex-col gap-4">
-                {% if games_by_event %}
-                    {% for event, games in games_by_event %}
-                        <h2 class="text-lg font-semibold">{{ event.name }}</h2>
-                        <ul class="list rounded-box bg-base-200">
-                            {% for game in games %}
-                                <li class="list-row items-center">
-                                    <div>{{ game.name }}</div>
-                                    <div></div>
-                                    <div class="{{ game.submission_status.color_classes }}">
-                                        {{ game.submission_status }}
-                                    </div>
-                                    <div>
-                                        ({{ game.game_requirement.times_to_run }}<span class="hidden md:inline-block">
-                                            &nbsp;sessions</span
-                                        >)
-                                    </div>
-                                    <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral">View</a>
-                                    {% if event.is_editing_open() %}
-                                        <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral">Edit</a>
-                                    {% else %}
-                                        <button class="btn-disabled btn btn-sm btn-neutral" disabled>Edit</button>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                            {% if event.is_submissions_open() %}
-                                <li class="list-row items-center">
-                                    <a
-                                        class="col-span-full flex items-center gap-2 text-primary"
-                                        href="/event/{{ swim(event) }}/submit-game"
-                                    >
-                                        <span class="icon-[mdi--plus-circle-outline]"></span>
-                                        Submit another game to {{ event.name }}
-                                    </a>
-                                </li>
-                            {% else %}
-                                <li class="list-row items-center">
-                                    <span class="col-span-full text-base-content/50">
-                                        Submissions closed for {{ event.name }}
-                                    </span>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    {% endfor %}
-                {% else %}
-                    <p>You haven't submitted anything yet.</p>
-                    {% if default_event and default_event.is_submissions_open() %}
-                        <a
-                            class="btn mx-auto btn-xl btn-primary"
-                            href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"
-                        >
-                            Submit a Game to {{ default_event.name }}
-                        </a>
+                {% macro game_list(event, games) %}
+                    <ul class="list rounded-box bg-base-200">
+                        {% for game in games %}
+                            <li class="list-row items-center">
+                                <div>{{ game.name }}</div>
+                                <div></div>
+                                <div class="{{ game.submission_status.color_classes }}">
+                                    {{ game.submission_status }}
+                                </div>
+                                <div>
+                                    ({{ game.game_requirement.times_to_run }}<span class="hidden md:inline-block">
+                                        &nbsp;sessions</span
+                                    >)
+                                </div>
+                                <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral">View</a>
+                                {% if event.is_editing_open() %}
+                                    <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral">Edit</a>
+                                {% else %}
+                                    <button class="btn-disabled btn btn-sm btn-neutral" disabled>Edit</button>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                        {% if event.is_submissions_open() %}
+                            <li class="list-row items-center">
+                                <a
+                                    class="col-span-full flex items-center gap-2 text-primary"
+                                    href="/event/{{ swim(event) }}/submit-game"
+                                >
+                                    <span class="icon-[mdi--plus-circle-outline]"></span>
+                                    Submit another game to {{ event.name }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="list-row items-center">
+                                <span class="col-span-full text-base-content/50">
+                                    Submissions closed for {{ event.name }}
+                                </span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                {% endmacro %}
+
+                {% if default_event %}
+                    <h2 class="text-lg font-semibold">{{ default_event.name }}</h2>
+                    {% if default_event_games %}
+                        {{ game_list(default_event, default_event_games) }}
                     {% else %}
-                        <p class="text-base-content/70">Game submissions are not currently open.</p>
+                        <p class="text-base-content/70">You haven't submitted any games to {{ default_event.name }} yet.</p>
+                        {% if default_event.is_submissions_open() %}
+                            <a
+                                class="btn mx-auto btn-xl btn-primary"
+                                href="/event/{{ swim(default_event) }}/submit-game"
+                            >
+                                Submit a Game to {{ default_event.name }}
+                            </a>
+                        {% else %}
+                            <p class="text-base-content/70">Game submissions are not currently open.</p>
+                        {% endif %}
                     {% endif %}
                 {% endif %}
+
+                {% for event, games in other_events %}
+                    <h2 class="text-lg font-semibold">{{ event.name }}</h2>
+                    {{ game_list(event, games) }}
+                {% endfor %}
             </div>
         </PageContainer>
     {% endblock %}
