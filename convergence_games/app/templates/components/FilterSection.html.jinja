@@ -44,12 +44,12 @@
                 "
             />
         {% endif %}
-        <div class="flex max-h-48 flex-col gap-1 overflow-y-auto">
+        <div class="flex max-h-56 flex-col gap-2 overflow-y-auto">
             {% for option in form_data.options %}
-                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                <label class="flex cursor-pointer items-center gap-2">
                     <input
                         type="checkbox"
-                        class="checkbox checkbox-sm"
+                        class="checkbox"
                         name="{{ form_data.name }}"
                         value="{{ option.value }}"
                         {% if option.selected %}

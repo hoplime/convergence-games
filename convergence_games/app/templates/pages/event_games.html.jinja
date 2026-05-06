@@ -13,19 +13,21 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <label
                             for="filter_drawer"
-                            class="drawer-button btn btn-outline btn-sm"
-                            id="filter_drawer_button"
-                            _="
-                            on load or change from #filter_form
-                            set count to #filter_form.querySelectorAll('input[type=checkbox][name]:checked').length
-                            if count > 0
-                                set my textContent to 'Filters (' + count + ')'
-                            else
-                                set my textContent to 'Filters'
-                            end
-                            "
+                            class="drawer-button btn btn-outline"
                         >
-                            Filters
+                            <span class="icon-[mingcute--filter-fill]"></span>
+                            <span
+                                id="filter_drawer_label"
+                                _="
+                                on load or change from #filter_form or change from closest .drawer
+                                set count to #filter_form.querySelectorAll('input[type=checkbox][name]:checked').length
+                                if count > 0
+                                    set my textContent to 'Filters (' + count + ')'
+                                else
+                                    set my textContent to 'Filters'
+                                end
+                                "
+                            >Filters</span>
                         </label>
                     </div>
 
@@ -70,15 +72,16 @@
                         hx-push-url="true"
                         hx-trigger="change delay:100ms, reset delay:10ms"
                         hx-params="not _search_genre, not _search_system, not _search_content"
-                        class="flex min-h-full w-72 flex-col gap-2 bg-base-200 p-4"
+                        class="flex min-h-full w-72 flex-col gap-2 bg-base-200 p-4 md:w-80 lg:w-96"
                     >
                         <div class="flex items-center justify-between">
                             <span class="text-lg font-bold">Filters</span>
                             <button
                                 type="button"
-                                class="btn btn-ghost btn-xs"
+                                class="btn btn-outline btn-error btn-xs"
                                 _="on click call #filter_form.reset() then send change to #filter_form"
                             >
+                                <span class="icon-[mdi--filter-off-outline]"></span>
                                 Clear all
                             </button>
                         </div>
