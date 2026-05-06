@@ -26,69 +26,69 @@
                 <FieldsetBase>
                     <legend class="fieldset-legend">Game Masters</legend>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <label class="form-control w-full">
-                            <div class="label">
-                                <span class="label-text">Submissions open</span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <label class="fieldset-label">Submissions open</label>
                                 {{ status_badge(event.is_submissions_open()) }}
                             </div>
                             <input
                                 type="datetime-local"
                                 name="submissions_open_at"
-                                class="input-bordered input w-full"
+                                class="input w-full"
                                 value="{{ dt_value(event.submissions_open_at) }}"
                             />
-                        </label>
-                        <label class="form-control w-full">
-                            <div class="label"><span class="label-text">Submissions close</span></div>
+                        </div>
+                        <div>
+                            <label class="fieldset-label">Submissions close</label>
                             <input
                                 type="datetime-local"
                                 name="submissions_close_at"
-                                class="input-bordered input w-full"
+                                class="input w-full"
                                 value="{{ dt_value(event.submissions_close_at) }}"
                             />
-                        </label>
-                        <label class="form-control w-full">
-                            <div class="label">
-                                <span class="label-text">Editing closes</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <label class="fieldset-label">Editing closes</label>
                                 {{ status_badge(event.is_editing_open()) }}
                             </div>
                             <input
                                 type="datetime-local"
                                 name="editing_close_at"
-                                class="input-bordered input w-full"
+                                class="input w-full"
                                 value="{{ dt_value(event.editing_close_at) }}"
                             />
-                        </label>
+                        </div>
                     </div>
                 </FieldsetBase>
 
                 <FieldsetBase>
                     <legend class="fieldset-legend">Players</legend>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <label class="form-control w-full">
-                            <div class="label">
-                                <span class="label-text">Preferences open</span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <label class="fieldset-label">Preferences open</label>
                                 {{ status_badge(event.is_preferences_open()) }}
                             </div>
                             <input
                                 type="datetime-local"
                                 name="preferences_open_at"
-                                class="input-bordered input w-full"
+                                class="input w-full"
                                 value="{{ dt_value(event.preferences_open_at) }}"
                             />
-                        </label>
-                        <label class="form-control w-full">
-                            <div class="label">
-                                <span class="label-text">Planner open</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <label class="fieldset-label">Planner open</label>
                                 {{ status_badge(event.is_planner_open()) }}
                             </div>
                             <input
                                 type="datetime-local"
                                 name="planner_open_at"
-                                class="input-bordered input w-full"
+                                class="input w-full"
                                 value="{{ dt_value(event.planner_open_at) }}"
                             />
-                        </label>
+                        </div>
                     </div>
                 </FieldsetBase>
 
