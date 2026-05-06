@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from litestar.datastructures import State
 from litestar.security.jwt import Token
@@ -12,9 +12,20 @@ from convergence_games.db.models import User
 # - ASGIConnection: The type of the connection object for handlers and middleware.
 
 
+type TokenType = Literal["access", "refresh", "legacy"]
+
+
 @dataclass
 class CustomToken(Token):
-    flag: bool = False
+    token_type: TokenType = "legacy"
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        # Lift token_type out of `extras` if it was carried there (Litestar's Token.decode
+        # stuffs all non-standard claims into `extras`).
+        raw = self.extras.pop("token_type", None)
+        if raw in ("access", "refresh", "legacy"):
+            self.token_type = raw
 
 
 if TYPE_CHECKING:
