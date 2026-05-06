@@ -1,7 +1,7 @@
 import datetime as dt
 import uuid
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 
 from litestar.connection import ASGIConnection
 from litestar.datastructures import Cookie
@@ -248,91 +248,102 @@ class TokenSessionAuthenticationMiddleware(JWTCookieAuthenticationMiddleware):
 
         return AuthenticationResult(user=None, auth=None)
 
-    async def _authenticate_via_refresh(
+    async def _authenticate_via_refresh(  # noqa: C901 - rotation/grace/reuse paths are intentionally branchy
         self, connection: ASGIConnection[Any, Any, Any, Any], encoded: str
     ) -> AuthenticationResult:
-        try:
-            token = _decode_token(encoded)
-        except NotAuthorizedException:
-            _append_pending_cookie(connection.scope, _make_clear_cookie(REFRESH_COOKIE_KEY))
-            _append_pending_cookie(connection.scope, _make_clear_cookie(ACCESS_COOKIE_KEY))
-            raise
-        if token.token_type != "refresh" or token.jti is None:
+        def _mark_anonymous_and_raise() -> NoReturn:
             _append_pending_cookie(connection.scope, _make_clear_cookie(REFRESH_COOKIE_KEY))
             _append_pending_cookie(connection.scope, _make_clear_cookie(ACCESS_COOKIE_KEY))
             raise NotAuthorizedException()
 
+        try:
+            token = _decode_token(encoded)
+        except NotAuthorizedException:
+            _mark_anonymous_and_raise()
+
+        if token.token_type != "refresh" or token.jti is None:
+            _mark_anonymous_and_raise()
+
         engine = cast(AsyncEngine, connection.app.state.db_engine)
         async with AsyncSession(engine) as session:
+            # Phase 1: load the row + commit any rejection-side-effect writes (revoke).
+            # Read every attribute we'll need later *inside* this block — once it commits, the
+            # ORM expires attributes and accessing them later triggers a refresh that needs a
+            # live transaction.
+            rejected = ""
+            family_id = ""
+            sibling_jti: str | None = None
+            sibling_user_id: int | None = None
+            row_user_id: int | None = None
             async with session.begin():
                 row = (
                     await session.execute(select(UserSession).where(UserSession.jti == token.jti))
                 ).scalar_one_or_none()
                 if row is None:
-                    _append_pending_cookie(connection.scope, _make_clear_cookie(REFRESH_COOKIE_KEY))
-                    _append_pending_cookie(connection.scope, _make_clear_cookie(ACCESS_COOKIE_KEY))
-                    raise NotAuthorizedException()
-
-                now = _now()
-                if row.expires_at < now:
-                    await _revoke_session_by_jti(session, row.jti, reason="expired")
-                    _append_pending_cookie(connection.scope, _make_clear_cookie(REFRESH_COOKIE_KEY))
-                    _append_pending_cookie(connection.scope, _make_clear_cookie(ACCESS_COOKIE_KEY))
-                    raise NotAuthorizedException()
-
-                if row.revoked_at is not None:
-                    grace = dt.timedelta(seconds=SETTINGS.REFRESH_ROTATION_GRACE_SECONDS)
-                    if row.revoked_reason == "rotated" and now < row.revoked_at + grace:
-                        # Concurrent-refresh race: tolerate by using the active sibling row.
-                        sibling = (
-                            await session.execute(
-                                select(UserSession).where(
-                                    UserSession.family_id == row.family_id,
-                                    UserSession.revoked_at.is_(None),
+                    rejected = "no_row"
+                else:
+                    now = _now()
+                    family_id = row.family_id
+                    row_user_id = row.user_id
+                    if row.expires_at < now:
+                        await _revoke_session_by_jti(session, row.jti, reason="expired")
+                        rejected = "expired"
+                    elif row.revoked_at is not None:
+                        grace = dt.timedelta(seconds=SETTINGS.REFRESH_ROTATION_GRACE_SECONDS)
+                        if row.revoked_reason == "rotated" and now < row.revoked_at + grace:
+                            sibling = (
+                                await session.execute(
+                                    select(UserSession).where(
+                                        UserSession.family_id == row.family_id,
+                                        UserSession.revoked_at.is_(None),
+                                    )
                                 )
-                            )
-                        ).scalar_one_or_none()
-                        if sibling is None:
-                            _append_pending_cookie(connection.scope, _make_clear_cookie(REFRESH_COOKIE_KEY))
-                            _append_pending_cookie(connection.scope, _make_clear_cookie(ACCESS_COOKIE_KEY))
-                            raise NotAuthorizedException()
-                        user = await _load_user_with_roles(session, sibling.user_id)
-                        if user is None:
-                            raise NotAuthorizedException()
-                        sibling.last_used_at = now
-                        access_token, access_ttl = _encode_access_token(user, list(user.event_roles))
-                        _append_pending_cookie(connection.scope, _make_access_cookie(access_token, access_ttl))
-                        _set_current_session_jti(connection.scope, sibling.jti)
-                        user_id_ctx.set(user.id)
-                        return AuthenticationResult(user=user, auth=token)
-                    # Outside the grace window or revoked for another reason → reuse detected.
-                    await _revoke_family(session, row.family_id, reason="reuse_detected")
-                    _append_pending_cookie(connection.scope, _make_clear_cookie(REFRESH_COOKIE_KEY))
-                    _append_pending_cookie(connection.scope, _make_clear_cookie(ACCESS_COOKIE_KEY))
-                    raise NotAuthorizedException()
+                            ).scalar_one_or_none()
+                            if sibling is None:
+                                rejected = "no_sibling"
+                            else:
+                                sibling_jti = sibling.jti
+                                sibling_user_id = sibling.user_id
+                                sibling.last_used_at = now
+                        else:
+                            await _revoke_family(session, row.family_id, reason="reuse_detected")
+                            rejected = "reuse_detected"
 
-                user = await _load_user_with_roles(session, row.user_id)
+            if rejected:
+                _mark_anonymous_and_raise()
+
+            # Phase 2: load user + (if rotation) mint new session row, in a new transaction.
+            async with session.begin():
+                if sibling_jti is not None and sibling_user_id is not None:
+                    # Grace-window branch: reuse the sibling row; just mint a fresh access token.
+                    user = await _load_user_with_roles(session, sibling_user_id)
+                    if user is None:
+                        _mark_anonymous_and_raise()
+                    access_token, access_ttl = _encode_access_token(user, list(user.event_roles))
+                    _append_pending_cookie(connection.scope, _make_access_cookie(access_token, access_ttl))
+                    _set_current_session_jti(connection.scope, sibling_jti)
+                    user_id_ctx.set(user.id)
+                    return AuthenticationResult(user=user, auth=token)
+
+                # Standard rotation branch.
+                assert row_user_id is not None
+                assert token.jti is not None
+                await _revoke_session_by_jti(session, token.jti, reason="rotated")
+                user = await _load_user_with_roles(session, row_user_id)
                 if user is None:
-                    raise NotAuthorizedException()
-
-                # Rotate: mark current row rotated, mint a new sibling in the same family.
-                row.revoked_at = now
-                row.revoked_reason = "rotated"
+                    _mark_anonymous_and_raise()
 
                 access_cookie, refresh_cookie, new_jti = await _issue_login_session(
                     session,
                     user,
                     list(user.event_roles),
                     user_agent=connection.headers.get("user-agent"),
-                    family_id=row.family_id,
+                    family_id=family_id,
                 )
                 _append_pending_cookie(connection.scope, access_cookie)
                 _append_pending_cookie(connection.scope, refresh_cookie)
                 _set_current_session_jti(connection.scope, new_jti)
                 user_id_ctx.set(user.id)
-                # Re-decode the new access token so callers get a sensible token object back.
-                # The on-disk session row stores the canonical state; the token shape just
-                # mirrors what the next request will present.
                 return AuthenticationResult(user=user, auth=token)
 
     async def _authenticate_via_legacy(

@@ -1,7 +1,7 @@
 ---
 title: Split single auth token into access + refresh with server-side sessions
 created: 2026-05-06
-status: draft
+status: in-progress
 ---
 
 # Split single auth token into access + refresh with server-side sessions
