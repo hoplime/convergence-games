@@ -337,40 +337,43 @@ class EventManagerController(Controller):
         transaction: AsyncSession,
         data: Annotated[PutEventManageScheduleForm, Body(media_type=RequestEncodingType.JSON)],
     ) -> Response[str]:
-        print(data)
-        # Set the event's sessions to the new data - including deleting any existing sessions
-        new_sessions: list[Session] = []
+        # Diff-based update: reuse existing Session rows so their primary keys (and
+        # any downstream Allocation / SessionAttendance rows) survive a save.
+        # Key: (committed, game_id, table_id, time_slot_id). Saving an uncommitted
+        # draft (data.commit=False) only diffs against uncommitted sessions; a
+        # commit (data.commit=True) ensures both committed and uncommitted
+        # variants exist for every entry.
+        existing_by_key: dict[tuple[bool, int, int, int], Session] = {
+            (s.committed, s.game_id, s.table_id, s.time_slot_id): s for s in event.sessions
+        }
 
-        if not data.commit:
-            # We are not committing, so don't remove existing committed sessions
-            new_sessions = [s for s in event.sessions if s.committed]
+        desired_committed_flags: tuple[bool, ...] = (False, True) if data.commit else (False,)
 
-        for session_data in data.sessions:
-            new_sessions.append(
+        desired_keys: set[tuple[bool, int, int, int]] = {
+            (committed, session_data.game, session_data.table, session_data.time_slot)
+            for session_data in data.sessions
+            for committed in desired_committed_flags
+        }
+
+        for key in desired_keys - existing_by_key.keys():
+            committed, game_id, table_id, time_slot_id = key
+            transaction.add(
                 Session(
-                    game_id=session_data.game,
-                    table_id=session_data.table,
-                    time_slot_id=session_data.time_slot,
+                    game_id=game_id,
+                    table_id=table_id,
+                    time_slot_id=time_slot_id,
                     event_id=event.id,
-                    committed=False,
+                    committed=committed,
                 )
             )
-            if data.commit:
-                # Also add a committed session for the game
-                new_sessions.append(
-                    Session(
-                        game_id=session_data.game,
-                        table_id=session_data.table,
-                        time_slot_id=session_data.time_slot,
-                        event_id=event.id,
-                        committed=True,
-                    )
-                )
 
-        event.sessions = new_sessions
-
-        # Save the event
-        transaction.add(event)
+        for key, session in existing_by_key.items():
+            committed_flag = key[0]
+            if committed_flag not in desired_committed_flags:
+                continue  # not in scope (e.g., committed sessions during a draft save)
+            if key in desired_keys:
+                continue  # reused
+            await transaction.delete(session)
 
         return Response(content="", status_code=HTTP_204_NO_CONTENT)
 

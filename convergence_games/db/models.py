@@ -171,7 +171,7 @@ class Event(Base):
     # Relationships
     rooms: Mapped[list[Room]] = relationship(back_populates="event", lazy="noload")
     tables: Mapped[list[Table]] = relationship(back_populates="event", lazy="noload")
-    sessions: Mapped[list[Session]] = relationship(back_populates="event", lazy="noload", cascade="all, delete-orphan")
+    sessions: Mapped[list[Session]] = relationship(back_populates="event", lazy="noload", cascade="all")
     time_slots: Mapped[list[TimeSlot]] = relationship(back_populates="event", lazy="noload")
     games: Mapped[list[Game]] = relationship(back_populates="event", lazy="noload")
     user_roles: Mapped[list[UserEventRole]] = relationship(back_populates="event", lazy="noload")

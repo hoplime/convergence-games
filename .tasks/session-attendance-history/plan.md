@@ -1,7 +1,7 @@
 ---
 title: Session Attendance History
 created: 2026-05-06
-status: draft
+status: in-progress
 ---
 
 # Session Attendance History
