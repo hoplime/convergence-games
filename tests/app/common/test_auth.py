@@ -96,11 +96,17 @@ async def test_find_user_by_email_case_insensitive(session: AsyncSession) -> Non
 @pytest.mark.asyncio
 async def test_find_user_by_email_prefers_email_provider(session: AsyncSession) -> None:
     email_user = await _create_user_with_login(
-        session, LoginProvider.EMAIL, "shared@example.com", provider_email="shared@example.com",
+        session,
+        LoginProvider.EMAIL,
+        "shared@example.com",
+        provider_email="shared@example.com",
         first_name="EmailUser",
     )
     _ = await _create_user_with_login(
-        session, LoginProvider.GOOGLE, "google-sub-456", provider_email="shared@example.com",
+        session,
+        LoginProvider.GOOGLE,
+        "google-sub-456",
+        provider_email="shared@example.com",
         first_name="GoogleUser",
     )
     found = await find_user_by_email(session, "shared@example.com")
