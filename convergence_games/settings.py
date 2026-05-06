@@ -107,6 +107,9 @@ class Settings(BaseSettings):
     # OAuth
     SIGNING_KEY: str = ""
     TOKEN_SECRET: str = ""
+    ACCESS_TOKEN_TTL_MINUTES: int = 15
+    REFRESH_TOKEN_TTL_DAYS: int = 180
+    REFRESH_ROTATION_GRACE_SECONDS: int = 5
     BASE_REDIRECT_URI: str | None = "https://tolocalhost.com"
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""

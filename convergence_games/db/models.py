@@ -970,6 +970,29 @@ class UserLogin(Base):
     __table_args__ = (UniqueConstraint("provider", "provider_user_id"),)
 
 
+class UserSession(Base):
+    jti: Mapped[str] = mapped_column(unique=True, index=True)
+    family_id: Mapped[str] = mapped_column(index=True)
+    expires_at: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True))
+    last_used_at: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True))
+    revoked_at: Mapped[dt.datetime | None] = mapped_column(DateTimeUTC(timezone=True), nullable=True, default=None)
+    revoked_reason: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    user_agent: Mapped[str | None] = mapped_column(nullable=True, default=None)
+
+    # Foreign Keys
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+
+    # Relationships
+    user: Mapped[User] = relationship(foreign_keys=user_id, lazy="noload")
+
+    @validates("expires_at", "last_used_at", "revoked_at")
+    def validate_tz_info(self, _: str, value: dt.datetime) -> dt.datetime:
+        # value may be None for nullable fields (revoked_at); fall through unchanged in that case.
+        if value is not None and value.tzinfo is None:
+            value = value.replace(tzinfo=dt.timezone.utc)
+        return value
+
+
 class UserEmailVerificationCode(Base):
     code: Mapped[str] = mapped_column(index=True)
     email: Mapped[str] = mapped_column(index=True)
