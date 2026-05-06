@@ -7,7 +7,7 @@
                 {% if games_by_event %}
                     {% for event, games in games_by_event %}
                         <h2 class="text-lg font-semibold">{{ event.name }}</h2>
-                        <ul class="list bg-base-200 rounded-box">
+                        <ul class="list rounded-box bg-base-200">
                             {% for game in games %}
                                 <li class="list-row items-center">
                                     <div>{{ game.name }}</div>
@@ -21,24 +21,41 @@
                                         >)
                                     </div>
                                     <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral">View</a>
-                                    <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral">Edit</a>
+                                    {% if event.is_editing_open() %}
+                                        <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral">Edit</a>
+                                    {% else %}
+                                        <button class="btn-disabled btn btn-sm btn-neutral" disabled>Edit</button>
+                                    {% endif %}
                                 </li>
                             {% endfor %}
                         </ul>
+                        {% if event.is_submissions_open() %}
+                            <button
+                                class="btn mx-auto btn-xl btn-primary"
+                                hx-get="/event/{{ swim(event) }}/submit-game"
+                                hx-target="#content"
+                                hx-push-url="true"
+                            >
+                                Submit another game
+                            </button>
+                        {% else %}
+                            <p class="text-base-content/70">
+                                Game submissions are not currently open for {{ event.name }}.
+                            </p>
+                        {% endif %}
                     {% endfor %}
-                    <button
-                        class="btn btn-xl btn-primary mx-auto"
-                        hx-get="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"
-                        hx-target="#content"
-                        hx-push-url="true"
-                    >
-                        Submit another game
-                    </button>
                 {% else %}
                     <p>You haven't submitted anything yet.</p>
-                    <a class="btn btn-xl btn-primary mx-auto" href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game">
-                        Submit a Game
-                    </a>
+                    {% if default_event and default_event.is_submissions_open() %}
+                        <a
+                            class="btn mx-auto btn-xl btn-primary"
+                            href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"
+                        >
+                            Submit a Game
+                        </a>
+                    {% else %}
+                        <p class="text-base-content/70">Game submissions are not currently open.</p>
+                    {% endif %}
                 {% endif %}
             </div>
         </PageContainer>

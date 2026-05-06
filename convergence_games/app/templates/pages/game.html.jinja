@@ -155,7 +155,11 @@
                             <L href="https://discord.gg/4wBtAG2rjt">Discord</L>.
                         </p>
                         <div class="card-actions justify-start">
-                            <a href="/game/{{ swim(game) }}/edit" class="btn btn-primary">Edit</a>
+                            {% if game.event.is_editing_open() %}
+                                <a href="/game/{{ swim(game) }}/edit" class="btn btn-primary">Edit</a>
+                            {% else %}
+                                <button class="btn btn-primary btn-disabled" disabled>Editing closed</button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

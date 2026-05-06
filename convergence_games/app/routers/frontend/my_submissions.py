@@ -9,6 +9,7 @@ from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
 from convergence_games.db.models import Event, Game
+from convergence_games.settings import SETTINGS
 
 
 class MySubmissionsController(Controller):
@@ -39,8 +40,12 @@ class MySubmissionsController(Controller):
             (event, list(event_games)) for event, event_games in groupby(games, key=lambda g: g.event)
         ]
 
+        default_event = (
+            await transaction.execute(select(Event).where(Event.id == SETTINGS.DEFAULT_EVENT_ID))
+        ).scalar_one_or_none()
+
         return HTMXBlockTemplate(
             template_name="pages/my_submissions.html.jinja",
             block_name=request.htmx.target,
-            context={"games_by_event": games_by_event},
+            context={"games_by_event": games_by_event, "default_event": default_event},
         )
