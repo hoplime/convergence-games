@@ -1,27 +1,36 @@
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from cryptography.fernet import Fernet
-from litestar.exceptions import HTTPException
+from litestar.exceptions import HTTPException, NotAuthorizedException
 from litestar.response import Redirect
 from pydantic import BaseModel
 from sqlalchemy import String, func, or_, select
 from sqlalchemy import cast as sql_cast
+from sqlalchemy import update as sql_update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from convergence_games.app.app_config.jwt_cookie_auth import (
     LEGACY_COOKIE_KEY,
+    REFRESH_COOKIE_KEY,
+    _decode_token,
     _issue_login_session,
     _make_clear_cookie,
+    _revoke_session_by_jti,
 )
 from convergence_games.db.enums import LoginProvider
-from convergence_games.db.models import User, UserEventRole, UserLogin
+from convergence_games.db.models import User, UserEventRole, UserLogin, UserSession
 from convergence_games.db.ocean import Sqid
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
+
+if TYPE_CHECKING:
+    from convergence_games.app.request_type import Request
 
 
 class AuthIntent(StrEnum):
@@ -268,3 +277,26 @@ class PendingOAuthLink(BaseModel):
     def decode(cls, encoded: str) -> PendingOAuthLink:
         decoded = fernet.decrypt(encoded).decode()
         return cls.model_validate_json(decoded)
+
+
+async def logout_current_session(request: Request, transaction: AsyncSession) -> None:
+    """Revoke the user_session row tied to the current request's refresh cookie, if any."""
+    refresh_value = request.cookies.get(REFRESH_COOKIE_KEY)
+    if refresh_value is None:
+        return
+    try:
+        token = _decode_token(refresh_value)
+    except NotAuthorizedException:
+        return
+    if token.token_type != "refresh" or token.jti is None:
+        return
+    await _revoke_session_by_jti(transaction, token.jti, reason="logout")
+
+
+async def revoke_all_sessions_for_user(transaction: AsyncSession, user_id: int, reason: str) -> None:
+    """Mark every active user_session row for user_id revoked. Used by 'sign out everywhere'."""
+    await transaction.execute(
+        sql_update(UserSession)
+        .where(UserSession.user_id == user_id, UserSession.revoked_at.is_(None))
+        .values(revoked_at=dt.datetime.now(tz=dt.timezone.utc), revoked_reason=reason)
+    )
