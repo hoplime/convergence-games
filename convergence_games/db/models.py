@@ -133,6 +133,41 @@ class Event(Base):
     timezone: Mapped[str] = mapped_column(default="Pacific/Auckland")
     max_party_size: Mapped[int] = mapped_column(default=3, server_default="3")
 
+    # Time span gating — NULL = default (submissions/editing open; preferences/planner closed)
+    submissions_open_at: Mapped[dt.datetime | None] = mapped_column(DateTimeUTC(timezone=True), nullable=True)
+    submissions_close_at: Mapped[dt.datetime | None] = mapped_column(DateTimeUTC(timezone=True), nullable=True)
+    editing_close_at: Mapped[dt.datetime | None] = mapped_column(DateTimeUTC(timezone=True), nullable=True)
+    preferences_open_at: Mapped[dt.datetime | None] = mapped_column(DateTimeUTC(timezone=True), nullable=True)
+    planner_open_at: Mapped[dt.datetime | None] = mapped_column(DateTimeUTC(timezone=True), nullable=True)
+
+    def is_submissions_open(self, now: dt.datetime | None = None) -> bool:
+        now = now or dt.datetime.now(dt.UTC)
+        if self.submissions_open_at is not None and now < self.submissions_open_at:
+            return False
+        if self.submissions_close_at is not None and now >= self.submissions_close_at:
+            return False
+        return True
+
+    def is_editing_open(self, now: dt.datetime | None = None) -> bool:
+        now = now or dt.datetime.now(dt.UTC)
+        if self.submissions_open_at is not None and now < self.submissions_open_at:
+            return False
+        if self.editing_close_at is not None and now >= self.editing_close_at:
+            return False
+        return True
+
+    def is_preferences_open(self, now: dt.datetime | None = None) -> bool:
+        now = now or dt.datetime.now(dt.UTC)
+        if self.preferences_open_at is None or now < self.preferences_open_at:
+            return False
+        return True
+
+    def is_planner_open(self, now: dt.datetime | None = None) -> bool:
+        now = now or dt.datetime.now(dt.UTC)
+        if self.planner_open_at is None or now < self.planner_open_at:
+            return False
+        return True
+
     # Relationships
     rooms: Mapped[list[Room]] = relationship(back_populates="event", lazy="noload")
     tables: Mapped[list[Table]] = relationship(back_populates="event", lazy="noload")
