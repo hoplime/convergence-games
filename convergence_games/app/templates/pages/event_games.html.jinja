@@ -104,18 +104,22 @@
                                 set checkedCbs to #filter_form.querySelectorAll('input[type=checkbox][name]:checked')
                                 set my innerHTML to ''
                                 for cb in checkedCbs
-                                    make a <button.badge.badge-sm.badge-primary.gap-1.cursor-pointer/>
+                                    make a <span.badge.badge-sm.badge-primary.gap-1.cursor-pointer/>
                                     set it.textContent to cb.parentElement.textContent.trim() + ' ×'
-                                    set it's @data-cb to cb.id
+                                    set it's @data-name to cb.name
+                                    set it's @data-value to cb.value
                                     put it at end of me
                                 end
                             end
 
                             on click
-                                if target.dataset.cb
-                                    set cb to #{target.dataset.cb}
-                                    set cb.checked to false
-                                    send change to cb
+                                if target.dataset.name
+                                    for cb in #filter_form.querySelectorAll('input[type=checkbox][name]')
+                                        if cb.name is target.dataset.name and cb.value is target.dataset.value
+                                            set cb.checked to false
+                                            send change to cb
+                                        end
+                                    end
                                 end
                             end
                             "
