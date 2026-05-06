@@ -25,6 +25,7 @@ from convergence_games.db.ocean import swim, swim_upper
 from convergence_games.permissions.permissions import user_has_permission
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.time_utils import nice_time_format, time_range_format
+from convergence_games.utils.user_agent import format_user_agent
 
 
 def extract_title(text: jinjax.catalog.CallerWrapper) -> str:
@@ -81,6 +82,7 @@ jinja_env.filters["debug"] = debug
 jinja_env.filters["extract_title"] = extract_title
 jinja_env.filters["nice_time_format"] = nice_time_format
 jinja_env.filters["time_range_format"] = time_range_format
+jinja_env.filters["format_user_agent"] = format_user_agent
 jinja_env.filters["humanize"] = naturaldelta
 jinja_env.filters["quote"] = quote
 jinja_env.filters["unquote"] = unquote

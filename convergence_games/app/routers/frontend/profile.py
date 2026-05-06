@@ -26,7 +26,7 @@ from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import LoginProvider
-from convergence_games.db.models import User, UserEventRole, UserLogin
+from convergence_games.db.models import User, UserEventRole, UserLogin, UserSession
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.utils.email import normalize_email
 
@@ -85,10 +85,29 @@ async def render_profile(
         if login.provider not in user_login_dict:
             user_login_dict[login.provider] = []
         user_login_dict[login.provider].append(login)
+
+    sessions: Sequence[UserSession] = (
+        (
+            await transaction.execute(
+                select(UserSession)
+                .where(UserSession.user_id == user.id, UserSession.revoked_at.is_(None))
+                .order_by(UserSession.last_used_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    current_session_jti = request.scope["state"].get("current_session_jti") if "state" in request.scope else None
+
     return HTMXBlockTemplate(
         template_name="pages/profile.html.jinja",
         block_name=request.htmx.target,
-        context={"profile_user": profile_user, "user_logins": user_login_dict},
+        context={
+            "profile_user": profile_user,
+            "user_logins": user_login_dict,
+            "sessions": sessions,
+            "current_session_jti": current_session_jti,
+        },
         cookies=cookies,
     )
 

@@ -1,0 +1,46 @@
+{#def
+    sessions,
+    current_session_jti = None,
+#}
+<div id="sessions-panel">
+    <FieldsetBase>
+        <legend class="fieldset-legend">Active Sessions</legend>
+        {% if not sessions %}
+            <p class="text-sm text-base-content/70">No active sessions.</p>
+        {% else %}
+            <ul class="list">
+                {% for session in sessions %}
+                    {% set is_current = (session.jti == current_session_jti) %}
+                    <li class="list-row flex items-start gap-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="font-medium">{{ session.user_agent | format_user_agent }}</div>
+                            <div class="text-sm text-base-content/70">
+                                Created {{ session.created_at | nice_time_format }}
+                                &middot; last seen {{ session.last_used_at | nice_time_format }}
+                            </div>
+                        </div>
+                        {% if is_current %}
+                            <div class="badge shrink-0 badge-success">This device</div>
+                        {% else %}
+                            <button
+                                class="btn shrink-0 btn-sm btn-error"
+                                hx-post="/auth/sessions/{{ swim(session) }}/revoke"
+                                hx-swap="none"
+                                hx-trigger="click"
+                                hx-on::after-request="htmx.ajax('GET', '/profile', {target: '#content'})"
+                            >
+                                Revoke
+                            </button>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <button
+            class="btn self-start btn-sm btn-warning"
+            hx-post="/auth/logout-everywhere"
+        >
+            Sign out everywhere
+        </button>
+    </FieldsetBase>
+</div>
