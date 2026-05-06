@@ -28,21 +28,24 @@
                                     {% endif %}
                                 </li>
                             {% endfor %}
+                            {% if event.is_submissions_open() %}
+                                <li class="list-row items-center">
+                                    <a
+                                        class="col-span-full flex items-center gap-2 text-primary"
+                                        href="/event/{{ swim(event) }}/submit-game"
+                                    >
+                                        <span class="icon-[mdi--plus-circle-outline]"></span>
+                                        Submit another game to {{ event.name }}
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="list-row items-center">
+                                    <span class="col-span-full text-base-content/50">
+                                        Submissions closed for {{ event.name }}
+                                    </span>
+                                </li>
+                            {% endif %}
                         </ul>
-                        {% if event.is_submissions_open() %}
-                            <button
-                                class="btn mx-auto btn-xl btn-primary"
-                                hx-get="/event/{{ swim(event) }}/submit-game"
-                                hx-target="#content"
-                                hx-push-url="true"
-                            >
-                                Submit another game
-                            </button>
-                        {% else %}
-                            <p class="text-base-content/70">
-                                Game submissions are not currently open for {{ event.name }}.
-                            </p>
-                        {% endif %}
                     {% endfor %}
                 {% else %}
                     <p>You haven't submitted anything yet.</p>
@@ -51,7 +54,7 @@
                             class="btn mx-auto btn-xl btn-primary"
                             href="/event/{{ SETTINGS.DEFAULT_EVENT_SQID }}/submit-game"
                         >
-                            Submit a Game
+                            Submit a Game to {{ default_event.name }}
                         </a>
                     {% else %}
                         <p class="text-base-content/70">Game submissions are not currently open.</p>
