@@ -203,6 +203,7 @@ class OAuthController(Controller):
         self,
         code: str,
         provider_name: LoginProvider,
+        request: Request,
         transaction: AsyncSession,
         state_query: Annotated[str | None, Parameter(query="state")] = None,
     ) -> Redirect | Template:
@@ -210,6 +211,7 @@ class OAuthController(Controller):
         linking_account_sqid = cast(Sqid, state.linking_account_sqid)
         linking_account_id = sink(linking_account_sqid) if linking_account_sqid is not None else None
         redirect_path = state.redirect_path
+        user_agent = request.headers.get("user-agent")
 
         provider = get_oauth_provider(provider_name)
         redirect_uri = build_redirect_uri(provider_name)
@@ -233,6 +235,7 @@ class OAuthController(Controller):
                     linking_account_id=linking_account_id,
                     redirect_path=redirect_path,
                     extra_email_to_link=pending_email,
+                    user_agent=user_agent,
                 )
             except HTTPException as exc:
                 if exc.status_code == 403:
@@ -251,6 +254,7 @@ class OAuthController(Controller):
                 linking_account_id=None,
                 redirect_path=redirect_path,
                 extra_email_to_link=pending_email,
+                user_agent=user_agent,
             )
         except NoAccountForSignInError:
             pass
@@ -270,6 +274,7 @@ class OAuthController(Controller):
                 linking_account_id=matched_user.id,
                 redirect_path=redirect_path,
                 extra_email_to_link=pending_email,
+                user_agent=user_agent,
             )
 
         if matched_user is not None and provider_name in (LoginProvider.DISCORD, LoginProvider.FACEBOOK):
@@ -300,12 +305,14 @@ class OAuthController(Controller):
             linking_account_id=None,
             redirect_path=redirect_path,
             extra_email_to_link=pending_email,
+            user_agent=user_agent,
         )
 
     @post(path="/link-confirm")
     async def post_link_confirm(
         self,
         data: Annotated[PostLinkConfirmForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        request: Request,
         transaction: AsyncSession,
     ) -> Redirect:
         pending = PendingOAuthLink.decode(data.payload)
@@ -316,6 +323,7 @@ class OAuthController(Controller):
             user_last_name=pending.user_last_name,
             user_profile_picture=pending.user_profile_picture,
         )
+        user_agent = request.headers.get("user-agent")
         if data.link == "true":
             return await authorize_flow(
                 transaction=transaction,
@@ -324,6 +332,7 @@ class OAuthController(Controller):
                 intent=AuthIntent.LINK,
                 linking_account_id=pending.candidate_user_id,
                 redirect_path=pending.redirect_path,
+                user_agent=user_agent,
             )
         return await authorize_flow(
             transaction=transaction,
@@ -331,6 +340,7 @@ class OAuthController(Controller):
             profile_info=profile_info,
             intent=AuthIntent.SIGN_UP,
             redirect_path=pending.redirect_path,
+            user_agent=user_agent,
         )
 
 

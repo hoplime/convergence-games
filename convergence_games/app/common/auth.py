@@ -12,7 +12,11 @@ from sqlalchemy import cast as sql_cast
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from convergence_games.app.app_config.jwt_cookie_auth import build_token_extras, jwt_cookie_auth
+from convergence_games.app.app_config.jwt_cookie_auth import (
+    LEGACY_COOKIE_KEY,
+    _issue_login_session,
+    _make_clear_cookie,
+)
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import User, UserEventRole, UserLogin
 from convergence_games.db.ocean import Sqid
@@ -169,6 +173,7 @@ async def authorize_flow(
     linking_account_id: int | None = None,
     redirect_path: str | None = None,
     extra_email_to_link: str | None = None,
+    user_agent: str | None = None,
 ) -> Redirect:
     user_login = (
         await transaction.execute(
@@ -192,9 +197,15 @@ async def authorize_flow(
     event_roles = list(
         (await transaction.execute(select(UserEventRole).where(UserEventRole.user_id == user_id))).scalars().all()
     )
-    login = jwt_cookie_auth.login(str(user_id), token_extras=build_token_extras(user, event_roles))
+    access_cookie, refresh_cookie, _jti = await _issue_login_session(
+        transaction, user, event_roles, user_agent=user_agent
+    )
     redirect_path = redirect_path or "/profile"
-    return Redirect(path=redirect_path, headers={"HX-Push-Url": redirect_path}, cookies=login.cookies)
+    return Redirect(
+        path=redirect_path,
+        headers={"HX-Push-Url": redirect_path},
+        cookies=[access_cookie, refresh_cookie, _make_clear_cookie(LEGACY_COOKIE_KEY)],
+    )
 
 
 async def _attach_email_login_if_missing(transaction: AsyncSession, user: User, email: str) -> None:

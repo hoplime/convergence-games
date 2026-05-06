@@ -10,7 +10,11 @@ from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.app_config.jwt_cookie_auth import build_token_extras, jwt_cookie_auth
+from convergence_games.app.app_config.jwt_cookie_auth import (
+    LEGACY_COOKIE_KEY,
+    _issue_login_session,
+    _make_clear_cookie,
+)
 from convergence_games.app.common.auth import (
     AuthIntent,
     OAuthRedirectState,
@@ -163,6 +167,7 @@ class ProfileController(Controller):
     async def post_sign_up_from_verified_email(
         self,
         data: Annotated[PostFromVerifiedEmailForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        request: Request,
         transaction: AsyncSession,
     ) -> Redirect:
         state = OAuthRedirectState.decode(data.state)
@@ -175,6 +180,7 @@ class ProfileController(Controller):
             profile_info=ProfileInfo(user_id=email, user_email=email),
             intent=AuthIntent.SIGN_UP,
             redirect_path=state.redirect_path,
+            user_agent=request.headers.get("user-agent"),
         )
 
     @get(path="/email-sign-in")
@@ -261,10 +267,16 @@ class ProfileController(Controller):
             .scalars()
             .all()
         )
-        login_response = jwt_cookie_auth.login(str(db_user.id), token_extras=build_token_extras(db_user, event_roles))
+        access_cookie, refresh_cookie, _jti = await _issue_login_session(
+            transaction,
+            db_user,
+            event_roles,
+            user_agent=request.headers.get("user-agent"),
+        )
 
         response = await render_profile(request, transaction, user_override=db_user)
-        for cookie in login_response.cookies:
-            response.cookies.append(cookie)
+        response.cookies.append(access_cookie)
+        response.cookies.append(refresh_cookie)
+        response.cookies.append(_make_clear_cookie(LEGACY_COOKIE_KEY))
         response.headers["HX-Refresh"] = "true"
         return response

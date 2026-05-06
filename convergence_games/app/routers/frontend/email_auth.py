@@ -21,6 +21,7 @@ from convergence_games.app.common.auth import (
     authorize_flow,
     find_user_by_email,
 )
+from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import UserEmailVerificationCode, UserLogin
@@ -34,6 +35,7 @@ async def login_with_email_and_code(
     transaction: AsyncSession,
     state: OAuthRedirectState,
     intent: AuthIntent | None = None,
+    user_agent: str | None = None,
 ) -> Redirect:
     email = normalize_email(email)
     user_email_verification_code = (
@@ -65,6 +67,7 @@ async def login_with_email_and_code(
             intent=resolved_intent,
             linking_account_id=linking_account_id,
             redirect_path=state.redirect_path,
+            user_agent=user_agent,
         )
     except NoAccountForSignInError:
         pass
@@ -90,6 +93,7 @@ async def login_with_email_and_code(
                 intent=AuthIntent.LINK,
                 linking_account_id=matched_user.id,
                 redirect_path=state.redirect_path,
+                user_agent=user_agent,
             )
 
     raise NoAccountForSignInError(provider=LoginProvider.EMAIL, email=email)
@@ -139,6 +143,7 @@ class EmailAuthController(Controller):
     async def get_magic_link(
         self,
         magic_link_code: Annotated[str, Parameter(query="code")],
+        request: Request,
         transaction: AsyncSession,
         state_query: Annotated[str | None, Parameter(query="state")] = None,
     ) -> Redirect | Template:
@@ -146,7 +151,12 @@ class EmailAuthController(Controller):
         code, email = UserEmailVerificationCode.decode_magic_link_code(magic_link_code)
         try:
             return await login_with_email_and_code(
-                email, code, transaction, state=state, intent=AuthIntent.SIGN_IN
+                email,
+                code,
+                transaction,
+                state=state,
+                intent=AuthIntent.SIGN_IN,
+                user_agent=request.headers.get("user-agent"),
             )
         except (NoAccountForSignInError, AccountAlreadyExistsError) as outcome:
             return _render_outcome_after_verify(outcome, fallback_email=email, state=state)
@@ -155,6 +165,7 @@ class EmailAuthController(Controller):
     async def post_verify_code(
         self,
         data: Annotated[PostVerifyCodeForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        request: Request,
         transaction: AsyncSession,
         state_query: Annotated[str | None, Parameter(query="state")] = None,
     ) -> Redirect | Template:
@@ -162,7 +173,12 @@ class EmailAuthController(Controller):
         intent = _resolve_intent_from_mode(data.mode) or state.mode
         try:
             return await login_with_email_and_code(
-                data.email, data.code, transaction, state=state, intent=intent
+                data.email,
+                data.code,
+                transaction,
+                state=state,
+                intent=intent,
+                user_agent=request.headers.get("user-agent"),
             )
         except (NoAccountForSignInError, AccountAlreadyExistsError) as outcome:
             return _render_outcome_after_verify(outcome, fallback_email=data.email, state=state)
