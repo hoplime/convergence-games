@@ -8,10 +8,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from convergence_games.app.alerts import Alert, AlertError
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import UserGamePreferenceValue
 from convergence_games.db.models import (
+    Event,
     Game,
     Session,
     Table,
@@ -21,6 +23,7 @@ from convergence_games.db.models import (
     UserGamePreference,
 )
 from convergence_games.db.ocean import Sqid, sink
+from convergence_games.permissions import user_has_permission
 from convergence_games.services import ImageLoader
 
 
@@ -137,12 +140,21 @@ class GameController(Controller):
     @put(path="/{game_sqid:str}/preference")
     async def put_game_preference(
         self,
+        request: Request,
         game_sqid: Sqid,
         user: User,
         transaction: AsyncSession,
         data: Annotated[RatingPutData, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Response[str]:
         game_id: int = sink(game_sqid)
+
+        event = (
+            await transaction.execute(select(Event).join(Game, Game.event_id == Event.id).where(Game.id == game_id))
+        ).scalar_one_or_none()
+        if event is not None and not event.is_preferences_open():
+            if not user_has_permission(user, "event", (event, event), "manage_submissions"):
+                raise AlertError([Alert("alert-warning", "Preferences are not currently open for this event.")])
+
         user_game_preference = (
             await transaction.execute(
                 select(UserGamePreference).where(

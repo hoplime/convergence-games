@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import datetime as dt
+
 from litestar import Controller, get, post
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
@@ -526,6 +528,9 @@ class PartyController(Controller):
 
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
+
+        if time_slot.checkin_open_time is not None and dt.datetime.now(dt.UTC) < time_slot.checkin_open_time:
+            raise AlertError([Alert(alert_class="alert-warning", message="Check-in is not open yet for this session.")])
 
         existing_checkin = (
             await transaction.execute(

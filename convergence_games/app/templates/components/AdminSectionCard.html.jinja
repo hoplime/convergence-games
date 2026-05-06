@@ -6,6 +6,7 @@
         <h2 class="card-title text-xl">Admin Section</h2>
         <p>You are an admin for this event.</p>
         <div class="card-actions justify-start">
+            <a href="/event/{{ swim(event) }}/manage-settings" class="btn btn-primary">Manage Settings</a>
             <a href="/event/{{ swim(event) }}/manage-submissions" class="btn btn-primary">Manage Submissions</a>
             <a href="/event/{{ swim(event) }}/manage-schedule" class="btn btn-primary">Manage Schedule</a>
             <a href="/event/{{ swim(event) }}/manage-players" class="btn btn-primary">Manage Players</a>

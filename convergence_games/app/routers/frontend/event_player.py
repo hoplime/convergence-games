@@ -15,6 +15,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 
+from convergence_games.app.alerts import Alert, AlertError
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
@@ -44,6 +45,7 @@ from convergence_games.db.models import (
     UserGamePreference,
 )
 from convergence_games.db.ocean import Sqid, sink, swim
+from convergence_games.permissions import user_has_permission
 
 # region Data Schema
 SqidInt = Annotated[int, BeforeValidator(sink)]
@@ -403,6 +405,11 @@ class EventPlayerController(Controller):
         user: User,
         time_slot_sqid: Annotated[Sqid | None, Parameter()] = None,
     ) -> Template:
+        if not event.is_planner_open() and not user_has_permission(
+            user, "event", (event, event), "manage_submissions"
+        ):
+            raise AlertError([Alert("alert-warning", "The session planner is not currently open for this event.")])
+
         time_slot: TimeSlot | None = None
         if time_slot_sqid is not None:
             time_slot_id = sink(time_slot_sqid)

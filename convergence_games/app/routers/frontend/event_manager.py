@@ -104,6 +104,27 @@ class PutEventManageAllocationForm(BaseModel):
     commit: bool = False
 
 
+def _empty_to_none_utc(v: Any) -> datetime | None:
+    if v == "" or v is None:
+        return None
+    if isinstance(v, str):
+        v = datetime.fromisoformat(v)
+    if isinstance(v, datetime) and v.tzinfo is None:
+        v = v.replace(tzinfo=timezone.utc)
+    return v
+
+
+EmptyToNoneUTC = BeforeValidator(_empty_to_none_utc)
+
+
+class PutEventSettingsForm(BaseModel):
+    submissions_open_at: Annotated[datetime | None, EmptyToNoneUTC] = None
+    submissions_close_at: Annotated[datetime | None, EmptyToNoneUTC] = None
+    editing_close_at: Annotated[datetime | None, EmptyToNoneUTC] = None
+    preferences_open_at: Annotated[datetime | None, EmptyToNoneUTC] = None
+    planner_open_at: Annotated[datetime | None, EmptyToNoneUTC] = None
+
+
 # endregion
 
 
@@ -1214,3 +1235,48 @@ class EventManagerController(Controller):
         _ = await transaction.execute(insert_user_game_played_stmt)
 
         return "Compensated"
+
+    @get(
+        path="/event/{event_sqid:str}/manage-settings",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def get_event_manage_settings(
+        self,
+        request: Request,
+        event: Event,
+        permission: bool,
+    ) -> Template:
+        return HTMXBlockTemplate(
+            template_name="pages/event_manage_settings.html.jinja",
+            block_name=request.htmx.target,
+            context={"event": event},
+        )
+
+    @put(
+        path="/event/{event_sqid:str}/manage-settings",
+        guards=[user_guard],
+        dependencies={
+            "event": event_with(),
+            "permission": permission_check(user_can_manage_submissions),
+        },
+    )
+    async def put_event_manage_settings(
+        self,
+        request: Request,
+        transaction: AsyncSession,
+        event: Event,
+        permission: bool,
+        data: Annotated[PutEventSettingsForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+    ) -> Redirect:
+        event.submissions_open_at = data.submissions_open_at
+        event.submissions_close_at = data.submissions_close_at
+        event.editing_close_at = data.editing_close_at
+        event.preferences_open_at = data.preferences_open_at
+        event.planner_open_at = data.planner_open_at
+        transaction.add(event)
+
+        return Redirect(f"/event/{swim(event)}/manage-settings")

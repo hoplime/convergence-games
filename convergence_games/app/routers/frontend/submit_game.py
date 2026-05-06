@@ -148,9 +148,7 @@ class SubmitGameForm(BaseModel):
     agree_to_use_safety_tools: Annotated[
         Literal["on"] | None, Field(title="Agree to Use Safety Tools", validate_default=True)
     ] = None
-    agree_to_hygiene: Annotated[
-        Literal["on"] | None, Field(title="Agree to Hygiene", validate_default=True)
-    ] = None
+    agree_to_hygiene: Annotated[Literal["on"] | None, Field(title="Agree to Hygiene", validate_default=True)] = None
     no_content_warnings_needed: Annotated[
         Literal["on"] | None, Field(title="No Content Warnings Needed", validate_default=True)
     ] = None
@@ -373,7 +371,12 @@ class SubmitGameController(Controller):
         guards=[user_guard],
         dependencies={"event": event_with(selectinload(Event.time_slots))},
     )
-    async def get_submit_game(self, request: Request, event: Event) -> Template:
+    async def get_submit_game(self, request: Request, event: Event, user: User) -> Template:
+        if not event.is_submissions_open() and not user_has_permission(
+            user, "event", (event, event), "manage_submissions"
+        ):
+            raise AlertError([Alert("alert-warning", "Game submissions are not currently open for this event.")])
+
         return HTMXBlockTemplate(
             template_name="pages/submit_game.html.jinja",
             block_name=request.htmx.target,
@@ -414,6 +417,11 @@ class SubmitGameController(Controller):
         image_loader: ImageLoader,
     ) -> Template:
         assert request.user is not None
+
+        if not game.event.is_editing_open() and not user_has_permission(
+            request.user, "event", (game.event, game.event), "manage_submissions"
+        ):
+            raise AlertError([Alert("alert-warning", "Game editing is not currently open for this event.")])
 
         for image in game.images:
             # TODO: This is a gross hack to get around the fact that we can't use the image loader in the template because of async
@@ -456,6 +464,11 @@ class SubmitGameController(Controller):
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
         assert request.user is not None
+
+        if not event.is_submissions_open() and not user_has_permission(
+            request.user, "event", (event, event), "manage_submissions"
+        ):
+            raise AlertError([Alert("alert-warning", "Game submissions are not currently open for this event.")])
 
         system_kwarg = (
             {"system_id": data.system}
@@ -551,6 +564,11 @@ class SubmitGameController(Controller):
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> HTMXBlockTemplate:
         assert request.user is not None
+
+        if not game.event.is_editing_open() and not user_has_permission(
+            request.user, "event", (game.event, game.event), "manage_submissions"
+        ):
+            raise AlertError([Alert("alert-warning", "Game editing is not currently open for this event.")])
 
         # Update all the properties
         # This is kept in the same order as the POST method to make it easier to compare

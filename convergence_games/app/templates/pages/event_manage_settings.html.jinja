@@ -1,0 +1,106 @@
+<Page>
+    {% block content %}
+        <PageTitle>{{ event.name }} Settings</PageTitle>
+        <PageContainer size="max-w-screen-md">
+            <h2 class="text-xl font-bold">Event Time Windows</h2>
+            <p class="text-base-content/70 mb-4">
+                Control when features become available. Leave blank to use defaults
+                (submissions/editing always open; preferences/planner closed until set).
+            </p>
+            <p class="text-base-content/70 mb-4">
+                All times are in UTC.
+            </p>
+
+            <form method="post" hx-put="/event/{{ swim(event) }}/manage-settings" hx-swap="none" class="space-y-6">
+                <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
+                    <legend class="fieldset-legend">Game Submissions</legend>
+                    <p class="text-sm text-base-content/70 mb-2">When GMs can submit new games.</p>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <label class="form-control w-full">
+                            <div class="label"><span class="label-text">Opens at</span></div>
+                            <input
+                                type="datetime-local"
+                                name="submissions_open_at"
+                                class="input input-bordered w-full"
+                                value="{{ event.submissions_open_at.strftime('%Y-%m-%dT%H:%M') if event.submissions_open_at else '' }}"
+                            />
+                        </label>
+                        <label class="form-control w-full">
+                            <div class="label"><span class="label-text">Closes at</span></div>
+                            <input
+                                type="datetime-local"
+                                name="submissions_close_at"
+                                class="input input-bordered w-full"
+                                value="{{ event.submissions_close_at.strftime('%Y-%m-%dT%H:%M') if event.submissions_close_at else '' }}"
+                            />
+                        </label>
+                    </div>
+                    {% if event.is_submissions_open() %}
+                        <div class="badge badge-success mt-2">Currently open</div>
+                    {% else %}
+                        <div class="badge badge-error mt-2">Currently closed</div>
+                    {% endif %}
+                </fieldset>
+
+                <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
+                    <legend class="fieldset-legend">Game Editing</legend>
+                    <p class="text-sm text-base-content/70 mb-2">When GMs can edit existing games. Opens with submissions, closes independently.</p>
+                    <label class="form-control w-full max-w-xs">
+                        <div class="label"><span class="label-text">Editing closes at</span></div>
+                        <input
+                            type="datetime-local"
+                            name="editing_close_at"
+                            class="input input-bordered w-full"
+                            value="{{ event.editing_close_at.strftime('%Y-%m-%dT%H:%M') if event.editing_close_at else '' }}"
+                        />
+                    </label>
+                    {% if event.is_editing_open() %}
+                        <div class="badge badge-success mt-2">Currently open</div>
+                    {% else %}
+                        <div class="badge badge-error mt-2">Currently closed</div>
+                    {% endif %}
+                </fieldset>
+
+                <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
+                    <legend class="fieldset-legend">Player Preferences</legend>
+                    <p class="text-sm text-base-content/70 mb-2">When players can set dice preferences on games. Closed until a date is set.</p>
+                    <label class="form-control w-full max-w-xs">
+                        <div class="label"><span class="label-text">Opens at</span></div>
+                        <input
+                            type="datetime-local"
+                            name="preferences_open_at"
+                            class="input input-bordered w-full"
+                            value="{{ event.preferences_open_at.strftime('%Y-%m-%dT%H:%M') if event.preferences_open_at else '' }}"
+                        />
+                    </label>
+                    {% if event.is_preferences_open() %}
+                        <div class="badge badge-success mt-2">Currently open</div>
+                    {% else %}
+                        <div class="badge badge-error mt-2">Currently closed</div>
+                    {% endif %}
+                </fieldset>
+
+                <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
+                    <legend class="fieldset-legend">Session Planner</legend>
+                    <p class="text-sm text-base-content/70 mb-2">When players can access the session planner. Closed until a date is set.</p>
+                    <label class="form-control w-full max-w-xs">
+                        <div class="label"><span class="label-text">Opens at</span></div>
+                        <input
+                            type="datetime-local"
+                            name="planner_open_at"
+                            class="input input-bordered w-full"
+                            value="{{ event.planner_open_at.strftime('%Y-%m-%dT%H:%M') if event.planner_open_at else '' }}"
+                        />
+                    </label>
+                    {% if event.is_planner_open() %}
+                        <div class="badge badge-success mt-2">Currently open</div>
+                    {% else %}
+                        <div class="badge badge-error mt-2">Currently closed</div>
+                    {% endif %}
+                </fieldset>
+
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+            </form>
+        </PageContainer>
+    {% endblock %}
+</Page>
