@@ -1,0 +1,78 @@
+{#def
+    form_data: MultiselectFormData,
+    searchable: bool = False,
+#}
+{% set section_id = "filter_section_" ~ form_data.name %}
+<div class="collapse collapse-arrow border border-base-300 bg-base-100">
+    <input type="checkbox" />
+    <div
+        class="collapse-title font-medium"
+        id="{{ section_id }}_title"
+        _="
+        on load or change from #{{ section_id }}
+        set count to <input[name={{ form_data.name }}]:checked in #{{ section_id }}/>'s length
+        if count > 0
+            set my textContent to '{{ form_data.label }} (' + count + ')'
+        else
+            set my textContent to '{{ form_data.label }}'
+        end
+        "
+    >
+        {{ form_data.label }}
+    </div>
+    <div class="collapse-content" id="{{ section_id }}">
+        {% if form_data.description %}
+            <p class="mb-2 text-sm text-base-content/70">{{ form_data.description | safe }}</p>
+        {% endif %}
+        {% if searchable %}
+            <input
+                type="text"
+                class="input input-sm mb-2 w-full"
+                placeholder="Search {{ form_data.label | lower }}..."
+                name="_search_{{ form_data.name }}"
+                _="on keyup
+                set query to my value.toLowerCase()
+                for label in <label/> in #{{ section_id }}
+                    if label.textContent.toLowerCase().includes(query) or query is ''
+                        remove .hidden from label
+                    else
+                        add .hidden to label
+                    end
+                end
+                "
+            />
+        {% endif %}
+        <div class="flex max-h-48 flex-col gap-1 overflow-y-auto">
+            {% for option in form_data.options %}
+                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                        type="checkbox"
+                        class="checkbox checkbox-sm"
+                        name="{{ form_data.name }}"
+                        value="{{ option.value }}"
+                        {% if option.selected %}
+                            _="on load set my.checked to true then trigger change"
+                        {% endif %}
+                    />
+                    <span>{{ option.label }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        <div class="mt-2 flex gap-1">
+            <button
+                type="button"
+                class="btn btn-outline btn-xs btn-primary"
+                _="on click set <input[name={{ form_data.name }}] in #{{ section_id }}/>'s checked to true then trigger change on <input[name={{ form_data.name }}] in #{{ section_id }}/>"
+            >
+                All
+            </button>
+            <button
+                type="button"
+                class="btn btn-outline btn-xs btn-secondary"
+                _="on click set <input[name={{ form_data.name }}] in #{{ section_id }}/>'s checked to false then trigger change on <input[name={{ form_data.name }}] in #{{ section_id }}/>"
+            >
+                None
+            </button>
+        </div>
+    </div>
+</div>

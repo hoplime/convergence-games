@@ -88,6 +88,7 @@
                     "meta.tag.other.LinkOAuthAccount.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.MaxLengthIndicator.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.MultiImageUploadContainer.html invalid.illegal.unrecognized-tag.html",
+                    "meta.tag.other.FilterSection.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.MultiselectTab.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.NavBar.html invalid.illegal.unrecognized-tag.html",
                     "meta.tag.other.NoAccountFound.html invalid.illegal.unrecognized-tag.html",

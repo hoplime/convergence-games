@@ -3,65 +3,138 @@
         <PageTitle>{{ event.name }} Games</PageTitle>
         <PageContainer size="max-w-screen-2xl">
             <h2 class="text-xl">{{ event.name }} Games</h2>
-            {# Game Filters #}
-            <form
-                hx-get="/event/{{ swim(event) }}/games"
-                hx-target="#game_list"
-                hx-push-url="true"
-                hx-trigger="change delay:100ms, reset delay:10ms"
-                hx-params="not filter_tab"
-                class="tabs-border tabs tabs-sm"
-            >
-                <div class="inline-flex h-8 items-center justify-center text-sm">
-                    <span class="icon-[mingcute--filter-fill]"></span>
-                </div>
-                {% if event.is_planner_open() %}
-                    <MultiselectTab :form_data="form_data.session" />
-                {% endif %}
-                <MultiselectTab :form_data="form_data.genre" />
-                <MultiselectTab :form_data="form_data.system" />
-                <MultiselectTab :form_data="form_data.tone" />
-                <MultiselectTab :form_data="form_data.bonus" />
-                <MultiselectTab :form_data="form_data.content" />
-                {% if request.user is not none and event.is_preferences_open() %}
-                    <MultiselectTab :form_data="form_data.preference" />
-                {% endif %}
-            </form>
-            <button
-                type="button"
-                class="btn btn-outline btn-sm btn-secondary md:w-fit"
-                _="on click get the previous <form/> then it.reset()"
-            >
-                <span>Clear Filters</span>
-            </button>
-            {# Game List #}
-            <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" id="game_list">
-                {% block game_list %}
-                    {% for game in games %}
-                        <GameCard
-                            :game="game"
-                            :preference="preferences.get(game.id)"
-                            :user_game_played="user_game_playeds.get(game.id)"
-                            :scheduled_time_slot_ids="scheduled_time_slots.get(game.id, [])"
-                            :display_d20="latest_d20_transaction is not none and latest_d20_transaction.current_balance > 0"
-                        />
-                    {% endfor %}
-                    {% if not games %}
-                        <div class="card col-span-full rounded-box border border-base-300 bg-base-200">
-                            <div class="card-body">
-                                <h2 class="card-title text-xl">No Games Found</h2>
-                                <p>There are no games that match your search criteria.</p>
-                                <p>Try changing your filters or check back later!</p>
-                            </div>
-                        </div>
+
+            <div class="drawer lg:drawer-open">
+                <input id="filter_drawer" type="checkbox" class="drawer-toggle" />
+
+                {# Main content #}
+                <div class="drawer-content flex flex-col gap-2">
+                    {# Mobile filter toggle + active pills #}
+                    <div class="flex flex-wrap items-center gap-2 lg:hidden">
+                        <label
+                            for="filter_drawer"
+                            class="btn btn-sm btn-outline drawer-button"
+                            id="filter_drawer_button"
+                            _="
+                            on load or change from #filter_form
+                            set count to <input[type=checkbox]:checked in #filter_form/>'s length
+                            if count > 0
+                                set my textContent to 'Filters (' + count + ')'
+                            else
+                                set my textContent to 'Filters'
+                            end
+                            "
+                        >
+                            Filters
+                        </label>
+                    </div>
+
+                    {# Active filter pills (visible when sidebar is hidden on mobile) #}
+                    <div
+                        id="active_filter_pills_mobile"
+                        class="flex flex-wrap gap-1 lg:hidden"
+                        _="
+                        on load or change from #filter_form
+                        set my innerHTML to ''
+                        for cb in <input[type=checkbox]:checked in #filter_form/>
+                            set pill to document.createElement('button')
+                            set pill.type to 'button'
+                            set pill.className to 'badge badge-sm badge-primary gap-1 cursor-pointer'
+                            set pill.textContent to cb.parentElement.textContent.trim() + ' ×'
+                            set pill@data-target to cb.id
+                            set pill.onclick to () => { cb.checked = false; cb.dispatchEvent(new Event('change', {bubbles: true})) }
+                            append pill to me
+                        end
+                        "
+                    ></div>
+
+                    {# Game grid #}
+                    <div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" id="game_list">
+                        {% block game_list %}
+                            {% for game in games %}
+                                <GameCard
+                                    :game="game"
+                                    :preference="preferences.get(game.id)"
+                                    :user_game_played="user_game_playeds.get(game.id)"
+                                    :scheduled_time_slot_ids="scheduled_time_slots.get(game.id, [])"
+                                    :display_d20="latest_d20_transaction is not none and latest_d20_transaction.current_balance > 0"
+                                />
+                            {% endfor %}
+                            {% if not games %}
+                                <div class="card col-span-full rounded-box border border-base-300 bg-base-200">
+                                    <div class="card-body">
+                                        <h2 class="card-title text-xl">No Games Found</h2>
+                                        <p>There are no games that match your search criteria.</p>
+                                        <p>Try changing your filters or check back later!</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endblock %}
+                    </div>
+
+                    {% if request.user is not none %}
+                        {% if request.user | has_permission("event", (event, event), "manage_submissions") %}
+                            <AdminSectionCard :event="event" />
+                        {% endif %}
                     {% endif %}
-                {% endblock %}
+                </div>
+
+                {# Filter sidebar / drawer #}
+                <div class="drawer-side z-20">
+                    <label for="filter_drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+                    <form
+                        id="filter_form"
+                        hx-get="/event/{{ swim(event) }}/games"
+                        hx-target="#game_list"
+                        hx-push-url="true"
+                        hx-trigger="change delay:100ms, reset delay:10ms"
+                        hx-params="not _search_genre, not _search_system, not _search_content"
+                        class="flex min-h-full w-72 flex-col gap-2 bg-base-200 p-4"
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="text-lg font-bold">Filters</span>
+                            <button
+                                type="button"
+                                class="btn btn-ghost btn-xs"
+                                _="on click get #filter_form then it.reset()"
+                            >
+                                Clear all
+                            </button>
+                        </div>
+
+                        {% if event.is_planner_open() %}
+                            <FilterSection :form_data="form_data.session" />
+                        {% endif %}
+                        <FilterSection :form_data="form_data.genre" :searchable="true" />
+                        <FilterSection :form_data="form_data.system" :searchable="true" />
+                        <FilterSection :form_data="form_data.tone" />
+                        <FilterSection :form_data="form_data.bonus" />
+                        <FilterSection :form_data="form_data.content" :searchable="true" />
+                        {% if request.user is not none and event.is_preferences_open() %}
+                            <FilterSection :form_data="form_data.preference" />
+                        {% endif %}
+
+                        {# Active filter pills in sidebar #}
+                        <div
+                            id="active_filter_pills"
+                            class="flex flex-wrap gap-1"
+                            _="
+                            on load or change from #filter_form
+                            set my innerHTML to ''
+                            for cb in <input[type=checkbox]:checked in #filter_form/>
+                                set pill to document.createElement('button')
+                                set pill.type to 'button'
+                                set pill.className to 'badge badge-sm badge-primary gap-1 cursor-pointer'
+                                set pill.textContent to cb.parentElement.textContent.trim() + ' ×'
+                                set pill@data-target to cb.id
+                                set pill.onclick to () => { cb.checked = false; cb.dispatchEvent(new Event('change', {bubbles: true})) }
+                                append pill to me
+                            end
+                            "
+                        ></div>
+                    </form>
+                </div>
             </div>
-            {% if request.user is not none %}
-                {% if request.user | has_permission("event", (event, event), "manage_submissions") %}
-                    <AdminSectionCard :event="event" />
-                {% endif %}
-            {% endif %}
         </PageContainer>
     {% endblock %}
 </Page>
