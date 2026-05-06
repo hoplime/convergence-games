@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import itertools
+import zoneinfo
 from collections.abc import Sequence
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
@@ -104,25 +105,23 @@ class PutEventManageAllocationForm(BaseModel):
     commit: bool = False
 
 
-def _empty_to_none_utc(v: Any) -> datetime | None:
+def _empty_to_none(v: Any) -> datetime | None:
     if v == "" or v is None:
         return None
     if isinstance(v, str):
-        v = datetime.fromisoformat(v)
-    if isinstance(v, datetime) and v.tzinfo is None:
-        v = v.replace(tzinfo=timezone.utc)
+        return datetime.fromisoformat(v)
     return v
 
 
-EmptyToNoneUTC = BeforeValidator(_empty_to_none_utc)
+EmptyToNone = BeforeValidator(_empty_to_none)
 
 
 class PutEventSettingsForm(BaseModel):
-    submissions_open_at: Annotated[datetime | None, EmptyToNoneUTC] = None
-    submissions_close_at: Annotated[datetime | None, EmptyToNoneUTC] = None
-    editing_close_at: Annotated[datetime | None, EmptyToNoneUTC] = None
-    preferences_open_at: Annotated[datetime | None, EmptyToNoneUTC] = None
-    planner_open_at: Annotated[datetime | None, EmptyToNoneUTC] = None
+    submissions_open_at: Annotated[datetime | None, EmptyToNone] = None
+    submissions_close_at: Annotated[datetime | None, EmptyToNone] = None
+    editing_close_at: Annotated[datetime | None, EmptyToNone] = None
+    preferences_open_at: Annotated[datetime | None, EmptyToNone] = None
+    planner_open_at: Annotated[datetime | None, EmptyToNone] = None
 
 
 # endregion
@@ -1250,10 +1249,11 @@ class EventManagerController(Controller):
         event: Event,
         permission: bool,
     ) -> Template:
+        tz = zoneinfo.ZoneInfo(event.timezone)
         return HTMXBlockTemplate(
             template_name="pages/event_manage_settings.html.jinja",
             block_name=request.htmx.target,
-            context={"event": event},
+            context={"event": event, "tz": tz},
         )
 
     @put(
@@ -1271,12 +1271,23 @@ class EventManagerController(Controller):
         event: Event,
         permission: bool,
         data: Annotated[PutEventSettingsForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
-    ) -> Redirect:
-        event.submissions_open_at = data.submissions_open_at
-        event.submissions_close_at = data.submissions_close_at
-        event.editing_close_at = data.editing_close_at
-        event.preferences_open_at = data.preferences_open_at
-        event.planner_open_at = data.planner_open_at
+    ) -> Response[str]:
+        tz = zoneinfo.ZoneInfo(event.timezone)
+
+        def to_utc(naive: datetime | None) -> datetime | None:
+            if naive is None:
+                return None
+            return naive.replace(tzinfo=tz).astimezone(timezone.utc)
+
+        event.submissions_open_at = to_utc(data.submissions_open_at)
+        event.submissions_close_at = to_utc(data.submissions_close_at)
+        event.editing_close_at = to_utc(data.editing_close_at)
+        event.preferences_open_at = to_utc(data.preferences_open_at)
+        event.planner_open_at = to_utc(data.planner_open_at)
         transaction.add(event)
 
-        return Redirect(f"/event/{swim(event)}/manage-settings")
+        return Response(
+            content="",
+            status_code=HTTP_200_OK,
+            headers={"HX-Redirect": f"/event/{swim(event)}/manage-settings"},
+        )

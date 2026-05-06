@@ -8,8 +8,10 @@
                 (submissions/editing always open; preferences/planner closed until set).
             </p>
             <p class="text-base-content/70 mb-4">
-                All times are in UTC.
+                All times are in <strong>{{ event.timezone }}</strong>.
             </p>
+
+            {% macro dt_value(dt_utc) %}{{ dt_utc.astimezone(tz).strftime('%Y-%m-%dT%H:%M') if dt_utc else '' }}{% endmacro %}
 
             <form method="post" hx-put="/event/{{ swim(event) }}/manage-settings" hx-swap="none" class="space-y-6">
                 <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
@@ -22,7 +24,7 @@
                                 type="datetime-local"
                                 name="submissions_open_at"
                                 class="input input-bordered w-full"
-                                value="{{ event.submissions_open_at.strftime('%Y-%m-%dT%H:%M') if event.submissions_open_at else '' }}"
+                                value="{{ dt_value(event.submissions_open_at) }}"
                             />
                         </label>
                         <label class="form-control w-full">
@@ -31,7 +33,7 @@
                                 type="datetime-local"
                                 name="submissions_close_at"
                                 class="input input-bordered w-full"
-                                value="{{ event.submissions_close_at.strftime('%Y-%m-%dT%H:%M') if event.submissions_close_at else '' }}"
+                                value="{{ dt_value(event.submissions_close_at) }}"
                             />
                         </label>
                     </div>
@@ -51,7 +53,7 @@
                             type="datetime-local"
                             name="editing_close_at"
                             class="input input-bordered w-full"
-                            value="{{ event.editing_close_at.strftime('%Y-%m-%dT%H:%M') if event.editing_close_at else '' }}"
+                            value="{{ dt_value(event.editing_close_at) }}"
                         />
                     </label>
                     {% if event.is_editing_open() %}
@@ -70,7 +72,7 @@
                             type="datetime-local"
                             name="preferences_open_at"
                             class="input input-bordered w-full"
-                            value="{{ event.preferences_open_at.strftime('%Y-%m-%dT%H:%M') if event.preferences_open_at else '' }}"
+                            value="{{ dt_value(event.preferences_open_at) }}"
                         />
                     </label>
                     {% if event.is_preferences_open() %}
@@ -89,7 +91,7 @@
                             type="datetime-local"
                             name="planner_open_at"
                             class="input input-bordered w-full"
-                            value="{{ event.planner_open_at.strftime('%Y-%m-%dT%H:%M') if event.planner_open_at else '' }}"
+                            value="{{ dt_value(event.planner_open_at) }}"
                         />
                     </label>
                     {% if event.is_planner_open() %}
