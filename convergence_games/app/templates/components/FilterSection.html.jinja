@@ -10,9 +10,7 @@
         id="{{ section_id }}_title"
         _="
         on load or change from #{{ section_id }} or change from #filter_form
-        log 'FilterSection {{ form_data.name }}: change detected'
         set count to #{{ section_id }}.querySelectorAll('input[name={{ form_data.name }}]:checked').length
-        log `FilterSection {{ form_data.name }}: ${count} checked`
         if count > 0
             set my textContent to '{{ form_data.label }} (' + count + ')'
         else
