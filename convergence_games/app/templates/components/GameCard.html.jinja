@@ -9,49 +9,31 @@
 #}
 <div class="card rounded-box border border-base-300 bg-base-200">
     <a href="/game/{{ swim(game) }}" class="grow">
-        <div class="card-body">
+        <div class="card-body gap-2">
             <h2 class="card-title">{{ game.name }}</h2>
             <div class="italic">{{ game.tagline }}</div>
-            <span>{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</span>
-            <div class="flex flex-row flex-wrap gap-2">
-                <div class="badge">
-                    <span class="font-semibold">{{ game.tone }}</span>
-                </div>
-                <div class="badge">
-                    <span class="font-semibold">{{ game.classification }}</span>
-                    <span>rating</span>
-                </div>
-                <div class="badge">
-                    <span class="font-semibold">{{ game.crunch }}</span>
-                    <span>complexity</span>
-                </div>
-            </div>
-            <div class="flex flex-row gap-2">
-                <div class="font-semibold">Genres</div>
-                <div class="flex flex-row flex-wrap gap-2">
-                    {% for genre in game.genres %}
-                        <div class="badge">{{ genre.name }}</div>
-                    {% endfor %}
-                </div>
+            <span class="text-sm text-base-content/70">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</span>
+            <div class="flex flex-row flex-wrap gap-1">
+                <div class="badge badge-sm">{{ game.tone }}</div>
+                <div class="badge badge-sm">{{ game.classification }} rating</div>
+                <div class="badge badge-sm">{{ game.crunch }} complexity</div>
+                {% for genre in game.genres %}
+                    <div class="badge badge-sm badge-outline">{{ genre.name }}</div>
+                {% endfor %}
             </div>
             {% if game.content_warnings %}
-                <div class="flex flex-row gap-2">
-                    <div class="font-semibold">Content</div>
-                    <div class="flex flex-row flex-wrap gap-2">
-                        {% for tag in game.content_warnings %}
-                            <div class="badge badge-warning">{{ tag.name }}</div>
-                        {% endfor %}
-                    </div>
+                <div class="flex flex-row flex-wrap gap-1">
+                    {% for tag in game.content_warnings %}
+                        <div class="badge badge-sm badge-warning">{{ tag.name }}</div>
+                    {% endfor %}
                 </div>
             {% endif %}
             {% set game_ksps = game.ksps | GameKSP %}
             {% if game_ksps %}
-                <div class="flex flex-row flex-wrap gap-2">
+                <div class="flex flex-row flex-wrap gap-1">
                     {% for note, tooltip, icon in zip(game_ksps.notes, game_ksps.tooltips, game_ksps.icons) %}
-                        <div class="badge">
-                            <div class="inline-flex gap-2">
-                                <span class="{{ icon }} my-auto"></span> <span>{{ note }}</span>
-                            </div>
+                        <div class="badge badge-sm" title="{{ tooltip }}">
+                            <span class="{{ icon }}"></span> {{ note }}
                         </div>
                     {% endfor %}
                 </div>
@@ -90,7 +72,7 @@
         </div>
     {% endif %}
     {% if game.event.is_planner_open() %}
-        <div class="absolute right-1 bottom-1 flex flex-row gap-[1px]">
+        <div class="absolute right-1 bottom-1 flex flex-row gap-[1px]" title="Scheduled sessions">
             {% for time_slot in game.event.time_slots %}
                 {% if time_slot.id in scheduled_time_slot_ids %}
                     <div class="h-2 w-2 bg-primary in-[.text-error]:bg-error"></div>
