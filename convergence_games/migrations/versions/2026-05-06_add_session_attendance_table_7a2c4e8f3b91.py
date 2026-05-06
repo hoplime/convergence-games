@@ -163,7 +163,88 @@ def schema_downgrades() -> None:
 
 
 def data_upgrades() -> None:
-    """Backfill happens here; populated in a follow-up commit."""
+    """Backfill session_attendance from existing committed Allocation rows.
+
+    Two passes (player rows, then GM rows). Both run with
+    ``ON CONFLICT DO NOTHING`` so the migration is re-runnable and so a user
+    who somehow ended up as both party-member and GM in the same slot
+    surfaces as the GM rather than failing the migration outright.
+
+    Recovers as much historical attendance as still survives in the DB at
+    the time of upgrade. Genuinely-deleted committed allocations (e.g. the
+    session-2 data lost before this fix landed) cannot be reconstructed.
+    """
+    bind = op.get_bind()
+
+    # PLAYER rows: every member of the leader's party for the timeslot.
+    bind.execute(
+        sa.text(
+            """
+            INSERT INTO session_attendance (
+                role, source, event_id, time_slot_id, game_id, user_id,
+                table_id, source_allocation_id,
+                created_at, updated_at, created_by, updated_by
+            )
+            SELECT
+                'PLAYER',
+                'BACKFILL',
+                s.event_id,
+                s.time_slot_id,
+                s.game_id,
+                pul.user_id,
+                s.table_id,
+                a.id,
+                NOW(),
+                NOW(),
+                NULL,
+                NULL
+            FROM allocation a
+            JOIN session s ON s.id = a.session_id
+            JOIN game g ON g.id = s.game_id
+            JOIN party p ON p.time_slot_id = s.time_slot_id
+            JOIN party_user_link leader_link
+                ON leader_link.party_id = p.id
+                AND leader_link.user_id = a.party_leader_id
+                AND leader_link.is_leader = TRUE
+            JOIN party_user_link pul ON pul.party_id = p.id
+            WHERE a.committed = TRUE
+              AND a.party_leader_id <> g.gamemaster_id
+            ON CONFLICT (event_id, time_slot_id, user_id) DO NOTHING
+            """
+        )
+    )
+
+    # GAMEMASTER rows: party-of-one allocations where the leader is the GM.
+    bind.execute(
+        sa.text(
+            """
+            INSERT INTO session_attendance (
+                role, source, event_id, time_slot_id, game_id, user_id,
+                table_id, source_allocation_id,
+                created_at, updated_at, created_by, updated_by
+            )
+            SELECT
+                'GAMEMASTER',
+                'BACKFILL',
+                s.event_id,
+                s.time_slot_id,
+                s.game_id,
+                a.party_leader_id,
+                s.table_id,
+                a.id,
+                NOW(),
+                NOW(),
+                NULL,
+                NULL
+            FROM allocation a
+            JOIN session s ON s.id = a.session_id
+            JOIN game g ON g.id = s.game_id
+            WHERE a.committed = TRUE
+              AND a.party_leader_id = g.gamemaster_id
+            ON CONFLICT (event_id, time_slot_id, user_id) DO NOTHING
+            """
+        )
+    )
 
 
 def data_downgrades() -> None:
