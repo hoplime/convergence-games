@@ -56,6 +56,7 @@ from convergence_games.db.models import (
     User,
 )
 from convergence_games.db.ocean import Sqid, sink
+from convergence_games.db.slugs import generate_unique_slug, maybe_regenerate_slug
 from convergence_games.permissions import user_has_permission
 from convergence_games.services import ImageLoader
 
@@ -478,6 +479,9 @@ class SubmitGameController(Controller):
 
         new_game = Game(
             name=data.title,
+            slug=await generate_unique_slug(
+                transaction, Game, data.title, scope={"event_id": event.id}, fallback="game"
+            ),
             tagline=data.tagline,
             description=data.description,
             classification=data.classification,
@@ -573,6 +577,9 @@ class SubmitGameController(Controller):
         # Update all the properties
         # This is kept in the same order as the POST method to make it easier to compare
         game.name = data.title
+        await maybe_regenerate_slug(
+            transaction, game, source=data.title, scope={"event_id": game.event_id}, fallback="game"
+        )
         game.tagline = data.tagline
         game.description = data.description
         game.classification = data.classification

@@ -16,6 +16,7 @@ from convergence_games.app.app_config.jwt_cookie_auth import build_token_extras,
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import User, UserEventRole, UserLogin
 from convergence_games.db.ocean import Sqid
+from convergence_games.db.slugs import generate_unique_slug
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
 
@@ -105,6 +106,33 @@ async def find_user_by_email(transaction: AsyncSession, email: str) -> User | No
     return sorted_users[0][0]
 
 
+async def _create_user_for_sign_up(
+    transaction: AsyncSession,
+    provider_name: LoginProvider,
+    profile_info: ProfileInfo,
+) -> User:
+    first_name = profile_info.user_first_name or ""
+    last_name = profile_info.user_last_name or ""
+    user = User(
+        first_name=first_name,
+        last_name=last_name,
+        logins=[
+            UserLogin(
+                provider=provider_name,
+                provider_user_id=profile_info.user_id,
+                provider_email=profile_info.user_email,
+            )
+        ],
+    )
+    full_name = f"{first_name} {last_name}".strip()
+    if full_name:
+        user.slug = await generate_unique_slug(transaction, User, full_name, fallback="user")
+    # Else: leave to the before_insert listener, which mints a `user-<random>`
+    # placeholder. profile.py swaps it for a real slug on profile completion.
+    transaction.add(user)
+    return user
+
+
 async def _resolve_user_for_intent(
     transaction: AsyncSession,
     provider_name: LoginProvider,
@@ -141,19 +169,7 @@ async def _resolve_user_for_intent(
     if intent == AuthIntent.SIGN_UP:
         if user_login is not None:
             raise AccountAlreadyExistsError(provider=provider_name, email=profile_info.user_email)
-        user = User(
-            first_name=profile_info.user_first_name or "",
-            last_name=profile_info.user_last_name or "",
-            logins=[
-                UserLogin(
-                    provider=provider_name,
-                    provider_user_id=profile_info.user_id,
-                    provider_email=profile_info.user_email,
-                )
-            ],
-        )
-        transaction.add(user)
-        return user
+        return await _create_user_for_sign_up(transaction, provider_name, profile_info)
     if intent == AuthIntent.SIGN_IN:
         if user_login is None:
             raise NoAccountForSignInError(provider=provider_name, email=profile_info.user_email)

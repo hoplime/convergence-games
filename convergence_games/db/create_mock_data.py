@@ -21,6 +21,7 @@ async def create_mock_data(transaction: AsyncSession) -> None:
 
     event = Event(
         name="Convergence 2025",
+        slug="convergence-2025",
         description="",
         start_date=dt.datetime(2025, 9, 13, tzinfo=NZT),
         end_date=dt.datetime(2025, 9, 14, tzinfo=NZT),

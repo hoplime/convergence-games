@@ -24,6 +24,7 @@ from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import User, UserEventRole, UserLogin
 from convergence_games.db.ocean import Sqid, sink
+from convergence_games.db.slugs import maybe_regenerate_slug
 from convergence_games.utils.email import normalize_email
 
 
@@ -138,7 +139,9 @@ class ProfileController(Controller):
     ) -> Template:
         email = normalize_email(data.email)
         state = OAuthRedirectState(redirect_path=data.redirect_path, mode=AuthIntent.SIGN_UP)
-        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state, session_factory=request.app.state.session_maker_class)
+        request.app.emit(
+            EVENT_EMAIL_SIGN_IN, email=email, state=state, session_factory=request.app.state.session_maker_class
+        )
         return HTMXBlockTemplate(
             template_name="components/VerifyCode.html.jinja",
             context={"email": email, "state": state.encode(), "mode": "sign_up"},
@@ -153,7 +156,9 @@ class ProfileController(Controller):
     ) -> Template:
         email = normalize_email(data.email)
         state = OAuthRedirectState(redirect_path=data.redirect_path, mode=AuthIntent.SIGN_IN)
-        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state, session_factory=request.app.state.session_maker_class)
+        request.app.emit(
+            EVENT_EMAIL_SIGN_IN, email=email, state=state, session_factory=request.app.state.session_maker_class
+        )
         return HTMXBlockTemplate(
             template_name="components/VerifyCode.html.jinja",
             context={"email": email, "state": state.encode(), "mode": "sign_in"},
@@ -254,6 +259,12 @@ class ProfileController(Controller):
         if data.description is not None:
             db_user.description = data.description
         db_user.over_18 = data.is_over_18
+        await maybe_regenerate_slug(
+            transaction,
+            db_user,
+            source=f"{db_user.first_name} {db_user.last_name}".strip(),
+            fallback="user",
+        )
         await transaction.flush()
 
         event_roles = list(

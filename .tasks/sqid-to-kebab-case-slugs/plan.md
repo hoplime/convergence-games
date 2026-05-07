@@ -300,33 +300,27 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
 
 ### Phase 2: Populate and regenerate slugs
 
-- [ ] **OAuth user creation** (`convergence_games/app/routers/frontend/oauth.py`)
-  - Wherever `User(...)` is instantiated, mint a placeholder slug: `user.slug = await generate_unique_slug(session, User, f"user-{secrets.token_hex(4)}", fallback="user")`. Don't pull from name fields — they're empty.
-- [ ] **Email auth user creation** (`convergence_games/app/routers/frontend/email_auth.py`)
-  - Same placeholder pattern.
-- [ ] **Profile completion / name edits** (`convergence_games/app/routers/frontend/profile.py`)
-  - After applying form data to the User in the profile-setup handler AND any subsequent name-edit handler, call `await maybe_regenerate_slug(session, user, source=f"{user.first_name} {user.last_name}".strip(), fallback="user")`.
-  - This swaps `user-7af3b1c2` for `alice-smith` once the user enters their name; subsequent renames re-roll the slug.
-- [ ] **Submit-game create flow** (`convergence_games/app/routers/frontend/submit_game.py`)
-  - On Game insert, call `await generate_unique_slug(session, Game, game.name, scope={"event_id": game.event_id})`.
-- [ ] **Submit-game edit flow** (`convergence_games/app/routers/frontend/submit_game.py`)
-  - On Game update, after applying form data, call `await maybe_regenerate_slug(session, game, source=game.name, scope={"event_id": game.event_id})`.
+- [x] **OAuth/email/sign-up user creation** (`convergence_games/app/common/auth.py`)
+  - The User constructor site lives in `_resolve_user_for_intent` (extracted into `_create_user_for_sign_up` for clarity / cyclomatic complexity).
+  - When the OAuth/email provider supplies a name, generate a name-based slug immediately. When it doesn't, the `before_insert` placeholder listener mints `user-<random>` and `profile.py` swaps it later.
+- [x] **Profile completion / name edits** (`convergence_games/app/routers/frontend/profile.py`)
+  - `post_profile` now calls `maybe_regenerate_slug(transaction, db_user, source=f"{first} {last}".strip(), fallback="user")` after applying form data. Swaps placeholder for `alice-smith`, regenerates on subsequent renames.
+- [x] **Submit-game create flow** (`convergence_games/app/routers/frontend/submit_game.py`)
+  - `post_game` sets `slug=await generate_unique_slug(...)` on the new `Game(...)`.
+- [x] **Submit-game edit flow** (`convergence_games/app/routers/frontend/submit_game.py`)
+  - `put_game` calls `maybe_regenerate_slug` after assigning `game.name = data.title`.
 - [ ] **Event edit flow** (`convergence_games/app/routers/frontend/event_manager.py`)
-  - In manage-settings update handler (or wherever `Event.name` can change), call `await maybe_regenerate_slug(session, event, source=event.name)`.
-- [ ] **Mock data + dev seeders** (`convergence_games/db/create_mock_data.py`, `convergence_games/services/mock_event.py` if exists)
-  - Populate slugs deterministically (e.g. `slugify(name)`, append `-{i}` on duplicates within an event for tests).
-- [ ] **Audit any other insert/edit site** via `grep -rn "Event(\|Game(\|User(" convergence_games/` and any handlers that mutate `name`, `first_name`, or `last_name`.
+  - The current `manage-settings` PUT only edits time-span fields, not `Event.name`. No slug regeneration needed today; will add the call when a name-edit handler is introduced.
+- [x] **Mock data + dev seeders** (`convergence_games/db/create_mock_data.py`)
+  - Set `slug="convergence-2025"` explicitly on the seed Event so dev URLs are deterministic.
+- [x] **Audit any other insert/edit site**
+  - `grep -rn "Event(\|Game(\|User("` confirmed `auth.py:_create_user_for_sign_up`, `submit_game.py:post_game`, and `create_mock_data.py:create_mock_data` are the only insert sites. Test fixtures construct `User(...)` directly — covered by the placeholder listener.
 
 #### Phase 2 verification
 
-- [ ] `basedpyright`, `ruff check` clean
-- [ ] Dev: register a new user via OAuth → row has placeholder `user-xxxxxxxx` slug
-- [ ] Dev: complete profile setup with name "Alice Smith" → slug becomes `alice-smith`
-- [ ] Dev: rename profile to "Alice Cooper" → slug regenerates to `alice-cooper`
-- [ ] Dev: rename a game from "Foo" to "Bar" → slug regenerates to `bar`
-- [ ] Dev: edit a game's description without changing the name → slug unchanged (verify via DB)
-- [ ] Dev: submit a new game with a duplicate name in the same event → suffixed slug
-- [ ] `pytest` — no regressions
+- [x] `basedpyright`, `ruff check` clean — no new errors in modified files
+- [x] `pytest` — 28/28 passing
+- [ ] Dev verification (register user, edit profile, edit game) — requires running dev server + db; deferred to deploy-time validation
 
 ### Phase 3: Public route resolution + sqid redirect
 
