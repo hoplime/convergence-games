@@ -1,7 +1,7 @@
 ---
 title: Improve image upload feedback and hardening in game submission
 created: 2026-05-07
-status: draft
+status: complete
 ---
 
 # Improve image upload feedback and hardening in game submission
@@ -207,31 +207,31 @@ Add `tests/app/routers/frontend/test_submit_game_image_validation.py`:
 
 ### Phase 1: Settings & Pillow guard
 
-- [ ] **Add image-upload settings** (`convergence_games/settings.py`)
+- [x] **Add image-upload settings** (`convergence_games/settings.py`)
   - Add `IMAGE_UPLOAD_MAX_FILE_SIZE_BYTES`, `IMAGE_UPLOAD_MAX_IMAGES_PER_GAME`, `IMAGE_UPLOAD_MAX_DIMENSION_PIXELS`, `IMAGE_UPLOAD_MAX_DECODE_PIXELS`, `IMAGE_UPLOAD_ALLOWED_MIME_TYPES`, `IMAGE_UPLOAD_REQUEST_BODY_HEADROOM_BYTES`.
   - Add `IMAGE_UPLOAD_MAX_REQUEST_BODY_BYTES` cached property.
-- [ ] **Configure Pillow decompression-bomb cap** (`convergence_games/services/image/pil_config.py`, new file)
+- [x] **Configure Pillow decompression-bomb cap** (`convergence_games/services/image/pil_config.py`, new file)
   - Set `PIL.Image.MAX_IMAGE_PIXELS = SETTINGS.IMAGE_UPLOAD_MAX_DECODE_PIXELS` at module import.
-- [ ] **Wire Pillow config into package init** (`convergence_games/services/image/__init__.py`)
+- [x] **Wire Pillow config into package init** (`convergence_games/services/image/__init__.py`)
   - Import the new module so it runs once on app startup.
 
 #### Phase 1 verification
 
-- [ ] `basedpyright` — no new errors
-- [ ] `ruff check` — no new errors
-- [ ] App boots: `litestar --app convergence_games.app:app run --reload` starts without errors.
+- [x] `basedpyright` — no new errors
+- [x] `ruff check` — no new errors
+- [x] App boots: `litestar --app convergence_games.app:app run --reload` starts without errors.
 
 ### Phase 2: Image loader hardening
 
-- [ ] **Add `ImageDecodeError` and `_decode_and_normalise`** (`convergence_games/services/image/image_loader.py`)
+- [x] **Add `ImageDecodeError` and `_decode_and_normalise`** (`convergence_games/services/image/image_loader.py`)
   - New exception class.
   - New method on `ImageLoader` performing safe `Image.open` + `image.load()` + dimension cap (via `image.thumbnail`).
   - Catch `UnidentifiedImageError`, `DecompressionBombError`, `OSError` and re-raise as `ImageDecodeError`.
-- [ ] **Refactor `FilesystemImageLoader.save_image`** (`convergence_games/services/image/filesystem_image_loader.py`)
+- [x] **Refactor `FilesystemImageLoader.save_image`** (`convergence_games/services/image/filesystem_image_loader.py`)
   - Decode once via `_decode_and_normalise`, pass the decoded `PILImage.Image` to `_dump_to_bytes` for full-size and each pre-cache size.
-- [ ] **Refactor `BlobImageLoader.save_image`** (`convergence_games/services/image/blob_image_loader.py`)
+- [x] **Refactor `BlobImageLoader.save_image`** (`convergence_games/services/image/blob_image_loader.py`)
   - Same refactor as filesystem loader.
-- [ ] **Tests** (`tests/services/image/test_image_loader.py`, new)
+- [x] **Tests** (`tests/services/image/test_image_loader.py`, new)
   - Valid image → success.
   - Garbage bytes → `ImageDecodeError`.
   - Truncated PNG → `ImageDecodeError`.
@@ -240,38 +240,38 @@ Add `tests/app/routers/frontend/test_submit_game_image_validation.py`:
 
 #### Phase 2 verification
 
-- [ ] `pytest tests/services/image/` passes.
-- [ ] `basedpyright` — no new errors.
-- [ ] `ruff check` — no new errors.
+- [x] `pytest tests/services/image/` passes.
+- [x] `basedpyright` — no new errors.
+- [x] `ruff check` — no new errors.
 
 ### Phase 3: Server-side form validation & route fixes
 
-- [ ] **Add `_validate_image_uploads` helper and wire to `SubmitGameForm.image`** (`convergence_games/app/routers/frontend/submit_game.py`)
+- [x] **Add `_validate_image_uploads` helper and wire to `SubmitGameForm.image`** (`convergence_games/app/routers/frontend/submit_game.py`)
   - Helper raises `ValueError(errors)` so Pydantic surfaces them via the existing `ValidationException` machinery.
   - Field annotation gains `AfterValidator(_validate_image_uploads)`.
-- [ ] **Catch `ImageDecodeError` in `post_game` and `put_game`** (`convergence_games/app/routers/frontend/submit_game.py`)
+- [x] **Catch `ImageDecodeError` in `post_game` and `put_game`** (`convergence_games/app/routers/frontend/submit_game.py`)
   - Wrap `create_image_links` calls; convert `ImageDecodeError` to a `ValidationException` with `extra=[{"key": "image", "message": "..."}]` so `handle_submit_game_form_validation_error` renders it inline.
-- [ ] **Replace hard-coded body limits and fix encoding** (`convergence_games/app/routers/frontend/submit_game.py`)
+- [x] **Replace hard-coded body limits and fix encoding** (`convergence_games/app/routers/frontend/submit_game.py`)
   - Both routes: `request_max_body_size=SETTINGS.IMAGE_UPLOAD_MAX_REQUEST_BODY_BYTES`.
   - POST `post_game`: change `RequestEncodingType.URL_ENCODED` to `RequestEncodingType.MULTI_PART`.
   - Update `handle_request_entity_too_large_error` text to use the configured limit.
-- [ ] **Tests** (`tests/app/routers/frontend/test_submit_game_image_validation.py`, new)
+- [x] **Tests** (`tests/app/routers/frontend/test_submit_game_image_validation.py`, new)
   - Unit-test `_validate_image_uploads` for the four cases listed in Technical Design.
 
 #### Phase 3 verification
 
-- [ ] `pytest` passes.
-- [ ] `basedpyright` — no new errors.
-- [ ] `ruff check` — no new errors.
-- [ ] Manual: submit a >5 MB JPEG via the form → inline image-field error, no 500.
-- [ ] Manual: submit a non-image file by removing the `accept` attribute via devtools → inline error.
-- [ ] Manual: submit a corrupt JPEG (truncated bytes) → inline error, no 500.
+- [x] `pytest` passes.
+- [x] `basedpyright` — no new errors.
+- [x] `ruff check` — no new errors.
+- [x] Manual: submit a >5 MB JPEG via the form → inline image-field error, no 500.
+- [x] Manual: submit a non-image file by removing the `accept` attribute via devtools → inline error.
+- [x] Manual: submit a corrupt JPEG (truncated bytes) → inline error, no 500.
 
 ### Phase 4: Client-side feedback
 
-- [ ] **Expose limits as JinjaX globals** (`convergence_games/app/app_config/template_config.py`)
+- [x] **Expose limits as JinjaX globals** (`convergence_games/app/app_config/template_config.py`)
   - Add `IMAGE_UPLOAD_MAX_FILE_SIZE_BYTES`, `IMAGE_UPLOAD_MAX_IMAGES_PER_GAME`, `IMAGE_UPLOAD_ALLOWED_MIME_TYPES` to the global context.
-- [ ] **Update `MultiImageUploadContainer`** (`convergence_games/app/templates/components/MultiImageUploadContainer.html.jinja`)
+- [x] **Update `MultiImageUploadContainer`** (`convergence_games/app/templates/components/MultiImageUploadContainer.html.jinja`)
   - Default `max_images` from the global.
   - Add total-size meter element.
   - Extend the inline script:
@@ -280,35 +280,35 @@ Add `tests/app/routers/frontend/test_submit_game_image_validation.py`:
     - Compute over-budget vs per-file budget × count.
     - Toggle a CSS warning state and dispatch `image-upload:status` `CustomEvent` with `{ ok: bool }` on the container.
   - Listen for child `change` and `htmx:load`; recompute.
-- [ ] **Update `ImageUpload`** (`convergence_games/app/templates/components/ImageUpload.html.jinja`)
+- [x] **Update `ImageUpload`** (`convergence_games/app/templates/components/ImageUpload.html.jinja`)
   - Add error banner sibling.
   - Extend the hyperscript on `change` to validate size and MIME, set `data-image-error` on the `<li>`, and bubble a `change` event so the container can recompute.
-- [ ] **Submit button gating** (`convergence_games/app/templates/pages/submit_game.html.jinja`)
+- [x] **Submit button gating** (`convergence_games/app/templates/pages/submit_game.html.jinja`)
   - Add a small inline script near the form's submit row that listens for `image-upload:status` and toggles the button's `disabled` state.
 
 #### Phase 4 verification
 
-- [ ] `npm run build` succeeds.
-- [ ] `npx tsc --noEmit` — no new errors (Jinja-side only, but ensure nothing in lib.ts regresses).
-- [ ] Manual: select a 10 MB image → red banner appears under the file input; submit button disabled; total meter shows the offending size.
-- [ ] Manual: pick a `.txt` renamed to `.png` (real type `text/plain`) → "type not supported" message.
-- [ ] Manual: add 10 valid small images, then try Add Image → button disabled at cap.
-- [ ] Manual: total size meter updates as files are added, removed, replaced.
+- [x] `npm run build` succeeds.
+- [x] `npx tsc --noEmit` — no new errors (Jinja-side only, but ensure nothing in lib.ts regresses).
+- [x] Manual: select a 10 MB image → red banner appears under the file input; submit button disabled; total meter shows the offending size.
+- [x] Manual: pick a `.txt` renamed to `.png` (real type `text/plain`) → "type not supported" message.
+- [x] Manual: add 10 valid small images, then try Add Image → button disabled at cap.
+- [x] Manual: total size meter updates as files are added, removed, replaced.
 
 ## Acceptance Criteria
 
-- [ ] Type checking passes (`basedpyright`).
-- [ ] Linting passes (`ruff check`, `ruff format --check`).
-- [ ] All tests pass (`pytest`).
-- [ ] Dev server starts without errors.
-- [ ] All image limits live in `Settings` and are overridable via `.env`.
-- [ ] No hard-coded `20 * 1024 * 1024` remains in `submit_game.py`.
-- [ ] POST `/event/{event_sqid}/game` declares `RequestEncodingType.MULTI_PART`.
-- [ ] Submitting a corrupt/truncated image produces a friendly inline error, never a 500.
-- [ ] Submitting a decompression-bomb PNG produces a friendly inline error and never decodes the bomb.
-- [ ] An image larger than `IMAGE_UPLOAD_MAX_DIMENSION_PIXELS` on its longest side is downscaled before saving.
-- [ ] The submit form's total-size meter and per-file errors update live as files are added/removed/changed; submit is blocked when any error is unresolved.
-- [ ] The 413 fallback toast text reflects the configured cap, not a literal "20MB".
+- [x] Type checking passes (`basedpyright`).
+- [x] Linting passes (`ruff check`, `ruff format --check`).
+- [x] All tests pass (`pytest`).
+- [x] Dev server starts without errors.
+- [x] All image limits live in `Settings` and are overridable via `.env`.
+- [x] No hard-coded `20 * 1024 * 1024` remains in `submit_game.py`.
+- [x] POST `/event/{event_sqid}/game` declares `RequestEncodingType.MULTI_PART`.
+- [x] Submitting a corrupt/truncated image produces a friendly inline error, never a 500.
+- [x] Submitting a decompression-bomb PNG produces a friendly inline error and never decodes the bomb.
+- [x] An image larger than `IMAGE_UPLOAD_MAX_DIMENSION_PIXELS` on its longest side is downscaled before saving.
+- [x] The submit form's total-size meter and per-file errors update live as files are added/removed/changed; submit is blocked when any error is unresolved.
+- [x] The 413 fallback toast text reflects the configured cap, not a literal "20MB".
 
 ## Risks and Mitigations
 
