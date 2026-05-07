@@ -22,9 +22,12 @@ from convergence_games.db.enums import (
     TableFacility,
 )
 from convergence_games.db.ocean import swim, swim_upper
+from convergence_games.logging import get_logger
 from convergence_games.permissions.permissions import user_has_permission
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.time_utils import nice_time_format, time_range_format
+
+logger = get_logger(__name__)
 
 
 def extract_title(text: jinjax.catalog.CallerWrapper) -> str:
@@ -46,7 +49,7 @@ def extract_title(text: jinjax.catalog.CallerWrapper) -> str:
 
 
 def debug(text: Any) -> Any:
-    print(text)
+    logger.debug("template_debug", value=text)
     return text
 
 

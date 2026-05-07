@@ -404,9 +404,7 @@ class EventPlayerController(Controller):
         user: User,
         time_slot_sqid: Annotated[Sqid | None, Parameter()] = None,
     ) -> Template:
-        if not event.is_planner_open() and not user_has_permission(
-            user, "event", (event, event), "manage_submissions"
-        ):
+        if not event.is_planner_open() and not user_has_permission(user, "event", (event, event), "manage_submissions"):
             return HTMXBlockTemplate(
                 template_name="pages/event_planner_closed.html.jinja",
                 block_name=request.htmx.target,

@@ -16,7 +16,6 @@ from litestar.params import Body, Parameter, RequestEncodingType
 from litestar.response import Redirect, Template
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from pydantic import BaseModel, BeforeValidator
-from rich.pretty import pprint
 from sqlalchemy import bindparam, delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,6 +50,7 @@ from convergence_games.db.models import (
     UserGamePreference,
 )
 from convergence_games.db.ocean import Sqid, sink, swim
+from convergence_games.logging import get_logger
 from convergence_games.permissions import user_has_permission
 from convergence_games.services.algorithm.game_allocator import (
     AlgPartyP,
@@ -64,6 +64,8 @@ from convergence_games.services.algorithm.query_adapter import (
     adapt_to_inputs,
     user_preferences_to_alg_preferences,
 )
+
+logger = get_logger(__name__)
 
 # region Data Schema
 SqidInt = Annotated[int, BeforeValidator(sink)]
@@ -298,7 +300,11 @@ class EventManagerController(Controller):
             if session.game in unscheduled_games:
                 unscheduled_games.remove(session.game)
             else:
-                print("!!!! WARNING: Session game not found in unscheduled games - count mismatch", session.game.name)
+                logger.warning(
+                    "schedule_unscheduled_game_count_mismatch",
+                    game_name=session.game.name,
+                    game_id=session.game.id,
+                )
 
         return HTMXBlockTemplate(
             template_name="pages/event_manage_schedule.html.jinja",
@@ -337,7 +343,7 @@ class EventManagerController(Controller):
         transaction: AsyncSession,
         data: Annotated[PutEventManageScheduleForm, Body(media_type=RequestEncodingType.JSON)],
     ) -> Response[str]:
-        print(data)
+        logger.debug("event_manage_schedule_put", session_count=len(data.sessions), commit=data.commit)
         # Set the event's sessions to the new data - including deleting any existing sessions
         new_sessions: list[Session] = []
 
@@ -828,7 +834,7 @@ class EventManagerController(Controller):
         _ = await transaction.execute(insert_user_game_preferences_update_stmt)
 
         sessions, parties = await adapt_to_inputs(transaction, time_slot_id)
-        game_allocator = GameAllocator(max_iterations=5000, debug_print=False)
+        game_allocator = GameAllocator(max_iterations=5000)
         alg_results, compensation = game_allocator.allocate(sessions, parties, False)
         pprint(alg_results)
         pprint(compensation)
@@ -1094,7 +1100,7 @@ class EventManagerController(Controller):
             for party_leader, _, allocation, gamemaster_id in allocations
         ]
         compensation = calculate_compensation(sessions, parties, results)
-        print(compensation)
+        logger.debug("event_manage_allocation_compensation", compensation=compensation)
 
         # SHARED INFORMATION - EXISTING TRANSACTIONS
         transaction.expunge_all()

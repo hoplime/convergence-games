@@ -145,9 +145,7 @@ class EmailAuthController(Controller):
         state = OAuthRedirectState.decode(state_query) if state_query is not None else OAuthRedirectState()
         code, email = UserEmailVerificationCode.decode_magic_link_code(magic_link_code)
         try:
-            return await login_with_email_and_code(
-                email, code, transaction, state=state, intent=AuthIntent.SIGN_IN
-            )
+            return await login_with_email_and_code(email, code, transaction, state=state, intent=AuthIntent.SIGN_IN)
         except (NoAccountForSignInError, AccountAlreadyExistsError) as outcome:
             return _render_outcome_after_verify(outcome, fallback_email=email, state=state)
 
@@ -161,8 +159,6 @@ class EmailAuthController(Controller):
         state = OAuthRedirectState.decode(state_query) if state_query is not None else OAuthRedirectState()
         intent = _resolve_intent_from_mode(data.mode) or state.mode
         try:
-            return await login_with_email_and_code(
-                data.email, data.code, transaction, state=state, intent=intent
-            )
+            return await login_with_email_and_code(data.email, data.code, transaction, state=state, intent=intent)
         except (NoAccountForSignInError, AccountAlreadyExistsError) as outcome:
             return _render_outcome_after_verify(outcome, fallback_email=data.email, state=state)

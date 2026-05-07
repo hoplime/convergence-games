@@ -16,8 +16,11 @@ from convergence_games.app.app_config.jwt_cookie_auth import build_token_extras,
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import User, UserEventRole, UserLogin
 from convergence_games.db.ocean import Sqid
+from convergence_games.logging import get_logger
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
+
+logger = get_logger(__name__)
 
 
 class AuthIntent(StrEnum):
@@ -96,7 +99,11 @@ async def find_user_by_email(transaction: AsyncSession, email: str) -> User | No
         users_by_id[user.id] = (user, had_email or login.provider == LoginProvider.EMAIL)
 
     if len(users_by_id) > 1:
-        print(f"find_user_by_email: ambiguous match for {email_lower!r}: user ids {sorted(users_by_id)}")
+        logger.warning(
+            "auth_ambiguous_email_match",
+            email=email_lower,
+            user_ids=sorted(users_by_id),
+        )
 
     sorted_users = sorted(
         users_by_id.values(),

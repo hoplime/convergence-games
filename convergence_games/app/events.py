@@ -8,9 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from convergence_games.app.app_config.template_config import jinja_env
 from convergence_games.app.common.auth import OAuthRedirectState
 from convergence_games.db.models import UserEmailVerificationCode
+from convergence_games.logging import bound, get_logger
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
 from convergence_games.utils.time_utils import nice_time_format
+
+logger = get_logger(__name__)
 
 EVENT_EMAIL_SIGN_IN = "event_email_sign_in"
 
@@ -35,32 +38,36 @@ async def event_email_sign_in(
         await session.commit()
         await session.refresh(user_email_verification_code)
 
-    print(f"event_email_sign_in, email: {email}, new_code: {code}")
-    magic_link_code = UserEmailVerificationCode.generate_magic_link_code(code, email)
-    magic_link_url = f"{SETTINGS.BASE_DOMAIN}/email-auth/magic-link?code={magic_link_code}&state={state.encode()}"
+    with bound(action="email_sign_in", email=email):
+        logger.info("email_sign_in_code_generated")
+        logger.debug("email_sign_in_code_value", code=code)
 
-    formatted_expires_at = nice_time_format(user_email_verification_code.expires_at, tz=tz)
-    html_content = jinja_env.get_template("emails/sign_in_code.html.jinja").render(
-        magic_link_url=magic_link_url,
-        code=code,
-        expires_at=formatted_expires_at,
-    )
+        magic_link_code = UserEmailVerificationCode.generate_magic_link_code(code, email)
+        magic_link_url = f"{SETTINGS.BASE_DOMAIN}/email-auth/magic-link?code={magic_link_code}&state={state.encode()}"
 
-    async with httpx.AsyncClient() as client:
-        await client.post(
-            url="https://api.brevo.com/v3/smtp/email",
-            headers={
-                "accept": "application/json",
-                "api-key": SETTINGS.BREVO_API_KEY,
-                "content-type": "application/json",
-            },
-            json={
-                "sender": {"name": SETTINGS.BREVO_SENDER_NAME, "email": SETTINGS.BREVO_SENDER_EMAIL},
-                "to": [{"email": email}],
-                "subject": "Your sign-in code for Convergence",
-                "htmlContent": html_content,
-            },
+        formatted_expires_at = nice_time_format(user_email_verification_code.expires_at, tz=tz)
+        html_content = jinja_env.get_template("emails/sign_in_code.html.jinja").render(
+            magic_link_url=magic_link_url,
+            code=code,
+            expires_at=formatted_expires_at,
         )
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                url="https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "accept": "application/json",
+                    "api-key": SETTINGS.BREVO_API_KEY,
+                    "content-type": "application/json",
+                },
+                json={
+                    "sender": {"name": SETTINGS.BREVO_SENDER_NAME, "email": SETTINGS.BREVO_SENDER_EMAIL},
+                    "to": [{"email": email}],
+                    "subject": "Your sign-in code for Convergence",
+                    "htmlContent": html_content,
+                },
+            )
+        logger.info("email_sign_in_email_sent", brevo_status=response.status_code)
 
 
 all_listeners = [

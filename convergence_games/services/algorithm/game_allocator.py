@@ -7,13 +7,13 @@ from functools import total_ordering
 from itertools import groupby
 from operator import itemgetter
 from random import Random
-from typing import IO, Any, Literal, Self, cast, final, overload, override
-
-from rich import print
-from rich.pretty import pprint
+from typing import Literal, Self, cast, final, overload, override
 
 from convergence_games.db.enums import UserGamePreferenceValue as UGPV
+from convergence_games.logging import get_logger
 from convergence_games.services.algorithm.models import AlgParty, AlgResult, AlgSession, PartyLeaderID, SessionID
+
+logger = get_logger(__name__)
 
 
 # This is used to sort the tiers, so that D20 is always first, then D12, etc.
@@ -118,26 +118,9 @@ type SessionCanFitMode = Literal["MIN", "OPT", "MAX"]
 
 @final
 class GameAllocator:
-    def __init__(self, max_iterations: int = 1, debug_print: bool = False) -> None:
+    def __init__(self, max_iterations: int = 1) -> None:
         self.r = Random()
         self._max_iterations = max_iterations
-        self._debug_print = debug_print
-        if self._debug_print:
-            self.print = print
-            self.pprint = pprint
-        else:
-
-            def noopprint(
-                *objects: Any,
-                sep: str = " ",
-                end: str = "\n",
-                file: IO[str] | None = None,
-                flush: bool = False,
-            ) -> None:
-                pass
-
-            self.print = noopprint
-            self.pprint = noopprint
 
     def _allocate_trial(self, sessions: list[AlgSession], parties: list[AlgPartyP]) -> list[AlgResult]:
         # Process:
@@ -237,7 +220,11 @@ class GameAllocator:
                             )
                             if not could_fit_if_swapped:
                                 continue
-                            self.print(f"Trying to bump {other_party.party_leader_id} from {session_id}")
+                            logger.debug(
+                                "alg_trying_bump",
+                                other_party_leader_id=other_party.party_leader_id,
+                                session_id=session_id,
+                            )
                             tier_of_other_party_currently = other_party.tier_by_session.get(session_id, Tier.zero())
                             # TODO: TIER DROP LOGIC
                             if allocate_party(
@@ -350,7 +337,7 @@ class GameAllocator:
         # Step 1 - Allocate parties using a D20
         # Allow filling to max
         # Don't allow anything below tier 0
-        self.print("Step 1 | Allocating D20s")
+        logger.debug("alg_step", step=1, name="Allocating D20s")
         for party in shuffled([party for party in parties if party.has_d20]):
             session_id = allocate_party(
                 party,
@@ -359,13 +346,13 @@ class GameAllocator:
                 can_fit_mode="MAX",
                 allow_bump=True,
             )
-            self.print(f"Party {party.party_leader_id} allocated to session {session_id}")
+            logger.debug("alg_party_allocated", party_leader_id=party.party_leader_id, session_id=session_id)
 
         # Step 2 - Allocate remaining parties
         # Preferring least popular games to give them a chance
         # Allow filling to the minimum
         # Don't allow anything below tier 1
-        self.print("Step 2 | Allocating Remaining Parties - Minimum")
+        logger.debug("alg_step", step=2, name="Allocating Remaining Parties - Minimum")
         for party in shuffled([party_lookup[party_id] for party_id in free_party_ids]):
             session_id = allocate_party(
                 party,
@@ -374,13 +361,13 @@ class GameAllocator:
                 can_fit_mode="MIN",
                 allow_bump=True,
             )
-            self.print(f"Party {party.party_leader_id} allocated to session {session_id}")
+            logger.debug("alg_party_allocated", party_leader_id=party.party_leader_id, session_id=session_id)
 
         # Step 3 - Allocate remaining parties
         # By random
         # Allow filling to the optimum
         # Don't allow anything below tier 1
-        self.print("Step 3 | Allocating Remaining Parties - Optimum Pass")
+        logger.debug("alg_step", step=3, name="Allocating Remaining Parties - Optimum Pass")
         for party in shuffled([party_lookup[party_id] for party_id in free_party_ids]):
             session_id = allocate_party(
                 party,
@@ -389,13 +376,13 @@ class GameAllocator:
                 can_fit_mode="OPT",
                 allow_bump=True,
             )
-            self.print(f"Party {party.party_leader_id} allocated to session {session_id}")
+            logger.debug("alg_party_allocated", party_leader_id=party.party_leader_id, session_id=session_id)
 
         # Step 4 - We still have remaining parties
         # By least players to optimum
         # Allow filling to the maximum
         # Allow any tier
-        self.print("Step 4 | Allocating Remaining Parties - Final Pass")
+        logger.debug("alg_step", step=4, name="Allocating Remaining Parties - Final Pass")
         for party in shuffled([party_lookup[party_id] for party_id in free_party_ids]):
             session_id = allocate_party(
                 party,
@@ -404,13 +391,13 @@ class GameAllocator:
                 can_fit_mode="MAX",
                 allow_bump=True,
             )
-            self.print(f"Party {party.party_leader_id} allocated to session {session_id}")
+            logger.debug("alg_party_allocated", party_leader_id=party.party_leader_id, session_id=session_id)
 
         # Step 5 - Now, there's gonna be games that don't have minimum players
         # Let's try to fill them up by taking from tables which are over the optimum
         # And have a group with a preference that wouldn't be downgraded more than once
         unfillable_session_ids: set[SessionID] = set()
-        self.print("Step 5 | Trying to Fill Tables Below Minimum")
+        logger.debug("alg_step", step=5, name="Trying to Fill Tables Below Minimum")
         unfilled_session_ids = [
             session_id
             for session_id, current_allocation in current_allocations.items()
@@ -418,17 +405,17 @@ class GameAllocator:
         ]
         for session_id in shuffled(unfilled_session_ids):
             if try_to_fill_session(session_id):
-                self.print(f"Filled session {session_id}")
+                logger.debug("alg_session_filled", session_id=session_id)
             else:
-                self.print(f"Failed to fill session {session_id}")
+                logger.debug("alg_session_fill_failed", session_id=session_id)
                 unfillable_session_ids.add(session_id)
 
         # Step 6 - It is not possible to get enough players into this game
         # We need to allocate the GM and any remaining parties to other games
         actually_unfillable_session_ids: set[SessionID] = set()
-        self.print("Step 6 | Allocating GM and Remaining Parties From Unfillable Games")
+        logger.debug("alg_step", step=6, name="Allocating GM and Remaining Parties From Unfillable Games")
         for session_id in shuffled(list(unfillable_session_ids)):
-            self.print(f"UNFILLABLE SESSION :( {session_id}")
+            logger.debug("alg_unfillable_session", session_id=session_id)
             if current_allocations[session_id].players_to_min < 0:
                 # We've managed to fill this table from others in this process of final table clean up
                 continue
@@ -447,7 +434,7 @@ class GameAllocator:
                 allow_bump=True,
                 blocked_session_ids=actually_unfillable_session_ids,
             )
-            self.print(f"Moved GM to {new_session_id}")
+            logger.debug("alg_gm_moved", from_session_id=session_id, to_session_id=new_session_id)
 
             # 2. Allocate the other players
             other_allocated_parties = current_allocations[session_id].parties
@@ -461,11 +448,16 @@ class GameAllocator:
                     allow_bump=True,
                     blocked_session_ids=actually_unfillable_session_ids,
                 )
-                self.print(f"Moved party {party.party_leader_id} to {new_session_id}")
+                logger.debug(
+                    "alg_party_moved",
+                    party_leader_id=party.party_leader_id,
+                    from_session_id=session_id,
+                    to_session_id=new_session_id,
+                )
             current_allocations[session_id].parties = []
 
         # Step 7 - Any Remaining Free Parties Go to Overflow
-        self.print("Step 7 | Allocating Remaining Parties to Overflow")
+        logger.debug("alg_step", step=7, name="Allocating Remaining Parties to Overflow")
         overflow_results = [
             AlgResult(party_leader_id=party_id, session_id=None, assignment_type="PLAYER")
             for party_id in free_party_ids
@@ -502,31 +494,30 @@ class GameAllocator:
     def _allocate(
         self, sessions: list[AlgSession], parties: list[AlgPartyP], include_run_summaries: bool = False
     ) -> tuple[list[AlgResult], Compensation] | tuple[list[AlgResult], Compensation, list[int]]:
-        self.print("Allocating for:")
-        self.pprint(sessions)
-        self.pprint(parties)
+        logger.debug("alg_inputs", sessions=sessions, parties=parties)
         summaries: list[int] = []
         best_results: list[AlgResult] | None = None
         best_compensation: Compensation | None = None
         for i in range(self._max_iterations):
-            self.print(f"Iteration {i + 1} of {self._max_iterations}")
+            logger.debug("alg_iteration", iteration=i + 1, max_iterations=self._max_iterations)
             results = self._allocate_trial(sessions, parties)
             valid = is_valid_allocation(sessions, parties, results)
-            self.print(f"Valid = {valid}")
+            logger.debug("alg_iteration_valid", iteration=i + 1, valid=valid)
             if not valid:
                 continue
 
             compensation: Compensation = calculate_compensation(sessions, parties, results)
             summaries.append(compensation.real_total)
-            # self.pprint(results)
-            # self.pprint(compensation)
-            self.print(f"Compensation Total = {compensation.total}")
+            logger.debug("alg_iteration_compensation", iteration=i + 1, total=compensation.total)
             if best_compensation is None or compensation < best_compensation:
-                self.print("Better result :white_check_mark:")
-                print(f"Found better result at {i} - {compensation.real_total} (total {compensation.total})")
+                logger.info(
+                    "alg_better_result_found",
+                    iteration=i,
+                    real_total=compensation.real_total,
+                    total=compensation.total,
+                )
                 best_results = results
                 best_compensation = compensation
-            self.print("")
 
         if best_results is None or best_compensation is None:
             raise ValueError("No valid allocation found")
@@ -716,8 +707,7 @@ def is_valid_allocation(sessions: list[AlgSession], parties: list[AlgPartyP], re
     result_id_count = Counter([result.party_leader_id for result in results])
     diff = party_id_count - result_id_count
     if diff:
-        print("Not all parties are allocated, or excess are allocated")
-        print(diff)
+        logger.warning("alg_validation_party_count_mismatch", diff=dict(diff))
         success = False
 
     # 2. No session may be below the min_players or above the max_players IF it has any players
@@ -732,10 +722,20 @@ def is_valid_allocation(sessions: list[AlgSession], parties: list[AlgPartyP], re
         if result_count == 0:
             continue
         if result_count < min_player_counts[session_id]:
-            print(f"Session {session_id} has too few players: {result_count} < {min_player_counts[session_id]}")
+            logger.warning(
+                "alg_validation_session_too_few_players",
+                session_id=session_id,
+                actual=result_count,
+                minimum=min_player_counts[session_id],
+            )
             success = False
         if result_count > max_player_counts[session_id]:
-            print(f"Session {session_id} has too many players: {result_count} > {max_player_counts[session_id]}")
+            logger.warning(
+                "alg_validation_session_too_many_players",
+                session_id=session_id,
+                actual=result_count,
+                maximum=max_player_counts[session_id],
+            )
             success = False
 
     return success
@@ -744,9 +744,15 @@ def is_valid_allocation(sessions: list[AlgSession], parties: list[AlgPartyP], re
 if __name__ == "__main__":
     import argparse
 
+    from rich import print
+    from rich.pretty import pprint
+
+    from convergence_games.logging import configure_logging
     from convergence_games.services.algorithm.mock_data import (
         MockDataGenerator,
     )
+
+    configure_logging()
 
     # End to End
     parser = argparse.ArgumentParser()

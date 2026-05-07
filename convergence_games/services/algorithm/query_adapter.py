@@ -27,7 +27,10 @@ from convergence_games.db.models import (
     UserEventD20Transaction,
     UserGamePreference,
 )
+from convergence_games.logging import get_logger
 from convergence_games.services.algorithm.game_allocator import Compensation
+
+logger = get_logger(__name__)
 from convergence_games.services.algorithm.models import AlgParty, AlgResult, AlgSession, SessionID
 
 
@@ -286,9 +289,12 @@ async def adapt_results_to_database(
     alg_results: list[AlgResult],
     compensation: Compensation,
 ) -> None:
-    print(time_slot_id)
-    print(alg_results)
-    print(compensation)
+    logger.debug(
+        "adapt_results_to_database",
+        time_slot_id=time_slot_id,
+        alg_results=alg_results,
+        compensation=compensation,
+    )
 
     _ = await transaction.execute(delete(Allocation).where(Allocation.session.has(time_slot_id=time_slot_id)))
 
@@ -299,7 +305,12 @@ async def adapt_results_to_database(
             continue
 
         if alg_result.session_id is None:
-            print("SOMEONE ENDED UP IN OVERFLOW TODO!")
+            logger.warning(
+                "allocation_party_in_overflow",
+                party_leader_id=party_leader_id,
+                party_type=party_type,
+                time_slot_id=time_slot_id,
+            )
             continue
 
         new_allocations.append(
