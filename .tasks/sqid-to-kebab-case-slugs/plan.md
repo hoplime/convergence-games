@@ -1,7 +1,7 @@
 ---
 title: Kebab-case slug URLs for public-facing routes
 created: 2026-05-07
-status: draft
+status: ready
 ---
 
 # Kebab-case slug URLs for public-facing routes
@@ -20,21 +20,24 @@ Old copied URLs containing sqids must continue to resolve. They should `301` red
 
 ## Requirements
 
-- `Event`, `Game`, and `User` rows expose a stable, human-readable `slug` column.
-- Slugs are auto-generated from a source field on insert and never change after creation.
-  - `Event.slug` derived from `Event.name`.
-  - `Game.slug` derived from `Game.name`.
-  - `User.slug` derived from `f"{first_name} {last_name}"` (trimmed if last name empty).
+- `Event`, `Game`, and `User` rows expose a human-readable `slug` column.
+- Slugs are auto-generated from a source field and **regenerate when the source changes**.
+  - `Event.slug` derived from `Event.name`. Regenerates if `name` is edited.
+  - `Game.slug` derived from `Game.name`. Regenerates if `name` is edited.
+  - `User.slug` derived from `f"{first_name} {last_name}"` (trimmed if last name empty), populated when profile setup completes (Users have no name at OAuth/email signup time). Regenerates if name fields are edited via the profile page later.
+- Until a user has set their name, `User.slug` holds a deterministic placeholder of the form `user-{sqid}` so the column stays NOT NULL and URLs always resolve.
+- A rename **breaks the old slug URL** — that is acceptable. Users sharing a freshly-renamed link is uncommon; the sqid-redirect fallback (below) covers anyone with the original sqid URL.
 - Slug uniqueness scopes:
   - `Event.slug` and `User.slug`: globally unique (table-wide).
   - `Game.slug`: unique per `event_id` (composite unique constraint).
-- On slug collision the Advanced Alchemy default applies: append a 4-char `[a-z0-9]` suffix, e.g. `convergence-2026-x7q3`.
+- On slug collision the Advanced Alchemy default applies: append a 4-char `[a-z0-9]` suffix, e.g. `convergence-2026-x7q3`. When regenerating an existing entity's slug, the entity's own current slug is excluded from the collision check (so a minor name edit that re-slugifies to the same value is a no-op).
 - Public-facing GET routes accept slugs as path parameters:
   - `/event/{event_key}` and `/event/{event_key}/games` (event landing + games list)
   - `/event/{event_key}/game/{game_key}` (game info page — moved from top-level `/game/{sqid}`)
   - `/event/{event_key}/planner` and `/event/{event_key}/planner/{time_slot_sqid}` (TimeSlot keeps sqid)
-- Mutation endpoints (PUT/POST/DELETE), HTMX partial endpoints, `/event/{...}/manage-*` admin pages, party lifecycle paths, and OAuth/auth flows continue using sqids unchanged.
-- Old sqid URLs for slug-enabled GETs return HTTP 301 to the canonical slug URL — never break a copied link.
+- Admin `manage-*` pages also accept slugs (`/event/{event_key}/manage-schedule`, `manage-submissions`, `manage-players`, `manage-allocation`, `manage-settings`) so admins get readable URLs too.
+- Mutation endpoints (PUT/POST/DELETE), HTMX partial endpoints, party lifecycle paths, and OAuth/auth flows continue using sqids unchanged.
+- Old sqid URLs for slug-enabled GETs return HTTP 301 to the canonical slug URL — never break a copied sqid link. Old slug URLs after a rename may 404 (acceptable).
 - Existing rows in production are backfilled in the same Alembic migration that adds the columns; no separate manual step.
 - `request.app.url_for(...)` callers and template helpers updated so links emitted server-side use the slug form.
 - `pytest`, `ruff check`, and `basedpyright` all pass.
@@ -79,30 +82,69 @@ async def generate_unique_slug(
     source: str,
     *,
     scope: dict[str, Any] | None = None,
+    exclude_id: int | None = None,
+    fallback: str = "untitled",
 ) -> str:
-    base = slugify(source) or "untitled"
+    base = slugify(source) or fallback
     candidate = base
-    while await _slug_exists(session, model, candidate, scope=scope):
+    while await _slug_exists(session, model, candidate, scope=scope, exclude_id=exclude_id):
         suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
         candidate = f"{base}-{suffix}"
     return candidate
 ```
 
-`_slug_exists` issues a single `SELECT 1 ... LIMIT 1` filtering by `slug` and any scope keys (e.g. `{"event_id": ...}` for Game).
+`_slug_exists` issues a single `SELECT 1 ... LIMIT 1` filtering by `slug`, any scope keys (e.g. `{"event_id": ...}` for Game), and `model.id != exclude_id` when given. The `exclude_id` parameter is used during regeneration so the entity's own current slug doesn't count as a collision against itself.
 
-This replicates `SQLAlchemyAsyncSlugRepository.get_available_slug` but works with a plain session and supports scoping. We do not need to introduce a full Repository class for this.
+A second helper handles the regen-on-rename case:
 
-### Where slugs are populated
+```python
+async def maybe_regenerate_slug(
+    session: AsyncSession,
+    instance: Base,
+    *,
+    source: str,
+    scope: dict[str, Any] | None = None,
+    fallback: str = "untitled",
+) -> None:
+    desired_base = slugify(source) or fallback
+    current = getattr(instance, "slug", None)
+    # Already aligned? (current matches desired_base, possibly with a -xxxx suffix retained from prior collision)
+    if current == desired_base or (current and current.startswith(f"{desired_base}-") and len(current) == len(desired_base) + 5):
+        return
+    instance.slug = await generate_unique_slug(
+        session,
+        type(instance),
+        source,
+        scope=scope,
+        exclude_id=instance.id,
+        fallback=fallback,
+    )
+```
 
-Auto-populate at the route/service layer when an entity is created — not via SQLAlchemy `before_insert` (that hook is sync and cannot await a uniqueness check). Touch points:
+This avoids churning the slug when the slugified form hasn't actually changed (e.g. fixing a typo in description, or capitalisation change in `name` that slugifies the same).
 
-- `convergence_games/app/routers/frontend/submit_game.py` — when a Game is inserted, call `generate_unique_slug(session, Game, game.name, scope={"event_id": game.event_id})` and assign before flush.
-- `convergence_games/db/create_mock_data.py` and `convergence_games/services/mock_event.py` (if it creates events/games) — populate slugs when seeding.
-- Any other Event/Game/User insert site (search via `Event(`, `Game(`, `User(` constructor calls). Shortlist found:
-  - `convergence_games/app/routers/frontend/oauth.py` — User creation on first OAuth login (use first_name + last_name).
-  - `convergence_games/app/routers/frontend/email_auth.py` — User creation on first email signup.
-  - `convergence_games/app/routers/frontend/event_manager.py` — anywhere new Events/Games are created administratively (currently none, but verify).
-  - Admin event creation flow if/when one exists.
+This replicates `SQLAlchemyAsyncSlugRepository.get_available_slug` but works with a plain session, supports scoping, and supports regeneration. We do not need a full Repository class.
+
+### Where slugs are populated and updated
+
+Auto-populate at the route/service layer when an entity is created or its source field is edited — not via SQLAlchemy `before_insert`/`before_update` (those hooks are sync and cannot await a uniqueness check). Touch points:
+
+**Insert sites:**
+
+- `convergence_games/app/routers/frontend/submit_game.py` — when a Game is inserted, call `await generate_unique_slug(session, Game, game.name, scope={"event_id": game.event_id})` and assign before flush. **Also** on the game-edit handler (same controller), call `maybe_regenerate_slug` after applying form changes.
+- `convergence_games/app/routers/frontend/oauth.py` — User creation on first OAuth login. User has no name yet — assign placeholder slug `f"user-{swim('User', user.id)}"`. Because we need the row's `id` to mint the placeholder, either: (a) flush the User row, then update its slug and flush again; or (b) generate the placeholder from a UUID-style random token instead of the sqid (e.g. `f"user-{secrets.token_hex(4)}"`). **Recommendation: option (b)** — single insert, no second flush, sqid-style fallback collision-safe via the same `generate_unique_slug` loop.
+- `convergence_games/app/routers/frontend/email_auth.py` — Same placeholder pattern.
+- `convergence_games/app/routers/frontend/profile.py` — when the user submits the profile-completion form (or edits first/last name later), call `maybe_regenerate_slug(session, user, source=f"{first_name} {last_name}".strip())`. This is the trigger that swaps the placeholder for a real `alice-smith` slug.
+- `convergence_games/db/create_mock_data.py` and `convergence_games/services/mock_event.py` (if it creates events/games/users) — populate slugs when seeding.
+- Admin Event creation/edit flow (if/when added) — same `maybe_regenerate_slug` pattern.
+
+**Edit/rename sites — call `maybe_regenerate_slug` after applying changes, before commit:**
+
+- Game edit handler in `submit_game.py` (or wherever `Game.name` is mutable).
+- Event edit handler in `event_manager.py` (manage-settings) — `await maybe_regenerate_slug(session, event, source=event.name)`.
+- User profile edit in `profile.py`.
+
+The HTMX update endpoints often update one column at a time; only re-slug when the source field is in the changeset. Keep this simple: every edit handler that touches `name`/`first_name`/`last_name` calls `maybe_regenerate_slug` unconditionally — the helper short-circuits when the slug is already aligned.
 
 ### Path resolution & sqid fallback
 
@@ -181,10 +223,12 @@ Sqid-using mutation/htmx links (`hx-put`, `hx-post`, `manage-*`) stay as-is.
 | `convergence_games/app/app_config/exception_handlers.py` | exception handler dict | Register `SlugRedirect` → `Redirect(..., status_code=301)`. |
 | `convergence_games/app/routers/frontend/common.py` | `event_with` uses `event_sqid` + `sink` | Accept `event_key`, slug lookup, fallback to sqid + redirect. |
 | `convergence_games/app/routers/frontend/event_player.py` | path `/event/{event_sqid:str}/...` | Rename param → `event_key`. Handler signatures unchanged otherwise (dependency still yields `Event`). |
+| `convergence_games/app/routers/frontend/event_manager.py` | path `/event/{event_sqid:str}/manage-*` | Rename param → `event_key`. Same dependency yields `Event` whether matched by slug or sqid (sqid hit triggers 301). |
 | `convergence_games/app/routers/frontend/game.py` | `path = "/game"`, GET uses `game_sqid` | Add new GET on `/event/{event_key:str}/game/{game_key:str}` scoped lookup. Old GET on `/game/{game_sqid}` only emits a 301 to the canonical path. PUTs remain. |
 | `convergence_games/app/routers/frontend/redirects.py` | uses `DEFAULT_EVENT_SQID` | Use default event slug helper. |
-| `convergence_games/app/routers/frontend/oauth.py`, `email_auth.py` | `User(...)` constructor sites | Populate `slug` via `generate_unique_slug`. |
-| `convergence_games/app/routers/frontend/submit_game.py` | `Game(...)` constructor sites | Populate `slug`. |
+| `convergence_games/app/routers/frontend/oauth.py`, `email_auth.py` | `User(...)` constructor sites | Populate placeholder `slug` (`user-<random>`) via `generate_unique_slug`. |
+| `convergence_games/app/routers/frontend/profile.py` | profile-completion + name-edit handlers | Call `maybe_regenerate_slug(session, user, source=...)` after applying form data. |
+| `convergence_games/app/routers/frontend/submit_game.py` | `Game(...)` constructor + game-edit handler | Populate `slug` on insert; call `maybe_regenerate_slug` on edit. |
 | `convergence_games/db/create_mock_data.py`, `convergence_games/services/mock_event.py` (if present) | seeding | Populate slugs for events, games, users. |
 | `convergence_games/migrations/versions/<timestamp>_add_slug_columns_to_event_game_user.py` (new) | — | Add columns nullable, backfill, set NOT NULL, add unique constraints/indexes. |
 | Public-facing templates (see Templates section) | `swim(event)`, `swim(game)` | `event.slug`, `game.slug`. |
@@ -201,7 +245,7 @@ def upgrade() -> None:
     # 2. backfill in Python via op.get_bind() — slugify name/full_name, dedupe with -xxxx suffix
     bind = op.get_bind()
     _backfill_event_slugs(bind)
-    _backfill_user_slugs(bind)
+    _backfill_user_slugs(bind)  # placeholder `user-<random>` if first/last name both empty
     _backfill_game_slugs(bind)  # scoped per event_id
 
     # 3. NOT NULL + unique constraints/indexes
@@ -236,8 +280,9 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
   - Add `SlugKey` to `Game`; override `__table_args__` with composite `(event_id, slug)` unique constraint and matching unique index, dropping the inherited table-wide ones.
 - [ ] **Slug generation helper** (`convergence_games/db/slugs.py` — new)
   - Re-export `slugify` from `advanced_alchemy.utils.text`.
-  - Implement `async def generate_unique_slug(session, model, source, *, scope=None) -> str`.
-  - Implement `_slug_exists` using `select(exists().where(...))`.
+  - Implement `async def generate_unique_slug(session, model, source, *, scope=None, exclude_id=None, fallback="untitled") -> str`.
+  - Implement `async def maybe_regenerate_slug(session, instance, *, source, scope=None, fallback="untitled") -> None` — short-circuits when current slug already matches the desired base.
+  - Implement `_slug_exists` using `select(exists().where(...))`, honouring `exclude_id`.
 - [ ] **Alembic migration** (`litestar --app convergence_games.app:app database make-migrations -m "add_slug_columns_to_event_game_user"`)
   - Generated skeleton + manual backfill section as designed.
   - Backfill for users: `slugify(f"{first_name} {last_name}".strip())`. Empty fallback `"user"`.
@@ -252,23 +297,34 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
 - [ ] `litestar database upgrade` runs cleanly on a copy of dev DB
 - [ ] All existing rows have non-null, unique slugs (manual SQL spot-check)
 
-### Phase 2: Populate slugs on insert
+### Phase 2: Populate and regenerate slugs
 
 - [ ] **OAuth user creation** (`convergence_games/app/routers/frontend/oauth.py`)
-  - Wherever `User(...)` is instantiated, call `await generate_unique_slug(session, User, f"{user.first_name} {user.last_name}".strip() or "user")` and set `user.slug`.
+  - Wherever `User(...)` is instantiated, mint a placeholder slug: `user.slug = await generate_unique_slug(session, User, f"user-{secrets.token_hex(4)}", fallback="user")`. Don't pull from name fields — they're empty.
 - [ ] **Email auth user creation** (`convergence_games/app/routers/frontend/email_auth.py`)
-  - Same pattern.
-- [ ] **Submit-game flow** (`convergence_games/app/routers/frontend/submit_game.py`)
+  - Same placeholder pattern.
+- [ ] **Profile completion / name edits** (`convergence_games/app/routers/frontend/profile.py`)
+  - After applying form data to the User in the profile-setup handler AND any subsequent name-edit handler, call `await maybe_regenerate_slug(session, user, source=f"{user.first_name} {user.last_name}".strip(), fallback="user")`.
+  - This swaps `user-7af3b1c2` for `alice-smith` once the user enters their name; subsequent renames re-roll the slug.
+- [ ] **Submit-game create flow** (`convergence_games/app/routers/frontend/submit_game.py`)
   - On Game insert, call `await generate_unique_slug(session, Game, game.name, scope={"event_id": game.event_id})`.
+- [ ] **Submit-game edit flow** (`convergence_games/app/routers/frontend/submit_game.py`)
+  - On Game update, after applying form data, call `await maybe_regenerate_slug(session, game, source=game.name, scope={"event_id": game.event_id})`.
+- [ ] **Event edit flow** (`convergence_games/app/routers/frontend/event_manager.py`)
+  - In manage-settings update handler (or wherever `Event.name` can change), call `await maybe_regenerate_slug(session, event, source=event.name)`.
 - [ ] **Mock data + dev seeders** (`convergence_games/db/create_mock_data.py`, `convergence_games/services/mock_event.py` if exists)
   - Populate slugs deterministically (e.g. `slugify(name)`, append `-{i}` on duplicates within an event for tests).
-- [ ] **Audit any other insert site** via `grep -rn "Event(\|Game(\|User(" convergence_games/`
+- [ ] **Audit any other insert/edit site** via `grep -rn "Event(\|Game(\|User(" convergence_games/` and any handlers that mutate `name`, `first_name`, or `last_name`.
 
 #### Phase 2 verification
 
 - [ ] `basedpyright`, `ruff check` clean
-- [ ] Dev: register a new user via OAuth → row has slug
-- [ ] Dev: submit a new game → row has slug, scoped uniqueness verified by submitting a duplicate name in the same event (should auto-suffix)
+- [ ] Dev: register a new user via OAuth → row has placeholder `user-xxxxxxxx` slug
+- [ ] Dev: complete profile setup with name "Alice Smith" → slug becomes `alice-smith`
+- [ ] Dev: rename profile to "Alice Cooper" → slug regenerates to `alice-cooper`
+- [ ] Dev: rename a game from "Foo" to "Bar" → slug regenerates to `bar`
+- [ ] Dev: edit a game's description without changing the name → slug unchanged (verify via DB)
+- [ ] Dev: submit a new game with a duplicate name in the same event → suffixed slug
 - [ ] `pytest` — no regressions
 
 ### Phase 3: Public route resolution + sqid redirect
@@ -281,10 +337,11 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
   - Try slug lookup first.
   - Fall back to sqid if `_looks_like_sqid(event_key)` (uppercase present, or no hyphens + decodable).
   - On sqid hit, raise `SlugRedirect` to the slug-canonical URL using `request.app.route_reverse(...)` with the matched handler name and substituted `event_key=event.slug`.
-- [ ] **Rename event-scoped route params** (event_player.py, any other controller using `{event_sqid:str}` for **public GETs**: `event_player.py`, `home.py` if present, `redirects.py`)
+- [ ] **Rename event-scoped route params** in every controller using `{event_sqid:str}` for GET handlers — public **and** admin:
+  - `event_player.py`, `home.py` (if present), `redirects.py`, `event_manager.py` (all `manage-*` GETs and any other GETs).
   - Rename `event_sqid` → `event_key` in path patterns and handler signatures.
-  - Manage-* admin paths (`event_manager.py`, `submit_game.py` admin variants) keep `event_sqid` — these are not slug-enabled per scope decision. They continue to call `event_with` only if they're moved to use slugs; if they currently use sqid + `sink` directly, they keep that.
-  - **Edge case**: if a manage-* path uses `event_with`, it inherits slug resolution. This is OK — slugs work for admin paths too as a side benefit, but admin templates will keep emitting `swim(event)` (sqid) and the dependency will redirect to the slug. That's a free upgrade — accept it. Alternatively, leave admin URLs un-slugged for now by keeping their dependency pinned to sqid; pick whichever requires fewer changes after grepping `event_with(` callsites.
+  - Mutation/HTMX endpoints inside `event_manager.py` (PUTs/POSTs for schedule edits, player d20 deltas, etc.) keep their existing path params — they are addressed by URL but not user-shared. If an HTMX endpoint's path includes `{event_sqid}` only as a routing key (not a true ID), it can be renamed too for consistency, but is optional. Default: leave mutation paths untouched to minimise diff.
+  - The `event_with` dependency now resolves either slug or sqid for every consumer. Admin templates (`AdminSectionCard.html.jinja`, etc.) emit slug links (Phase 4); old sqid bookmarks 301 to the slug equivalent for free.
 
 - [ ] **Game GET routes** (`convergence_games/app/routers/frontend/game.py`)
   - Add a new GET handler at `/event/{event_key:str}/game/{game_key:str}` that:
@@ -312,14 +369,18 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
   - `templates/pages/event_games.html.jinja`
   - `templates/pages/game.html.jinja`
   - Top-level navigation components that emit `/event/{event_sqid}/...`
+- [ ] **Admin manage links**:
+  - `templates/components/AdminSectionCard.html.jinja` — switch the five `manage-*` links to `event.slug`.
+  - Any breadcrumb / "back to event" links inside admin pages.
 - [ ] Each location: replace `swim(event)` → `event.slug`, `/game/{{ swim(game) }}` → `/event/{{ game.event.slug }}/game/{{ game.slug }}`. Verify the relevant `selectinload(Game.event)` is already in the query (most public Game queries already load event for date/timezone access — verify in `event_player.py` and `game.py`).
-- [ ] Leave admin/htmx mutation links untouched.
+- [ ] Leave HTMX mutation links (`hx-put`, `hx-post`) using sqids untouched.
 
 #### Phase 4 verification
 
 - [ ] Dev server: load `/`, `/event/convergence-2026/games`, click a game card → URL shows `/event/.../game/...`
-- [ ] View page source of games list → all card links use slugs
-- [ ] Schedule manager + planner still work (not slug-converted; sqid links function)
+- [ ] Visit `/event/convergence-2026/manage-schedule`, `/event/convergence-2026/manage-submissions`, etc. → 200 with slug in the URL bar
+- [ ] View page source of games list and admin section → all navigation links use slugs
+- [ ] Schedule manager + planner still work (HTMX mutations still on sqids)
 - [ ] `npx tsc --noEmit` — TypeScript still clean (no path assumptions baked in)
 
 ### Phase 5: Default event + redirects shortcut
@@ -344,6 +405,10 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
   - Collision: insert two events with same name → second slug has `-xxxx` suffix
   - Game scoped collision: two games with same name in same event → suffix; two games with same name in different events → both bare slugs
   - User slug from first/last name; empty last name handled
+  - User created without name → placeholder `user-xxxxxxxx`
+  - `maybe_regenerate_slug` is a no-op when the source slugifies to the existing base
+  - `maybe_regenerate_slug` rerolls when source changes (game rename "Foo" → "Bar")
+  - `maybe_regenerate_slug` excludes the entity's own current slug from the collision check
 - [ ] **Route resolution tests** (`tests/app/routers/frontend/test_slug_routing.py`)
   - GET `/event/{slug}/games` → 200
   - GET `/event/{old_sqid}/games` → 301 with correct `Location` header
@@ -369,10 +434,13 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
   - `/event/convergence-2026/games`
   - `/event/convergence-2026/game/<some-game-slug>`
   - `/event/convergence-2026/planner`
-- [ ] Old sqid URLs return 301 to the canonical slug URL (verified for event and game)
-- [ ] HTMX mutation endpoints, manage-* admin pages, party endpoints all continue to function on sqids
+- [ ] Admin URLs use slugs:
+  - `/event/convergence-2026/manage-schedule`, `manage-submissions`, `manage-players`, `manage-allocation`, `manage-settings`
+- [ ] Old sqid URLs return 301 to the canonical slug URL (verified for event GETs, manage-* GETs, and game GET)
+- [ ] HTMX mutation endpoints and party endpoints continue to function on sqids
 - [ ] Submitting a new game whose name collides with an existing game in the same event yields a `-xxxx`-suffixed slug
-- [ ] Creating a user via OAuth or email auth populates a slug
+- [ ] Renaming an Event/Game/User regenerates its slug; minor edits that slugify identically do not
+- [ ] Creating a user via OAuth or email auth populates a placeholder `user-xxxxxxxx` slug; completing profile setup with a name swaps it for `firstname-lastname`
 
 ## Risks and Mitigations
 
@@ -381,6 +449,8 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
 3. **Migration backfill on a large `user` table**: User table backfill is O(n) Python-side. Mitigation: chunk via `LIMIT/OFFSET` if row count > 50k; otherwise plain loop is fine for the convention-scale dataset.
 4. **Templates referencing `game.event.slug` without loading the relationship**: Could trigger lazy-load errors (`lazy="noload"` is the project default). Mitigation: every public template that emits the new `/event/{event.slug}/game/{game.slug}` URL must be served by a query that `selectinload(Game.event)`. Audit per-template before merging Phase 4.
 5. **Slug containing only stripped characters** (e.g. a game named `"???"`): `slugify` returns empty. Mitigation: fallback to `"untitled"` (or class-name + sqid suffix) inside `generate_unique_slug`.
+6. **User placeholder leaking into shared URLs**: If an admin shares `/event/.../player/user-7af3b1c2` before the player completes profile setup, then the player completes setup and the slug rolls to `alice-smith`, the old shared URL 404s. Mitigation: this matches the explicit "rename breaks old slug URLs" requirement and is acceptable. Admin player views are scarce on shared links anyway.
+7. **Game rename invalidates printed/posted URLs**: Once an event is published, organisers may print the games list with stable URLs. Mitigation: out of scope per the rename-breaks-URLs decision; if it becomes an issue later, add a `slug_history` table or freeze slugs once an event opens for preferences. Note this in `Notes`.
 
 ## Notes
 
@@ -388,4 +458,4 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
 - The Advanced Alchemy `SQLAlchemyAsyncSlugRepository` is *not* adopted — the project does not currently use repositories. We use the same algorithm via the `generate_unique_slug` helper instead.
 - `swim`/`sink` and `ocean.py` remain — they are still used by all mutation endpoints, party invite codes (uppercase sqids), and admin paths.
 - `name=` kwargs on Litestar handlers may need adding for `route_reverse` to work in the redirect builder. Audit during Phase 3.
-- Future follow-up (separate task): consider migrating admin paths to slugs for consistency once the public migration is settled.
+- Future follow-up (separate task): if rename-breaks-URLs becomes a real-world pain point, introduce a `slug_history` table that records prior slugs and 301-redirects them like the sqid fallback does today. Or freeze slugs at the point an event opens for preferences.
