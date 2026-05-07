@@ -1,4 +1,7 @@
+import logging
+
 import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.scrubber import EventScrubber
 from sentry_sdk.types import Event, Hint
 
@@ -32,4 +35,7 @@ def init_sentry() -> None:
             pii_denylist=[],
         ),
         before_send=_before_send,
+        integrations=[
+            LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
+        ],
     )
