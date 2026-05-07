@@ -836,8 +836,12 @@ class EventManagerController(Controller):
         sessions, parties = await adapt_to_inputs(transaction, time_slot_id)
         game_allocator = GameAllocator(max_iterations=5000)
         alg_results, compensation = game_allocator.allocate(sessions, parties, False)
-        pprint(alg_results)
-        pprint(compensation)
+        logger.debug(
+            "event_manage_allocation_results",
+            time_slot_id=time_slot_id,
+            alg_results=alg_results,
+            compensation=compensation,
+        )
         await adapt_results_to_database(transaction, time_slot_id, alg_results, compensation)
 
         return Redirect(f"/event/{swim(event)}/manage-allocation/{time_slot_sqid}")

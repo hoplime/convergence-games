@@ -8,7 +8,6 @@ from __future__ import annotations
 import asyncio
 from typing import Any, cast
 
-from rich.pretty import pprint
 from sqlalchemy import URL, Select, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
@@ -328,6 +327,8 @@ async def adapt_results_to_database(
 
 
 async def main() -> None:
+    from rich.pretty import pprint
+
     engine_url = URL.create(
         drivername="postgresql+asyncpg",
         username="MIGRATION_USER",
@@ -347,4 +348,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    from convergence_games.logging import configure_logging
+
+    configure_logging()
     asyncio.run(main())
