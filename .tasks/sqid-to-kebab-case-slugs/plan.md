@@ -324,36 +324,28 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
 
 ### Phase 3: Public route resolution + sqid redirect
 
-- [ ] **`SlugRedirect` exception + handler** (`convergence_games/app/exceptions.py` or extend `alerts.py`; `convergence_games/app/app_config/exception_handlers.py`)
-  - `class SlugRedirect(Exception): def __init__(self, path: str): self.path = path`
-  - Handler: `return Redirect(path=exc.path, status_code=301)`.
-- [ ] **Update `event_with`** (`convergence_games/app/routers/frontend/common.py`)
-  - Rename parameter to `event_key`.
-  - Try slug lookup first.
-  - Fall back to sqid if `_looks_like_sqid(event_key)` (uppercase present, or no hyphens + decodable).
-  - On sqid hit, raise `SlugRedirect` to the slug-canonical URL using `request.app.route_reverse(...)` with the matched handler name and substituted `event_key=event.slug`.
-- [ ] **Rename event-scoped route params** in every controller using `{event_sqid:str}` for GET handlers — public **and** admin:
-  - `event_player.py`, `home.py` (if present), `redirects.py`, `event_manager.py` (all `manage-*` GETs and any other GETs).
-  - Rename `event_sqid` → `event_key` in path patterns and handler signatures.
-  - Mutation/HTMX endpoints inside `event_manager.py` (PUTs/POSTs for schedule edits, player d20 deltas, etc.) keep their existing path params — they are addressed by URL but not user-shared. If an HTMX endpoint's path includes `{event_sqid}` only as a routing key (not a true ID), it can be renamed too for consistency, but is optional. Default: leave mutation paths untouched to minimise diff.
-  - The `event_with` dependency now resolves either slug or sqid for every consumer. Admin templates (`AdminSectionCard.html.jinja`, etc.) emit slug links (Phase 4); old sqid bookmarks 301 to the slug equivalent for free.
-
-- [ ] **Game GET routes** (`convergence_games/app/routers/frontend/game.py`)
-  - Add a new GET handler at `/event/{event_key:str}/game/{game_key:str}` that:
-    - Resolves event via `event_with()`.
-    - Resolves game by `(event.id, slug=game_key)`; on miss, falls back to sqid decode like the event resolver and raises `SlugRedirect` to the canonical path.
-  - Refactor original GET on `/game/{game_sqid:str}`: become a thin handler that decodes the sqid, looks up the game, and raises `SlugRedirect` to `/event/{game.event.slug}/game/{game.slug}`. Keep PUT handlers (`preference`, `already-played`) on the sqid path untouched.
-- [ ] **`route_reverse` handler names**
-  - Ensure each public GET handler has a stable `name=` so `request.app.route_reverse("event_games", event_key=...)` works for redirect construction. Add `name=` kwargs where missing.
+- [x] **`SlugRedirectError` exception + handler** (`convergence_games/app/exceptions.py`, `convergence_games/app/app_config/exception_handlers.py`)
+  - `SlugRedirectError(path: str)`. Handler returns `Redirect(path=..., status_code=301)`.
+- [x] **Update `event_with`** (`convergence_games/app/routers/frontend/common.py`)
+  - Renamed parameter to `event_key: str`.
+  - Tries slug first; falls back to sqid via `looks_like_sqid` heuristic; on sqid hit raises `SlugRedirectError` with a path-substitution canonical URL (`/{old_key}/` → `/{new_slug}/`). Avoids `route_reverse` so we don't have to pin handler names.
+  - `looks_like_sqid` exported for reuse by `game.py`'s parallel resolver.
+- [x] **Rename event-scoped route params** to `event_key` in every controller's path templates:
+  - `event_player.py`, `event_manager.py`, `submit_game.py` — all `{event_sqid:str}` → `{event_key:str}` (≈30 sites).
+  - Two PUT handlers (`put_player_d20s`, `put_player_compensation`) had `event_sqid: Sqid` parameters; renamed to `event_key: str` and updated `add_transaction_with_delta` accordingly. The endpoint URL emitted in the response template now interpolates the slug-or-sqid path key as-is — slug links produce slug-form HTMX URLs, sqid links produce sqid-form, and the dependency normalises either.
+- [x] **Game GET routes** (`convergence_games/app/routers/frontend/game.py`)
+  - New `get_game_by_event_and_slug` at `/event/{event_key:str}/game/{game_key:str}` resolves event and game by slug-or-sqid; if either matched via sqid, raises `SlugRedirectError`.
+  - Legacy `get_game_legacy` at `/game/{game_sqid:str}` decodes the sqid, looks up the game, and unconditionally redirects to the canonical slug URL.
+  - PUT handlers on `/game/{game_sqid:str}/...` unchanged.
+- [x] **HX-Redirect URLs** in `event_manager.py` (manage-allocation `/{time_slot_sqid}` redirect, manage-settings PUT response): replaced `swim(event)` with `event.slug` for canonical slug responses.
 
 #### Phase 3 verification
 
-- [ ] `basedpyright`, `ruff check` clean
-- [ ] `curl -I http://localhost:8000/event/convergence-2026/games` → 200
-- [ ] `curl -I http://localhost:8000/event/<old-sqid>/games` → 301 → `/event/convergence-2026/games`
-- [ ] `curl -I http://localhost:8000/game/<old-sqid>` → 301 → `/event/convergence-2026/game/<game-slug>`
-- [ ] `curl -I http://localhost:8000/event/convergence-2026/game/dragons-of-doom` → 200
-- [ ] `pytest` — no regressions
+- [x] `basedpyright`, `ruff check` clean — only pre-existing baseline issues remain
+- [x] App loads cleanly via `from convergence_games.app.app import app` — all expected `/event/{event_key}/...` and `/event/{event_key}/game/{game_key}` routes register
+- [x] Slug helper sanity check: insert two events, second collides → suffix applied (verified end-to-end against SQLite in-memory)
+- [x] `pytest` — 28/28 passing
+- [ ] curl verification — requires running server; deferred
 
 ### Phase 4: Update template links
 

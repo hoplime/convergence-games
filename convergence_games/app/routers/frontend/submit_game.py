@@ -368,7 +368,7 @@ def game_with(*options: ExecutableOption):
 # region Submit Game Controller
 class SubmitGameController(Controller):
     @get(
-        path="/event/{event_sqid:str}/submit-game",
+        path="/event/{event_key:str}/submit-game",
         guards=[user_guard],
         dependencies={"event": event_with(selectinload(Event.time_slots))},
     )
@@ -447,7 +447,7 @@ class SubmitGameController(Controller):
         )
 
     @post(
-        path="/event/{event_sqid:str}/game",
+        path="/event/{event_key:str}/game",
         guards=[user_guard],
         dependencies={"event": event_with(selectinload(Event.time_slots))},
         exception_handlers={

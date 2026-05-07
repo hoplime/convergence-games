@@ -197,7 +197,7 @@ async def add_transaction_with_delta(
     table_type: type[UserEventD20Transaction] | type[UserEventCompensationTransaction],
     request: Request,
     event: Event,
-    event_sqid: Sqid,
+    event_key: str,
     user_sqid: Sqid,
     transaction: AsyncSession,
     data: Annotated[PutEventPlayerTransactionForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
@@ -253,7 +253,7 @@ async def add_transaction_with_delta(
         "UserManageDelta",
         current_value=new_transaction_row.current_balance,
         expected_latest_sqid=swim(new_transaction_row),
-        endpoint=f"/event/{event_sqid}/player/{user_sqid}/{'d20s' if table_type is UserEventD20Transaction else 'compensation'}",
+        endpoint=f"/event/{event_key}/player/{user_sqid}/{'d20s' if table_type is UserEventD20Transaction else 'compensation'}",
     )
     return HTMXBlockTemplate(template_str=template_str, block_name=request.htmx.target)
 
@@ -261,7 +261,7 @@ async def add_transaction_with_delta(
 class EventManagerController(Controller):
     # Event management
     @get(
-        path="/event/{event_sqid:str}/manage-schedule",
+        path="/event/{event_key:str}/manage-schedule",
         guards=[user_guard],
         dependencies={
             "event": event_with(
@@ -321,7 +321,7 @@ class EventManagerController(Controller):
         )
 
     @put(
-        path="/event/{event_sqid:str}/manage-schedule",
+        path="/event/{event_key:str}/manage-schedule",
         guards=[user_guard],
         dependencies={
             "event": event_with(
@@ -375,7 +375,7 @@ class EventManagerController(Controller):
         return Response(content="", status_code=HTTP_204_NO_CONTENT)
 
     @get(
-        path="/event/{event_sqid:str}/manage-schedule/last-updated-by",
+        path="/event/{event_key:str}/manage-schedule/last-updated-by",
         guards=[user_guard],
         dependencies={
             "event": event_with(
@@ -431,7 +431,7 @@ class EventManagerController(Controller):
         )
 
     @get(
-        path="/event/{event_sqid:str}/manage-submissions",
+        path="/event/{event_key:str}/manage-submissions",
         guards=[user_guard],
         dependencies={
             "event": event_with(),
@@ -500,7 +500,7 @@ class EventManagerController(Controller):
         )
 
     @get(
-        path="/event/{event_sqid:str}/manage-players",
+        path="/event/{event_key:str}/manage-players",
         guards=[user_guard],
         dependencies={
             "event": event_with(),
@@ -547,7 +547,7 @@ class EventManagerController(Controller):
         )
 
     @put(
-        path="/event/{event_sqid:str}/player/{user_sqid:str}/d20s",
+        path="/event/{event_key:str}/player/{user_sqid:str}/d20s",
         guards=[user_guard],
         dependencies={
             "event": event_with(),
@@ -558,7 +558,7 @@ class EventManagerController(Controller):
         self,
         request: Request,
         event: Event,
-        event_sqid: Sqid,
+        event_key: str,
         user_sqid: Sqid,
         transaction: AsyncSession,
         data: Annotated[PutEventPlayerTransactionForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
@@ -568,14 +568,14 @@ class EventManagerController(Controller):
             table_type=UserEventD20Transaction,
             request=request,
             event=event,
-            event_sqid=event_sqid,
+            event_key=event_key,
             user_sqid=user_sqid,
             transaction=transaction,
             data=data,
         )
 
     @put(
-        path="/event/{event_sqid:str}/player/{user_sqid:str}/compensation",
+        path="/event/{event_key:str}/player/{user_sqid:str}/compensation",
         guards=[user_guard],
         dependencies={
             "event": event_with(),
@@ -586,7 +586,7 @@ class EventManagerController(Controller):
         self,
         request: Request,
         event: Event,
-        event_sqid: Sqid,
+        event_key: str,
         user_sqid: Sqid,
         transaction: AsyncSession,
         data: Annotated[PutEventPlayerTransactionForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
@@ -596,7 +596,7 @@ class EventManagerController(Controller):
             table_type=UserEventCompensationTransaction,
             request=request,
             event=event,
-            event_sqid=event_sqid,
+            event_key=event_key,
             user_sqid=user_sqid,
             transaction=transaction,
             data=data,
@@ -604,8 +604,8 @@ class EventManagerController(Controller):
 
     @get(
         path=[
-            "/event/{event_sqid:str}/manage-allocation",
-            "/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}",
+            "/event/{event_key:str}/manage-allocation",
+            "/event/{event_key:str}/manage-allocation/{time_slot_sqid:str}",
         ],
         guards=[user_guard],
         dependencies={
@@ -780,7 +780,7 @@ class EventManagerController(Controller):
         )
 
     @post(
-        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/do-allocation",
+        path="/event/{event_key:str}/manage-allocation/{time_slot_sqid:str}/do-allocation",
         guards=[user_guard],
         dependencies={
             "event": event_with(selectinload(Event.time_slots)),
@@ -834,10 +834,10 @@ class EventManagerController(Controller):
         pprint(compensation)
         await adapt_results_to_database(transaction, time_slot_id, alg_results, compensation)
 
-        return Redirect(f"/event/{swim(event)}/manage-allocation/{time_slot_sqid}")
+        return Redirect(f"/event/{event.slug}/manage-allocation/{time_slot_sqid}")
 
     @post(
-        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/unlock",
+        path="/event/{event_key:str}/manage-allocation/{time_slot_sqid:str}/unlock",
         guards=[user_guard],
         dependencies={
             "event": event_with(selectinload(Event.time_slots)),
@@ -870,7 +870,7 @@ class EventManagerController(Controller):
         return TimeSlotStatus.PRE_ALLOCATION.value
 
     @post(
-        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/lock",
+        path="/event/{event_key:str}/manage-allocation/{time_slot_sqid:str}/lock",
         guards=[user_guard],
         dependencies={
             "event": event_with(selectinload(Event.time_slots)),
@@ -903,7 +903,7 @@ class EventManagerController(Controller):
         return TimeSlotStatus.ALLOCATING.value
 
     @post(
-        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/{user_sqid:str}/checkin",
+        path="/event/{event_key:str}/manage-allocation/{time_slot_sqid:str}/{user_sqid:str}/checkin",
         guards=[user_guard],
         dependencies={
             "event": event_with(selectinload(Event.time_slots)),
@@ -945,7 +945,7 @@ class EventManagerController(Controller):
         return "checked-in"
 
     @put(
-        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}",
+        path="/event/{event_key:str}/manage-allocation/{time_slot_sqid:str}",
         guards=[user_guard],
         dependencies={
             "event": event_with(selectinload(Event.time_slots)),
@@ -1011,7 +1011,7 @@ class EventManagerController(Controller):
         return Response(content="", status_code=HTTP_204_NO_CONTENT)
 
     @put(
-        path="/event/{event_sqid:str}/manage-allocation/{time_slot_sqid:str}/apply-compensation",
+        path="/event/{event_key:str}/manage-allocation/{time_slot_sqid:str}/apply-compensation",
         guards=[user_guard],
         dependencies={
             "event": event_with(selectinload(Event.time_slots)),
@@ -1236,7 +1236,7 @@ class EventManagerController(Controller):
         return "Compensated"
 
     @get(
-        path="/event/{event_sqid:str}/manage-settings",
+        path="/event/{event_key:str}/manage-settings",
         guards=[user_guard],
         dependencies={
             "event": event_with(),
@@ -1257,7 +1257,7 @@ class EventManagerController(Controller):
         )
 
     @put(
-        path="/event/{event_sqid:str}/manage-settings",
+        path="/event/{event_key:str}/manage-settings",
         guards=[user_guard],
         dependencies={
             "event": event_with(),
@@ -1289,5 +1289,5 @@ class EventManagerController(Controller):
         return Response(
             content="",
             status_code=HTTP_200_OK,
-            headers={"HX-Redirect": f"/event/{swim(event)}/manage-settings"},
+            headers={"HX-Redirect": f"/event/{event.slug}/manage-settings"},
         )

@@ -1,9 +1,10 @@
 from litestar.datastructures import Cookie
 from litestar.response import Redirect
+from litestar.status_codes import HTTP_301_MOVED_PERMANENTLY
 
 from convergence_games.app.alerts import AlertError
 from convergence_games.app.app_config.template_config import catalog
-from convergence_games.app.exceptions import UserNotLoggedInError
+from convergence_games.app.exceptions import SlugRedirectError, UserNotLoggedInError
 from convergence_games.app.request_type import Request
 from convergence_games.app.response_type import HTMXBlockTemplate
 
@@ -28,7 +29,13 @@ def alert_handler(request: Request, exc: AlertError) -> HTMXBlockTemplate:
     )
 
 
+def slug_redirect_handler(request: Request, exc: SlugRedirectError) -> Redirect:
+    """301-redirect from a sqid-form URL to its canonical slug-form URL."""
+    return Redirect(path=exc.path, status_code=HTTP_301_MOVED_PERMANENTLY)
+
+
 exception_handlers = {
     UserNotLoggedInError: user_not_logged_in_handler,
     AlertError: alert_handler,
+    SlugRedirectError: slug_redirect_handler,
 }

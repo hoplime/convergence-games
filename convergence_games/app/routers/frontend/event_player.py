@@ -335,7 +335,7 @@ async def get_user_game_playeds(request: Request, transaction: AsyncSession, eve
 class EventPlayerController(Controller):
     # Event viewing
     @get(
-        ["/event/{event_sqid:str}", "/event/{event_sqid:str}/games"],
+        ["/event/{event_key:str}", "/event/{event_key:str}/games"],
         dependencies={
             "event": event_with(selectinload(Event.time_slots)),
             "query_params": Provide(event_games_query_from_params_dep),
@@ -392,7 +392,7 @@ class EventPlayerController(Controller):
         )
 
     @get(
-        ["/event/{event_sqid:str}/planner", "/event/{event_sqid:str}/planner/{time_slot_sqid:str}"],
+        ["/event/{event_key:str}/planner", "/event/{event_key:str}/planner/{time_slot_sqid:str}"],
         dependencies={"event": event_with(selectinload(Event.time_slots))},
         guards=[user_guard],
     )
@@ -404,9 +404,7 @@ class EventPlayerController(Controller):
         user: User,
         time_slot_sqid: Annotated[Sqid | None, Parameter()] = None,
     ) -> Template:
-        if not event.is_planner_open() and not user_has_permission(
-            user, "event", (event, event), "manage_submissions"
-        ):
+        if not event.is_planner_open() and not user_has_permission(user, "event", (event, event), "manage_submissions"):
             return HTMXBlockTemplate(
                 template_name="pages/event_planner_closed.html.jinja",
                 block_name=request.htmx.target,
