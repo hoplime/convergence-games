@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from advanced_alchemy.base import BigIntAuditBase
+from advanced_alchemy.mixins import SlugKey
 from advanced_alchemy.types import DateTimeUTC
 from sqlalchemy import (
     Connection,
@@ -125,7 +126,7 @@ class Image(Base):
 
 
 # Game Information Models
-class Event(Base):
+class Event(Base, SlugKey):
     name: Mapped[str] = mapped_column(index=True, unique=True)
     description: Mapped[str] = mapped_column(default="")
     start_date: Mapped[dt.datetime] = mapped_column(DateTimeUTC(timezone=True), index=True)
@@ -247,7 +248,7 @@ class ContentWarning(Base):
     game_links: Mapped[list[GameContentWarningLink]] = relationship(back_populates="content_warning", lazy="noload")
 
 
-class Game(Base):
+class Game(Base, SlugKey):
     # Description Fields
     name: Mapped[str] = mapped_column(index=True)
     tagline: Mapped[str] = mapped_column(default="")
@@ -323,6 +324,9 @@ class Game(Base):
     __table_args__ = (
         # This redundant constraint is necessary for the foreign key constraint in Session
         UniqueConstraint("id", "event_id"),
+        # Slug uniqueness is scoped per event (overrides SlugKey's table-wide uniqueness)
+        UniqueConstraint("event_id", "slug", name="uq_game_event_slug"),
+        Index("ix_game_event_slug_unique", "event_id", "slug", unique=True),
     )
 
 
@@ -742,7 +746,7 @@ class UserEventCompensationTransaction(Base):
     )
 
 
-class User(Base):
+class User(Base, SlugKey):
     first_name: Mapped[str] = mapped_column(index=True, default="")
     last_name: Mapped[str] = mapped_column(index=True, default="")
     description: Mapped[str] = mapped_column(default="")
@@ -1011,3 +1015,23 @@ class Allocation(Base):
     session: Mapped[Session] = relationship(back_populates="allocations", foreign_keys=session_id, lazy="noload")
 
     __table_args__ = (UniqueConstraint("party_leader_id", "session_id", "committed"),)
+
+
+# Slug placeholder fallback: any Event/Game/User flushed without an explicit
+# slug gets a random placeholder so the NOT NULL constraint never trips.
+# Route handlers should call `generate_unique_slug` to assign meaningful slugs;
+# this listener is the safety net for tests, mock seeders, and freshly created
+# Users (whose name isn't known until profile setup completes).
+def _ensure_slug_placeholder(prefix: str) -> Any:
+    import secrets
+
+    def _listener(mapper: Mapper[Any], connection: Connection, target: Any) -> None:
+        if not getattr(target, "slug", None):
+            target.slug = f"{prefix}-{secrets.token_hex(6)}"
+
+    return _listener
+
+
+sqla_event.listens_for(Event, "before_insert")(_ensure_slug_placeholder("event"))
+sqla_event.listens_for(Game, "before_insert")(_ensure_slug_placeholder("game"))
+sqla_event.listens_for(User, "before_insert")(_ensure_slug_placeholder("user"))

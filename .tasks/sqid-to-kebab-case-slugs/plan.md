@@ -1,7 +1,7 @@
 ---
 title: Kebab-case slug URLs for public-facing routes
 created: 2026-05-07
-status: ready
+status: in-progress
 ---
 
 # Kebab-case slug URLs for public-facing routes
@@ -274,28 +274,29 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
 
 ### Phase 1: Schema + slug helper
 
-- [ ] **Add `SlugKey` mixin to models** (`convergence_games/db/models.py`)
-  - Import `from advanced_alchemy.mixins import SlugKey`.
-  - Add `SlugKey` to bases of `Event`, `User`.
-  - Add `SlugKey` to `Game`; override `__table_args__` with composite `(event_id, slug)` unique constraint and matching unique index, dropping the inherited table-wide ones.
-- [ ] **Slug generation helper** (`convergence_games/db/slugs.py` — new)
-  - Re-export `slugify` from `advanced_alchemy.utils.text`.
-  - Implement `async def generate_unique_slug(session, model, source, *, scope=None, exclude_id=None, fallback="untitled") -> str`.
-  - Implement `async def maybe_regenerate_slug(session, instance, *, source, scope=None, fallback="untitled") -> None` — short-circuits when current slug already matches the desired base.
-  - Implement `_slug_exists` using `select(exists().where(...))`, honouring `exclude_id`.
-- [ ] **Alembic migration** (`litestar --app convergence_games.app:app database make-migrations -m "add_slug_columns_to_event_game_user"`)
-  - Generated skeleton + manual backfill section as designed.
-  - Backfill for users: `slugify(f"{first_name} {last_name}".strip())`. Empty fallback `"user"`.
-  - Backfill for games: scoped per `event_id`.
-  - Add NOT NULL + unique indexes after backfill.
-  - Downgrade: drop indexes, constraints, columns.
+- [x] **Add `SlugKey` mixin to models** (`convergence_games/db/models.py`)
+  - Imported `from advanced_alchemy.mixins import SlugKey`.
+  - Added `SlugKey` to `Event`, `User`.
+  - Added `SlugKey` to `Game`; overrode `__table_args__` with composite `(event_id, slug)` unique constraint and matching unique index, dropping the inherited table-wide ones.
+  - Added `before_insert` listener that mints a `<class>-<random>` placeholder slug if none is set — covers tests/seeders/Users-without-name without breaking the NOT NULL constraint. App code overwrites with a meaningful slug via `generate_unique_slug`.
+- [x] **Slug generation helper** (`convergence_games/db/slugs.py` — new)
+  - Re-exports `slugify` from `advanced_alchemy.utils.text`.
+  - `async def generate_unique_slug(session, model, source, *, scope=None, exclude_id=None, fallback="untitled") -> str`.
+  - `async def maybe_regenerate_slug(session, instance, *, source, scope=None, fallback="untitled") -> None` — short-circuits when current slug already matches the desired base (or `desired_base-xxxx`).
+  - `_slug_exists` uses `select(exists().where(...))`, honours `scope` and `exclude_id`.
+- [x] **Alembic migration** (`convergence_games/migrations/versions/2026-05-07_add_slug_columns_to_event_game_user_8d64f1978eda.py`)
+  - Adds nullable slug columns first; backfills per the design; alters columns to NOT NULL and adds unique constraints/indexes.
+  - User backfill: slugify "first_name last_name", placeholder `user-<random>` when both empty.
+  - Game backfill: scoped per `event_id`.
+  - Downgrade drops indexes, constraints, columns.
 
 #### Phase 1 verification
 
-- [ ] `basedpyright` — no new errors
-- [ ] `ruff check` — no new errors
-- [ ] `litestar database upgrade` runs cleanly on a copy of dev DB
-- [ ] All existing rows have non-null, unique slugs (manual SQL spot-check)
+- [x] `basedpyright` — no new errors in modified files (0 errors, only Any-related warnings consistent with the rest of the project)
+- [x] `ruff check` — clean on modified files
+- [x] `pytest` — 28/28 passing (the auth tests that flush Users directly are protected by the placeholder listener)
+- [ ] `litestar database upgrade` — not executable in this environment (no docker daemon); migration well-formed and matches the existing migration pattern
+- [ ] All existing rows have non-null, unique slugs — verified by inspection of the migration logic; will confirm on first deploy
 
 ### Phase 2: Populate and regenerate slugs
 
