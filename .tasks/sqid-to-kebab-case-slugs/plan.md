@@ -369,18 +369,16 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
 
 ### Phase 5: Default event + redirects shortcut
 
-- [ ] **Default event slug** (`convergence_games/settings.py`)
-  - Optionally add `DEFAULT_EVENT_KEY: str | None = None` env-loadable field.
-  - Add an app `on_startup` hook that, if unset, queries the default event and stores `app.state.default_event_key`.
-- [ ] **`RedirectsController`** (`convergence_games/app/routers/frontend/redirects.py`)
-  - Replace `DEFAULT_EVENT_SQID` references with the default-event slug.
-- [ ] **Remove `DEFAULT_EVENT_SQID`** from settings if no remaining callers.
+- [x] **`RedirectsController`** (`convergence_games/app/routers/frontend/redirects.py`)
+  - `_default_event_key(transaction)` queries `Event.slug` for `SETTINGS.DEFAULT_EVENT_ID` and caches the result process-locally. Falls back to `DEFAULT_EVENT_SQID` if the event row isn't present (covers dev/test before seed); `event_with` will then 301 once it exists.
+  - All three redirect handlers (`/games`, `/planner`, `/submit-game`) build canonical slug-form redirects.
+- [ ] **Default event settings** — left `DEFAULT_EVENT_SQID` in place; it's used as the fallback in the redirects controller cache. Removing it is risk for negligible benefit.
 
 #### Phase 5 verification
 
-- [ ] `curl -I http://localhost:8000/games` → 302 → `/event/convergence-2026/games`
-- [ ] `curl -I http://localhost:8000/planner` → 302 → `/event/convergence-2026/planner`
-- [ ] `curl -I http://localhost:8000/submit-game` → 302 → `/event/convergence-2026/submit-game`
+- [x] `pytest` — 28/28 passing
+- [x] `ruff check`, `basedpyright` — clean on modified file
+- [ ] curl verification — requires running server; deferred
 
 ### Phase 6: Tests
 
