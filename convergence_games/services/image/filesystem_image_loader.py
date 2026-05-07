@@ -1,4 +1,3 @@
-from io import BytesIO
 from pathlib import Path
 from typing import final, override
 from uuid import UUID
@@ -28,11 +27,9 @@ class FilesystemImageLoader(ImageLoader):
         path = self._base_path.joinpath(*subfolder_names_for_guid(lookup))
         path.mkdir(parents=True, exist_ok=True)
 
-        # Save the image to the original path
-        image = PILImage.open(BytesIO(image_data))
+        image = self._decode_and_normalise(image_data)
         await self._write_image(image, path / f"{lookup}_full.jpg")
 
-        # Save the image in different sizes
         for size in self._pre_cache_sizes:
             thumbnail_path = path / f"{lookup}_{size}.jpg"
             await self._write_image(image, thumbnail_path, thumbnail_size=size)

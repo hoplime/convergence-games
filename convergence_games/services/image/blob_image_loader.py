@@ -1,8 +1,6 @@
-from io import BytesIO
 from typing import override
 from uuid import UUID
 
-import PIL.Image as PILImage
 from azure.identity.aio import DefaultAzureCredential
 from azure.storage.blob import ContentSettings
 from azure.storage.blob.aio import BlobClient, BlobServiceClient
@@ -39,16 +37,14 @@ class BlobImageLoader(ImageLoader):
 
     @override
     async def save_image(self, image_data: bytes, lookup: UUID) -> None:
-        image = PILImage.open(BytesIO(image_data))
+        image = self._decode_and_normalise(image_data)
 
         async with self._blob_service_client as service_client:
             blob_path = "/".join(subfolder_names_for_guid(lookup))
 
-            # Save the image to the original path
             blob_client = service_client.get_blob_client(self._container_name, f"{blob_path}/{lookup}_full.jpg")
             await self._upload(blob_client, self._dump_to_bytes(image))
 
-            # Save the image in different sizes
             for size in self._pre_cache_sizes:
                 blob_client = service_client.get_blob_client(self._container_name, f"{blob_path}/{lookup}_{size}.jpg")
                 await self._upload(blob_client, self._dump_to_bytes(image, thumbnail_size=size))
