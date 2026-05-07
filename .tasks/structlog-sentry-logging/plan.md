@@ -104,7 +104,7 @@ logging.basicConfig(level=logging.INFO, handlers=[handler], force=True)
 logging.getLogger("sqlalchemy.engine").setLevel(
     logging.INFO if SETTINGS.DATABASE_ECHO else logging.WARNING
 )
-logging.getLogger("uvicorn.access").setLevel(logging.INFO)
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)  # superseded by canonical line
 logging.getLogger("uvicorn.error").setLevel(logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("azure").setLevel(logging.WARNING)
@@ -167,11 +167,27 @@ async def bind_logging_user(request: Request) -> None:
 
 This runs after auth, so `request.user` is populated for authenticated routes; for anon routes the call is a no-op.
 
-### Litestar `logging_config`
+### Litestar `logging_config` — what `StructLoggingConfig` actually does
 
-Pass an explicit `logging_config=StructLoggingConfig(...)` to the Litestar app so Litestar's own diagnostic emissions (route handler errors, middleware lifecycle, access logs when enabled) flow through structlog. Reference: <https://docs.litestar.dev/2/usage/logging.html>. We use Litestar's `StructLoggingConfig` from `litestar.logging.config` rather than rolling our own so we get `request.logger` for free.
+Pass an explicit `logging_config=StructLoggingConfig(...)` to the Litestar app (reference: <https://docs.litestar.dev/2/usage/logging.html>). Concretely, `litestar.logging.config.StructLoggingConfig` does three things at app startup, on top of plain stdlib `LoggingConfig`:
 
-`StructLoggingConfig` accepts the same `processors=` list we built; we share the list to avoid drift.
+1. **Calls `structlog.configure(...)`** with the processor list we pass it, the wrapper class, the logger factory, etc. This is the same `structlog.configure` call we'd otherwise make ourselves — so we avoid drift by sharing one canonical processor list (built in `convergence_games/logging/config.py`) between our own `configure_logging()` and Litestar's `StructLoggingConfig(processors=...)`.
+2. **Configures stdlib `logging` via `dictConfig`** so non-structlog loggers (uvicorn, SQLAlchemy, sentry-sdk, etc.) hit the same handlers. We still install our `ProcessorFormatter` ourselves in `configure_logging()` because Litestar's default formatter set is more limited than the structlog/stdlib bridge we want.
+3. **Adds `request.logger` per request** — a `BoundLogger` that handlers can grab as `request.logger.info(...)` to get a logger pre-bound with Litestar's request context (path params, request id if Litestar generates one, etc.). We do **not** depend on `request.logger` for our request-scoped fields — we use structlog's `contextvars` so any code that calls `get_logger()` inherits the same context without needing the `Request` object.
+
+Mechanically: `configure_logging()` runs first (at module import in `app.py`) and sets up structlog + stdlib + Sentry handler chain. Then `StructLoggingConfig` is constructed sharing the same processor list, and Litestar invokes its own startup hook to (re)apply `structlog.configure` and `dictConfig`. `configure_logging()` is idempotent so this is safe — the second pass produces the same configuration. We could skip our own configure call and rely entirely on `StructLoggingConfig`, but doing it ourselves first means scripts and tests (which don't construct a Litestar app) get the same configuration via one call.
+
+**Why we still emit our own canonical line instead of leaning on Litestar's request log:** `StructLoggingConfig` does not, in 2.16, emit a per-request "completed" log line with status + duration. It logs route handler exceptions (controlled by `log_exceptions` / `traceback_line_limit`), but normal requests are logged by uvicorn's `uvicorn.access` logger, which gives the bare `client - "GET /path" status` line and nothing else. Our middleware-emitted `http_request` line is what carries the contextvars (request_id, user_id, custom binds from inside the handler) and the duration.
+
+### Avoiding duplicate per-request lines
+
+There are three sources that could each produce a line per request:
+
+1. **`uvicorn.access`** (stdlib logger) — bare `GET /path 200`. Useful at-a-glance, but redundant once we have a richer canonical line. **Decision: silence it** by setting `logging.getLogger("uvicorn.access").setLevel(logging.WARNING)` in `configure_logging()`. Our canonical line replaces it.
+2. **Litestar's `StructLoggingConfig` exception logger** — only fires on exceptions. **Decision: keep** at INFO. The canonical line still fires (with `status=500` and `exc_info=True`), but Litestar's pre-traceback-truncation log is independently useful and emits with a different `event` string so it's not a duplicate.
+3. **Our `LoggingContextMiddleware` canonical line** — the one we want. Always fires, success or error.
+
+So "suppressing default behavior" means specifically: silence `uvicorn.access` to avoid two access-style lines per request. Nothing else gets suppressed.
 
 ### Sentry integration changes
 
@@ -180,6 +196,109 @@ Pass an explicit `logging_config=StructLoggingConfig(...)` to the Litestar app s
 - Add `LoggingIntegration(level=logging.INFO, event_level=logging.ERROR)` to `integrations=[...]` (the defaults match these values, but listing it explicitly documents the choice).
 - The existing `LitestarIntegration` is auto-enabled by `sentry-sdk[litestar]`; no change needed.
 - `init_sentry()` is called *after* `configure_logging()` in `app.py` so the structlog + stdlib bridge is in place when Sentry attaches its handlers.
+
+### Usage examples — handlers, services, repositories, listeners, scripts
+
+The point of `merge_contextvars` is that **services and repositories never need to know whether they're running inside a request.** They call `get_logger()` and emit events; if a request middleware bound `request_id`/`user_id`/etc. earlier in the call stack, those fields automatically appear on the record. If they're called from a script, a test, or a background task, the fields are simply absent and the rest of the log line still works.
+
+#### A handler
+
+```python
+# convergence_games/app/routers/frontend/event_manager.py
+from convergence_games.logging import get_logger, bound
+
+logger = get_logger(__name__)
+
+class EventManagerController(Controller):
+    @post("/events/{event_sqid:str}/games")
+    async def create_game(
+        self,
+        event_sqid: str,
+        data: PostGameForm,
+        transaction: AsyncSession,
+        user: User,
+    ) -> Redirect:
+        with bound(event_id=sink(event_sqid), action="create_game"):
+            game = await game_service.create(transaction, data, user)
+            logger.info("game_created", game_id=game.id)
+            return Redirect(...)
+```
+
+The `with bound(event_id=..., action=...)` block scopes those fields to the duration of the block. Anything `game_service.create` logs internally inherits them. The canonical line at request end also inherits them.
+
+#### A service
+
+```python
+# convergence_games/services/games.py
+from convergence_games.logging import get_logger
+
+logger = get_logger(__name__)
+
+class GameService:
+    async def create(self, session: AsyncSession, data: PostGameForm, user: User) -> Game:
+        # No request awareness — but if called from a request handler, logs inherit
+        # request_id, user_id, event_id, action via contextvars.
+        logger.info("game_create_attempted", title=data.title)
+        game = Game(...)
+        session.add(game)
+        await session.flush()
+        logger.info("game_persisted", game_id=game.id)
+        return game
+```
+
+Run from a request: log lines have `request_id`, `user_id`, `event_id`, `action`, `game_id`. Run from a script: log lines have just `title` and `game_id`. Same code; different surrounding context.
+
+#### A repository / data access function
+
+Same pattern — `logger = get_logger(__name__)` at module top, plain `logger.info("...", **fields)` at the call site. Don't pass `request` or `request.logger` through repository signatures; that couples the data layer to HTTP and breaks reuse from CLI / tests.
+
+#### Event listener (`convergence_games/app/events.py`)
+
+Litestar's `@listener` runs the handler in a worker task. asyncio's `Task` snapshots `contextvars` at creation time, so when Litestar dispatches `EVENT_EMAIL_SIGN_IN` from inside a request, the listener inherits `request_id`, `user_id`, etc. — verify this in Phase 2 with a test that emits an event from a request and asserts the listener log inherits the request_id. If for some reason it doesn't propagate, the dispatch site should explicitly pass relevant ids in the event payload and the listener should `bind(...)` them at the top.
+
+```python
+@listener(EVENT_EMAIL_SIGN_IN)
+async def event_email_sign_in(email: str, ...) -> None:
+    with bound(action="email_sign_in", email=email):
+        logger.info("email_sign_in_code_generated")          # INFO — no code
+        logger.debug("email_sign_in_code_value", code=code)   # DEBUG only — see Risks §1
+        ...
+        logger.info("email_sign_in_email_sent")
+```
+
+#### A script
+
+```python
+# scripts/create_mock_event.py
+from convergence_games.logging import configure_logging, get_logger
+
+configure_logging()
+logger = get_logger("scripts.create_mock_event")
+
+def main() -> None:
+    logger.info("mock_event_creation_started")
+    ...
+    print("Created event 42")  # user-facing CLI output stays as print
+```
+
+`configure_logging()` is the only entry-point script needs. Diagnostics flow through structlog; user-facing output stays on `print()` so it isn't tagged with timestamps/levels.
+
+#### A test
+
+```python
+# tests/services/test_game_service.py
+from convergence_games.logging import bound
+
+async def test_game_create_logs(log_output):
+    async with session_factory() as session:
+        with bound(test_id="t1"):
+            await GameService().create(session, sample_form, sample_user)
+    events = [e for e in log_output.entries if e["event"] == "game_persisted"]
+    assert len(events) == 1
+    assert events[0]["test_id"] == "t1"
+```
+
+The `log_output` fixture (defined in `tests/conftest.py`) gives a `LogCapture` so tests can assert on event names and fields without parsing strings.
 
 ### Replacing `print` and `pprint`
 
@@ -251,7 +370,7 @@ Update the "Logging" section in `.claude/rules/python-style.md` to reference str
   - Add a top-level `before_request=bind_logging_user` hook (defined locally in `app.py` or in `convergence_games/logging/middleware.py`).
 - [ ] **Canonical log line emission**
   - In `LoggingContextMiddleware`, capture status / duration / body size and emit a single `logger.info("http_request", ...)` per request as described in the design.
-  - Keep Litestar's `StructLoggingConfig` access-log emission disabled (or set it to a higher level) to avoid duplicate per-request lines.
+  - Silence `uvicorn.access` (set level to WARNING) so the canonical line is the only per-request access record; keep `uvicorn.error` and Litestar's exception logger at INFO.
 
 #### Phase 2 verification
 
@@ -337,6 +456,8 @@ Update the "Logging" section in `.claude/rules/python-style.md` to reference str
 1. **Logging the email sign-in code in production logs is a security regression.** The existing `print()` exposes the 6-digit code; lifting it to `logger.info(...)` would put it into Sentry breadcrumbs and any prod log aggregator. Mitigation: log the code only at DEBUG level (default off in prod), or omit it entirely from the log record and rely on email delivery + DB record to debug.
 2. **Sentry event flooding from ERROR-level logs.** `LoggingIntegration` defaults to creating an issue per `logger.error`. If existing libraries emit ERROR for benign cases (e.g. asyncpg disconnects on shutdown), this could spam Sentry. Mitigation: monitor after rollout; set `event_level=logging.CRITICAL` if needed, or add a `before_send` filter listing known-noisy `logger.name`s.
 3. **Forgetting `clear_contextvars()` leaks user context across requests** — particularly with `gunicorn -k uvicorn.workers.UvicornWorker` where workers reuse async tasks. Mitigation: middleware uses `try/finally` to clear, plus a smoke test in `tests/logging/` that fires two sequential mock requests and asserts no leak.
+7. **Event listeners may not inherit request contextvars.** Litestar dispatches `@listener` handlers via a worker pool; if they're scheduled in a way that doesn't snapshot contextvars at dispatch time, listener logs will be missing `request_id` / `user_id`. Mitigation: add an explicit test in Phase 2 that emits an event from inside a request and asserts the listener log inherits `request_id`. If it doesn't, the `emit` call site passes ids in the event payload and the listener binds them at the top of its body.
+8. **`configure_logging()` runs twice — once from us, once from `StructLoggingConfig`.** Litestar invokes `structlog.configure(...)` from its app-init hook. Mitigation: same processor list shared between both call sites; `configure_logging()` is idempotent; verify in Phase 2 that no warnings are emitted and the second pass produces the same effective config.
 4. **`StructLoggingConfig` from Litestar may not be available or stable across `litestar>=2.16`.** Mitigation: pin to the import path that exists in the installed version (`litestar.logging.config.StructLoggingConfig`); fall back to a hand-built `LoggingConfig` if necessary. Verify in Phase 2 before wiring widely.
 5. **`debug_print=` parameter removal on the allocator is a public-API change.** It's an internal service, but external callers may exist (scripts, tests). Mitigation: grep for `debug_print=` before deletion, leave the kwarg in place but ignored if any usage remains, with a warning log on first use.
 6. **Idempotency of `configure_logging()` matters under reload / multi-worker.** Mitigation: module-level `_configured` flag; `logging.basicConfig(..., force=True)` so re-applying overwrites previous handlers cleanly.
