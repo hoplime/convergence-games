@@ -65,7 +65,7 @@
                     <label for="filter_drawer" aria-label="close sidebar" class="drawer-overlay"></label>
                     <form
                         id="filter_form"
-                        hx-get="/event/{{ swim(event) }}/games"
+                        hx-get="/event/{{ event.slug }}/games"
                         hx-target="#game_list"
                         hx-push-url="true"
                         hx-trigger="change delay:100ms, reset delay:10ms"

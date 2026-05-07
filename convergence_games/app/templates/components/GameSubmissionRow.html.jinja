@@ -4,7 +4,7 @@
     user: User
 #}
 <tr {{ attrs.render() }}>
-    <th><a href="/game/{{ swim(game) }}" class="link">{{ game.name }}</a></th>
+    <th><a href="/event/{{ game.event.slug }}/game/{{ game.slug }}" class="link">{{ game.name }}</a></th>
     <td>{{ game.system.name }}</td>
     <td>{{ game.gamemaster.full_name }}</td>
     <td>{{ game.created_at | nice_time_format }}</td>

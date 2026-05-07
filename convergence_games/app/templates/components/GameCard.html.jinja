@@ -8,7 +8,7 @@
     display_d20: bool = False,
 #}
 <div class="card rounded-box border border-base-300 bg-base-200">
-    <a href="/game/{{ swim(game) }}" class="grow">
+    <a href="/event/{{ game.event.slug }}/game/{{ game.slug }}" class="grow">
         <div class="card-body gap-2">
             <h2 class="card-title">{{ game.name }}</h2>
             <div class="italic">{{ game.tagline }}</div>

@@ -19,7 +19,7 @@
                                         {# Put the GM first! #}
                                         {% for group_leader, party, checkin_status, metadata in groups[session.id] %}
                                             {% if group_leader.id == session.game.gamemaster_id %}
-                                                {% set checkin_hx_post = "/event/" ~ swim(event) ~ "/manage-allocation/" ~ swim(selected_time_slot) ~ "/" ~ swim(group_leader) ~ "/checkin" %}
+                                                {% set checkin_hx_post = "/event/" ~ event.slug ~ "/manage-allocation/" ~ swim(selected_time_slot) ~ "/" ~ swim(group_leader) ~ "/checkin" %}
                                                 <AllocationPartyCard
                                                     :group_leader="group_leader"
                                                     :party="party"
@@ -31,7 +31,7 @@
                                         {% endfor %}
                                         {% for group_leader, party, checkin_status, metadata in groups[session.id] %}
                                             {% if group_leader.id != session.game.gamemaster_id %}
-                                                {% set checkin_hx_post = "/event/" ~ swim(event) ~ "/manage-allocation/" ~ swim(selected_time_slot) ~ "/" ~ swim(group_leader) ~ "/checkin" %}
+                                                {% set checkin_hx_post = "/event/" ~ event.slug ~ "/manage-allocation/" ~ swim(selected_time_slot) ~ "/" ~ swim(group_leader) ~ "/checkin" %}
                                                 <AllocationPartyCard
                                                     :group_leader="group_leader"
                                                     :party="party"
@@ -80,7 +80,7 @@
                         <FieldsetBase>
                             <legend class="fieldset-legend">Controls</legend>
                             <form
-                                hx-get="/event/{{ swim(event) }}/manage-allocation/{time_slot_sqid}"
+                                hx-get="/event/{{ event.slug }}/manage-allocation/{time_slot_sqid}"
                                 hx-ext="path-params"
                                 hx-target="#content"
                                 hx-trigger="change"
@@ -102,7 +102,7 @@
                             <div class="flex flex-row gap-2">
                                 <button
                                     class="btn grow btn-primary"
-                                    hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/lock"
+                                    hx-post="/event/{{ event.slug }}/manage-allocation/{{ swim(selected_time_slot) }}/lock"
                                     hx-target="#time-slot-status"
                                     hx-swap="innerHTML"
                                     hx-confirm="Are you sure you want to lock this time slot? This will prevent players from modifying parties etc."
@@ -111,7 +111,7 @@
                                 </button>
                                 <button
                                     class="btn grow btn-primary"
-                                    hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/unlock"
+                                    hx-post="/event/{{ event.slug }}/manage-allocation/{{ swim(selected_time_slot) }}/unlock"
                                     hx-target="#time-slot-status"
                                     hx-swap="innerHTML"
                                     hx-confirm="Are you sure you want to unlock this time slot? This will allow players to modify parties etc."
@@ -121,7 +121,7 @@
                             </div>
                             <button
                                 class="allocate-button group/allocate-button [.htmx-request]:btn-disabled btn btn-primary"
-                                hx-post="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/do-allocation"
+                                hx-post="/event/{{ event.slug }}/manage-allocation/{{ swim(selected_time_slot) }}/do-allocation"
                                 hx-target="#content"
                                 hx-trigger="click"
                                 hx-confirm="Are you sure you want to redo an allocation? This will rerun the algorithm."
@@ -136,7 +136,7 @@
                             <button class="commit-button btn btn-primary">Commit (Public)</button>
                             <button
                                 class="btn btn-primary"
-                                hx-put="/event/{{ swim(event) }}/manage-allocation/{{ swim(selected_time_slot) }}/apply-compensation"
+                                hx-put="/event/{{ event.slug }}/manage-allocation/{{ swim(selected_time_slot) }}/apply-compensation"
                                 hx-target="#time-slot-compensation-status"
                                 hx-swap="innerHTML"
                                 hx-confirm="Are you sure you want to apply compensation? This will record game plays for all players in this time slot, given compensation and spend D20s."
@@ -149,7 +149,7 @@
                             class="unallocated-parties scrollbar-hidden flex grow flex-col gap-2 overflow-y-scroll mask-b-from-75% mask-b-to-100%"
                         >
                             {% for group_leader, party, checkin_status, metadata in groups[None] %}
-                                {% set checkin_hx_post = "/event/" ~ swim(event) ~ "/manage-allocation/" ~ swim(selected_time_slot) ~ "/" ~ swim(group_leader) ~ "/checkin" %}
+                                {% set checkin_hx_post = "/event/" ~ event.slug ~ "/manage-allocation/" ~ swim(selected_time_slot) ~ "/" ~ swim(group_leader) ~ "/checkin" %}
                                 <AllocationPartyCard
                                     :group_leader="group_leader"
                                     :party="party"

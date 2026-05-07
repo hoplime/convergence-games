@@ -18,7 +18,7 @@
                                         &nbsp;sessions</span
                                     >)
                                 </div>
-                                <a href="/game/{{ swim(game) }}" class="btn btn-sm btn-neutral">View</a>
+                                <a href="/event/{{ event.slug }}/game/{{ game.slug }}" class="btn btn-sm btn-neutral">View</a>
                                 {% if event.is_editing_open() %}
                                     <a href="/game/{{ swim(game) }}/edit" class="btn btn-sm btn-neutral">Edit</a>
                                 {% else %}
@@ -30,7 +30,7 @@
                             <li class="list-row items-center">
                                 <a
                                     class="col-span-full flex items-center gap-2 text-primary"
-                                    href="/event/{{ swim(event) }}/submit-game"
+                                    href="/event/{{ event.slug }}/submit-game"
                                 >
                                     <span class="icon-[mdi--plus-circle-outline]"></span>
                                     Submit another game to {{ event.name }}
@@ -55,7 +55,7 @@
                         {% if default_event.is_submissions_open() %}
                             <a
                                 class="btn mx-auto btn-xl btn-primary"
-                                href="/event/{{ swim(default_event) }}/submit-game"
+                                href="/event/{{ default_event.slug }}/submit-game"
                             >
                                 Submit a Game to {{ default_event.name }}
                             </a>

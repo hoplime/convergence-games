@@ -14,12 +14,12 @@
     <UserManageDelta
         :current_value="user.latest_d20_transaction.current_balance if user.latest_d20_transaction else 0"
         :expected_latest_sqid="swim(user.latest_d20_transaction) if user.latest_d20_transaction else None"
-        :endpoint="'/event/' + swim(event)  + '/player/' + swim(user) + '/d20s'"
+        :endpoint="'/event/' + event.slug + '/player/' + swim(user) + '/d20s'"
     ></UserManageDelta>
     <UserManageDelta
         :current_value="user.latest_compensation_transaction.current_balance if user.latest_compensation_transaction else 0"
         :expected_latest_sqid="swim(user.latest_compensation_transaction) if user.latest_compensation_transaction else None"
-        :endpoint="'/event/' + swim(event)  + '/player/' + swim(user) + '/compensation'"
+        :endpoint="'/event/' + event.slug + '/player/' + swim(user) + '/compensation'"
     ></UserManageDelta>
     <td>
         {% if user.event_roles %}

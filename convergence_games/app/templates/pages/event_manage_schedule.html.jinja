@@ -151,7 +151,7 @@
                             <button class="commit-button btn btn-primary">Commit (Public)</button>
                             <p
                                 class="edit-warning empty:hidden"
-                                hx-get="/event/{{ swim(event) }}/manage-schedule/last-updated-by"
+                                hx-get="/event/{{ event.slug }}/manage-schedule/last-updated-by"
                                 hx-trigger="load, every 5s [document.visibilityState=='visible']"
                                 hx-swap="innerHTML"
                                 hx-include="next [name='last-saved']"

@@ -14,7 +14,7 @@
                         class="tab"
                         aria-label="{{ 'Session ' ~ loop.index }}"
                         {{ "checked" if selected_time_slot.id == time_slot.id }}
-                        hx-get="/event/{{ swim(event) }}/planner/{{ swim(time_slot) }}"
+                        hx-get="/event/{{ event.slug }}/planner/{{ swim(time_slot) }}"
                         hx-params="none"
                         hx-target="#game_list"
                         hx-replace-url="true"

@@ -18,13 +18,13 @@
                         <p class="text-base-content">
                             In the meantime, you can browse the games and set your preferences.
                         </p>
-                        <a href="/event/{{ swim(event) }}/games" class="btn btn-primary">
+                        <a href="/event/{{ event.slug }}/games" class="btn btn-primary">
                             <span class="icon-[bi--dice-6-fill]"></span>
                             Browse games & set preferences
                         </a>
                     {% else %}
                         <p class="text-base-content">In the meantime, you can browse the games available.</p>
-                        <a href="/event/{{ swim(event) }}/games" class="btn btn-primary">
+                        <a href="/event/{{ event.slug }}/games" class="btn btn-primary">
                             <span class="icon-[bi--dice-6-fill]"></span>
                             Browse games
                         </a>

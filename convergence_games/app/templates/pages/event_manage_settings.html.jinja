@@ -19,7 +19,7 @@
 
             <form
                 method="post"
-                hx-put="/event/{{ swim(event) }}/manage-settings"
+                hx-put="/event/{{ event.slug }}/manage-settings"
                 hx-swap="none"
                 class="flex flex-col gap-4"
             >

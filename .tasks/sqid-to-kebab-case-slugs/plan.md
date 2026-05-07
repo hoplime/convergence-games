@@ -349,26 +349,23 @@ Implement as `_resolve_event(session, event_key)` returning `tuple[Event, bool]`
 
 ### Phase 4: Update template links
 
-- [ ] **Public event/game links** in:
-  - `templates/components/GameCard.html.jinja`
-  - `templates/components/GameSubmissionRow.html.jinja` (title link only)
-  - `templates/components/ScheduleGameCard.html.jinja` (`_=` go-to-url)
-  - `templates/pages/event_games.html.jinja`
-  - `templates/pages/game.html.jinja`
-  - Top-level navigation components that emit `/event/{event_sqid}/...`
-- [ ] **Admin manage links**:
-  - `templates/components/AdminSectionCard.html.jinja` — switch the five `manage-*` links to `event.slug`.
-  - Any breadcrumb / "back to event" links inside admin pages.
-- [ ] Each location: replace `swim(event)` → `event.slug`, `/game/{{ swim(game) }}` → `/event/{{ game.event.slug }}/game/{{ game.slug }}`. Verify the relevant `selectinload(Game.event)` is already in the query (most public Game queries already load event for date/timezone access — verify in `event_player.py` and `game.py`).
-- [ ] Leave HTMX mutation links (`hx-put`, `hx-post`) using sqids untouched.
+- [x] **Public game card links** (`GameCard.html.jinja`, `ScheduleGameCard.html.jinja`, `GameSubmissionRow.html.jinja`):
+  - `<a href="/game/{swim(game)}">` → `<a href="/event/{game.event.slug}/game/{game.slug}">`
+  - `_= go to url ...` navigation in ScheduleGameCard same.
+- [x] **Admin manage links** (`AdminSectionCard.html.jinja`, `UserManageRow.html.jinja`):
+  - All `/event/{swim(event)}/manage-*` and `/event/{swim(event)}/player/{swim(user)}/...` switched to `event.slug` interpolation.
+- [x] **Page-level links** (`event_planner_closed.html.jinja`, `event_games.html.jinja`, `event_session_planner.html.jinja`, `event_manage_settings.html.jinja`, `event_manage_schedule.html.jinja`, `event_manage_allocation.html.jinja`, `my_submissions.html.jinja`, `submit_game_confirmation.html.jinja`, `submit_game.html.jinja`):
+  - All `/event/{swim(event)}/...` interpolations switched to `event.slug` (covers anchors and HTMX hx-get/hx-post/hx-put). The path templates accept either slug or sqid via `event_with`, so HTMX endpoints work regardless; using slug keeps URL bar canonical.
+- [x] **Submit-game confirmation context**: `post_game` and `put_game` now pass `event` (or `game.event` for the edit case) into the template context so the confirmation page can build the slug-form URL.
+- [x] HTMX mutation links to `/game/{sqid}/...` (preference, already-played, /game/{sqid} edit PUT, submission-status) untouched — these routes use the legacy sqid path and `Sqid` parameter validation.
+- [x] `data-event="swim(event)"` JS internal identifier in `event_manage_schedule.html.jinja` left as sqid — it's an opaque ID for client-side matching, not a URL.
 
 #### Phase 4 verification
 
-- [ ] Dev server: load `/`, `/event/convergence-2026/games`, click a game card → URL shows `/event/.../game/...`
-- [ ] Visit `/event/convergence-2026/manage-schedule`, `/event/convergence-2026/manage-submissions`, etc. → 200 with slug in the URL bar
-- [ ] View page source of games list and admin section → all navigation links use slugs
-- [ ] Schedule manager + planner still work (HTMX mutations still on sqids)
-- [ ] `npx tsc --noEmit` — TypeScript still clean (no path assumptions baked in)
+- [x] `pytest` — 28/28 passing
+- [x] `ruff check` clean on modified files
+- [x] `npx tsc --noEmit` — clean
+- [ ] Dev verification (loading pages in a browser) — requires running server; deferred
 
 ### Phase 5: Default event + redirects shortcut
 

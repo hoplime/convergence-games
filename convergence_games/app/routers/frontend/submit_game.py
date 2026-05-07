@@ -534,7 +534,7 @@ class SubmitGameController(Controller):
             re_target="#content",
             block_name="content",
             template_name="pages/submit_game_confirmation.html.jinja",
-            context={"game": new_game},
+            context={"game": new_game, "event": event},
         )
 
     @put(
@@ -712,7 +712,7 @@ class SubmitGameController(Controller):
             re_target="#content",
             block_name="content",
             template_name="pages/submit_game_confirmation.html.jinja",
-            context={"game": game, "edited": True},
+            context={"game": game, "event": game.event, "edited": True},
         )
 
     @put(
