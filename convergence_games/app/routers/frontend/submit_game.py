@@ -9,6 +9,7 @@ from litestar.exceptions import HTTPException, NotFoundException, ValidationExce
 from litestar.params import Body, RequestEncodingType
 from litestar.status_codes import HTTP_413_REQUEST_ENTITY_TOO_LARGE
 from pydantic import (
+    AfterValidator,
     BaseModel,
     BeforeValidator,
     ConfigDict,
@@ -57,7 +58,8 @@ from convergence_games.db.models import (
 )
 from convergence_games.db.ocean import Sqid, sink
 from convergence_games.permissions import user_has_permission
-from convergence_games.services import ImageLoader
+from convergence_games.services import ImageDecodeError, ImageLoader
+from convergence_games.settings import SETTINGS
 
 
 # region Submit Game Form
@@ -86,6 +88,36 @@ SqidOrNewStr = Annotated[SqidOrNew[str], BeforeValidator(make_sqid_or_new_valida
 SqidInt = Annotated[int, BeforeValidator(sink)]
 
 
+def _validate_image_uploads(images: list[UploadFile | int]) -> list[UploadFile | int]:
+    """Validate count and MIME type of uploaded images.
+
+    Per-file byte-size enforcement happens in ``create_image`` after the bytes
+    have been read, because Litestar's ``UploadFile`` does not expose a size
+    attribute. The ``request_max_body_size`` route limit caps total upload size.
+    """
+    max_count = SETTINGS.IMAGE_UPLOAD_MAX_IMAGES_PER_GAME
+    allowed = set(SETTINGS.IMAGE_UPLOAD_ALLOWED_MIME_TYPES)
+
+    errors: list[str] = []
+    if len(images) > max_count:
+        errors.append(f"You can upload at most {max_count} images (got {len(images)}).")
+
+    for index, image in enumerate(images):
+        if not isinstance(image, UploadFile):
+            continue
+        position = index + 1
+        if image.content_type not in allowed:
+            allowed_display = ", ".join(sorted(allowed))
+            errors.append(
+                f"Image {position}: type '{image.content_type or 'unknown'}' is not supported. "
+                f"Allowed: {allowed_display}."
+            )
+
+    if errors:
+        raise ValueError("; ".join(errors))
+    return images
+
+
 def user_can_approve_game(user: User, game: Game) -> bool:
     return user_has_permission(user, "game", (game.event, game), "approve")
 
@@ -104,8 +136,11 @@ class SubmitGameForm(BaseModel):
     description: Annotated[str, Field(title="Description"), NoneToEmpty] = ""
 
     image: Annotated[
-        list[UploadFile | SqidInt], MaybeListValidator
-    ] = []  # TODO: Or typeof existing image in the database
+        list[UploadFile | SqidInt],
+        MaybeListValidator,
+        AfterValidator(_validate_image_uploads),
+        Field(title="Images"),
+    ] = []
 
     genre: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Genres")]
     tone: Annotated[GameTone, Field(title="Tone")]
@@ -263,10 +298,11 @@ def handle_submit_game_form_validation_error(request: Request, exc: ValidationEx
 
 
 def handle_request_entity_too_large_error(request: Request, exc: HTTPException) -> HTMXBlockTemplate:
+    limit_mb = SETTINGS.IMAGE_UPLOAD_MAX_REQUEST_BODY_BYTES / 1024 / 1024
     raise AlertError(
         [
             Alert("alert-error", "Too much data for the server to handle! (Error 413)"),
-            Alert("alert-error", "If you've submitted images, try reducing their total size below 20MB."),
+            Alert("alert-error", f"If you've submitted images, try reducing their total size below {limit_mb:.0f} MB."),
         ]
     )
 
@@ -321,9 +357,40 @@ async def create_new_links(
 async def create_image(
     upload_file: UploadFile,
     image_loader: ImageLoader,
+    position: int,
 ) -> Image:
     lookup = uuid4()
-    await image_loader.save_image(await upload_file.read(), lookup)
+    image_bytes = await upload_file.read()
+
+    max_size = SETTINGS.IMAGE_UPLOAD_MAX_FILE_SIZE_BYTES
+    if len(image_bytes) > max_size:
+        max_size_mb = max_size / 1024 / 1024
+        actual_mb = len(image_bytes) / 1024 / 1024
+        raise ValidationException(
+            f"Image {position}: {actual_mb:.1f} MB exceeds the {max_size_mb:.0f} MB per-image limit.",
+            extra=[
+                {
+                    "key": "image",
+                    "message": f"Image {position}: {actual_mb:.1f} MB exceeds the {max_size_mb:.0f} MB per-image limit.",
+                }
+            ],
+        )
+
+    try:
+        await image_loader.save_image(image_bytes, lookup)
+    except ImageDecodeError as exc:
+        raise ValidationException(
+            f"Image {position}: could not be read.",
+            extra=[
+                {
+                    "key": "image",
+                    "message": (
+                        f"Image {position}: could not be read as a valid image. "
+                        "Try a different file or re-export it from your editor."
+                    ),
+                }
+            ],
+        ) from exc
     return Image(lookup_key=lookup)
 
 
@@ -335,7 +402,7 @@ async def create_image_links(
     return [
         GameImageLink(
             game=game,
-            image=await create_image(image, image_loader),
+            image=await create_image(image, image_loader, position=i + 1),
             sort_order=i,
         )
         for i, image in enumerate(data.image)
@@ -453,7 +520,7 @@ class SubmitGameController(Controller):
             ValidationException: handle_submit_game_form_validation_error,
             HTTP_413_REQUEST_ENTITY_TOO_LARGE: handle_request_entity_too_large_error,
         },  # type: ignore[assignment]
-        request_max_body_size=20 * 1024 * 1024,  # 20 MB
+        request_max_body_size=SETTINGS.IMAGE_UPLOAD_MAX_REQUEST_BODY_BYTES,
     )
     async def post_game(
         self,
@@ -461,7 +528,7 @@ class SubmitGameController(Controller):
         transaction: AsyncSession,
         event: Event,
         image_loader: ImageLoader,
-        data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> HTMXBlockTemplate:
         assert request.user is not None
 
@@ -540,7 +607,7 @@ class SubmitGameController(Controller):
             ValidationException: handle_submit_game_form_validation_error,
             HTTP_413_REQUEST_ENTITY_TOO_LARGE: handle_request_entity_too_large_error,
         },  # type: ignore[assignment]
-        request_max_body_size=20 * 1024 * 1024,  # 20 MB
+        request_max_body_size=SETTINGS.IMAGE_UPLOAD_MAX_REQUEST_BODY_BYTES,
         dependencies={
             "game": game_with(
                 selectinload(Game.system),
@@ -675,7 +742,8 @@ class SubmitGameController(Controller):
 
         # Images
         desired_image_ids_or_images = [
-            image if isinstance(image, int) else await create_image(image, image_loader) for image in data.image
+            image if isinstance(image, int) else await create_image(image, image_loader, position=i + 1)
+            for i, image in enumerate(data.image)
         ]
         # Remove any image links that are not in the desired list
         for image_link in game.image_links:
