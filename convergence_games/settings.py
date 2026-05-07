@@ -79,6 +79,25 @@ class Settings(BaseSettings):
     IMAGE_STORAGE_CONTAINER_NAME: str | None = None
     IMAGE_STORAGE_PRE_CACHE_SIZES: Json[list[int]] | list[int] = []
 
+    # Image upload limits
+    IMAGE_UPLOAD_MAX_FILE_SIZE_BYTES: int = 5 * 1024 * 1024
+    IMAGE_UPLOAD_MAX_IMAGES_PER_GAME: int = 10
+    IMAGE_UPLOAD_MAX_DIMENSION_PIXELS: int = 4096
+    IMAGE_UPLOAD_MAX_DECODE_PIXELS: int = 50_000_000
+    IMAGE_UPLOAD_ALLOWED_MIME_TYPES: Json[list[str]] | list[str] = [
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+    ]
+    IMAGE_UPLOAD_REQUEST_BODY_HEADROOM_BYTES: int = 2 * 1024 * 1024
+
+    @cached_property
+    def IMAGE_UPLOAD_MAX_REQUEST_BODY_BYTES(self) -> int:  # noqa: N802
+        return (
+            self.IMAGE_UPLOAD_MAX_FILE_SIZE_BYTES * self.IMAGE_UPLOAD_MAX_IMAGES_PER_GAME
+            + self.IMAGE_UPLOAD_REQUEST_BODY_HEADROOM_BYTES
+        )
+
     @model_validator(mode="after")
     def image_storage_path_set_if_mode_filesystem(self) -> Self:
         """Set the image storage path if the mode is filesystem."""
