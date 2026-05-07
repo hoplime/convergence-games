@@ -1,12 +1,21 @@
 {#def
-    max_images: int = 10,
+    max_images: int | None = None,
 #}
+{% set effective_max = max_images if max_images is not none else SETTINGS.IMAGE_UPLOAD_MAX_IMAGES_PER_GAME %}
+{% set max_file_size_bytes = SETTINGS.IMAGE_UPLOAD_MAX_FILE_SIZE_BYTES %}
+{% set max_total_bytes = max_file_size_bytes * effective_max %}
 {% set id = random_id() %}
-<div {{ attrs.render(class="flex flex-col gap-2") }}>
+<div
+    {{ attrs.render(class="image-upload-container flex flex-col gap-2") }}
+    id="image-upload-container-{{ id }}"
+    data-max-images="{{ effective_max }}"
+    data-max-file-size="{{ max_file_size_bytes }}"
+    data-max-total-size="{{ max_total_bytes }}"
+>
     <ul id="multi-image-{{ id }}" class="flex flex-col gap-2">
         {{ content }}
     </ul>
-    <div class="flex flex-row items-center gap-2 pl-10">
+    <div class="flex flex-row flex-wrap items-center gap-x-4 gap-y-1 pl-10">
         <button
             type="button"
             id="add-image-{{ id }}"
@@ -17,20 +26,71 @@
         >
             <span class="icon-[mdi--plus-circle-outline]"></span> Add Image
         </button>
-        <span id="image-count-{{ id }}">X/{{ max_images }}</span>
+        <span id="image-count-{{ id }}">0/{{ effective_max }}</span>
+        <span id="image-total-{{ id }}" class="text-sm text-base-content/70">0.0 MB / 0.0 MB</span>
     </div>
 </div>
 {# Closure #}
 <script>
     (() => {
         const Sortable = convergence.Sortable;
+        const containerElement = document.getElementById("image-upload-container-{{ id }}");
         const multiImageListElement = document.getElementById("multi-image-{{ id }}");
         const addImageButtonElement = document.getElementById("add-image-{{ id }}");
         const imageCountElement = document.getElementById("image-count-{{ id }}");
-        const maxImages = +"{{ max_images }}";
+        const imageTotalElement = document.getElementById("image-total-{{ id }}");
+        const maxImages = +containerElement.dataset.maxImages;
+        const maxFileSize = +containerElement.dataset.maxFileSize;
+        const maxTotalSize = +containerElement.dataset.maxTotalSize;
 
-        const numberImagesChanged = (evt) => {
-            const imageCount = multiImageListElement.childElementCount;
+        const formatMB = (bytes) => (bytes / 1024 / 1024).toFixed(1);
+
+        const validateRow = (rowElement, index) => {
+            const fileInput = rowElement.querySelector("input.image-upload-input");
+            const errorElement = rowElement.querySelector(".image-upload-error");
+            if (fileInput === null || errorElement === null) {
+                rowElement.dataset.imageError = "";
+                return { error: null, size: 0 };
+            }
+            const file = fileInput.files[0];
+            if (!file) {
+                errorElement.textContent = "";
+                errorElement.classList.add("hidden");
+                rowElement.dataset.imageError = "";
+                return { error: null, size: 0 };
+            }
+            const allowed = (fileInput.dataset.allowedMime || "").split(",").filter(Boolean);
+            const maxSize = +fileInput.dataset.maxSize;
+            const maxSizeMb = +fileInput.dataset.maxSizeMb;
+            let error = null;
+            if (allowed.length > 0 && !allowed.includes(file.type)) {
+                error = `Image ${index + 1}: type "${file.type || "unknown"}" is not supported. Allowed: ${allowed.join(", ")}.`;
+            } else if (file.size > maxSize) {
+                error = `Image ${index + 1}: ${formatMB(file.size)} MB exceeds the ${maxSizeMb} MB per-image limit.`;
+            }
+            if (error) {
+                errorElement.textContent = error;
+                errorElement.classList.remove("hidden");
+                rowElement.dataset.imageError = error;
+            } else {
+                errorElement.textContent = "";
+                errorElement.classList.add("hidden");
+                rowElement.dataset.imageError = "";
+            }
+            return { error, size: file.size };
+        };
+
+        const recompute = () => {
+            const rows = Array.from(multiImageListElement.children);
+            const imageCount = rows.length;
+            let totalSize = 0;
+            let anyError = false;
+            rows.forEach((row, index) => {
+                const { error, size } = validateRow(row, index);
+                if (error) anyError = true;
+                totalSize += size;
+            });
+
             if (imageCount >= maxImages) {
                 addImageButtonElement.disabled = true;
                 imageCountElement.classList.add("text-warning", "font-semibold");
@@ -39,14 +99,36 @@
                 imageCountElement.classList.remove("text-warning", "font-semibold");
             }
             imageCountElement.innerText = `${imageCount}/${maxImages}`;
+
+            const overTotal = totalSize > maxTotalSize;
+            imageTotalElement.innerText = `${formatMB(totalSize)} MB / ${formatMB(maxTotalSize)} MB`;
+            imageTotalElement.classList.toggle("text-error", overTotal);
+            imageTotalElement.classList.toggle("font-semibold", overTotal);
+            imageTotalElement.classList.toggle("text-base-content/70", !overTotal);
+
+            const tooMany = imageCount > maxImages;
+            const ok = !anyError && !overTotal && !tooMany;
+            containerElement.dispatchEvent(
+                new CustomEvent("image-upload:status", {
+                    bubbles: true,
+                    detail: { ok, totalSize, imageCount, anyError, overTotal, tooMany },
+                }),
+            );
         };
 
-        numberImagesChanged();
+        recompute();
+
+        multiImageListElement.addEventListener("change", (evt) => {
+            if (evt.target && evt.target.matches("input.image-upload-input")) {
+                recompute();
+            }
+        });
 
         const sortable = Sortable.create(multiImageListElement, {
             handle: ".sortable-drag-handle",
             filter: ".sortable-remove, .sortable-move-up, .sortable-move-down",
             animation: 150,
+            onSort: recompute,
             onFilter: (evt) => {
                 const item = evt.item;
                 const parent = item.parentNode;
@@ -55,30 +137,31 @@
                     const hasUploadedImage =
                         eventInputElement.type == "hidden" ||
                         (eventInputElement.type == "file" && eventInputElement.files.length > 0);
-                    console.log(hasUploadedImage);
                     if (hasUploadedImage && !confirm("Are you sure you want to remove this image?")) {
                         return;
                     }
                     if (parent) {
                         parent.removeChild(item);
                     }
-                    numberImagesChanged();
+                    recompute();
                 } else if (Sortable.utils.is(evt.target, ".sortable-move-up")) {
                     const item = evt.item;
                     const prevItem = item.previousElementSibling;
                     if (prevItem) {
                         parent.insertBefore(item, prevItem);
                     }
+                    recompute();
                 } else if (Sortable.utils.is(evt.target, ".sortable-move-down")) {
                     const item = evt.item;
                     const nextItem = item.nextElementSibling;
                     if (nextItem) {
                         parent.insertBefore(nextItem, item);
                     }
+                    recompute();
                 }
             },
         });
 
-        multiImageListElement.addEventListener("htmx:load", numberImagesChanged);
+        multiImageListElement.addEventListener("htmx:load", recompute);
     })();
 </script>

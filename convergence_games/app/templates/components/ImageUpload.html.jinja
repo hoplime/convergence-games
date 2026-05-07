@@ -1,13 +1,16 @@
 {#def
     existing_image: Image | None = None
 #}
-<li {{ attrs.render(class="flex flex-row items-center not-last:border-b p-2 w-fit") }}>
+<li
+    {{ attrs.render(class="image-upload-row flex flex-row items-start not-last:border-b p-2 w-fit gap-2") }}
+    data-image-error=""
+>
     <div class="flex flex-col gap-2">
         <span class="icon-[mdi--arrow-up] sortable-move-up size-8 cursor-pointer"></span>
         <span class="icon-[lsicon--drag-filled] sortable-drag-handle size-8 cursor-move"></span>
         <span class="icon-[mdi--arrow-down] sortable-move-down size-8 cursor-pointer"></span>
     </div>
-    <div class="flex flex-col">
+    <div class="flex flex-col gap-1">
         {% if existing_image is not none %}
             <input type="hidden" name="image" value="{{ swim(existing_image) }}" />
             <p>Uploaded Image</p>
@@ -17,7 +20,19 @@
                 class="sortable-drag-handle max-h-48 max-w-64 object-contain"
             />
         {% else %}
-            <input type="file" class="file-input" name="image" accept="image/png, image/jpeg, image/gif" />
+            {% set max_size_bytes = SETTINGS.IMAGE_UPLOAD_MAX_FILE_SIZE_BYTES %}
+            {% set max_size_mb = (max_size_bytes / 1024 / 1024) | round(0, 'floor') | int %}
+            {% set allowed_mime = SETTINGS.IMAGE_UPLOAD_ALLOWED_MIME_TYPES %}
+            <input
+                type="file"
+                class="image-upload-input file-input"
+                name="image"
+                accept="{{ allowed_mime | join(', ') }}"
+                data-max-size="{{ max_size_bytes }}"
+                data-max-size-mb="{{ max_size_mb }}"
+                data-allowed-mime="{{ allowed_mime | join(',') }}"
+            />
+            <p class="image-upload-error text-error text-sm hidden"></p>
             <div class="hidden pt-2 has-[.block]:block">
                 <img
                     src=""

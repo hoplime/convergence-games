@@ -845,6 +845,7 @@
                 {# Submit #}
                 <ErrorHolder name="form" />
                 <button
+                    id="submit-game-button"
                     class="btn btn-lg btn-primary"
                     {% if editing %}
                         hx-put="/game/{{ swim(game) }}"
@@ -864,6 +865,15 @@
                         </span>
                     </div>
                 </button>
+                <script>
+                    (() => {
+                        const submitButton = document.getElementById("submit-game-button");
+                        if (!submitButton) return;
+                        document.addEventListener("image-upload:status", (evt) => {
+                            submitButton.disabled = !evt.detail.ok;
+                        });
+                    })();
+                </script>
             </form>
         </PageContainer>
     {% endblock %}
