@@ -3,6 +3,7 @@
     url: str,
     target: str = "#content",
     include: str | None = None,
+    params: str | None = None,
     active: bool = False,
     desc: bool = False,
 #}
@@ -11,6 +12,7 @@
     hx-get="{{ url }}{{ '&' if '?' in url else '?' }}sort={{ sort }}&desc={{ not desc if active else False }}"
     hx-target="{{ target }}"
     {% if include %}hx-include="{{ include }}"{% endif %}
+    {% if params %}hx-params="{{ params }}"{% endif %}
     hx-push-url="true"
 >
     {{ content }}

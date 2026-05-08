@@ -61,14 +61,55 @@
                             {% set show_preference_column = request.user is not none and event.is_preferences_open() %}
                             {% set display_d20 = latest_d20_transaction is not none and latest_d20_transaction.current_balance > 0 %}
                             {% if view == "table" %}
+                                {% set sort_url = "/event/" + swim(event) + "/games?view=table" %}
                                 <div class="hidden overflow-x-auto md:block">
                                     <table class="table bg-base-200 table-sm">
                                         <thead>
                                             <tr>
-                                                <th>Name</th>
-                                                <th>System</th>
-                                                <th>GM</th>
-                                                <th>Tone</th>
+                                                <TableSortHeader
+                                                    sort="name"
+                                                    :url="sort_url"
+                                                    target="#game_list"
+                                                    include="#filter_form"
+                                                    params="not view,sort,desc"
+                                                    :active="sort == 'name'"
+                                                    :desc="desc"
+                                                >
+                                                    Name
+                                                </TableSortHeader>
+                                                <TableSortHeader
+                                                    sort="system"
+                                                    :url="sort_url"
+                                                    target="#game_list"
+                                                    include="#filter_form"
+                                                    params="not view,sort,desc"
+                                                    :active="sort == 'system'"
+                                                    :desc="desc"
+                                                >
+                                                    System
+                                                </TableSortHeader>
+                                                <TableSortHeader
+                                                    sort="gamemaster"
+                                                    :url="sort_url"
+                                                    target="#game_list"
+                                                    include="#filter_form"
+                                                    params="not view,sort,desc"
+                                                    :active="sort == 'gamemaster'"
+                                                    :desc="desc"
+                                                >
+                                                    GM
+                                                </TableSortHeader>
+                                                <TableSortHeader
+                                                    sort="tone"
+                                                    :url="sort_url"
+                                                    target="#game_list"
+                                                    include="#filter_form"
+                                                    params="not view,sort,desc"
+                                                    :active="sort == 'tone'"
+                                                    :desc="desc"
+                                                >
+                                                    Tone
+                                                </TableSortHeader>
                                                 <th>Genres</th>
                                                 {% if show_preference_column %}
                                                     <th>Preference</th>
