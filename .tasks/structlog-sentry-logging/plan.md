@@ -1,7 +1,7 @@
 ---
 title: Adopt structlog with Litestar and Sentry telemetry
 created: 2026-05-07
-status: draft
+status: complete
 ---
 
 # Adopt structlog with Litestar and Sentry telemetry
