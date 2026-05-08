@@ -11,7 +11,7 @@ from litestar.di import Provide
 from litestar.params import Parameter
 from litestar.response import Template
 from pydantic import BaseModel, BeforeValidator
-from sqlalchemy import and_, select
+from sqlalchemy import Select, and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 
@@ -50,6 +50,10 @@ from convergence_games.permissions import user_has_permission
 SqidInt = Annotated[int, BeforeValidator(sink)]
 
 
+type GamesView = Literal["cards", "table"]
+type GamesSort = Literal["name", "system", "gamemaster", "tone"]
+
+
 class EventGamesQuery(BaseModel):
     genre: list[SqidInt] = []
     system: list[SqidInt] = []
@@ -58,6 +62,9 @@ class EventGamesQuery(BaseModel):
     content: list[SqidInt] = []
     preference: list[Literal["unrated", "rated"]] = []
     session: list[SqidInt] = []
+    view: GamesView = "cards"
+    sort: GamesSort | None = None
+    desc: bool = False
 
 
 @dataclass
@@ -79,6 +86,23 @@ class MultiselectFormData:
 
 
 # region Dependencies
+def _apply_games_sort(stmt: Select[tuple[Game]], sort: GamesSort | None, desc: bool) -> Select[tuple[Game]]:
+    if sort == "system":
+        stmt = stmt.join(System, Game.system_id == System.id)
+        columns = [System.name]
+    elif sort == "gamemaster":
+        stmt = stmt.join(User, Game.gamemaster_id == User.id)
+        columns = [User.last_name, User.first_name]
+    elif sort == "tone":
+        columns = [Game.tone]
+    else:
+        columns = [Game.name]
+    stmt = stmt.order_by(*[c.desc() if desc else c.asc() for c in columns])
+    if sort is not None and sort != "name":
+        stmt = stmt.order_by(Game.name.asc())
+    return stmt
+
+
 async def get_event_approved_games_dep(
     event: Event,
     transaction: AsyncSession,
@@ -96,12 +120,12 @@ async def get_event_approved_games_dep(
             selectinload(Game.content_warnings),
             selectinload(Game.event).selectinload(Event.time_slots),
         )
-        .order_by(Game.name)
         .where(
             Game.event_id == event_id,
             Game.submission_status == SubmissionStatus.APPROVED,
         )
     )
+    stmt = _apply_games_sort(stmt, query_params.sort, query_params.desc)
     if query_params.genre:
         stmt = stmt.where(Game.genres.any(Genre.id.in_(query_params.genre)))
     if query_params.system:
@@ -145,6 +169,9 @@ async def event_games_query_from_params_dep(
     content: list[Sqid] | None = None,
     preference: list[Literal["unrated", "rated"]] | None = None,
     session: list[Sqid] | None = None,
+    view: GamesView = "cards",
+    sort: GamesSort | None = None,
+    desc: bool = False,
 ) -> EventGamesQuery:
     return EventGamesQuery.model_validate(
         {
@@ -155,6 +182,9 @@ async def event_games_query_from_params_dep(
             "content": content or [],
             "preference": preference or [],
             "session": session or [],
+            "view": view,
+            "sort": sort,
+            "desc": desc,
         }
     )
 
@@ -353,6 +383,7 @@ class EventPlayerController(Controller):
         preferences: dict[int, UserGamePreferenceValue],
         user_game_playeds: dict[int, UserGamePlayed],
         form_data: dict[str, MultiselectFormData],
+        query_params: EventGamesQuery,
         transaction: AsyncSession,
     ) -> Template:
         scheduled_time_slots_stmt = select(Session.game_id, Session.time_slot_id).where(Session.committed)
@@ -388,6 +419,9 @@ class EventPlayerController(Controller):
                 "user_game_playeds": user_game_playeds,
                 "scheduled_time_slots": scheduled_time_slots_dict,
                 "latest_d20_transaction": latest_d20_transaction,
+                "view": query_params.view,
+                "sort": query_params.sort,
+                "desc": query_params.desc,
             },
         )
 
@@ -404,9 +438,7 @@ class EventPlayerController(Controller):
         user: User,
         time_slot_sqid: Annotated[Sqid | None, Parameter()] = None,
     ) -> Template:
-        if not event.is_planner_open() and not user_has_permission(
-            user, "event", (event, event), "manage_submissions"
-        ):
+        if not event.is_planner_open() and not user_has_permission(user, "event", (event, event), "manage_submissions"):
             return HTMXBlockTemplate(
                 template_name="pages/event_planner_closed.html.jinja",
                 block_name=request.htmx.target,
