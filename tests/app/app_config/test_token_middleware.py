@@ -1,10 +1,8 @@
-"""Tests for the access/refresh token middleware helpers and rotation logic.
+"""Tests for the JWTMultiCookieAuth + JWTMultiCookieAuthenticationMiddleware.
 
-We exercise the middleware indirectly: the helpers (`_issue_login_session`,
-`_revoke_session_by_jti`, `_revoke_family`, `_decode_token`) and the rotation/migration
-paths via a thin fake ASGI connection that captures pending cookies. Building a full
-Litestar test app would force a real Postgres dependency; the helper-level tests give us
-the same coverage at much lower setup cost.
+Covers cookie creation, the access hot path, refresh rotation with reuse detection
+and grace window, legacy migration, and the DB helpers (create_user_session,
+_revoke_session_by_jti, _revoke_family).
 """
 
 from __future__ import annotations
@@ -16,21 +14,19 @@ from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
-from litestar.exceptions import NotAuthorizedException
+from litestar.connection import ASGIConnection
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from convergence_games.app.app_config.jwt_cookie_auth import (
-    ACCESS_COOKIE_KEY,
-    LEGACY_COOKIE_KEY,
-    REFRESH_COOKIE_KEY,
-    TokenSessionAuthenticationMiddleware,
-    _decode_token,
-    _encode_access_token,
-    _encode_refresh_token,
-    _issue_login_session,
     _revoke_family,
     _revoke_session_by_jti,
+    build_token_extras,
+    create_user_session,
+    jwt_cookie_auth,
+)
+from convergence_games.app.common.jwt_multi_cookie import (
+    JWTMultiCookieAuthenticationMiddleware,
 )
 from convergence_games.db.models import Base, User, UserSession
 
@@ -53,57 +49,49 @@ async def _create_user(session: AsyncSession) -> User:
     return user
 
 
-# --- helpers ---
+# --- DB helpers ---
 
 
 @pytest.mark.asyncio
-async def test_issue_login_session_creates_user_session_row(session: AsyncSession) -> None:
+async def test_create_user_session_creates_row(session: AsyncSession) -> None:
     user = await _create_user(session)
-    access_cookie, refresh_cookie, jti = await _issue_login_session(
-        session, user, [], user_agent="Test UA"
-    )
+    jti = "test-jti-1"
+    await create_user_session(session, user.id, jti, user_agent="Test UA")
     await session.flush()
-
-    assert access_cookie.key == ACCESS_COOKIE_KEY
-    assert refresh_cookie.key == REFRESH_COOKIE_KEY
-    assert access_cookie.value
-    assert refresh_cookie.value
-    assert jti
 
     rows = (await session.execute(select(UserSession))).scalars().all()
     assert len(rows) == 1
     assert rows[0].user_id == user.id
     assert rows[0].jti == jti
-    assert rows[0].family_id == jti  # fresh session: family == jti
+    assert rows[0].family_id == jti
     assert rows[0].user_agent == "Test UA"
     assert rows[0].revoked_at is None
 
 
 @pytest.mark.asyncio
-async def test_issue_login_session_uses_explicit_family_id(session: AsyncSession) -> None:
+async def test_create_user_session_uses_explicit_family_id(session: AsyncSession) -> None:
     user = await _create_user(session)
-    _, _, original_jti = await _issue_login_session(session, user, [], user_agent=None)
+    await create_user_session(session, user.id, "jti-1", user_agent=None)
     await session.flush()
-    _, _, new_jti = await _issue_login_session(session, user, [], user_agent=None, family_id=original_jti)
+    await create_user_session(session, user.id, "jti-2", user_agent=None, family_id="jti-1")
     await session.flush()
 
     rows = (await session.execute(select(UserSession).order_by(UserSession.id))).scalars().all()
     assert len(rows) == 2
-    assert rows[0].family_id == original_jti
-    assert rows[1].family_id == original_jti
-    assert rows[0].jti != rows[1].jti
+    assert rows[0].family_id == "jti-1"
+    assert rows[1].family_id == "jti-1"
 
 
 @pytest.mark.asyncio
 async def test_revoke_session_by_jti(session: AsyncSession) -> None:
     user = await _create_user(session)
-    _, _, jti = await _issue_login_session(session, user, [], user_agent=None)
+    await create_user_session(session, user.id, "jti-revoke", user_agent=None)
     await session.flush()
 
-    await _revoke_session_by_jti(session, jti, reason="logout")
+    await _revoke_session_by_jti(session, "jti-revoke", reason="logout")
     await session.flush()
 
-    row = (await session.execute(select(UserSession).where(UserSession.jti == jti))).scalar_one()
+    row = (await session.execute(select(UserSession).where(UserSession.jti == "jti-revoke"))).scalar_one()
     assert row.revoked_at is not None
     assert row.revoked_reason == "logout"
 
@@ -111,69 +99,58 @@ async def test_revoke_session_by_jti(session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_revoke_family_revokes_only_active(session: AsyncSession) -> None:
     user = await _create_user(session)
-    _, _, j1 = await _issue_login_session(session, user, [], user_agent=None)
+    await create_user_session(session, user.id, "fam-1", user_agent=None)
     await session.flush()
-    _, _, j2 = await _issue_login_session(session, user, [], user_agent=None, family_id=j1)
-    await session.flush()
-
-    # Revoke first row up front (simulating a rotation)
-    await _revoke_session_by_jti(session, j1, reason="rotated")
+    await create_user_session(session, user.id, "fam-2", user_agent=None, family_id="fam-1")
     await session.flush()
 
-    await _revoke_family(session, j1, reason="reuse_detected")
+    await _revoke_session_by_jti(session, "fam-1", reason="rotated")
     await session.flush()
 
-    row1 = (await session.execute(select(UserSession).where(UserSession.jti == j1))).scalar_one()
-    row2 = (await session.execute(select(UserSession).where(UserSession.jti == j2))).scalar_one()
-    # Already-revoked row keeps its original reason; only previously-active rows in the family get
-    # the new reason.
+    await _revoke_family(session, "fam-1", reason="reuse_detected")
+    await session.flush()
+
+    row1 = (await session.execute(select(UserSession).where(UserSession.jti == "fam-1"))).scalar_one()
+    row2 = (await session.execute(select(UserSession).where(UserSession.jti == "fam-2"))).scalar_one()
     assert row1.revoked_reason == "rotated"
     assert row2.revoked_reason == "reuse_detected"
 
 
-# --- token encoding round-trip ---
+# --- JWTMultiCookieAuth cookie creation ---
 
 
-@pytest.mark.asyncio
-async def test_access_token_round_trip(session: AsyncSession) -> None:
-    user = await _create_user(session)
-    encoded, ttl = _encode_access_token(user, [])
-    token = _decode_token(encoded)
-    assert token.sub == str(user.id)
-    assert token.token_type == "access"
-    assert token.extras["first_name"] == "Test"
-    assert token.extras["over_18"] is True
-    assert ttl > dt.timedelta(0)
+def test_create_login_cookies_returns_three() -> None:
+    cookies = jwt_cookie_auth.create_login_cookies(
+        "42",
+        token_extras={"first_name": "Test", "last_name": "User", "over_18": True, "event_roles": []},
+        refresh_token_unique_jwt_id="my-jti",
+    )
+    assert len(cookies) == 3
+    assert cookies[0].key == "access"
+    assert cookies[1].key == "refresh"
+    assert cookies[2].key == "token"
+    assert cookies[2].max_age == 0
 
 
-@pytest.mark.asyncio
-async def test_refresh_token_round_trip() -> None:
-    encoded, ttl = _encode_refresh_token(user_id=42, jti="my-test-jti")
-    token = _decode_token(encoded)
-    assert token.sub == "42"
-    assert token.token_type == "refresh"
-    assert token.jti == "my-test-jti"
-    assert ttl > dt.timedelta(0)
+def test_create_refresh_cookie() -> None:
+    cookie = jwt_cookie_auth.create_refresh_cookie("42", "test-jti")
+    assert cookie.key == "refresh"
+    assert cookie.value
 
 
-def test_decode_token_invalid_raises() -> None:
-    with pytest.raises(NotAuthorizedException):
-        _decode_token("not-a-jwt")
+def test_login_returns_response_with_cookies() -> None:
+    response = jwt_cookie_auth.login(
+        "42",
+        token_extras={"first_name": "Test", "last_name": "User", "over_18": True, "event_roles": []},
+        refresh_token_unique_jwt_id="my-jti",
+    )
+    cookie_keys = {c.key for c in response.cookies}
+    assert "access" in cookie_keys
+    assert "refresh" in cookie_keys
+    assert "token" in cookie_keys
 
 
-# --- middleware: access path ---
-
-
-def _make_connection(scope: dict[str, Any]) -> Any:
-    """Build the minimum ASGI connection shape the middleware reads from."""
-    from litestar.connection import ASGIConnection
-
-    scope.setdefault("type", "http")
-    scope.setdefault("headers", [])
-    scope.setdefault("state", {})
-    scope.setdefault("query_string", b"")
-    scope.setdefault("path", "/")
-    return ASGIConnection(scope)  # pyright: ignore[reportArgumentType]
+# --- Middleware tests ---
 
 
 def _scope_with_cookies(cookies: dict[str, str]) -> dict[str, Any]:
@@ -184,22 +161,64 @@ def _scope_with_cookies(cookies: dict[str, str]) -> dict[str, Any]:
     return {"type": "http", "headers": headers, "state": {}, "query_string": b"", "path": "/"}
 
 
-def _make_middleware(engine: Any = None) -> TokenSessionAuthenticationMiddleware:
-    """Construct middleware bypassing __init__ — we only call authenticate methods."""
-    mw = TokenSessionAuthenticationMiddleware.__new__(TokenSessionAuthenticationMiddleware)
-    mw.algorithm = "HS256"  # pyright: ignore[reportAttributeAccessIssue]
-    mw.token_secret = ""  # pyright: ignore[reportAttributeAccessIssue]
-    mw.token_cls = MagicMock()  # pyright: ignore[reportAttributeAccessIssue]
+def _make_connection(scope: dict[str, Any]) -> Any:
+    scope.setdefault("type", "http")
+    scope.setdefault("headers", [])
+    scope.setdefault("state", {})
+    scope.setdefault("query_string", b"")
+    scope.setdefault("path", "/")
+    return ASGIConnection(scope)  # pyright: ignore[reportArgumentType]
+
+
+def _make_middleware() -> JWTMultiCookieAuthenticationMiddleware:
+    from convergence_games.app.request_type import CustomToken
+    from convergence_games.settings import SETTINGS
+
+    mw = JWTMultiCookieAuthenticationMiddleware.__new__(JWTMultiCookieAuthenticationMiddleware)
+    mw.algorithm = "HS256"
+    mw.token_secret = SETTINGS.TOKEN_SECRET
+    mw.token_cls = CustomToken
+    mw.auth_cookie_key = "access"
+    mw.refresh_cookie_key = "refresh"
+    mw.legacy_cookie_key = "token"
+    mw.refresh_handler = None
+    mw.legacy_handler = None
+    mw.rotation_grace_seconds = 5
+    mw.access_token_expiration = dt.timedelta(minutes=15)
+    mw.cookie_path = "/"
+    mw.cookie_secure = None
+    mw.cookie_samesite = "lax"
+    mw.cookie_domain = None
+    mw.retrieve_user_handler = MagicMock()  # type: ignore
     return mw
+
+
+def _connection_with_engine(scope: dict[str, Any], engine: Any) -> Any:
+    fake_app = MagicMock()
+    fake_app.state.db_engine = engine
+    scope.setdefault("type", "http")
+    scope.setdefault("headers", [])
+    scope.setdefault("state", {})
+    scope.setdefault("query_string", b"")
+    scope.setdefault("path", "/")
+    scope["litestar_app"] = fake_app
+    scope["app"] = fake_app
+    return ASGIConnection(scope)  # pyright: ignore[reportArgumentType]
 
 
 @pytest.mark.asyncio
 async def test_access_path_returns_user_from_claims() -> None:
+    from convergence_games.app.app_config.jwt_cookie_auth import retrieve_user_handler
+
     user = User(id=1, first_name="Alice", last_name="Smith", over_18=True)
-    encoded, _ = _encode_access_token(user, [])
-    scope = _scope_with_cookies({ACCESS_COOKIE_KEY: encoded})
+    cookies = jwt_cookie_auth.create_login_cookies("1", token_extras=build_token_extras(user, []))
+    access_cookie = cookies[0]
+    assert access_cookie.value is not None
+
+    scope = _scope_with_cookies({"access": access_cookie.value})
     connection = _make_connection(scope)
     mw = _make_middleware()
+    mw.retrieve_user_handler = retrieve_user_handler  # type: ignore
     result = await mw.authenticate_request(connection)
     assert result.user is not None
     assert result.user.id == 1
@@ -218,20 +237,18 @@ async def test_no_cookies_returns_anonymous() -> None:
 
 @pytest.mark.asyncio
 async def test_invalid_access_with_no_refresh_returns_anonymous() -> None:
-    scope = _scope_with_cookies({ACCESS_COOKIE_KEY: "garbage"})
+    scope = _scope_with_cookies({"access": "garbage"})
     connection = _make_connection(scope)
     mw = _make_middleware()
     result = await mw.authenticate_request(connection)
     assert result.user is None
 
 
-# --- middleware: refresh path (via injected engine) ---
+# --- Refresh/legacy path tests (file-backed SQLite) ---
 
 
 @pytest_asyncio.fixture
 async def in_memory_engine(tmp_path: Any) -> AsyncGenerator[Any]:
-    # File-backed SQLite so the multiple AsyncSessions opened by the middleware and the test
-    # share the same DB (sqlite+aiosqlite:// would give each connection its own in-memory DB).
     db_path = tmp_path / "test.sqlite"
     engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}", echo=False)
     async with engine.begin() as conn:
@@ -240,49 +257,36 @@ async def in_memory_engine(tmp_path: Any) -> AsyncGenerator[Any]:
     await engine.dispose()
 
 
-def _connection_with_engine(scope: dict[str, Any], engine: Any) -> Any:
-    from litestar.connection import ASGIConnection
-
-    fake_app = MagicMock()
-    fake_app.state.db_engine = engine
-    scope.setdefault("type", "http")
-    scope.setdefault("headers", [])
-    scope.setdefault("state", {})
-    scope.setdefault("query_string", b"")
-    scope.setdefault("path", "/")
-    # Litestar's ASGIConnection reads scope["litestar_app"] (and "app" as a fallback).
-    scope["litestar_app"] = fake_app
-    scope["app"] = fake_app
-    return ASGIConnection(scope)  # pyright: ignore[reportArgumentType]
-
-
 @pytest.mark.asyncio
 async def test_refresh_path_rotates_and_authenticates(in_memory_engine: Any) -> None:
+    from convergence_games.app.app_config.jwt_cookie_auth import _handle_refresh
+
     factory = async_sessionmaker(in_memory_engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as setup:
         async with setup.begin():
             user = User(first_name="Bob", last_name="B", over_18=False)
             setup.add(user)
             await setup.flush()
-            _, _, jti = await _issue_login_session(setup, user, [], user_agent=None)
+            jti = "bob-jti"
+            await create_user_session(setup, user.id, jti, user_agent=None)
             user_id = user.id
 
-    refresh_token, _ = _encode_refresh_token(user_id, jti)
-    scope = _scope_with_cookies({REFRESH_COOKIE_KEY: refresh_token})
+    refresh_cookie = jwt_cookie_auth.create_refresh_cookie(str(user_id), jti)
+    assert refresh_cookie.value is not None
+    scope = _scope_with_cookies({"refresh": refresh_cookie.value})
     connection = _connection_with_engine(scope, in_memory_engine)
     mw = _make_middleware()
+    mw.refresh_handler = _handle_refresh
     result = await mw.authenticate_request(connection)
 
     assert result.user is not None
     assert result.user.id == user_id
 
-    # New cookies queued for the response.
     pending = scope["state"]["pending_auth_cookies"]
     pending_keys = {c.key for c in pending}
-    assert ACCESS_COOKIE_KEY in pending_keys
-    assert REFRESH_COOKIE_KEY in pending_keys
+    assert "access" in pending_keys
+    assert "refresh" in pending_keys
 
-    # And the original session row is revoked with reason=rotated.
     async with factory() as verify:
         rows = (await verify.execute(select(UserSession).order_by(UserSession.id))).scalars().all()
         assert len(rows) == 2
@@ -295,40 +299,39 @@ async def test_refresh_path_rotates_and_authenticates(in_memory_engine: Any) -> 
 
 @pytest.mark.asyncio
 async def test_refresh_path_reuse_detection_revokes_family(in_memory_engine: Any) -> None:
+    from convergence_games.app.app_config.jwt_cookie_auth import _handle_refresh
+
     factory = async_sessionmaker(in_memory_engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as setup:
         async with setup.begin():
             user = User(first_name="Carol", last_name="C", over_18=False)
             setup.add(user)
             await setup.flush()
-            _, _, original_jti = await _issue_login_session(setup, user, [], user_agent=None)
+            original_jti = "carol-jti-1"
+            await create_user_session(setup, user.id, original_jti, user_agent=None)
             await setup.flush()
-            # Simulate a rotation that happened a long time ago (outside the grace window).
             await _revoke_session_by_jti(setup, original_jti, reason="rotated")
             row = (await setup.execute(select(UserSession).where(UserSession.jti == original_jti))).scalar_one()
             row.revoked_at = dt.datetime.now(tz=dt.timezone.utc) - dt.timedelta(minutes=10)
-            # Active sibling (the rotated successor)
-            _, _, new_jti = await _issue_login_session(
-                setup, user, [], user_agent=None, family_id=original_jti
-            )
+            new_jti = "carol-jti-2"
+            await create_user_session(setup, user.id, new_jti, user_agent=None, family_id=original_jti)
             user_id = user.id
 
-    # Replay the OLD jti — middleware should treat this as theft.
-    replayed_token, _ = _encode_refresh_token(user_id, original_jti)
-    scope = _scope_with_cookies({REFRESH_COOKIE_KEY: replayed_token})
+    replayed_cookie = jwt_cookie_auth.create_refresh_cookie(str(user_id), original_jti)
+    assert replayed_cookie.value is not None
+    scope = _scope_with_cookies({"refresh": replayed_cookie.value})
     connection = _connection_with_engine(scope, in_memory_engine)
     mw = _make_middleware()
+    mw.refresh_handler = _handle_refresh
     result = await mw.authenticate_request(connection)
 
-    assert result.user is None  # unauthenticated
+    assert result.user is None
 
     async with factory() as verify:
         rows = (await verify.execute(select(UserSession).order_by(UserSession.id))).scalars().all()
         assert len(rows) == 2
         old = next(r for r in rows if r.jti == original_jti)
         new = next(r for r in rows if r.jti == new_jti)
-        # Original row keeps its 'rotated' reason; the previously-active sibling is now revoked
-        # with reason 'reuse_detected'.
         assert old.revoked_reason == "rotated"
         assert new.revoked_at is not None
         assert new.revoked_reason == "reuse_detected"
@@ -336,43 +339,43 @@ async def test_refresh_path_reuse_detection_revokes_family(in_memory_engine: Any
 
 @pytest.mark.asyncio
 async def test_refresh_path_grace_window_tolerates_rotated(in_memory_engine: Any) -> None:
+    from convergence_games.app.app_config.jwt_cookie_auth import _handle_refresh
+
     factory = async_sessionmaker(in_memory_engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as setup:
         async with setup.begin():
             user = User(first_name="Dan", last_name="D", over_18=False)
             setup.add(user)
             await setup.flush()
-            _, _, original_jti = await _issue_login_session(setup, user, [], user_agent=None)
+            original_jti = "dan-jti-1"
+            await create_user_session(setup, user.id, original_jti, user_agent=None)
             await setup.flush()
-            # Mark just-rotated (within grace window).
             await _revoke_session_by_jti(setup, original_jti, reason="rotated")
-            await _issue_login_session(setup, user, [], user_agent=None, family_id=original_jti)
+            await create_user_session(setup, user.id, "dan-jti-2", user_agent=None, family_id=original_jti)
             user_id = user.id
 
-    replayed_token, _ = _encode_refresh_token(user_id, original_jti)
-    scope = _scope_with_cookies({REFRESH_COOKIE_KEY: replayed_token})
+    replayed_cookie = jwt_cookie_auth.create_refresh_cookie(str(user_id), original_jti)
+    assert replayed_cookie.value is not None
+    scope = _scope_with_cookies({"refresh": replayed_cookie.value})
     connection = _connection_with_engine(scope, in_memory_engine)
     mw = _make_middleware()
+    mw.refresh_handler = _handle_refresh
     result = await mw.authenticate_request(connection)
 
-    # Inside the grace window the request is honoured — user is authenticated, no family-revoke.
     assert result.user is not None
     assert result.user.id == user_id
 
     async with factory() as verify:
         rows = (await verify.execute(select(UserSession))).scalars().all()
-        # No row should have reason 'reuse_detected'.
         assert not any(r.revoked_reason == "reuse_detected" for r in rows)
-        # Exactly one active sibling remains.
         active = [r for r in rows if r.revoked_at is None]
         assert len(active) == 1
 
 
-# --- middleware: legacy migration ---
-
-
 @pytest.mark.asyncio
 async def test_legacy_cookie_migrates_and_clears(in_memory_engine: Any) -> None:
+    from convergence_games.app.app_config.jwt_cookie_auth import _handle_legacy
+
     factory = async_sessionmaker(in_memory_engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as setup:
         async with setup.begin():
@@ -381,21 +384,20 @@ async def test_legacy_cookie_migrates_and_clears(in_memory_engine: Any) -> None:
             await setup.flush()
             user_id = user.id
 
-    # Build a legacy-shaped token: no token_type claim, current shape.
-    from convergence_games.app.app_config.jwt_cookie_auth import _now
     from convergence_games.app.request_type import CustomToken
     from convergence_games.settings import SETTINGS
 
     legacy = CustomToken(
         sub=str(user_id),
-        exp=_now() + dt.timedelta(days=30),
+        exp=dt.datetime.now(tz=dt.timezone.utc) + dt.timedelta(days=30),
         extras={"first_name": "Eve", "last_name": "E", "over_18": False, "event_roles": []},
     )
     encoded = legacy.encode(secret=SETTINGS.TOKEN_SECRET, algorithm="HS256")
 
-    scope = _scope_with_cookies({LEGACY_COOKIE_KEY: encoded})
+    scope = _scope_with_cookies({"token": encoded})
     connection = _connection_with_engine(scope, in_memory_engine)
     mw = _make_middleware()
+    mw.legacy_handler = _handle_legacy
     result = await mw.authenticate_request(connection)
 
     assert result.user is not None
@@ -403,13 +405,11 @@ async def test_legacy_cookie_migrates_and_clears(in_memory_engine: Any) -> None:
 
     pending = scope["state"]["pending_auth_cookies"]
     pending_keys = {c.key: c for c in pending}
-    assert ACCESS_COOKIE_KEY in pending_keys
-    assert REFRESH_COOKIE_KEY in pending_keys
-    assert LEGACY_COOKIE_KEY in pending_keys
-    # The legacy cookie is cleared.
-    assert pending_keys[LEGACY_COOKIE_KEY].max_age == 0
+    assert "access" in pending_keys
+    assert "refresh" in pending_keys
+    assert "token" in pending_keys
+    assert pending_keys["token"].max_age == 0
 
-    # And a user_session row was created.
     async with factory() as verify:
         rows = (await verify.execute(select(UserSession))).scalars().all()
         assert len(rows) == 1

@@ -17,12 +17,7 @@ from litestar.params import Body, Parameter, RequestEncodingType
 from litestar.response import Redirect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.app_config.jwt_cookie_auth import (
-    ACCESS_COOKIE_KEY,
-    LEGACY_COOKIE_KEY,
-    REFRESH_COOKIE_KEY,
-    _make_clear_cookie,
-)
+from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
 from convergence_games.app.common.auth import (
     AuthIntent,
     NoAccountForSignInError,
@@ -176,12 +171,7 @@ class OAuthController(Controller):
     ) -> Redirect:
         await logout_current_session(request, transaction)
         response = Redirect(path=redirect_path)
-        for cookie in (
-            _make_clear_cookie(ACCESS_COOKIE_KEY),
-            _make_clear_cookie(REFRESH_COOKIE_KEY),
-            _make_clear_cookie(LEGACY_COOKIE_KEY),
-        ):
-            response.cookies.append(cookie)
+        jwt_cookie_auth.delete_cookies_from_response(response)
         return response
 
     @get(path="/{provider_name:str}/login")

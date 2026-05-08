@@ -11,12 +11,7 @@ from litestar.response import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.app_config.jwt_cookie_auth import (
-    ACCESS_COOKIE_KEY,
-    LEGACY_COOKIE_KEY,
-    REFRESH_COOKIE_KEY,
-    _make_clear_cookie,
-)
+from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
 from convergence_games.app.common.auth import revoke_all_sessions_for_user
 from convergence_games.app.guards import user_guard
 from convergence_games.app.request_type import Request
@@ -44,24 +39,17 @@ class AuthController(Controller):
             await transaction.execute(select(UserSession).where(UserSession.id == session_id))
         ).scalar_one_or_none()
         if row is None or row.user_id != request.user.id:
-            # 404 (not 403) so a logged-in user can't probe for the existence of other users' sessions.
             raise HTTPException(detail="Session not found", status_code=404)
         if row.revoked_at is None:
             row.revoked_at = dt.datetime.now(tz=dt.timezone.utc)
             row.revoked_reason = "admin"
 
-        # If the user revoked their own current session, clear cookies on the response so they
-        # become anonymous on next request.
         clear_self = request.scope["state"].get("current_session_jti") == row.jti
         response: Response[None] = Response(content=None, status_code=204)
         if clear_self:
-            response.cookies.append(_make_clear_cookie(ACCESS_COOKIE_KEY))
-            response.cookies.append(_make_clear_cookie(REFRESH_COOKIE_KEY))
-            response.cookies.append(_make_clear_cookie(LEGACY_COOKIE_KEY))
-            # Tell HTMX to follow up by reloading.
+            jwt_cookie_auth.delete_cookies_from_response(response)
             response.headers["HX-Refresh"] = "true"
         else:
-            # Tell HTMX to refresh the sessions panel.
             response.headers["HX-Trigger"] = "sessions-changed"
         return response
 
@@ -74,7 +62,5 @@ class AuthController(Controller):
         assert request.user is not None
         await revoke_all_sessions_for_user(transaction, request.user.id, reason="logout_everywhere")
         response = ClientRedirect("/sign-in")
-        response.cookies.append(_make_clear_cookie(ACCESS_COOKIE_KEY))
-        response.cookies.append(_make_clear_cookie(REFRESH_COOKIE_KEY))
-        response.cookies.append(_make_clear_cookie(LEGACY_COOKIE_KEY))
+        jwt_cookie_auth.delete_cookies_from_response(response)
         return response

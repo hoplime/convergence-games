@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass
 from typing import Annotated, Literal, Sequence
 
@@ -10,11 +11,7 @@ from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.app_config.jwt_cookie_auth import (
-    LEGACY_COOKIE_KEY,
-    _issue_login_session,
-    _make_clear_cookie,
-)
+from convergence_games.app.app_config.jwt_cookie_auth import build_token_extras, create_user_session, jwt_cookie_auth
 from convergence_games.app.common.auth import (
     AuthIntent,
     OAuthRedirectState,
@@ -286,16 +283,18 @@ class ProfileController(Controller):
             .scalars()
             .all()
         )
-        access_cookie, refresh_cookie, _jti = await _issue_login_session(
-            transaction,
-            db_user,
-            event_roles,
-            user_agent=request.headers.get("user-agent"),
+        jti = uuid.uuid4().hex
+        await create_user_session(
+            transaction, db_user.id, jti, user_agent=request.headers.get("user-agent")
+        )
+        cookies = jwt_cookie_auth.create_login_cookies(
+            str(db_user.id),
+            token_extras=build_token_extras(db_user, event_roles),
+            refresh_token_unique_jwt_id=jti,
         )
 
         response = await render_profile(request, transaction, user_override=db_user)
-        response.cookies.append(access_cookie)
-        response.cookies.append(refresh_cookie)
-        response.cookies.append(_make_clear_cookie(LEGACY_COOKIE_KEY))
+        for cookie in cookies:
+            response.cookies.append(cookie)
         response.headers["HX-Refresh"] = "true"
         return response
