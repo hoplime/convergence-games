@@ -9,7 +9,7 @@
 
                 {# Main content #}
                 <div class="drawer-content flex flex-col gap-2">
-                    {# Filter toggle + active pills #}
+                    {# Filter toggle + active pills + view toggle #}
                     <div class="flex flex-wrap items-center gap-2">
                         <label for="filter_drawer" class="drawer-button btn btn-outline">
                             <span class="icon-[mingcute--filter-fill]"></span>
@@ -27,6 +27,32 @@
                                 >Filters</span
                             >
                         </label>
+                        <div class="join ml-auto" role="group" aria-label="View mode">
+                            <a
+                                class="btn join-item {{ 'btn-primary' if view != 'table' else 'btn-outline' }}"
+                                hx-get="/event/{{ swim(event) }}/games?view=cards"
+                                hx-target="#game_list"
+                                hx-include="#filter_form"
+                                hx-params="not view"
+                                hx-push-url="true"
+                                title="Card view"
+                            >
+                                <span class="icon-[mdi--view-grid]"></span>
+                                <span class="hidden sm:inline">Cards</span>
+                            </a>
+                            <a
+                                class="btn join-item {{ 'btn-primary' if view == 'table' else 'btn-outline' }}"
+                                hx-get="/event/{{ swim(event) }}/games?view=table"
+                                hx-target="#game_list"
+                                hx-include="#filter_form"
+                                hx-params="not view"
+                                hx-push-url="true"
+                                title="Table view"
+                            >
+                                <span class="icon-[mdi--view-list]"></span>
+                                <span class="hidden sm:inline">Table</span>
+                            </a>
+                        </div>
                     </div>
 
                     {# Game grid / table #}
@@ -117,6 +143,11 @@
                         hx-params="not _search_genre, _search_system, _search_content"
                         class="flex min-h-full w-72 flex-col gap-2 bg-base-200 p-4 md:w-80 lg:w-96"
                     >
+                        <input type="hidden" name="view" value="{{ view }}" />
+                        {% if sort %}
+                            <input type="hidden" name="sort" value="{{ sort }}" />
+                            <input type="hidden" name="desc" value="{{ 'true' if desc else 'false' }}" />
+                        {% endif %}
                         <div class="flex items-center justify-between">
                             <span class="text-lg font-bold">Filters</span>
                             <button
