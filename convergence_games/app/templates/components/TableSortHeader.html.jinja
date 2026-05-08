@@ -1,12 +1,16 @@
 {#def
     sort: str,
+    url: str,
+    target: str = "#content",
+    include: str | None = None,
     active: bool = False,
     desc: bool = False,
 #}
 <th
-    class="{{ 'bg-base-300' if active }}"
-    hx-get="manage-submissions?sort={{ sort }}&desc={{ not desc if active else False }}"
-    hx-target="#content"
+    class="cursor-pointer select-none {{ 'bg-base-300' if active }}"
+    hx-get="{{ url }}{{ '&' if '?' in url else '?' }}sort={{ sort }}&desc={{ not desc if active else False }}"
+    hx-target="{{ target }}"
+    {% if include %}hx-include="{{ include }}"{% endif %}
     hx-push-url="true"
 >
     {{ content }}

@@ -6,20 +6,22 @@
             <table class="table bg-base-200 table-sm">
                 <thead>
                     <tr>
-                        <TableSortHeader sort="title" :active="sort == 'title'" :desc="desc">Title</TableSortHeader>
-                        <TableSortHeader sort="system" :active="sort == 'system'" :desc="desc">
+                        <TableSortHeader sort="title" url="manage-submissions" :active="sort == 'title'" :desc="desc">
+                            Title
+                        </TableSortHeader>
+                        <TableSortHeader sort="system" url="manage-submissions" :active="sort == 'system'" :desc="desc">
                             System
                         </TableSortHeader>
-                        <TableSortHeader sort="gamemaster" :active="sort == 'gamemaster'" :desc="desc">
+                        <TableSortHeader sort="gamemaster" url="manage-submissions" :active="sort == 'gamemaster'" :desc="desc">
                             GM
                         </TableSortHeader>
-                        <TableSortHeader sort="submitted" :active="sort == 'submitted'" :desc="desc">
+                        <TableSortHeader sort="submitted" url="manage-submissions" :active="sort == 'submitted'" :desc="desc">
                             Submitted
                         </TableSortHeader>
-                        <TableSortHeader sort="status" :active="sort == 'status'" :desc="desc">
+                        <TableSortHeader sort="status" url="manage-submissions" :active="sort == 'status'" :desc="desc">
                             Status
                         </TableSortHeader>
-                        <TableSortHeader sort="sessions" :active="sort == 'sessions'" :desc="desc">
+                        <TableSortHeader sort="sessions" url="manage-submissions" :active="sort == 'sessions'" :desc="desc">
                             Sessions
                         </TableSortHeader>
                         <th>Actions</th>
