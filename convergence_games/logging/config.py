@@ -53,7 +53,6 @@ def configure_logging() -> None:
         processors=[
             structlog.stdlib.filter_by_level,
             *SHARED_PROCESSORS,
-            structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
@@ -64,12 +63,17 @@ def configure_logging() -> None:
         cache_logger_on_first_use=False,
     )
 
+    # ConsoleRenderer formats exc_info itself; JSONRenderer needs it pre-formatted.
+    final_processors: list[structlog.types.Processor] = [
+        structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+    ]
+    if not _is_dev():
+        final_processors.append(structlog.processors.format_exc_info)
+    final_processors.append(_build_renderer())
+
     formatter = structlog.stdlib.ProcessorFormatter(
         foreign_pre_chain=SHARED_PROCESSORS,
-        processors=[
-            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-            _build_renderer(),
-        ],
+        processors=final_processors,
     )
 
     handler = logging.StreamHandler()
