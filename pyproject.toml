@@ -72,3 +72,6 @@ ignore = [
 
 [tool.pyright]
 reportPrivateImportUsage = "none"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

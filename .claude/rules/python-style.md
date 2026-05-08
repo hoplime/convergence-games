@@ -44,7 +44,14 @@ Common alias: `import datetime as dt`.
 
 ## Logging
 
-- Logging is not yet formally set up. When it is, it will use a library (likely loguru). For now, `print()` and `rich.pretty.pprint()` are acceptable for local debugging.
+- Use **structlog** for all diagnostic logging in the application. The pipeline is configured in `convergence_games/logging/`.
+- At module top: `from convergence_games.logging import get_logger; logger = get_logger(__name__)`. Don't use stdlib `logging` directly in application code — stdlib loggers (uvicorn, SQLAlchemy, etc.) are bridged through the same pipeline already.
+- Log calls take an event name as the first positional arg and structured fields as kwargs: `logger.info("game_created", game_id=game.id)`. Don't pass f-strings as event names; the event name is a stable identifier and the kwargs are the data.
+- Per-request `request_id`, `method`, `path`, and `user_id` are bound automatically by `LoggingContextMiddleware`. Inside a handler/service/repository, just call `logger.info(...)` and those fields are merged into the record via `structlog.contextvars`.
+- Use `from convergence_games.logging import bind, bound` to attach extra fields. Prefer `with bound(event_id=..., action=...): ...` for scoped fields, falling out of context when the block exits. The canonical `http_request` log line at request end carries everything bound during the request.
+- Output is environment-aware: `structlog.dev.ConsoleRenderer` (pretty, colored) when `ENVIRONMENT=development` or `DEBUG=true`; `structlog.processors.JSONRenderer` otherwise.
+- Sentry receives INFO+ logs as breadcrumbs and ERROR+ logs as issue events automatically; bound contextvars are set on the Sentry scope as tags via `sentry_scope_processor`.
+- `print()` and `rich.pretty.pprint()` are reserved for `scripts/` and `__main__` blocks (CLI / human-facing output). They have no place in runtime code paths.
 
 ## Scripts
 

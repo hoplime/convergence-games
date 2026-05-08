@@ -59,7 +59,9 @@ def configure_logging() -> None:
         ],
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
-        cache_logger_on_first_use=True,
+        # Disabled so reconfiguring at runtime (e.g. in tests) takes effect for
+        # module-level cached loggers like the canonical-line emitter.
+        cache_logger_on_first_use=False,
     )
 
     formatter = structlog.stdlib.ProcessorFormatter(
