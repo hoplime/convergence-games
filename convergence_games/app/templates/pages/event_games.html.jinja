@@ -29,27 +29,72 @@
                         </label>
                     </div>
 
-                    {# Game grid #}
-                    <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" id="game_list">
+                    {# Game grid / table #}
+                    <div id="game_list">
                         {% block game_list %}
-                            {% for game in games %}
-                                <GameCard
-                                    :game="game"
-                                    :preference="preferences.get(game.id)"
-                                    :user_game_played="user_game_playeds.get(game.id)"
-                                    :scheduled_time_slot_ids="scheduled_time_slots.get(game.id, [])"
-                                    :display_d20="latest_d20_transaction is not none and latest_d20_transaction.current_balance > 0"
-                                />
-                            {% endfor %}
-                            {% if not games %}
-                                <div class="card col-span-full rounded-box border border-base-300 bg-base-200">
-                                    <div class="card-body">
-                                        <h2 class="card-title text-xl">No Games Found</h2>
-                                        <p>There are no games that match your search criteria.</p>
-                                        <p>Try changing your filters or check back later!</p>
-                                    </div>
+                            {% set show_preference_column = request.user is not none and event.is_preferences_open() %}
+                            {% set display_d20 = latest_d20_transaction is not none and latest_d20_transaction.current_balance > 0 %}
+                            {% if view == "table" %}
+                                <div class="hidden overflow-x-auto md:block">
+                                    <table class="table bg-base-200 table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>System</th>
+                                                <th>GM</th>
+                                                <th>Tone</th>
+                                                <th>Genres</th>
+                                                {% if show_preference_column %}
+                                                    <th>Preference</th>
+                                                {% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for game in games %}
+                                                <GameRow
+                                                    :game="game"
+                                                    :preference="preferences.get(game.id)"
+                                                    :user_game_played="user_game_playeds.get(game.id)"
+                                                    :display_d20="display_d20"
+                                                    :show_preference_column="show_preference_column"
+                                                />
+                                            {% endfor %}
+                                            {% if not games %}
+                                                <tr>
+                                                    <td colspan="{{ 6 if show_preference_column else 5 }}" class="text-center">
+                                                        <p class="font-semibold">No games found.</p>
+                                                        <p class="text-sm text-base-content/70">
+                                                            Try changing your filters or check back later!
+                                                        </p>
+                                                    </td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
                                 </div>
                             {% endif %}
+                            <div
+                                class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {{ 'md:hidden' if view == 'table' }}"
+                            >
+                                {% for game in games %}
+                                    <GameCard
+                                        :game="game"
+                                        :preference="preferences.get(game.id)"
+                                        :user_game_played="user_game_playeds.get(game.id)"
+                                        :scheduled_time_slot_ids="scheduled_time_slots.get(game.id, [])"
+                                        :display_d20="display_d20"
+                                    />
+                                {% endfor %}
+                                {% if not games %}
+                                    <div class="card col-span-full rounded-box border border-base-300 bg-base-200">
+                                        <div class="card-body">
+                                            <h2 class="card-title text-xl">No Games Found</h2>
+                                            <p>There are no games that match your search criteria.</p>
+                                            <p>Try changing your filters or check back later!</p>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
                         {% endblock %}
                     </div>
 

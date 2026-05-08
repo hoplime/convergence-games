@@ -1,0 +1,44 @@
+{#def
+    game: Game,
+    preference: int | None = None,
+    user_game_played: UserGamePlayed | None = None,
+    display_d20: bool = False,
+    show_preference_column: bool = False,
+#}
+<tr class="hover:bg-base-300/40">
+    <td class="align-top">
+        <a href="/game/{{ swim(game) }}" class="link-hover font-semibold">{{ game.name }}</a>
+        {% if game.tagline %}
+            <div class="text-sm italic text-base-content/70">{{ game.tagline }}</div>
+        {% endif %}
+    </td>
+    <td class="align-top">{{ game.system.name }}</td>
+    <td class="align-top">{{ game.gamemaster.full_name }}</td>
+    <td class="align-top">
+        <div class="badge badge-sm">{{ game.tone }}</div>
+    </td>
+    <td class="align-top">
+        <div class="flex flex-row flex-wrap gap-1">
+            {% for genre in game.genres %}
+                <div class="badge badge-sm badge-outline">{{ genre.name }}</div>
+            {% endfor %}
+        </div>
+    </td>
+    {% if show_preference_column %}
+        <td class="align-top">
+            {% if game.event.is_preferences_open() and request.user %}
+                {% if request.user.id == game.gamemaster_id %}
+                    <span class="text-sm font-semibold">GMing</span>
+                {% elif not request.user.over_18 and game.classification.value == "R18" %}
+                    <span class="text-sm">18+ only</span>
+                {% else %}
+                    <DiceRating
+                        :display_d20="display_d20"
+                        :hx_put_url="'/game/' + swim(game) + '/preference'"
+                        :starting_value="preference"
+                    />
+                {% endif %}
+            {% endif %}
+        </td>
+    {% endif %}
+</tr>
