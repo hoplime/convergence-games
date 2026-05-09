@@ -71,3 +71,4 @@ ignore = [
 
 [tool.pyright]
 reportPrivateImportUsage = "none"
+reportUnusedCallResult = "none"
