@@ -1,3 +1,3 @@
-from ._public import HomeController
+from ._public import PublicController
 
-__all__ = ["HomeController"]
+__all__ = ["PublicController"]
