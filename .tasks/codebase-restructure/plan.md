@@ -446,6 +446,11 @@ No base class, no repository abstraction. Services own their domain's queries an
 - Pre-existing type errors (31 in basedpyright after excluding `ignore/` and `db/migrations/`) are baseline — don't try to fix during restructure
 - Pre-existing ruff warnings (C901 complexity in event_manager/event_player, N806 aliased vars, migration file lint) are baseline
 - `permissions/__init__.py` still exists as a re-export shim pointing to `lib/permissions` — clean up in Phase 8
+- Future path renames to consider (breaking URL changes, need template/HTMX updates):
+  - `/editor-test` → `/debug/editor-test` (debug route should be under debug prefix)
+  - `/components/image-upload` → `/fragments/image-upload` or under `/game/` (generic component endpoint)
+  - `/search/*` → `/event/{sqid}/search/*` or keep (search is event-scoped but path doesn't reflect it)
+  - PreferencesController and GameController both use `/game` path prefix — works but worth noting
 
 ### Codebase stats (pre-restructure baseline)
 
