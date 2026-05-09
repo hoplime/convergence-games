@@ -54,7 +54,7 @@ from convergence_games.lib.ocean import Sqid, sink
 from convergence_games.lib.permissions import user_has_permission
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
-from convergence_games.server import catalog
+from convergence_games.lib.template import catalog
 from convergence_games.services import ImageLoader
 
 

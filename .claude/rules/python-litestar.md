@@ -15,7 +15,7 @@ paths: **/*.py
 
 ## Dependency Injection
 
-- Dependencies declared in `convergence_games/server/_dependencies.py`.
+- Dependencies declared in `convergence_games/server/core.py`.
 - Inject via handler parameter names: `transaction: AsyncSession`, `user: User`, `image_loader: ImageLoader`.
 - `transaction` provides an auto-committing async session wrapped in `begin()`.
 
@@ -30,14 +30,14 @@ paths: **/*.py
 - Pages in `convergence_games/app/templates/pages/` (lowercase `.html.jinja`).
 - Reusable components in `convergence_games/app/templates/components/` (PascalCase `.html.jinja`).
 - All JinjaX components automatically receive `request` via custom passthrough in template_config.
-- Custom Jinja filters/globals registered in `convergence_games/server/_template.py`.
+- Custom Jinja filters/globals registered in `convergence_games/lib/template.py`.
 
 ## Error Handling
 
 - `UserNotLoggedInError` for auth failures (redirects to login).
 - `AlertError` for user-facing error messages with toast alerts.
 - `IntegrityError` caught in transaction provider, raised as 409 Conflict.
-- Custom exception handlers registered in `server/_exceptions.py`.
+- Custom exception handlers registered in `convergence_games/server/core.py`.
 
 ## Events
 

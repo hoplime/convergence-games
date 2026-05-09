@@ -17,13 +17,14 @@ from convergence_games.lib.auth import (
     OAuthRedirectState,
     ProfileInfo,
     authorize_flow,
+    build_token_extras,
+    jwt_cookie_auth,
 )
 from convergence_games.lib.events import EVENT_EMAIL_SIGN_IN
 from convergence_games.lib.guards import user_guard
 from convergence_games.lib.ocean import Sqid, sink
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
-from convergence_games.server import build_token_extras, jwt_cookie_auth
 from convergence_games.utils.email import normalize_email
 
 

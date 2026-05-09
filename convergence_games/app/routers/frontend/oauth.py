@@ -26,11 +26,11 @@ from convergence_games.lib.auth import (
     ProfileInfo,
     authorize_flow,
     find_user_by_email,
+    jwt_cookie_auth,
 )
 from convergence_games.lib.ocean import Sqid, sink
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
-from convergence_games.server import jwt_cookie_auth
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
 
