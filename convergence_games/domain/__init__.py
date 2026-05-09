@@ -11,13 +11,13 @@ from .accounts.controllers import EmailAuthController, OAuthController
 from .admin.controllers import EventManagerController
 from .debug.controllers import DebugController, EditorTestController
 from .games.controllers import (
-    EventPlayerController,
+    EventGamesController,
     GameController,
     MiscComponentsController,
     SearchController,
     SubmitGameController,
 )
-from .player.controllers import PartyController
+from .player.controllers import PartyController, PlannerController, PreferencesController
 from .public.controllers import HomeController
 from .redirects.controllers import RedirectsController
 from .system.controllers import favicon_router, health_check, static_files_router
@@ -44,13 +44,15 @@ domain_router = Router(
         EditorTestController,
         EmailAuthController,
         EventManagerController,
-        EventPlayerController,
+        EventGamesController,
         GameController,
         HomeController,
         MiscComponentsController,
         MySubmissionsController,
         OAuthController,
         PartyController,
+        PlannerController,
+        PreferencesController,
         ProfileController,
         RedirectsController,
         SearchController,
