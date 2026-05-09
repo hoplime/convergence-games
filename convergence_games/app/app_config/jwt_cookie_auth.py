@@ -1,17 +1,16 @@
 import datetime as dt
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any, cast, override
 
-from litestar.connection import ASGIConnection
 from litestar.exceptions import NotAuthorizedException
 from litestar.middleware.authentication import AuthenticationResult
 from litestar.security.jwt import JWTCookieAuth, JWTCookieAuthenticationMiddleware
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from convergence_games.app.context import user_id_ctx
-from convergence_games.app.request_type import CustomToken
+from convergence_games.app.request_type import AnyASGIConnection, CustomToken, TypedASGIConnection
 from convergence_games.db.enums import Role
 from convergence_games.db.models import User, UserEventRole
 from convergence_games.settings import SETTINGS
@@ -35,14 +34,15 @@ def _user_from_token_claims(user_id: int, extras: dict[str, Any]) -> User:
     return user
 
 
-async def retrieve_user_handler(token: CustomToken, connection: ASGIConnection) -> User | None:
+async def retrieve_user_handler(token: CustomToken, connection: AnyASGIConnection) -> User | None:
+    connection = cast(TypedASGIConnection, connection)
     user_id = int(token.sub)
     user_id_ctx.set(user_id)
 
     if "first_name" in token.extras:
         return _user_from_token_claims(user_id, token.extras)
 
-    engine = cast(AsyncEngine, connection.app.state.db_engine)
+    engine = connection.app.state.db_engine
     async with AsyncSession(engine) as async_session:
         async with async_session.begin():
             stmt = select(User).options(selectinload(User.event_roles)).where(User.id == user_id)
@@ -53,14 +53,15 @@ async def retrieve_user_handler(token: CustomToken, connection: ASGIConnection) 
 
 
 class LaxJWTCookieAuthenticationMiddleware(JWTCookieAuthenticationMiddleware):
-    async def authenticate_request(self, connection: ASGIConnection[Any, Any, Any, Any]) -> AuthenticationResult:
+    @override
+    async def authenticate_request(self, connection: AnyASGIConnection) -> AuthenticationResult:
         try:
             return await super().authenticate_request(connection)
         except NotAuthorizedException:
             return AuthenticationResult(user=None, auth=None)
 
 
-jwt_cookie_auth = JWTCookieAuth(
+jwt_cookie_auth = JWTCookieAuth[User, CustomToken](
     token_secret=SETTINGS.TOKEN_SECRET,
     retrieve_user_handler=retrieve_user_handler,
     token_cls=CustomToken,
