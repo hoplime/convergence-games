@@ -1,7 +1,7 @@
 from litestar import Controller, get
 
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
-from convergence_games.server import catalog
+from convergence_games.lib.template import catalog
 
 
 class MiscComponentsController(Controller):

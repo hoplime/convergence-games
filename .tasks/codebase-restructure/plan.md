@@ -222,33 +222,32 @@ No base class, no repository abstraction. Services own their domain's queries an
 
 ### Phase 2: Create `server/` and refactor app init ✅
 
-- [x] **Create server package** with split config files (adapted from plan's single `plugins.py`):
-  - `server/_plugins.py` — SQLAlchemy, compression, OpenAPI, HTMX plugin configs
-  - `server/_template.py` — JinjaX/Jinja2 template config, `catalog`, `jinja_env`
-  - `server/_auth.py` — JWT cookie auth, `build_token_extras`
-  - `server/_dependencies.py` — DI providers (transaction, user, image_loader)
-  - `server/_exceptions.py` — exception handlers
-  - `server/_sentry.py` — Sentry initialization
-  - `server/app.py` — `create_app()` factory + `app = create_app()`
-  - `server/__init__.py` — exports `catalog`, `jinja_env`, `jwt_cookie_auth`, `build_token_extras`, `sqlalchemy_config`
+- [x] **Create server package** (litestar-fullstack pattern: `app.py`, `core.py`, `plugins.py`):
+  - `server/app.py` — `create_app()` factory with lazy imports + `app = create_app()`
+  - `server/core.py` — dependencies, exception handlers, sentry init
+  - `server/plugins.py` — SQLAlchemy, compression, OpenAPI, HTMX plugin configs
+  - `server/__init__.py` — empty (nothing imports from server)
+- [x] **Move shared config to `lib/`** (nothing outside server should import from server):
+  - `lib/template.py` — JinjaX/Jinja2 template engine, `catalog`, `jinja_env`
+  - `lib/auth.py` — merged `jwt_cookie_auth`, `build_token_extras`, auth middleware + existing auth flows
 - [x] **Move migrations**: `convergence_games/migrations/` → `convergence_games/db/migrations/`
 - [x] **Update migration config**: `script_location` in `alembic.ini` and SQLAlchemy plugin
 - [x] **Update entrypoint references**:
   - `convergence_games/__init__.py` — emptied (no re-export due to circular import risk)
   - `convergence_games/app/__init__.py` — emptied (routers still live here for Phase 3)
   - Dockerfile CMD (2 places) → `convergence_games.server.app:app`
-  - `scripts/create_all_app_metadata.py` → `convergence_games.server`
+  - `scripts/create_all_app_metadata.py` → `convergence_games.server.app` / `server.plugins`
   - `scripts/dump_fixtures.py` → `convergence_games.server.app:app`
-- [x] **Update all imports** from `app.app_config.*` → `convergence_games.server`:
-  - `template_config.catalog` (5 files)
-  - `template_config.jinja_env` (1 file)
-  - `jwt_cookie_auth.*` (3 files)
-- [x] **Delete**: `app/app.py`, `app/app_config/`
+- [x] **Update all imports** from `app.app_config.*` → `lib.*`:
+  - `catalog` (5 files) → `lib.template`
+  - `jinja_env` (1 file) → `lib.template`
+  - `jwt_cookie_auth` / `build_token_extras` (3 files) → `lib.auth`
+- [x] **Delete**: `app/app.py`, `app/app_config/`, `server/_auth.py`, `server/_template.py`, `server/_dependencies.py`, `server/_exceptions.py`, `server/_sentry.py`
 - [x] **Add pyright excludes**: `convergence_games/db/migrations`, `ignore/` (were inflating baseline)
 
 #### Phase 2 verification ✅
 
-- [x] `basedpyright` — 31 errors (no new; baseline reduced by excluding `ignore/` dir)
+- [x] `basedpyright` — 30 errors (no new; baseline reduced by excluding `ignore/` dir)
 - [x] `ruff check` — 36 errors (all pre-existing baseline)
 - [x] `PYTHONPATH=. pytest tests/` — 28 passed
 - [x] App creates with same route count (84)

@@ -58,7 +58,7 @@ pytest -k "test_name"                        # Run specific test
 ## Architecture
 
 ### Application Entry Point
-`convergence_games/server/app.py` creates the Litestar application via `create_app()` factory. Config modules live in `convergence_games/server/` (`_plugins.py`, `_template.py`, `_auth.py`, `_dependencies.py`, `_exceptions.py`, `_sentry.py`). Shared config objects (`catalog`, `jinja_env`, `jwt_cookie_auth`, `build_token_extras`) are re-exported from `convergence_games/server/__init__.py`.
+`convergence_games/server/app.py` creates the Litestar application via `create_app()` factory. Server config is split into `server/core.py` (dependencies, exception handlers, sentry) and `server/plugins.py` (SQLAlchemy, compression, HTMX, OpenAPI). Shared infrastructure lives in `lib/`: template engine (`lib/template.py` — `catalog`, `jinja_env`), auth (`lib/auth.py` — `jwt_cookie_auth`, `build_token_extras`). Nothing outside `server/` imports from it except the ASGI entrypoint.
 
 ### Routing
 Three router groups in `convergence_games/app/routers/`:

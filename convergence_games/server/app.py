@@ -1,20 +1,23 @@
-from litestar import Litestar
+from __future__ import annotations
 
-from convergence_games.app.routers import routers
-from convergence_games.lib.events import all_listeners
-from convergence_games.settings import SETTINGS
+from typing import TYPE_CHECKING
 
-from ._auth import jwt_cookie_auth
-from ._dependencies import dependencies
-from ._exceptions import exception_handlers
-from ._plugins import compression_config, htmx_plugin, openapi_config, sqlalchemy_plugin
-from ._sentry import init_sentry
-from ._template import template_config
-
-__all__ = ["app", "create_app"]
+if TYPE_CHECKING:
+    from litestar import Litestar
 
 
 def create_app() -> Litestar:
+    from litestar import Litestar
+
+    from convergence_games.app.routers import routers
+    from convergence_games.lib.auth import jwt_cookie_auth
+    from convergence_games.lib.events import all_listeners
+    from convergence_games.lib.template import template_config
+    from convergence_games.settings import SETTINGS
+
+    from .core import dependencies, exception_handlers, init_sentry
+    from .plugins import compression_config, htmx_plugin, openapi_config, sqlalchemy_plugin
+
     init_sentry()
 
     return Litestar(
