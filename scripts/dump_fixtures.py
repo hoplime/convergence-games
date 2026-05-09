@@ -23,7 +23,7 @@ def main() -> None:
     cmd = [
         "litestar",
         "--app",
-        "convergence_games.app:app",
+        "convergence_games.server.app:app",
         "database",
         "dump-data",
         "--dir",

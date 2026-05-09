@@ -11,6 +11,8 @@ from convergence_games.lib.exceptions import UserNotLoggedInError
 from convergence_games.lib.request_type import Request
 from convergence_games.services import ImageLoader, image_loader_from_settings
 
+__all__ = ["dependencies"]
+
 
 async def provide_transaction(db_session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
     try:

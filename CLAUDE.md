@@ -27,7 +27,7 @@ npm install                                  # Node dependencies
 
 ### Running
 ```bash
-litestar --app convergence_games.app:app run --reload  # Dev server (port 8000)
+litestar --app convergence_games.server.app:app run --reload  # Dev server (port 8000)
 npm run tailwind:watch                       # CSS rebuild on change
 npm run build:tsc                            # TypeScript compile + Vite bundle
 npm run build                                # Full frontend build (TS + CSS)
@@ -43,10 +43,10 @@ npx tsc --noEmit                             # TypeScript type checking
 
 ### Database Migrations
 ```bash
-litestar --app convergence_games.app:app database upgrade             # Run migrations
-litestar --app convergence_games.app:app database make-migrations -m "description"  # Generate migration (uses Advanced Alchemy CLI)
+litestar --app convergence_games.server.app:app database upgrade             # Run migrations
+litestar --app convergence_games.server.app:app database make-migrations -m "description"  # Generate migration (uses Advanced Alchemy CLI)
 ```
-Migrations live in `convergence_games/migrations/versions/`. Alembic post-write hooks auto-run ruff on generated files.
+Migrations live in `convergence_games/db/migrations/versions/`. Alembic post-write hooks auto-run ruff on generated files.
 
 ### Tests
 ```bash
@@ -58,7 +58,7 @@ pytest -k "test_name"                        # Run specific test
 ## Architecture
 
 ### Application Entry Point
-`convergence_games/app/app.py` creates the Litestar application. Config modules live in `convergence_games/app/app_config/` (SQLAlchemy plugin, JWT auth, Jinja/JinjaX templates, Sentry, compression, exception handlers).
+`convergence_games/server/app.py` creates the Litestar application via `create_app()` factory. Config modules live in `convergence_games/server/` (`_plugins.py`, `_template.py`, `_auth.py`, `_dependencies.py`, `_exceptions.py`, `_sentry.py`). Shared config objects (`catalog`, `jinja_env`, `jwt_cookie_auth`, `build_token_extras`) are re-exported from `convergence_games/server/__init__.py`.
 
 ### Routing
 Three router groups in `convergence_games/app/routers/`:
@@ -81,7 +81,7 @@ All SQLAlchemy models are in `convergence_games/db/models.py` with a single `Bas
 
 Enums in `convergence_games/db/enums.py` use `FlagWithNotes` (IntFlag with metadata dicts for notes, form notes, tooltips, icons) and `Requirement`/`Facility` subclasses for game/room/table requirements matching.
 
-### Sqid Encoding (`db/ocean.py`)
+### Sqid Encoding (`lib/ocean.py`)
 Database IDs are obfuscated in URLs using Sqids. The API uses ocean-themed naming:
 - `swim(obj)` / `swim_upper(obj)` - encode an object's ID to a sqid
 - `sink(sqid)` / `sink_upper(sqid)` - decode a sqid back to a database ID

@@ -37,6 +37,6 @@ paths: **/*.py
 ## Migrations
 
 - Managed via Alembic through Advanced Alchemy's Litestar integration.
-- Generate: `litestar --app convergence_games.app:app database make-migrations -m "description"`
-- Apply: `litestar --app convergence_games.app:app database upgrade`
-- Files in `convergence_games/migrations/versions/`, auto-formatted by ruff post-write hook.
+- Generate: `litestar --app convergence_games.server.app:app database make-migrations -m "description"`
+- Apply: `litestar --app convergence_games.server.app:app database upgrade`
+- Files in `convergence_games/db/migrations/versions/`, auto-formatted by ruff post-write hook.
