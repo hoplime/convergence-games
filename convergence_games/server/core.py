@@ -1,113 +1,38 @@
-from collections.abc import AsyncGenerator
+from __future__ import annotations
 
-import sentry_sdk
-from litestar.datastructures import Cookie
-from litestar.di import Provide
-from litestar.exceptions import ClientException
-from litestar.response import Redirect
-from litestar.status_codes import HTTP_409_CONFLICT
-from sentry_sdk.scrubber import EventScrubber
-from sentry_sdk.types import Event, Hint
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import TYPE_CHECKING, override
 
-from convergence_games.db.models import User
-from convergence_games.lib.alerts import AlertError
-from convergence_games.lib.exceptions import UserNotLoggedInError
-from convergence_games.lib.request_type import Request
-from convergence_games.lib.response_type import HTMXBlockTemplate
-from convergence_games.lib.template import catalog
-from convergence_games.services import ImageLoader, image_loader_from_settings
+from litestar.plugins import InitPluginProtocol
+
+from convergence_games.app.routers import routers
+from convergence_games.lib.auth import jwt_cookie_auth
+from convergence_games.lib.deps import dependencies
+from convergence_games.lib.events import all_listeners
+from convergence_games.lib.exceptions import exception_handlers
+from convergence_games.lib.sentry import init_sentry
+from convergence_games.server import config, plugins
 from convergence_games.settings import SETTINGS
 
-# region Dependencies
+if TYPE_CHECKING:
+    from litestar.config.app import AppConfig
 
 
-async def provide_transaction(db_session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
-    try:
-        async with db_session.begin():
-            yield db_session
-    except IntegrityError as exc:
-        raise ClientException(
-            status_code=HTTP_409_CONFLICT,
-            detail=str(exc),
-        ) from exc
+class ApplicationCore(InitPluginProtocol):
+    @override
+    def on_app_init(self, app_config: AppConfig) -> AppConfig:
+        init_sentry()
 
+        app_config.debug = SETTINGS.DEBUG
+        app_config = jwt_cookie_auth.on_app_init(app_config)
 
-async def provide_user(
-    request: Request,
-) -> User:
-    if request.user is None:
-        raise UserNotLoggedInError("User must be logged in to perform this action.")
-    return request.user
+        app_config.plugins.extend([plugins.sqlalchemy, plugins.htmx])
+        app_config.openapi_config = config.openapi
+        app_config.compression_config = config.compression
+        app_config.template_config = config.template
 
+        app_config.route_handlers.extend(routers)
+        app_config.dependencies.update(dependencies)
+        app_config.exception_handlers.update(exception_handlers)  # pyright: ignore[reportUnknownMemberType]
+        app_config.listeners.extend(all_listeners)
 
-async def provide_image_loader() -> ImageLoader:
-    return image_loader_from_settings
-
-
-dependencies = {
-    "transaction": Provide(provide_transaction),
-    "user": Provide(provide_user),
-    "image_loader": Provide(provide_image_loader),
-}
-
-
-# region Exception handlers
-
-
-def user_not_logged_in_handler(request: Request, exc: UserNotLoggedInError) -> Redirect:
-    request_url_path = request.scope["path"]
-    return Redirect(path="/profile", cookies=[Cookie(key="invalid-action-path", value=request_url_path, max_age=30)])
-
-
-def alert_handler(request: Request, exc: AlertError) -> HTMXBlockTemplate:
-    template_str = catalog.render(
-        "ToastAlerts",
-        alerts=exc.alerts,
-        redirect_text=(exc.redirect_text or "Return Home") if not request.htmx else "",
-        redirect_url=(exc.redirect_url or "/") if not request.htmx else "",
-    )
-    return HTMXBlockTemplate(
-        template_str=template_str,
-        re_target=request.query_params.get("alert-retarget", "#content"),
-        re_swap="beforeend",
-    )
-
-
-exception_handlers = {
-    UserNotLoggedInError: user_not_logged_in_handler,
-    AlertError: alert_handler,
-}
-
-
-# region Sentry
-
-CONTROL_FLOW_EXCEPTIONS = (UserNotLoggedInError,)
-
-
-def _before_send(event: Event, hint: Hint) -> Event | None:
-    if "exc_info" in hint:
-        exc_type = hint["exc_info"][0]  # pyright: ignore[reportAny]
-        if exc_type is not None and issubclass(exc_type, CONTROL_FLOW_EXCEPTIONS):
-            event["level"] = "warning"
-    return event
-
-
-def init_sentry() -> None:
-    if not SETTINGS.SENTRY_ENABLE:
-        return
-
-    _ = sentry_sdk.init(
-        dsn=SETTINGS.SENTRY_DSN,
-        environment=SETTINGS.SENTRY_ENVIRONMENT,
-        release=SETTINGS.RELEASE,
-        send_default_pii=True,
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,
-        event_scrubber=EventScrubber(
-            denylist=[],
-            pii_denylist=[],
-        ),
-        before_send=_before_send,
-    )
+        return app_config

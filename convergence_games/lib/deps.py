@@ -1,12 +1,52 @@
+from collections.abc import AsyncGenerator
+
 from litestar.di import Provide
-from litestar.exceptions import HTTPException, NotFoundException
+from litestar.exceptions import ClientException, HTTPException, NotFoundException
+from litestar.status_codes import HTTP_409_CONFLICT
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.base import ExecutableOption
 
-from convergence_games.db.models import Event, Game, Party, TimeSlot
+from convergence_games.db.models import Event, Game, Party, TimeSlot, User
+from convergence_games.lib.exceptions import UserNotLoggedInError
 from convergence_games.lib.ocean import Sqid, sink, sink_upper
+from convergence_games.lib.request_type import Request
+from convergence_games.services import ImageLoader, image_loader_from_settings
 from convergence_games.settings import SETTINGS
+
+# region Global dependency providers
+
+
+async def provide_transaction(db_session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
+    try:
+        async with db_session.begin():
+            yield db_session
+    except IntegrityError as exc:
+        raise ClientException(
+            status_code=HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+
+async def provide_user(request: Request) -> User:
+    if request.user is None:
+        raise UserNotLoggedInError("User must be logged in to perform this action.")
+    return request.user
+
+
+async def provide_image_loader() -> ImageLoader:
+    return image_loader_from_settings
+
+
+dependencies = {
+    "transaction": Provide(provide_transaction),
+    "user": Provide(provide_user),
+    "image_loader": Provide(provide_image_loader),
+}
+
+
+# region Entity dependency factories
 
 
 def event_with(*options: ExecutableOption) -> Provide:
