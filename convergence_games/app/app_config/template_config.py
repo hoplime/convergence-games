@@ -10,7 +10,6 @@ from jinja2 import Environment, FileSystemLoader
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.template.config import TemplateConfig
 
-from convergence_games.app.paths import COMPONENTS_DIR_PATH, TEMPLATES_DIR_PATH
 from convergence_games.db.enums import (
     GameActivityRequirement,
     GameCoreActivity,
@@ -21,8 +20,9 @@ from convergence_games.db.enums import (
     RoomFacility,
     TableFacility,
 )
-from convergence_games.db.ocean import swim, swim_upper
-from convergence_games.permissions.permissions import user_has_permission
+from convergence_games.lib.ocean import swim, swim_upper
+from convergence_games.lib.permissions import user_has_permission
+from convergence_games.paths import COMPONENTS_DIR_PATH, TEMPLATES_DIR_PATH
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.time_utils import nice_time_format, time_range_format
 

@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     @cached_property
     def DEFAULT_EVENT_SQID(self) -> str:  # noqa: N802
         """Get the default event's sqid for use in URLs."""
-        from convergence_games.db.ocean import swim
+        from convergence_games.lib.ocean import swim
 
         return swim("Event", self.DEFAULT_EVENT_ID)
 

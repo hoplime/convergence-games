@@ -8,8 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnExpressionArgument
 
-from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import (
     SubmissionStatus,
 )
@@ -18,7 +16,9 @@ from convergence_games.db.models import (
     Genre,
     System,
 )
-from convergence_games.db.ocean import Sqid, sink
+from convergence_games.lib.ocean import Sqid, sink
+from convergence_games.lib.request_type import Request
+from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 
 type SearchableBase = System | Genre | ContentWarning
 

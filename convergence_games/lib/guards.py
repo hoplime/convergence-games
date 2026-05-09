@@ -7,7 +7,7 @@ from litestar.di import Provide
 from litestar.exceptions import HTTPException
 from litestar.handlers.base import BaseRouteHandler
 
-from convergence_games.app.exceptions import UserNotLoggedInError
+from convergence_games.lib.exceptions import UserNotLoggedInError
 
 
 async def user_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:

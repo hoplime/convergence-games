@@ -21,7 +21,6 @@ from sqlalchemy import (
 from sqlalchemy import event as sqla_event
 from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship, validates
 
-from convergence_games.app.context import user_id_ctx
 from convergence_games.db.enums import (
     GameActivityRequirement,
     GameClassification,
@@ -41,6 +40,7 @@ from convergence_games.db.enums import (
     TimeSlotStatus,
     UserGamePreferenceValue,
 )
+from convergence_games.lib.context import user_id_ctx
 
 
 class UserAuditColumns:

@@ -2,7 +2,7 @@ import sentry_sdk
 from sentry_sdk.scrubber import EventScrubber
 from sentry_sdk.types import Event, Hint
 
-from convergence_games.app.exceptions import UserNotLoggedInError
+from convergence_games.lib.exceptions import UserNotLoggedInError
 from convergence_games.settings import SETTINGS
 
 CONTROL_FLOW_EXCEPTIONS = (UserNotLoggedInError,)

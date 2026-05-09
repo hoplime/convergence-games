@@ -1,5 +1,5 @@
 from random import Random
-from typing import cast, final, override
+from typing import cast, final
 
 from convergence_games.db.enums import UserGamePreferenceValue as UGPV
 from convergence_games.services.algorithm.models import AlgParty, AlgSession, PartyLeaderID, SessionID

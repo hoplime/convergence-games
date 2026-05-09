@@ -6,8 +6,8 @@ from litestar.events import listener
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from convergence_games.app.app_config.template_config import jinja_env
-from convergence_games.app.common.auth import OAuthRedirectState
 from convergence_games.db.models import UserEmailVerificationCode
+from convergence_games.lib.auth import OAuthRedirectState
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
 from convergence_games.utils.time_utils import nice_time_format

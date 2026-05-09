@@ -4,8 +4,7 @@ from uuid import uuid4
 
 from litestar import Controller, get, post, put
 from litestar.datastructures import UploadFile
-from litestar.di import Provide
-from litestar.exceptions import HTTPException, NotFoundException, ValidationException
+from litestar.exceptions import HTTPException, ValidationException
 from litestar.params import Body, RequestEncodingType
 from litestar.status_codes import HTTP_413_REQUEST_ENTITY_TOO_LARGE
 from pydantic import (
@@ -21,14 +20,8 @@ from pydantic_core import PydanticCustomError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.sql.base import ExecutableOption
 
-from convergence_games.app.alerts import Alert, AlertError
 from convergence_games.app.app_config.template_config import catalog
-from convergence_games.app.guards import permission_check, user_guard
-from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.app.routers.frontend.common import event_with
 from convergence_games.db.enums import (
     GameActivityRequirement,
     GameClassification,
@@ -55,8 +48,13 @@ from convergence_games.db.models import (
     System,
     User,
 )
-from convergence_games.db.ocean import Sqid, sink
-from convergence_games.permissions import user_has_permission
+from convergence_games.lib.alerts import Alert, AlertError
+from convergence_games.lib.deps import event_with, game_with
+from convergence_games.lib.guards import permission_check, user_guard
+from convergence_games.lib.ocean import Sqid, sink
+from convergence_games.lib.permissions import user_has_permission
+from convergence_games.lib.request_type import Request
+from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 from convergence_games.services import ImageLoader
 
 
@@ -341,24 +339,6 @@ async def create_image_links(
         for i, image in enumerate(data.image)
         if isinstance(image, UploadFile)
     ]
-
-
-def game_with(*options: ExecutableOption):
-    async def wrapper(
-        transaction: AsyncSession,
-        game_sqid: Sqid,
-    ) -> Game:
-        game_id = sink(game_sqid)
-        game = (
-            await transaction.execute(select(Game).options(*options).where(Game.id == game_id))
-        ).scalar_one_or_none()
-
-        if not game:
-            raise NotFoundException(detail="Game not found")
-
-        return game
-
-    return Provide(wrapper)
 
 
 # endregion

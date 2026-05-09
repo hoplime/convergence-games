@@ -55,7 +55,9 @@ if TYPE_CHECKING:
 
     Request: TypeAlias = HTMXRequest
 else:
+    from litestar import Litestar
     from litestar.connection import ASGIConnection
+    from litestar.datastructures import State
     from litestar.plugins.htmx import HTMXRequest
 
     AppState = State

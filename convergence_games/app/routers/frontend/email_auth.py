@@ -12,7 +12,9 @@ from sqlalchemy import String, func, select
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.common.auth import (
+from convergence_games.db.enums import LoginProvider
+from convergence_games.db.models import UserEmailVerificationCode, UserLogin
+from convergence_games.lib.auth import (
     AccountAlreadyExistsError,
     AuthIntent,
     NoAccountForSignInError,
@@ -21,10 +23,8 @@ from convergence_games.app.common.auth import (
     authorize_flow,
     find_user_by_email,
 )
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.db.enums import LoginProvider
-from convergence_games.db.models import UserEmailVerificationCode, UserLogin
-from convergence_games.db.ocean import sink
+from convergence_games.lib.ocean import sink
+from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 from convergence_games.utils.email import normalize_email
 
 

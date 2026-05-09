@@ -15,10 +15,6 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 
-from convergence_games.app.guards import user_guard
-from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate
-from convergence_games.app.routers.frontend.common import event_with
 from convergence_games.db.enums import (
     GameClassification,
     GameKSP,
@@ -43,8 +39,12 @@ from convergence_games.db.models import (
     UserGamePlayed,
     UserGamePreference,
 )
-from convergence_games.db.ocean import Sqid, sink, swim
-from convergence_games.permissions import user_has_permission
+from convergence_games.lib.deps import event_with
+from convergence_games.lib.guards import user_guard
+from convergence_games.lib.ocean import Sqid, sink, swim
+from convergence_games.lib.permissions import user_has_permission
+from convergence_games.lib.request_type import Request
+from convergence_games.lib.response_type import HTMXBlockTemplate
 
 # region Data Schema
 SqidInt = Annotated[int, BeforeValidator(sink)]

@@ -1,4 +1,4 @@
-from convergence_games.app.paths import STATIC_DIR_PATH
+from convergence_games.paths import STATIC_DIR_PATH
 from convergence_games.settings import SETTINGS
 
 from .blob_image_loader import BlobImageLoader
