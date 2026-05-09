@@ -2,31 +2,29 @@ from typing import cast
 
 from litestar.response import Redirect
 from litestar.router import Router
+from litestar.types import ControllerRouterHandler
 from litestar.types.callable_types import BeforeRequestHookHandler
 
 from convergence_games.lib.request_type import Request
 
-from .debug import DebugController
-from .editor_test import EditorTestController
-from .email_auth import EmailAuthController
-from .event_manager import EventManagerController
-from .event_player import EventPlayerController
-from .game import GameController
-from .home import HomeController
-from .misc_components import MiscComponentsController
-from .my_submissions import MySubmissionsController
-from .oauth import OAuthController
-from .party import PartyController
-from .profile import ProfileController
-from .redirects import RedirectsController
-from .search import SearchController
-from .settings import SettingsController
-from .submit_game import SubmitGameController
+from .accounts.controllers import EmailAuthController, OAuthController
+from .admin.controllers import EventManagerController
+from .debug.controllers import DebugController, EditorTestController
+from .games.controllers import (
+    EventPlayerController,
+    GameController,
+    MiscComponentsController,
+    SearchController,
+    SubmitGameController,
+)
+from .player.controllers import PartyController
+from .public.controllers import HomeController
+from .redirects.controllers import RedirectsController
+from .system.controllers import favicon_router, health_check, static_files_router
+from .user.controllers import MySubmissionsController, ProfileController, SettingsController
 
 
 async def before_request_handler(request: Request) -> Redirect | None:
-    # If we're logged in BUT hasn't set up their profile yet, redirect to the profile setup page
-    # To finish filling out their more info
     if (
         request.method == "GET"
         and request.scope["path"] != "/profile"
@@ -36,7 +34,7 @@ async def before_request_handler(request: Request) -> Redirect | None:
         return Redirect(path="/profile")
 
 
-router = Router(
+domain_router = Router(
     path="/",
     response_headers={"Vary": "hx-target"},
     include_in_schema=False,
@@ -61,3 +59,15 @@ router = Router(
     ],
     before_request=cast(BeforeRequestHookHandler, before_request_handler),
 )
+
+system_router = Router(
+    path="/",
+    include_in_schema=False,
+    tags=["system"],
+    route_handlers=[
+        favicon_router,
+        static_files_router,
+    ],
+)
+
+routers: list[ControllerRouterHandler] = [domain_router, system_router, health_check]
