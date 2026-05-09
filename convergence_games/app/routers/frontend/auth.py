@@ -44,7 +44,7 @@ class AuthController(Controller):
             row.revoked_at = dt.datetime.now(tz=dt.timezone.utc)
             row.revoked_reason = "admin"
 
-        clear_self = request.scope["state"].get("current_session_jti") == row.jti
+        clear_self = request.state.get("current_session_jti") == row.jti
         response: Response[None] = Response(content=None, status_code=204)
         if clear_self:
             jwt_cookie_auth.delete_cookies_from_response(response)

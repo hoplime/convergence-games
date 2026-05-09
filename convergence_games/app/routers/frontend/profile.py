@@ -94,7 +94,7 @@ async def render_profile(
         .scalars()
         .all()
     )
-    current_session_jti = request.scope["state"].get("current_session_jti") if "state" in request.scope else None
+    current_session_jti = request.state.get("current_session_jti")
 
     return HTMXBlockTemplate(
         template_name="pages/profile.html.jinja",
@@ -158,7 +158,9 @@ class ProfileController(Controller):
     ) -> Template:
         email = normalize_email(data.email)
         state = OAuthRedirectState(redirect_path=data.redirect_path, mode=AuthIntent.SIGN_UP)
-        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state, session_factory=request.app.state.session_maker_class)
+        request.app.emit(
+            EVENT_EMAIL_SIGN_IN, email=email, state=state, session_factory=request.app.state.session_maker_class
+        )
         return HTMXBlockTemplate(
             template_name="components/VerifyCode.html.jinja",
             context={"email": email, "state": state.encode(), "mode": "sign_up"},
@@ -173,7 +175,9 @@ class ProfileController(Controller):
     ) -> Template:
         email = normalize_email(data.email)
         state = OAuthRedirectState(redirect_path=data.redirect_path, mode=AuthIntent.SIGN_IN)
-        request.app.emit(EVENT_EMAIL_SIGN_IN, email=email, state=state, session_factory=request.app.state.session_maker_class)
+        request.app.emit(
+            EVENT_EMAIL_SIGN_IN, email=email, state=state, session_factory=request.app.state.session_maker_class
+        )
         return HTMXBlockTemplate(
             template_name="components/VerifyCode.html.jinja",
             context={"email": email, "state": state.encode(), "mode": "sign_in"},
@@ -284,9 +288,7 @@ class ProfileController(Controller):
             .all()
         )
         jti = uuid.uuid4().hex
-        await create_user_session(
-            transaction, db_user.id, jti, user_agent=request.headers.get("user-agent")
-        )
+        await create_user_session(transaction, db_user.id, jti, user_agent=request.headers.get("user-agent"))
         cookies = jwt_cookie_auth.create_login_cookies(
             str(db_user.id),
             token_extras=build_token_extras(db_user, event_roles),
