@@ -1,8 +1,8 @@
 from litestar import Controller, get
 
-from convergence_games.app.guards import user_guard
-from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
+from convergence_games.lib.guards import user_guard
+from convergence_games.lib.request_type import Request
+from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 
 
 class SettingsController(Controller):

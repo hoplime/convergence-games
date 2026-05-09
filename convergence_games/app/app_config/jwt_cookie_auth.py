@@ -9,10 +9,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from convergence_games.app.context import user_id_ctx
-from convergence_games.app.request_type import AnyASGIConnection, CustomToken, TypedASGIConnection
 from convergence_games.db.enums import Role
 from convergence_games.db.models import User, UserEventRole
+from convergence_games.lib.context import user_id_ctx
+from convergence_games.lib.request_type import AnyASGIConnection, CustomToken, TypedASGIConnection
 from convergence_games.settings import SETTINGS
 
 

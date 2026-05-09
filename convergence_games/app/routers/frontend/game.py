@@ -8,9 +8,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from convergence_games.app.alerts import Alert, AlertError
-from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import UserGamePreferenceValue
 from convergence_games.db.models import (
     Event,
@@ -22,8 +19,11 @@ from convergence_games.db.models import (
     UserGamePlayed,
     UserGamePreference,
 )
-from convergence_games.db.ocean import Sqid, sink
-from convergence_games.permissions import user_has_permission
+from convergence_games.lib.alerts import Alert, AlertError
+from convergence_games.lib.ocean import Sqid, sink
+from convergence_games.lib.permissions import user_has_permission
+from convergence_games.lib.request_type import Request
+from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 from convergence_games.services import ImageLoader
 
 

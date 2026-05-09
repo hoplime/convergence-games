@@ -18,7 +18,8 @@ from litestar.response import Redirect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence_games.app.app_config.jwt_cookie_auth import jwt_cookie_auth
-from convergence_games.app.common.auth import (
+from convergence_games.db.models import LoginProvider
+from convergence_games.lib.auth import (
     AuthIntent,
     NoAccountForSignInError,
     OAuthRedirectState,
@@ -27,10 +28,9 @@ from convergence_games.app.common.auth import (
     authorize_flow,
     find_user_by_email,
 )
-from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
-from convergence_games.db.models import LoginProvider
-from convergence_games.db.ocean import Sqid, sink
+from convergence_games.lib.ocean import Sqid, sink
+from convergence_games.lib.request_type import Request
+from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
 

@@ -6,9 +6,9 @@ from litestar.status_codes import HTTP_409_CONFLICT
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.app.exceptions import UserNotLoggedInError
-from convergence_games.app.request_type import Request
 from convergence_games.db.models import User
+from convergence_games.lib.exceptions import UserNotLoggedInError
+from convergence_games.lib.request_type import Request
 from convergence_games.services import ImageLoader, image_loader_from_settings
 
 

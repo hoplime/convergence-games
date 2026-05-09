@@ -15,7 +15,7 @@ from sqlalchemy.orm import selectinload
 from convergence_games.app.app_config.jwt_cookie_auth import build_token_extras, jwt_cookie_auth
 from convergence_games.db.enums import LoginProvider
 from convergence_games.db.models import User, UserEventRole, UserLogin
-from convergence_games.db.ocean import Sqid
+from convergence_games.lib.ocean import Sqid
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.email import normalize_email
 

@@ -1,6 +1,6 @@
 from litestar import Controller, get
 
-from convergence_games.app.response_type import HTMXBlockTemplate
+from convergence_games.lib.response_type import HTMXBlockTemplate
 
 
 class DebugController(Controller):

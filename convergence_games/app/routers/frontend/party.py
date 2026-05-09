@@ -3,19 +3,12 @@ from __future__ import annotations
 import datetime as dt
 
 from litestar import Controller, get, post
-from litestar.di import Provide
-from litestar.exceptions import HTTPException
 from litestar.response import Redirect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, with_loader_criteria
-from sqlalchemy.sql.base import ExecutableOption
 
-from convergence_games.app.alerts import Alert, AlertError
 from convergence_games.app.app_config.template_config import catalog
-from convergence_games.app.guards import user_guard
-from convergence_games.app.request_type import Request
-from convergence_games.app.response_type import HTMXBlockTemplate, Template
 from convergence_games.db.enums import TimeSlotStatus
 from convergence_games.db.models import (
     Allocation,
@@ -30,46 +23,12 @@ from convergence_games.db.models import (
     UserCheckinStatus,
     UserEventD20Transaction,
 )
-from convergence_games.db.ocean import Sqid, sink, sink_upper, swim
-
-
-def party_with(*options: ExecutableOption, raise_404: bool = False) -> Provide:
-    async def wrapper(
-        transaction: AsyncSession,
-        invite_sqid: Sqid,
-    ) -> Party | None:
-        try:
-            party_id = sink_upper(invite_sqid)
-            party = (
-                await transaction.execute(select(Party).options(*options).where(Party.id == party_id))
-            ).scalar_one_or_none()
-        except Exception:
-            party = None
-
-        if not party and raise_404:
-            raise HTTPException(status_code=404, detail="Party not found.")
-
-        return party
-
-    return Provide(wrapper)
-
-
-def time_slot_with(*options: ExecutableOption, raise_404: bool = False) -> Provide:
-    async def wrapper(
-        transaction: AsyncSession,
-        time_slot_sqid: Sqid,
-    ) -> TimeSlot | None:
-        time_slot_id: int = sink(time_slot_sqid)
-        time_slot = (
-            await transaction.execute(select(TimeSlot).options(*options).where(TimeSlot.id == time_slot_id))
-        ).scalar_one_or_none()
-
-        if not time_slot and raise_404:
-            raise HTTPException(status_code=404, detail="Time slot not found.")
-
-        return time_slot
-
-    return Provide(wrapper)
+from convergence_games.lib.alerts import Alert, AlertError
+from convergence_games.lib.deps import time_slot_with
+from convergence_games.lib.guards import user_guard
+from convergence_games.lib.ocean import Sqid, sink, sink_upper, swim
+from convergence_games.lib.request_type import Request
+from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 
 
 async def user_is_gm_for_this_time_slot(

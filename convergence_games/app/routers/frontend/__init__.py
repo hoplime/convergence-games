@@ -4,7 +4,7 @@ from litestar.response import Redirect
 from litestar.router import Router
 from litestar.types.callable_types import BeforeRequestHookHandler
 
-from convergence_games.app.request_type import Request
+from convergence_games.lib.request_type import Request
 
 from .debug import DebugController
 from .editor_test import EditorTestController

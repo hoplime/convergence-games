@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from litestar import Litestar
 
+from convergence_games.lib.events import all_listeners
 from convergence_games.settings import SETTINGS
 
 from .app_config import (
@@ -15,7 +16,6 @@ from .app_config import (
     sqlalchemy_plugin,
     template_config,
 )
-from .events import all_listeners
 from .routers import routers
 
 init_sentry()

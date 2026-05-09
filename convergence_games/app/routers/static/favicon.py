@@ -5,7 +5,7 @@ from litestar.config.response_cache import CACHE_FOREVER
 from litestar.handlers import HTTPRouteHandler
 from litestar.response.file import File
 
-from convergence_games.app.paths import STATIC_DIR_PATH
+from convergence_games.paths import STATIC_DIR_PATH
 
 route_handlers: list[HTTPRouteHandler] = []
 
