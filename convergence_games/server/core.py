@@ -4,7 +4,9 @@ from typing import TYPE_CHECKING, override
 
 from litestar.plugins import InitPluginProtocol
 
-from convergence_games.app.routers import routers
+from convergence_games.apps.api import router as api_router
+from convergence_games.apps.frontend import router as frontend_router
+from convergence_games.apps.system import router as system_router
 from convergence_games.lib.auth import jwt_cookie_auth
 from convergence_games.lib.deps import dependencies
 from convergence_games.lib.events import all_listeners
@@ -30,7 +32,7 @@ class ApplicationCore(InitPluginProtocol):
         app_config.compression_config = config.compression
         app_config.template_config = config.template
 
-        app_config.route_handlers.extend(routers)
+        app_config.route_handlers.extend([frontend_router, api_router, system_router])
         app_config.dependencies.update(dependencies)
         app_config.exception_handlers.update(exception_handlers)  # pyright: ignore[reportUnknownMemberType]
         app_config.listeners.extend(all_listeners)

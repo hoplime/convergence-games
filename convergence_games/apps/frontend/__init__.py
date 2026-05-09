@@ -2,7 +2,6 @@ from typing import cast
 
 from litestar.response import Redirect
 from litestar.router import Router
-from litestar.types import ControllerRouterHandler
 from litestar.types.callable_types import BeforeRequestHookHandler
 
 from convergence_games.lib.request_type import Request
@@ -20,7 +19,6 @@ from .games.controllers import (
 from .player.controllers import PartyController, PlannerController, PreferencesController
 from .public.controllers import HomeController
 from .redirects.controllers import RedirectsController
-from .system.controllers import favicon_router, health_check, static_files_router
 from .user.controllers import MySubmissionsController, ProfileController, SettingsController
 
 
@@ -34,17 +32,16 @@ async def before_request_handler(request: Request) -> Redirect | None:
         return Redirect(path="/profile")
 
 
-domain_router = Router(
+router = Router(
     path="/",
     response_headers={"Vary": "hx-target"},
     include_in_schema=False,
-    tags=["frontend"],
     route_handlers=[
         DebugController,
         EditorTestController,
         EmailAuthController,
-        EventManagerController,
         EventGamesController,
+        EventManagerController,
         GameController,
         HomeController,
         MiscComponentsController,
@@ -61,15 +58,3 @@ domain_router = Router(
     ],
     before_request=cast(BeforeRequestHookHandler, before_request_handler),
 )
-
-system_router = Router(
-    path="/",
-    include_in_schema=False,
-    tags=["system"],
-    route_handlers=[
-        favicon_router,
-        static_files_router,
-    ],
-)
-
-routers: list[ControllerRouterHandler] = [domain_router, system_router, health_check]

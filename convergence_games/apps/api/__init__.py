@@ -2,7 +2,7 @@ from litestar.router import Router
 
 from convergence_games.settings import SETTINGS
 
-from .debug import DebugController
+from ._debug import DebugController
 
 route_handlers = []
 
