@@ -8,7 +8,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, with_loader_criteria
 
-from convergence_games.app.app_config.template_config import catalog
 from convergence_games.db.enums import TimeSlotStatus
 from convergence_games.db.models import (
     Allocation,
@@ -29,6 +28,7 @@ from convergence_games.lib.guards import user_guard
 from convergence_games.lib.ocean import Sqid, sink, sink_upper, swim
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
+from convergence_games.server import catalog
 
 
 async def user_is_gm_for_this_time_slot(

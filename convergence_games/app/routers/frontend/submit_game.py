@@ -21,7 +21,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from convergence_games.app.app_config.template_config import catalog
 from convergence_games.db.enums import (
     GameActivityRequirement,
     GameClassification,
@@ -55,6 +54,7 @@ from convergence_games.lib.ocean import Sqid, sink
 from convergence_games.lib.permissions import user_has_permission
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
+from convergence_games.server import catalog
 from convergence_games.services import ImageLoader
 
 

@@ -1,11 +1,13 @@
 from litestar.datastructures import Cookie
 from litestar.response import Redirect
 
-from convergence_games.app.app_config.template_config import catalog
 from convergence_games.lib.alerts import AlertError
 from convergence_games.lib.exceptions import UserNotLoggedInError
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate
+from convergence_games.server._template import catalog
+
+__all__ = ["exception_handlers"]
 
 
 def user_not_logged_in_handler(request: Request, exc: UserNotLoggedInError) -> Redirect:

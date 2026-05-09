@@ -15,6 +15,8 @@ from convergence_games.lib.context import user_id_ctx
 from convergence_games.lib.request_type import AnyASGIConnection, CustomToken, TypedASGIConnection
 from convergence_games.settings import SETTINGS
 
+__all__ = ["build_token_extras", "jwt_cookie_auth"]
+
 
 def build_token_extras(user: User, event_roles: Sequence[UserEventRole]) -> dict[str, Any]:
     return {

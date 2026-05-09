@@ -5,6 +5,8 @@ from sentry_sdk.types import Event, Hint
 from convergence_games.lib.exceptions import UserNotLoggedInError
 from convergence_games.settings import SETTINGS
 
+__all__ = ["init_sentry"]
+
 CONTROL_FLOW_EXCEPTIONS = (UserNotLoggedInError,)
 
 

@@ -23,7 +23,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload, with_loader_criteria
 from sqlalchemy.sql.selectable import Select
 
-from convergence_games.app.app_config.template_config import catalog
 from convergence_games.db.enums import GameClassification, SubmissionStatus, TimeSlotStatus
 from convergence_games.db.models import (
     Allocation,
@@ -52,6 +51,7 @@ from convergence_games.lib.ocean import Sqid, sink, swim
 from convergence_games.lib.permissions import user_has_permission
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate
+from convergence_games.server import catalog
 from convergence_games.services.algorithm.game_allocator import (
     AlgPartyP,
     GameAllocator,

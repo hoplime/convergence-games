@@ -8,6 +8,8 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from convergence_games.db.enums import LoginProvider
+from convergence_games.db.models import Base, User, UserLogin
 from convergence_games.lib.auth import (
     AccountAlreadyExistsError,
     AuthIntent,
@@ -16,8 +18,6 @@ from convergence_games.lib.auth import (
     authorize_flow,
     find_user_by_email,
 )
-from convergence_games.db.enums import LoginProvider
-from convergence_games.db.models import Base, User, UserLogin
 
 
 @pytest_asyncio.fixture

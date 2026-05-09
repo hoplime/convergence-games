@@ -26,18 +26,18 @@ from convergence_games.paths import COMPONENTS_DIR_PATH, TEMPLATES_DIR_PATH
 from convergence_games.settings import SETTINGS
 from convergence_games.utils.time_utils import nice_time_format, time_range_format
 
+__all__ = ["catalog", "jinja_env", "template_config"]
+
 
 def extract_title(text: jinjax.catalog.CallerWrapper) -> str:
     raw_text = repr(text)
 
-    # Check for <PageTitle> first (JinjaX component, not yet expanded at this point)
     title_start = raw_text.find("<PageTitle>")
     if title_start != -1:
         title_end = raw_text.find("</PageTitle>", title_start)
         page_title = raw_text[title_start + 11 : title_end]
         return f"{page_title} - {SETTINGS.SITE_TITLE}"
 
-    # Fall back to raw <title> tag (e.g., home page)
     title_start = raw_text.find("<title>")
     if title_start == -1:
         return ""

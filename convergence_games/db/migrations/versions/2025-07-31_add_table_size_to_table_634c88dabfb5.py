@@ -16,15 +16,13 @@ from advanced_alchemy.types import (
     DateTimeUTC,
     EncryptedString,
     EncryptedText,
-    PasswordHash,
     StoredObject,
 )
 from alembic import op
-from sqlalchemy import Text
 from sqlalchemy.dialects import postgresql  # noqa: F401
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 __all__ = ["downgrade", "upgrade", "schema_upgrades", "schema_downgrades", "data_upgrades", "data_downgrades"]
 

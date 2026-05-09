@@ -8,7 +8,7 @@
             "module": "uvicorn",
             "args": [
                 "--host=0.0.0.0",
-                "convergence_games.app:app",
+                "convergence_games.server.app:app",
                 "--reload"
             ],
             "justMyCode": false,

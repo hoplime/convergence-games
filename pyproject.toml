@@ -70,5 +70,13 @@ ignore = [
 ]
 
 [tool.pyright]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    ".venv",
+    "convergence_games/db/migrations",
+    "ignore",
+]
 reportPrivateImportUsage = "none"
 reportUnusedCallResult = "none"
