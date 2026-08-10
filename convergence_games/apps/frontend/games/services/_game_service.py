@@ -1,10 +1,12 @@
+from dataclasses import dataclass
 from uuid import uuid4
 
 from litestar.datastructures import UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from convergence_games.db.enums import SubmissionStatus
+from convergence_games.db.enums import SubmissionStatus, UserGamePreferenceValue
 from convergence_games.db.models import (
     ContentWarning,
     Event,
@@ -16,11 +18,23 @@ from convergence_games.db.models import (
     GameRequirementTimeSlotLink,
     Genre,
     Image,
+    Session,
     System,
+    Table,
+    UserEventD20Transaction,
+    UserGamePlayed,
+    UserGamePreference,
 )
 from convergence_games.services import ImageLoader
 
 from .._forms import SubmitGameForm
+
+
+@dataclass(slots=True)
+class UserGameContext:
+    preference: UserGamePreferenceValue | None
+    user_game_played: UserGamePlayed | None
+    has_d20: bool
 
 
 class GameService:
@@ -290,6 +304,90 @@ class GameService:
         game.submission_status = submission_status
         self._session.add(game)
         return game
+
+    async def get_game_for_detail(self, game_id: int) -> Game | None:
+        """Load a Game with the associations needed to render the game detail page."""
+        return (
+            await self._session.execute(
+                select(Game)
+                .options(
+                    selectinload(Game.system),
+                    selectinload(Game.gamemaster),
+                    selectinload(Game.event),
+                    selectinload(Game.game_requirement),
+                    selectinload(Game.genres),
+                    selectinload(Game.content_warnings),
+                    selectinload(Game.images),
+                )
+                .where(Game.id == game_id)
+            )
+        ).scalar_one_or_none()
+
+    async def get_user_game_context(self, *, game_id: int, user_id: int, event_id: int) -> UserGameContext:
+        """Look up the requesting user's preference, play history, and d20 balance for a game."""
+        user_game_preference = (
+            await self._session.execute(
+                select(UserGamePreference).where(
+                    UserGamePreference.game_id == game_id,
+                    UserGamePreference.user_id == user_id,
+                    UserGamePreference.frozen_at_time_slot_id.is_(None),
+                )
+            )
+        ).scalar_one_or_none()
+        preference = user_game_preference.preference if user_game_preference else None
+
+        latest_d20_transaction = (
+            await self._session.execute(
+                select(UserEventD20Transaction)
+                .where(UserEventD20Transaction.user_id == user_id)
+                .where(UserEventD20Transaction.event_id == event_id)
+                .order_by(UserEventD20Transaction.id.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+
+        user_game_played = (
+            await self._session.execute(
+                select(UserGamePlayed).where(UserGamePlayed.user_id == user_id, UserGamePlayed.game_id == game_id)
+            )
+        ).scalar_one_or_none()
+
+        return UserGameContext(
+            preference=preference,
+            user_game_played=user_game_played,
+            has_d20=latest_d20_transaction is not None and latest_d20_transaction.current_balance > 0,
+        )
+
+    async def get_scheduled_sessions(self, game_id: int) -> list[Session]:
+        """Return a game's committed sessions, ordered by their time slot's start time."""
+        scheduled_sessions = (
+            (
+                await self._session.execute(
+                    select(Session)
+                    .where(
+                        Session.game_id == game_id,
+                        Session.committed,
+                    )
+                    .options(
+                        selectinload(Session.table).selectinload(Table.room),
+                        selectinload(Session.time_slot),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return sorted(scheduled_sessions, key=lambda s: s.time_slot.start_time)
+
+    async def get_game_image_urls(self, game: Game, image_loader: ImageLoader) -> list[dict[str, str]]:
+        """Build full and thumbnail URLs for a game's images."""
+        return [
+            {
+                "full": await image_loader.get_image_path(image.lookup_key),
+                "thumbnail": await image_loader.get_image_path(image.lookup_key, size=300),
+            }
+            for image in game.images
+        ]
 
 
 async def provide_game_service(transaction: AsyncSession) -> GameService:
