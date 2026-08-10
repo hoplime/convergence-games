@@ -156,7 +156,8 @@ class GameService:
 
     async def update_game(self, *, game: Game, data: SubmitGameForm, image_loader: ImageLoader) -> Game:
         """Precondition: game loaded with genre_links, content_warning_links, image_links,
-        and game_requirement.time_slot_links (the game_with dep at _submit.py 524-533)."""
+        and game_requirement.time_slot_links (see the `game_with(...)` dependency configured
+        for `put_game` in `apps/frontend/games/controllers/_submit.py`)."""
         self._apply_scalar_fields(game, data)
         await self._apply_system(game, data)
         await self._sync_genre_links(game, data)

@@ -7,7 +7,7 @@ paths: **/*.py
 
 ## SQLAlchemy Models
 
-- All models in `convergence_games/db/models.py`, inheriting from `Base` (which extends `BigIntAuditBase` + `UserAuditColumns`).
+- All models in `convergence_games/db/models/`, one per file (e.g., `_game.py`, `_user.py`), re-exported from the package `__init__` — inheriting from `Base` (which extends `BigIntAuditBase` + `UserAuditColumns`).
 - Use SQLAlchemy 2.0+ `Mapped[T]` annotations for all columns.
 - All relationships default to `lazy="noload"` to prevent N+1 queries. Relationships must be explicitly loaded in queries via `selectinload()`, `joinedload()`, etc.
 - Cross-event foreign key constraints use the `foreign_key_constraint_with_event()` helper to ensure referential integrity within an event.
@@ -29,7 +29,7 @@ paths: **/*.py
 
 ## Sqid Encoding
 
-- Database IDs are obfuscated in URLs using Sqids (`convergence_games/db/ocean.py`).
+- Database IDs are obfuscated in URLs using Sqids (`convergence_games/lib/ocean.py`).
 - `swim(obj)` encodes, `sink(sqid)` decodes. `swim_upper`/`sink_upper` for uppercase sqids.
 - IDs are salted per model class name via `_ink()`.
 - Use `Annotated[int, BeforeValidator(sink)]` for automatic decoding in route parameters.

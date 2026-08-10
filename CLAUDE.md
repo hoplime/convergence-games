@@ -58,21 +58,24 @@ pytest -k "test_name"                        # Run specific test
 ## Architecture
 
 ### Application Entry Point
-`convergence_games/server/app.py` creates the Litestar application via `create_app()` factory. Server config is split into `server/core.py` (dependencies, exception handlers, sentry) and `server/plugins.py` (SQLAlchemy, compression, HTMX, OpenAPI). Shared infrastructure lives in `lib/`: template engine (`lib/template.py` — `catalog`, `jinja_env`), auth (`lib/auth.py` — `jwt_cookie_auth`, `build_token_extras`). Nothing outside `server/` imports from it except the ASGI entrypoint.
+`convergence_games/server/app.py` creates the Litestar application via `create_app()` factory. Server config is split into `server/core.py` (dependencies, exception handlers, sentry) and `server/plugins.py` (SQLAlchemy, compression, HTMX, OpenAPI). Shared infrastructure lives in `lib/`: template engine (`lib/template.py` — `catalog`, `jinja_env`), auth (`lib/auth.py` — `jwt_cookie_auth`, `build_token_extras`), permissions (`lib/permissions.py`). Nothing outside `server/` imports from it except the ASGI entrypoint.
 
 ### Routing
-Three router groups in `convergence_games/app/routers/`:
-- **`frontend/`** - Server-rendered HTML pages. Each file is a Litestar Controller (e.g., `EventManagerController`, `SubmitGameController`). A `before_request` hook redirects users who haven't completed profile setup.
-- **`api/`** - JSON API endpoints. Only active when `DEBUG=True`.
-- **`static/`** - Static file serving and favicons.
+Three top-level apps mounted in `convergence_games/apps/`:
+- **`frontend/`** - Server-rendered HTML pages, organized by domain: `apps/frontend/<domain>/{controllers,services}/` for `accounts`, `admin`, `debug`, `games`, `player`, `public`, `redirects`, `user`. Each controller file is a Litestar Controller (e.g., `SubmissionsController`, `SubmitGameController`). The frontend router (`apps/frontend/__init__.py`) carries a `before_request` hook that redirects users who haven't completed profile setup.
+- **`api/`** - JSON API endpoints (`apps/api/`). Only active when `DEBUG=True`.
+- **`system/`** - Health check, static file serving, and favicons (`apps/system/`).
 
 ### Templates (JinjaX)
-Templates use JinjaX component syntax. Components in `templates/components/` are reusable UI elements (PascalCase `.html.jinja` files). Pages in `templates/pages/` are full page templates. All JinjaX components automatically receive `request` via a custom passthrough.
+Templates use JinjaX component syntax. Components in `templates/components/` are reusable UI elements (PascalCase `.html.jinja` files). Pages in `templates/pages/` are full page templates. All JinjaX components automatically receive `request` via a custom passthrough. `templates/`, `static/`, and `frontend/` (TypeScript sources) live at the package top level (`convergence_games/templates/`, `convergence_games/static/`, `convergence_games/frontend/`).
 
-Some pages have co-located TypeScript files (e.g., `event_manage_schedule.ts`) that are bundled through the Vite entry at `app/templates/index.ts` -> re-exported via `app/lib/index.ts` into a single UMD `lib.js`.
+Some pages have co-located TypeScript files (e.g., `event_manage_schedule.ts`) that are bundled through the Vite entry at `convergence_games/frontend/index.ts` -> re-exports `templates/index.ts`, which re-exports the co-located page scripts (`templates/pages/*.ts`) -> bundled into a single UMD `lib.js`.
+
+### Service Pattern
+Services are plain classes holding an injected `self._session: AsyncSession`. Each service module defines a `provide_<name>_service(transaction: AsyncSession) -> XService` factory alongside the class; controllers wire it in via `dependencies = {"x_service": Provide(provide_x_service)}`. Services never call `.commit()` — the `transaction` dependency provides an auto-committing session wrapped in `begin()`, so commits happen at the request boundary, not inside services.
 
 ### Database Models
-All SQLAlchemy models are in `convergence_games/db/models.py` with a single `Base` class (extends `BigIntAuditBase` + `UserAuditColumns` for created_by/updated_by tracking). Key domain models:
+All SQLAlchemy models live under `convergence_games/db/models/`, one model per file (e.g., `_game.py`, `_user.py`), re-exported from `db/models/__init__.py`. All models share a single `Base` class (extends `BigIntAuditBase` + `UserAuditColumns` for created_by/updated_by tracking). Key domain models:
 - **Event** -> has Rooms, Tables, TimeSlots, Games, Sessions
 - **Game** -> belongs to Event, System, User (gamemaster); has GameRequirement, Genres, ContentWarnings, Images
 - **Session** -> links a Game to a Table and TimeSlot (with cross-event foreign key constraints)
@@ -91,7 +94,7 @@ Database IDs are obfuscated in URLs using Sqids. The API uses ocean-themed namin
 `convergence_games/services/algorithm/game_allocator.py` implements the player-to-session allocation. It works with `AlgParty`, `AlgSession`, and `AlgResult` models (in `services/algorithm/models.py`). Players rate games using a dice-based preference system (D4-D20, higher = stronger preference). The allocator builds tier lists from preferences and assigns parties to sessions respecting player counts, compensation, and constraints.
 
 ### Permissions
-`convergence_games/permissions/` provides `user_has_permission()` used both in route guards and Jinja templates. Roles: Owner > Manager > Reader > Player.
+`convergence_games/lib/permissions.py` provides `user_has_permission()` used both in route guards and Jinja templates. Roles: Owner > Manager > Reader > Player.
 
 ### Image Storage
 `convergence_games/services/image/` supports two backends (configured via `IMAGE_STORAGE_MODE`):
