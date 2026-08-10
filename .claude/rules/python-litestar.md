@@ -7,7 +7,7 @@ paths: **/*.py
 
 ## Route Handlers
 
-- Organize routes in `Controller` classes, one per file in `convergence_games/app/routers/frontend/`.
+- Organize routes in `Controller` classes, one per file in `convergence_games/apps/frontend/<domain>/controllers/` (domains: `accounts`, `admin`, `debug`, `games`, `player`, `public`, `redirects`, `user`).
 - Use `@get`, `@post`, `@put`, `@delete` decorators from litestar.
 - All handlers are `async def`.
 - Apply `guards=[user_guard]` on endpoints requiring authentication.
@@ -27,8 +27,8 @@ paths: **/*.py
 
 ## Templates (JinjaX)
 
-- Pages in `convergence_games/app/templates/pages/` (lowercase `.html.jinja`).
-- Reusable components in `convergence_games/app/templates/components/` (PascalCase `.html.jinja`).
+- Pages in `convergence_games/templates/pages/` (lowercase `.html.jinja`).
+- Reusable components in `convergence_games/templates/components/` (PascalCase `.html.jinja`).
 - All JinjaX components automatically receive `request` via custom passthrough in template_config.
 - Custom Jinja filters/globals registered in `convergence_games/lib/template.py`.
 
@@ -43,8 +43,17 @@ paths: **/*.py
 
 - Litestar event listeners via `@listener("event_name")` for decoupled side effects (e.g., sending emails).
 
+## Services
+
+- Business logic lives in `apps/frontend/<domain>/services/`, one service class per module (e.g., `_game_service.py` -> `GameService`).
+- A service is a plain class holding an injected session: `def __init__(self, session: AsyncSession) -> None: self._session = session`.
+- Each service module defines a `provide_<name>_service(transaction: AsyncSession) -> XService` factory next to the class.
+- Controllers wire the factory in via `dependencies = {"x_service": Provide(provide_x_service)}`.
+- Services never call `.commit()` — the `transaction` dependency's `begin()` wrapper commits at the request boundary.
+- Form models/helpers shared across a domain's controllers live in a domain-local `_forms.py` / `_common.py` file (e.g., `apps/frontend/games/_forms.py`, `apps/frontend/admin/_common.py`), not duplicated per controller.
+
 ## Permissions
 
-- `user_has_permission()` from `convergence_games/permissions/` checks role-based access.
+- `user_has_permission()` from `convergence_games/lib/permissions.py` checks role-based access.
 - Available as both a route guard helper and a Jinja template filter.
 - Role hierarchy: Owner > Manager > Reader > Player.

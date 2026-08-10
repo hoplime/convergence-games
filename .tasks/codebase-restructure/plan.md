@@ -1,7 +1,7 @@
 ---
 title: Codebase restructure
 created: 2026-05-09
-status: in-progress
+status: superseded by design.md + implementation.md (complete)
 ---
 
 # Codebase Restructure
