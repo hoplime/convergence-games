@@ -8,7 +8,7 @@ from convergence_games.db.models import TimeSlot, User
 from convergence_games.lib.alerts import Alert, AlertError
 from convergence_games.lib.deps import time_slot_with
 from convergence_games.lib.guards import user_guard
-from convergence_games.lib.ocean import Sqid, sink, sink_upper, swim
+from convergence_games.lib.ocean import Sqid, sink, swim
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 from convergence_games.lib.template import catalog
@@ -93,12 +93,7 @@ class PartyController(Controller):
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
 
-        try:
-            invite_id = sink_upper(invite_sqid)
-        except Exception as e:
-            raise AlertError([Alert(alert_class="alert-error", message="Invalid invite code.")]) from e
-
-        party = await party_service.join_party(user_id=user.id, time_slot_id=time_slot.id, invite_id=invite_id)
+        party = await party_service.join_party(user_id=user.id, time_slot_id=time_slot.id, invite_sqid=invite_sqid)
 
         if not request.htmx:
             # This is from a QRCode - go to the overall planner view
@@ -174,9 +169,7 @@ class PartyController(Controller):
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
 
-        member_id = sink(member_sqid)
-
-        await party_service.promote_member(user_id=user.id, time_slot_id=time_slot.id, member_id=member_id)
+        await party_service.promote_member(user_id=user.id, time_slot_id=time_slot.id, member_sqid=member_sqid)
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
 
