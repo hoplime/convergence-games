@@ -1,27 +1,10 @@
-from __future__ import annotations
-
-import datetime as dt
-
 from litestar import Controller, get, post
+from litestar.di import Provide
 from litestar.response import Redirect
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, with_loader_criteria
+from sqlalchemy.orm import selectinload
 
 from convergence_games.db.enums import TimeSlotStatus
-from convergence_games.db.models import (
-    Allocation,
-    Event,
-    Game,
-    Party,
-    PartyUserLink,
-    Session,
-    Table,
-    TimeSlot,
-    User,
-    UserCheckinStatus,
-    UserEventD20Transaction,
-)
+from convergence_games.db.models import TimeSlot, User
 from convergence_games.lib.alerts import Alert, AlertError
 from convergence_games.lib.deps import time_slot_with
 from convergence_games.lib.guards import user_guard
@@ -30,25 +13,13 @@ from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 from convergence_games.lib.template import catalog
 
-
-async def user_is_gm_for_this_time_slot(
-    transaction: AsyncSession,
-    user: User,
-    time_slot: TimeSlot,
-) -> bool:
-    return (
-        await transaction.execute(
-            select(Session.id)
-            .join(Game, Session.game_id == Game.id)
-            .where(Session.time_slot_id == time_slot.id, Game.gamemaster_id == user.id, Session.committed)
-            .limit(1)
-        )
-    ).scalar_one_or_none() is not None
+from ..services import PartyService, provide_party_service
 
 
 class PartyController(Controller):
     path = "/party"
     guards = [user_guard]
+    dependencies = {"party_service": Provide(provide_party_service)}
 
     @get(
         path="/overview/{time_slot_sqid:str}",
@@ -57,94 +28,22 @@ class PartyController(Controller):
         },
     )
     async def overview_party(
-        self, transaction: AsyncSession, time_slot: TimeSlot, user: User, request: Request
+        self, time_slot: TimeSlot, user: User, request: Request, party_service: PartyService
     ) -> Template:
-        party = (
-            await transaction.execute(
-                select(Party)
-                .where(Party.time_slot_id == time_slot.id)
-                .where(Party.members.any(id=user.id))
-                .options(
-                    selectinload(Party.time_slot),
-                    selectinload(Party.party_user_links),
-                    selectinload(Party.members).options(
-                        selectinload(User.checkin_statuses),
-                        selectinload(User.latest_d20_transaction),
-                    ),
-                    with_loader_criteria(UserCheckinStatus, UserCheckinStatus.time_slot_id == time_slot.id),
-                    with_loader_criteria(
-                        UserEventD20Transaction, UserEventD20Transaction.event_id == time_slot.event_id
-                    ),
-                )
-            )
-        ).scalar_one_or_none()
-        checked_in = (
-            await transaction.execute(
-                select(UserCheckinStatus.checked_in)
-                .where(UserCheckinStatus.user_id == user.id)
-                .where(UserCheckinStatus.time_slot_id == time_slot.id)
-            )
-        ).scalar_one_or_none() or False
-        is_gm = await user_is_gm_for_this_time_slot(transaction, user, time_slot)
-        if party is None:
-            leader_id = None
-        else:
-            leader_id = next((link.user_id for link in party.party_user_links if link.is_leader), None)
-        max_party_size = (
-            await transaction.execute(select(Event.max_party_size).where(Event.id == time_slot.event_id))
-        ).scalar_one_or_none()
-
-        transaction.expunge_all()
-        allocated_session_stmt = (
-            select(Session)
-            .where(
-                (Session.time_slot_id == time_slot.id)
-                & (Session.committed)
-                & (Session.allocations.any(party_leader_id=leader_id or user.id, committed=True))
-            )
-            .options(
-                selectinload(Session.allocations)
-                .selectinload(Allocation.party_leader)
-                .selectinload(User.parties)
-                .selectinload(Party.members),
-                selectinload(Session.game).selectinload(Game.system),
-                selectinload(Session.table).selectinload(Table.room),
-                with_loader_criteria(Party, Party.time_slot_id == time_slot.id),
-                with_loader_criteria(Allocation, Allocation.committed),
-            )
-        )
-        allocated_session = (await transaction.execute(allocated_session_stmt)).scalar_one_or_none()
-        allocated_session_players: list[User] = []
-        if allocated_session:
-            for allocation in allocated_session.allocations:
-                allocated_party = allocation.party_leader.parties[0] if allocation.party_leader.parties else None
-                if allocated_party:
-                    allocated_session_players.extend(allocated_party.members)
-                else:
-                    allocated_session_players.append(allocation.party_leader)
-        gm_index = (
-            allocated_session_players.index(
-                [p for p in allocated_session_players if p.id == allocated_session.game.gamemaster_id][0]
-            )
-            if allocated_session
-            else None
-        )
-        if gm_index is not None:
-            # Move the GM to the front of the list
-            allocated_session_players.insert(0, allocated_session_players.pop(gm_index))
+        overview = await party_service.get_overview(user=user, time_slot=time_slot)
 
         return HTMXBlockTemplate(
             template_str=catalog.render(
                 "PartyOverview",
                 time_slot=time_slot,
-                party=party,
-                leader_id=leader_id,
+                party=overview.party,
+                leader_id=overview.leader_id,
                 request=request,
-                max_party_size=max_party_size,
-                checked_in=checked_in,
-                is_gm=is_gm,
-                allocated_session=allocated_session,
-                allocated_session_players=allocated_session_players,
+                max_party_size=overview.max_party_size,
+                checked_in=overview.checked_in,
+                is_gm=overview.is_gm,
+                allocated_session=overview.allocated_session,
+                allocated_session_players=overview.allocated_session_players,
             )
         )
 
@@ -156,9 +55,9 @@ class PartyController(Controller):
     )
     async def host_party(
         self,
-        transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
+        party_service: PartyService,
     ) -> Template | Redirect:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
@@ -166,30 +65,7 @@ class PartyController(Controller):
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
 
-        is_gm = await user_is_gm_for_this_time_slot(transaction, user, time_slot)
-
-        if is_gm:
-            raise AlertError([Alert(alert_class="alert-error", message="GMs cannot host parties for their sessions.")])
-
-        existing_party_for_time_slot = (
-            await transaction.execute(
-                select(Party).where(Party.time_slot_id == time_slot.id).where(Party.members.any(id=user.id))
-            )
-        ).scalar_one_or_none()
-
-        if existing_party_for_time_slot:
-            raise AlertError(
-                [Alert(alert_class="alert-warning", message="You are already in a party for this time slot.")]
-            )
-
-        party = Party(
-            time_slot_id=time_slot.id,
-            created_by=user.id,
-            updated_by=user.id,
-            party_user_links=[PartyUserLink(user_id=user.id, is_leader=True)],
-        )
-        transaction.add(party)
-        await transaction.flush()
+        await party_service.host_party(user_id=user.id, time_slot_id=time_slot.id)
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
 
@@ -205,11 +81,11 @@ class PartyController(Controller):
     )
     async def join_party(
         self,
-        transaction: AsyncSession,
         user: User,
         request: Request,
         time_slot: TimeSlot | None,
         invite_sqid: Sqid,
+        party_service: PartyService,
     ) -> Template | Redirect:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
@@ -217,71 +93,12 @@ class PartyController(Controller):
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
 
-        is_gm = await user_is_gm_for_this_time_slot(transaction, user, time_slot)
-
-        if is_gm:
-            raise AlertError([Alert(alert_class="alert-error", message="GMs cannot join parties for their sessions.")])
-
-        existing_party_user_link = (
-            await transaction.execute(
-                select(PartyUserLink).where(
-                    PartyUserLink.user_id == user.id, PartyUserLink.party.has(time_slot_id=time_slot.id)
-                )
-            )
-        ).scalar_one_or_none()
-
-        if existing_party_user_link is not None:
-            time_slot = (
-                await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot.id))
-            ).scalar_one_or_none()
-            raise AlertError(
-                [Alert(alert_class="alert-warning", message="You are already in a party for this time slot.")],
-                redirect_url=f"/event/{swim('Event', time_slot.event_id)}/planner/{swim(time_slot)}"
-                if time_slot
-                else None,
-                redirect_text="Return to Planner",
-            )
-
         try:
             invite_id = sink_upper(invite_sqid)
         except Exception as e:
             raise AlertError([Alert(alert_class="alert-error", message="Invalid invite code.")]) from e
 
-        party = (
-            await transaction.execute(
-                select(Party)
-                .where(Party.id == invite_id, Party.time_slot_id == time_slot.id)
-                .options(selectinload(Party.members), selectinload(Party.time_slot).selectinload(TimeSlot.event))
-            )
-        ).scalar_one_or_none()
-
-        # TODO: Tidy these up
-        if party is None:
-            time_slot = (
-                await transaction.execute(select(TimeSlot).where(TimeSlot.id == time_slot.id))
-            ).scalar_one_or_none()
-            raise AlertError(
-                [Alert(alert_class="alert-error", message="No party found with that code.")],
-                redirect_url=f"/event/{swim('Event', time_slot.event_id)}/planner/{swim(time_slot)}"
-                if time_slot
-                else None,
-                redirect_text="Return to Planner",
-            )
-        if len(party.members) >= party.time_slot.event.max_party_size:
-            raise AlertError(
-                [Alert(alert_class="alert-error", message="Party is full.")],
-                redirect_url=f"/event/{swim(party.time_slot.event)}/planner/{swim(time_slot)}",
-                redirect_text="Return to Planner",
-            )
-        if user.id in [member.id for member in party.members]:
-            raise AlertError(
-                [Alert(alert_class="alert-warning", message="You are already a member of this party.")],
-                redirect_url=f"/event/{swim(party.time_slot.event)}/planner/{swim(time_slot)}",
-                redirect_text="Return to Planner",
-            )
-
-        party_user_link = PartyUserLink(user_id=user.id, party_id=party.id)
-        transaction.add(party_user_link)
+        party = await party_service.join_party(user_id=user.id, time_slot_id=time_slot.id, invite_id=invite_id)
 
         if not request.htmx:
             # This is from a QRCode - go to the overall planner view
@@ -297,9 +114,9 @@ class PartyController(Controller):
     )
     async def leave_party(
         self,
-        transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
+        party_service: PartyService,
     ) -> Template | Redirect:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
@@ -307,24 +124,7 @@ class PartyController(Controller):
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
 
-        party_user_link = (
-            await transaction.execute(
-                select(PartyUserLink)
-                .options(selectinload(PartyUserLink.party).selectinload(Party.members))
-                .where(PartyUserLink.user_id == user.id, PartyUserLink.party.has(time_slot_id=time_slot.id))
-            )
-        ).scalar_one_or_none()
-
-        if party_user_link is None:
-            raise AlertError([Alert(alert_class="alert-warning", message="You are not in a party for this time slot.")])
-
-        was_leader = party_user_link.is_leader
-
-        await transaction.delete(party_user_link)
-
-        if was_leader:
-            # If the leader is the only member, delete the party
-            await transaction.delete(party_user_link.party)
+        await party_service.leave_party(user_id=user.id, time_slot_id=time_slot.id)
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
 
@@ -334,21 +134,14 @@ class PartyController(Controller):
     )
     async def get_party_members(
         self,
-        transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
+        party_service: PartyService,
     ) -> Template:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
 
-        party = (
-            await transaction.execute(
-                select(Party)
-                .where(Party.time_slot_id == time_slot.id)
-                .options(selectinload(Party.party_user_links), selectinload(Party.members))
-                .where(Party.members.any(id=user.id))
-            )
-        ).scalar_one_or_none()
+        party = await party_service.get_party_with_members(user_id=user.id, time_slot_id=time_slot.id)
 
         if party is None:
             raise AlertError([Alert(alert_class="alert-warning", message="No party found for this time slot.")])
@@ -370,10 +163,10 @@ class PartyController(Controller):
     )
     async def promote_party_member(
         self,
-        transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
         member_sqid: Sqid,
+        party_service: PartyService,
     ) -> Template | Redirect:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
@@ -381,40 +174,9 @@ class PartyController(Controller):
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
 
-        party_user_link = (
-            await transaction.execute(
-                select(PartyUserLink).where(
-                    PartyUserLink.party.has(time_slot_id=time_slot.id), PartyUserLink.user_id == user.id
-                )
-            )
-        ).scalar_one_or_none()
-
-        if party_user_link is None or not party_user_link.is_leader:
-            raise AlertError([Alert(alert_class="alert-error", message="You are not leading a party.")])
-
         member_id = sink(member_sqid)
 
-        other_party_user_link = (
-            await transaction.execute(
-                select(PartyUserLink)
-                .where(PartyUserLink.party.has(time_slot_id=time_slot.id), PartyUserLink.user_id == member_id)
-                .options(
-                    selectinload(PartyUserLink.user),
-                )
-            )
-        ).scalar_one_or_none()
-
-        if other_party_user_link is None:
-            raise AlertError([Alert(alert_class="alert-error", message="Member not found in this party.")])
-
-        # We need to use a nested transaction so we can force is_leader = False before setting the new leader
-        # Otherwise we violate the unique constraint (well, index) on ix_unique_party_leader
-        async with transaction.begin_nested():
-            party_user_link.is_leader = False
-            transaction.add(party_user_link)
-
-        other_party_user_link.is_leader = True
-        transaction.add(other_party_user_link)
+        await party_service.promote_member(user_id=user.id, time_slot_id=time_slot.id, member_id=member_id)
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
 
@@ -426,10 +188,10 @@ class PartyController(Controller):
     )
     async def remove_party_member(
         self,
-        transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
         member_sqid: Sqid,
+        party_service: PartyService,
     ) -> Template | Redirect:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
@@ -439,34 +201,7 @@ class PartyController(Controller):
 
         member_id = sink(member_sqid)
 
-        if member_id == user.id:
-            raise AlertError([Alert(alert_class="alert-error", message="You cannot remove yourself from the party.")])
-
-        party_user_link = (
-            await transaction.execute(
-                select(PartyUserLink).where(
-                    PartyUserLink.party.has(time_slot_id=time_slot.id), PartyUserLink.user_id == user.id
-                )
-            )
-        ).scalar_one_or_none()
-
-        if party_user_link is None or not party_user_link.is_leader:
-            raise AlertError([Alert(alert_class="alert-error", message="You are not leading a party.")])
-
-        other_party_user_link = (
-            await transaction.execute(
-                select(PartyUserLink)
-                .where(PartyUserLink.party.has(time_slot_id=time_slot.id), PartyUserLink.user_id == member_id)
-                .options(
-                    selectinload(PartyUserLink.user),
-                )
-            )
-        ).scalar_one_or_none()
-
-        if other_party_user_link is None:
-            raise AlertError([Alert(alert_class="alert-error", message="Member not found in this party.")])
-
-        await transaction.delete(other_party_user_link)
+        await party_service.remove_member(user_id=user.id, time_slot_id=time_slot.id, member_id=member_id)
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
 
@@ -478,9 +213,9 @@ class PartyController(Controller):
     )
     async def check_in(
         self,
-        transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
+        party_service: PartyService,
     ) -> Template | Redirect:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
@@ -488,23 +223,9 @@ class PartyController(Controller):
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
 
-        if time_slot.checkin_open_time is not None and dt.datetime.now(dt.UTC) < time_slot.checkin_open_time:
-            raise AlertError([Alert(alert_class="alert-warning", message="Check-in is not open yet for this session.")])
-
-        existing_checkin = (
-            await transaction.execute(
-                select(UserCheckinStatus).where(
-                    UserCheckinStatus.user_id == user.id, UserCheckinStatus.time_slot_id == time_slot.id
-                )
-            )
-        ).scalar_one_or_none()
-
-        if existing_checkin:
-            existing_checkin.checked_in = True
-            transaction.add(existing_checkin)
-        else:
-            new_checkin = UserCheckinStatus(user_id=user.id, time_slot_id=time_slot.id, checked_in=True)
-            transaction.add(new_checkin)
+        await party_service.check_in(
+            user_id=user.id, time_slot_id=time_slot.id, checkin_open_time=time_slot.checkin_open_time
+        )
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
 
@@ -516,9 +237,9 @@ class PartyController(Controller):
     )
     async def check_out(
         self,
-        transaction: AsyncSession,
         user: User,
         time_slot: TimeSlot | None,
+        party_service: PartyService,
     ) -> Template | Redirect:
         if time_slot is None:
             raise AlertError([Alert(alert_class="alert-error", message="Time slot not found.")])
@@ -526,19 +247,6 @@ class PartyController(Controller):
         if time_slot.status != TimeSlotStatus.PRE_ALLOCATION:
             return Redirect(f"/party/overview/{swim(time_slot)}")
 
-        existing_checkin = (
-            await transaction.execute(
-                select(UserCheckinStatus).where(
-                    UserCheckinStatus.user_id == user.id, UserCheckinStatus.time_slot_id == time_slot.id
-                )
-            )
-        ).scalar_one_or_none()
-
-        if existing_checkin:
-            existing_checkin.checked_in = False
-            transaction.add(existing_checkin)
-        else:
-            new_checkin = UserCheckinStatus(user_id=user.id, time_slot_id=time_slot.id, checked_in=False)
-            transaction.add(new_checkin)
+        await party_service.check_out(user_id=user.id, time_slot_id=time_slot.id)
 
         return Redirect(f"/party/overview/{swim(time_slot)}")
