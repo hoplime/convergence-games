@@ -7,7 +7,6 @@ from litestar.exceptions import HTTPException, ValidationException
 from litestar.params import Body, RequestEncodingType
 from litestar.status_codes import HTTP_413_REQUEST_ENTITY_TOO_LARGE
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from convergence_games.db.enums import (
@@ -22,16 +21,9 @@ from convergence_games.db.enums import (
     SubmissionStatus,
 )
 from convergence_games.db.models import (
-    ContentWarning,
     Event,
     Game,
-    GameContentWarningLink,
-    GameGenreLink,
-    GameImageLink,
     GameRequirement,
-    GameRequirementTimeSlotLink,
-    Genre,
-    System,
     User,
 )
 from convergence_games.lib.alerts import Alert, AlertError
@@ -245,10 +237,9 @@ class SubmitGameController(Controller):
             "permission": permission_check(user_can_edit_game),
         },
     )
-    async def put_game(  # noqa: C901 - We know this is too complex, but it's tricky to change at the moment
+    async def put_game(
         self,
         request: Request,
-        transaction: AsyncSession,
         game_service: GameService,
         game: Game,
         permission: bool,
@@ -262,137 +253,7 @@ class SubmitGameController(Controller):
         ):
             raise AlertError([Alert("alert-warning", "Game editing is not currently open for this event.")])
 
-        # Update all the properties
-        # This is kept in the same order as the POST method to make it easier to compare
-        game.name = data.title
-        game.tagline = data.tagline
-        game.description = data.description
-        game.classification = data.classification
-        game.crunch = data.crunch
-        game.core_activity = data.core_activity
-        game.tone = data.tone
-        game.player_count_minimum = data.player_count_minimum_prop
-        game.player_count_optimum = data.player_count_optimum_prop
-        game.player_count_maximum = data.player_count_maximum_prop
-        game.ksps = data.ksp
-        if isinstance(data.system, int):
-            game.system_id = data.system
-        else:
-            game.system = await game_service.get_or_create_by_name(System, data.system.value)
-        # existing_game.gamemaster=request.user  - Not updated!
-        # existing_game.event_id=event_id  - Not updated!
-
-        game.game_requirement.times_to_run = data.times_to_run
-        game.game_requirement.scheduling_notes = data.scheduling_notes
-        game.game_requirement.table_size_requirement = data.table_size_requirement
-        game.game_requirement.table_size_notes = data.table_size_notes
-        game.game_requirement.equipment_requirement = data.equipment_requirement
-        game.game_requirement.equipment_notes = data.equipment_notes
-        game.game_requirement.activity_requirement = data.activity_requirement
-        game.game_requirement.activity_notes = data.activity_notes
-        game.game_requirement.room_requirement = data.room_requirement
-        game.game_requirement.room_notes = data.room_notes
-
-        # Reassign the links
-        # TODO - This is a bit of a hack because we can't just automatically update the game requirement
-        # For two reasons:
-        # 1. This could be creating new Genres OR using existing ones
-        # 2. It's not a true linking table because it's got extra data in it, so some ORM helpers don't work
-        desired_genre_ids_or_new_genres = [
-            genre if isinstance(genre, int) else await game_service.get_or_create_by_name(Genre, genre.value)
-            for genre in data.genre
-        ]
-        # Remove any genre links that are not in the desired list
-        for genre_link in game.genre_links:
-            if genre_link.genre_id not in desired_genre_ids_or_new_genres:
-                await transaction.delete(genre_link)
-        # Add any new genre links that are not already in the existing list
-        for genre_id_or_new_genre in desired_genre_ids_or_new_genres:
-            if isinstance(genre_id_or_new_genre, int):
-                if genre_id_or_new_genre in [link.genre_id for link in game.genre_links]:
-                    # This genre link already exists, so skip it
-                    continue
-                genre_link = GameGenreLink(game_id=game.id, genre_id=genre_id_or_new_genre)
-            else:
-                genre_link = GameGenreLink(game_id=game.id, genre=genre_id_or_new_genre)
-
-            # Actually add it
-            transaction.add(genre_link)
-
-        # Do the same logic for content warnings
-        desired_content_warning_ids_or_content_warnings = [
-            content_warning
-            if isinstance(content_warning, int)
-            else await game_service.get_or_create_by_name(ContentWarning, content_warning.value)
-            for content_warning in data.content_warning
-        ]
-        # Remove any content warning links that are not in the desired list
-        for content_warning_link in game.content_warning_links:
-            if content_warning_link.content_warning_id not in desired_content_warning_ids_or_content_warnings:
-                await transaction.delete(content_warning_link)
-        # Add any new content warning links that are not already in the existing list
-        for content_warning_id_or_new_content_warning in desired_content_warning_ids_or_content_warnings:
-            if isinstance(content_warning_id_or_new_content_warning, int):
-                if content_warning_id_or_new_content_warning in [
-                    link.content_warning_id for link in game.content_warning_links
-                ]:
-                    # This content warning link already exists, so skip it
-                    continue
-                content_warning_link = GameContentWarningLink(
-                    game_id=game.id, content_warning_id=content_warning_id_or_new_content_warning
-                )
-            else:
-                content_warning_link = GameContentWarningLink(
-                    game_id=game.id, content_warning=content_warning_id_or_new_content_warning
-                )
-
-            # Actually add it
-            transaction.add(content_warning_link)
-
-        # Time slots
-        desired_time_slot_ids = data.available_time_slot
-        # Remove any time slot links that are not in the desired list
-        for time_slot_link in game.game_requirement.time_slot_links:
-            if time_slot_link.time_slot_id not in desired_time_slot_ids:
-                await transaction.delete(time_slot_link)
-        # Add any new time slot links that are not already in the existing list
-        for time_slot_id in desired_time_slot_ids:
-            if time_slot_id in [link.time_slot_id for link in game.game_requirement.time_slot_links]:
-                # This time slot link already exists, so skip it
-                continue
-            time_slot_link = GameRequirementTimeSlotLink(
-                game_requirement=game.game_requirement, time_slot_id=time_slot_id
-            )
-            transaction.add(time_slot_link)
-
-        # Images
-        desired_image_ids_or_images = [
-            image if isinstance(image, int) else await game_service.create_image(image, image_loader)
-            for image in data.image
-        ]
-        # Remove any image links that are not in the desired list
-        for image_link in game.image_links:
-            if image_link.image_id not in desired_image_ids_or_images:
-                await transaction.delete(image_link)
-            else:
-                # This image link is staying, so just update the sort order
-                image_link.sort_order = desired_image_ids_or_images.index(image_link.image_id)
-        # Add any new image links that are not already in the existing list
-        for i, image_id_or_image in enumerate(desired_image_ids_or_images):
-            if isinstance(image_id_or_image, int):
-                # Technically since you won't share the same image ID across multiple games, this is a bit redundant
-                # But maybe in future we will be sharing images across games/systems/etc
-                if image_id_or_image in [link.image_id for link in game.image_links]:
-                    # This image link already exists, so skip it
-                    continue
-                image_link = GameImageLink(game_id=game.id, image_id=image_id_or_image, sort_order=i)
-            else:
-                image_link = GameImageLink(game=game, image=image_id_or_image, sort_order=i)
-
-            # Actually add it
-            transaction.add(image_link)
-
-        transaction.add(game)
+        game = await game_service.update_game(game=game, data=data, image_loader=image_loader)
 
         return HTMXBlockTemplate(
             re_target="#content",
@@ -417,14 +278,13 @@ class SubmitGameController(Controller):
     async def put_game_submission_status(
         self,
         request: Request,
-        transaction: AsyncSession,
+        game_service: GameService,
         game: Game,
         data: Annotated[SubmissionStatusForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
         assert request.user is not None
 
-        game.submission_status = data.submission_status
-        transaction.add(game)
+        game = await game_service.set_submission_status(game, data.submission_status)
 
         template_str = catalog.render(
             "GameSubmissionRow",
