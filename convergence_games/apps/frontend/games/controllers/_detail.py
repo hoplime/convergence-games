@@ -1,111 +1,42 @@
 from litestar import Controller, get
+from litestar.di import Provide
 from litestar.exceptions import HTTPException
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from convergence_games.db.models import (
-    Game,
-    Session,
-    Table,
-    UserEventD20Transaction,
-    UserGamePlayed,
-    UserGamePreference,
-)
 from convergence_games.lib.ocean import Sqid, sink
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 from convergence_games.services import ImageLoader
 
+from ..services import GameService, UserGameContext, provide_game_service
+
 
 class GameController(Controller):
     path = "/game"
+    dependencies = {"game_service": Provide(provide_game_service)}
 
     @get(path="/{game_sqid:str}")
     async def get_game(
         self,
         request: Request,
         game_sqid: Sqid,
-        transaction: AsyncSession,
+        game_service: GameService,
         image_loader: ImageLoader,
     ) -> Template:
         game_id: int = sink(game_sqid)
-        game = (
-            await transaction.execute(
-                select(Game)
-                .options(
-                    selectinload(Game.system),
-                    selectinload(Game.gamemaster),
-                    selectinload(Game.event),
-                    selectinload(Game.game_requirement),
-                    selectinload(Game.genres),
-                    selectinload(Game.content_warnings),
-                    selectinload(Game.images),
-                )
-                .where(Game.id == game_id)
-            )
-        ).scalar_one_or_none()
+        game = await game_service.get_game_for_detail(game_id)
 
         if game is None:
             raise HTTPException(status_code=404, detail="Game not found")
 
         if request.user:
-            user_game_preference = (
-                await transaction.execute(
-                    select(UserGamePreference).where(
-                        UserGamePreference.game_id == game_id,
-                        UserGamePreference.user_id == request.user.id,
-                        UserGamePreference.frozen_at_time_slot_id.is_(None),
-                    )
-                )
-            ).scalar_one_or_none()
-            preference = user_game_preference.preference if user_game_preference else None
-            latest_d20_transaction = (
-                await transaction.execute(
-                    select(UserEventD20Transaction)
-                    .where(UserEventD20Transaction.user_id == request.user.id)
-                    .where(UserEventD20Transaction.event_id == game.event_id)
-                    .order_by(UserEventD20Transaction.id.desc())
-                    .limit(1)
-                )
-            ).scalar_one_or_none()
-            user_game_played = (
-                await transaction.execute(
-                    select(UserGamePlayed).where(
-                        UserGamePlayed.user_id == request.user.id, UserGamePlayed.game_id == game_id
-                    )
-                )
-            ).scalar_one_or_none()
-        else:
-            preference = None
-            latest_d20_transaction = None
-            user_game_played = None
-
-        game_image_urls = [
-            {
-                "full": await image_loader.get_image_path(image.lookup_key),
-                "thumbnail": await image_loader.get_image_path(image.lookup_key, size=300),
-            }
-            for image in game.images
-        ]
-
-        scheduled_sessions = (
-            (
-                await transaction.execute(
-                    select(Session)
-                    .where(
-                        Session.game_id == game_id,
-                        Session.committed,
-                    )
-                    .options(
-                        selectinload(Session.table).selectinload(Table.room),
-                        selectinload(Session.time_slot),
-                    )
-                )
+            user_game_context = await game_service.get_user_game_context(
+                game_id=game_id, user_id=request.user.id, event_id=game.event_id
             )
-            .scalars()
-            .all()
-        )
+        else:
+            user_game_context = UserGameContext(None, None, False)
+
+        game_image_urls = await game_service.get_game_image_urls(game, image_loader)
+        scheduled_sessions = await game_service.get_scheduled_sessions(game_id)
 
         return HTMXBlockTemplate(
             template_name="pages/game.html.jinja",
@@ -113,9 +44,9 @@ class GameController(Controller):
             context={
                 "game": game,
                 "game_image_urls": game_image_urls,
-                "preference": preference,
-                "user_game_played": user_game_played,
-                "scheduled_sessions": sorted(scheduled_sessions, key=lambda s: s.time_slot.start_time),
-                "has_d20": latest_d20_transaction is not None and latest_d20_transaction.current_balance > 0,
+                "preference": user_game_context.preference,
+                "user_game_played": user_game_context.user_game_played,
+                "scheduled_sessions": scheduled_sessions,
+                "has_d20": user_game_context.has_d20,
             },
         )
