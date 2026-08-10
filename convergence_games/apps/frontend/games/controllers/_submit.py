@@ -1,29 +1,17 @@
 from dataclasses import dataclass
-from typing import Annotated, Callable, Literal, cast
-from uuid import uuid4
+from typing import Annotated, cast
 
 from litestar import Controller, get, post, put
-from litestar.datastructures import UploadFile
+from litestar.di import Provide
 from litestar.exceptions import HTTPException, ValidationException
 from litestar.params import Body, RequestEncodingType
 from litestar.status_codes import HTTP_413_REQUEST_ENTITY_TOO_LARGE
-from pydantic import (
-    BaseModel,
-    BeforeValidator,
-    ConfigDict,
-    Field,
-    TypeAdapter,
-    ValidationInfo,
-    field_validator,
-)
-from pydantic_core import PydanticCustomError
-from sqlalchemy import select
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from convergence_games.db.enums import (
     GameActivityRequirement,
-    GameClassification,
     GameCoreActivity,
     GameCrunch,
     GameEquipmentRequirement,
@@ -43,47 +31,23 @@ from convergence_games.db.models import (
     GameRequirement,
     GameRequirementTimeSlotLink,
     Genre,
-    Image,
     System,
     User,
 )
 from convergence_games.lib.alerts import Alert, AlertError
 from convergence_games.lib.deps import event_with, game_with
 from convergence_games.lib.guards import permission_check, user_guard
-from convergence_games.lib.ocean import Sqid, sink
 from convergence_games.lib.permissions import user_has_permission
 from convergence_games.lib.request_type import Request
 from convergence_games.lib.response_type import HTMXBlockTemplate, Template
 from convergence_games.lib.template import catalog
 from convergence_games.services import ImageLoader
 
-
-# region Submit Game Form
-class NewValue[T](BaseModel):
-    value: T
+from .._forms import SubmitGameForm
+from ..services import GameService, provide_game_service
 
 
-type SqidOrNew[T] = int | NewValue[T]
-
-
-def make_sqid_or_new_validator[T](new_value_type: type[T]) -> Callable[[str], SqidOrNew[T]]:
-    new_value_type_adapter = TypeAdapter(new_value_type)
-
-    def sqid_or_new_validator(value: str) -> SqidOrNew[T]:
-        if value.startswith("new:"):
-            return NewValue(value=new_value_type_adapter.validate_python(value.removeprefix("new:")))
-        return sink(cast(Sqid, value))
-
-    return sqid_or_new_validator
-
-
-NoneToEmpty = BeforeValidator(lambda value: "" if value is None else value)
-MaybeListValidator = BeforeValidator(lambda value: value if isinstance(value, list) else [value])
-IntFlagValidator = BeforeValidator(lambda value: sum(map(int, value)) if isinstance(value, list) else int(value))
-SqidOrNewStr = Annotated[SqidOrNew[str], BeforeValidator(make_sqid_or_new_validator(str))]
-SqidInt = Annotated[int, BeforeValidator(sink)]
-
-
+# region Permissions
 def user_can_approve_game(user: User, game: Game) -> bool:
     return user_has_permission(user, "game", (game.event, game), "approve")
 
@@ -92,142 +56,11 @@ def user_can_edit_game(user: User, game: Game) -> bool:
     return user_has_permission(user, "game", (game.event, game), "update")
 
 
-class SubmitGameForm(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)  # Required for UploadFile
-
-    # Stuff that's used for Game
-    title: Annotated[str, Field(min_length=1, max_length=100, title="Title")]
-    system: Annotated[SqidOrNewStr, Field(title="System")]
-    tagline: Annotated[str, Field(min_length=10, max_length=140, title="Tagline"), NoneToEmpty] = ""
-    description: Annotated[str, Field(title="Description"), NoneToEmpty] = ""
-
-    image: Annotated[
-        list[UploadFile | SqidInt], MaybeListValidator
-    ] = []  # TODO: Or typeof existing image in the database
-
-    genre: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Genres")]
-    tone: Annotated[GameTone, Field(title="Tone")]
-    content_warning: Annotated[list[SqidOrNewStr], MaybeListValidator, Field(title="Content Warnings")] = []
-    crunch: Annotated[GameCrunch, Field(title="Complexity")]
-    core_activity: Annotated[GameCoreActivity, IntFlagValidator, Field(title="Core Activities")] = GameCoreActivity.NONE
-    player_count_minimum_more: int | None = None
-    player_count_minimum: Annotated[int, Field(ge=1, title="Minimum Players")]
-    player_count_optimum_more: int | None = None
-    player_count_optimum: Annotated[int, Field(ge=1, title="Optimum Players")]
-    player_count_maximum_more: int | None = None
-    player_count_maximum: Annotated[int, Field(ge=1, title="Maximum Players")]
-    classification: Annotated[GameClassification, Field(title="Age Suitability & Classification")]
-    ksp: Annotated[GameKSP, IntFlagValidator, Field(title="Bonuses")] = GameKSP.NONE
-
-    # Stuff that's used for GameRequirement
-    times_to_run: Annotated[int, Field(title="Times to Run")] = 1
-    available_time_slot: Annotated[list[SqidInt], MaybeListValidator, Field(title="Available Time Slots")]
-    scheduling_notes: Annotated[str, Field(title="Scheduling Notes"), NoneToEmpty] = ""
-    table_size_requirement: Annotated[
-        GameTableSizeRequirement, IntFlagValidator, Field(title="Table Size Requirements")
-    ] = GameTableSizeRequirement.NONE
-    table_size_notes: Annotated[str, Field(title="Table Size Notes"), NoneToEmpty] = ""
-    equipment_requirement: Annotated[
-        GameEquipmentRequirement, IntFlagValidator, Field(title="Equipment Requirements")
-    ] = GameEquipmentRequirement.NONE
-    equipment_notes: Annotated[str, Field(title="Equiment Notes"), NoneToEmpty] = ""
-    activity_requirement: Annotated[GameActivityRequirement, IntFlagValidator, Field(title="Activity Requirements")] = (
-        GameActivityRequirement.NONE
-    )
-    activity_notes: Annotated[str, Field(title="Activity Notes"), NoneToEmpty] = ""
-    room_requirement: Annotated[GameRoomRequirement, IntFlagValidator, Field(title="Room Requirements")] = (
-        GameRoomRequirement.NONE
-    )
-    room_notes: Annotated[str, Field(title="Room Notes"), NoneToEmpty] = ""
-
-    agree_to_code_of_conduct: Annotated[
-        Literal["on"] | None, Field(title="Agree to Code of Conduct", validate_default=True)
-    ] = None
-    agree_to_use_safety_tools: Annotated[
-        Literal["on"] | None, Field(title="Agree to Use Safety Tools", validate_default=True)
-    ] = None
-    agree_to_hygiene: Annotated[Literal["on"] | None, Field(title="Agree to Hygiene", validate_default=True)] = None
-    no_content_warnings_needed: Annotated[
-        Literal["on"] | None, Field(title="No Content Warnings Needed", validate_default=True)
-    ] = None
-
-    @property
-    def player_count_minimum_prop(self) -> int:
-        return max(self.player_count_minimum, self.player_count_minimum_more or 0)
-
-    @property
-    def player_count_optimum_prop(self) -> int:
-        return max(self.player_count_optimum, self.player_count_optimum_more or 0)
-
-    @property
-    def player_count_maximum_prop(self) -> int:
-        return max(self.player_count_maximum, self.player_count_maximum_more or 0)
-
-    @field_validator("player_count_optimum", mode="after")
-    @classmethod
-    def validate_player_count_optimum(cls, value: int, info: ValidationInfo) -> int:
-        minimum = max(info.data["player_count_minimum"], info.data["player_count_minimum_more"] or 0)
-        optimum = max(value, info.data["player_count_optimum_more"] or 0)
-        if optimum < minimum:
-            raise PydanticCustomError("", "Optimum player count must be greater than or equal to minimum player count.")
-        return value
-
-    @field_validator("player_count_maximum", mode="after")
-    @classmethod
-    def validate_player_count_maximum(cls, value: int, info: ValidationInfo) -> int:
-        optimum = max(info.data["player_count_optimum"], info.data["player_count_optimum_more"] or 0)
-        maximum = max(value, info.data["player_count_maximum_more"] or 0)
-        if maximum < optimum:
-            raise PydanticCustomError("", "Maximum player count must be greater than or equal to optimum player count.")
-        return value
-
-    @field_validator("available_time_slot", mode="after")
-    @classmethod
-    def validate_enough_time_slots_selected(cls, value: list[SqidInt], info: ValidationInfo) -> list[SqidInt]:
-        if len(value) < info.data["times_to_run"]:
-            raise PydanticCustomError("", "You must select at least as many time slots as times to run.")
-        return value
-
-    @field_validator("agree_to_code_of_conduct", mode="after")
-    @classmethod
-    def validate_agree_to_code_of_conduct(cls, value: bool) -> bool:
-        if not value:
-            raise PydanticCustomError("", "You must agree to the Code of Conduct.")
-        return value
-
-    @field_validator("agree_to_use_safety_tools", mode="after")
-    @classmethod
-    def validate_agree_to_use_safety_tools(cls, value: bool) -> bool:
-        if not value:
-            raise PydanticCustomError("", "You must agree to use the X-Card and Open Table Policy.")
-        return value
-
-    @field_validator("agree_to_hygiene", mode="after")
-    @classmethod
-    def validate_agree_to_hygiene(cls, value: bool) -> bool:
-        if not value:
-            raise PydanticCustomError("", "You must agree to meet convention hygiene expectations.")
-        return value
-
-    @field_validator("no_content_warnings_needed", mode="after")
-    @classmethod
-    def validate_no_content_warnings_needed(
-        cls, value: Literal["on"] | None, info: ValidationInfo
-    ) -> Literal["on"] | None:
-        content_warnings = info.data.get("content_warning", [])
-        if not content_warnings and not value:
-            raise PydanticCustomError(
-                "",
-                "You must either add at least one content warning or confirm that none are needed.",
-            )
-        return value
+# endregion
 
 
 class SubmissionStatusForm(BaseModel):
     submission_status: SubmissionStatus
-
-
-# endregion
 
 
 # region Form Error
@@ -272,80 +105,10 @@ def handle_request_entity_too_large_error(request: Request, exc: HTTPException) 
 # endregion
 
 
-# region Utility Functions
-async def create_if_not_exists[T: System | Genre | ContentWarning](
-    model_type: type[T],
-    name: str,
-    transaction: AsyncSession,
-) -> T:
-    existing = await transaction.execute(select(model_type).where(model_type.name == name))
-    existing = existing.scalars().one_or_none()
-    if existing is not None:
-        return existing
-    return model_type(name=name)
-
-
-async def create_new_links(
-    data: SubmitGameForm,
-    transaction: AsyncSession,
-    game: Game,
-) -> tuple[list[GameGenreLink], list[GameContentWarningLink], list[GameRequirementTimeSlotLink]]:
-    genre_links = [
-        (
-            GameGenreLink(game=game, genre_id=genre)
-            if isinstance(genre, int)
-            else GameGenreLink(game=game, genre=await create_if_not_exists(Genre, genre.value, transaction))
-        )
-        for genre in data.genre
-    ]
-    content_warning_links = [
-        (
-            GameContentWarningLink(game=game, content_warning_id=content_warning)
-            if isinstance(content_warning, int)
-            else GameContentWarningLink(
-                game=game,
-                content_warning=await create_if_not_exists(ContentWarning, content_warning.value, transaction),
-            )
-        )
-        for content_warning in data.content_warning
-    ]
-    time_slot_links = [
-        GameRequirementTimeSlotLink(game_requirement=game.game_requirement, time_slot_id=time_slot_id)
-        for time_slot_id in data.available_time_slot
-    ]
-    return genre_links, content_warning_links, time_slot_links
-
-
-async def create_image(
-    upload_file: UploadFile,
-    image_loader: ImageLoader,
-) -> Image:
-    lookup = uuid4()
-    await image_loader.save_image(await upload_file.read(), lookup)
-    return Image(lookup_key=lookup)
-
-
-async def create_image_links(
-    data: SubmitGameForm,
-    game: Game,
-    image_loader: ImageLoader,
-) -> list[GameImageLink]:
-    return [
-        GameImageLink(
-            game=game,
-            image=await create_image(image, image_loader),
-            sort_order=i,
-        )
-        for i, image in enumerate(data.image)
-        if isinstance(image, UploadFile)
-    ]
-
-
-# endregion
-
-
 # region Submit Game Controller
 class SubmitGameController(Controller):
+    dependencies = {"game_service": Provide(provide_game_service)}
+
     @get(
         path="/event/{event_sqid:str}/submit-game",
         guards=[user_guard],
@@ -438,8 +201,8 @@ class SubmitGameController(Controller):
     async def post_game(
         self,
         request: Request,
-        transaction: AsyncSession,
         event: Event,
+        game_service: GameService,
         image_loader: ImageLoader,
         data: Annotated[SubmitGameForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> HTMXBlockTemplate:
@@ -450,61 +213,9 @@ class SubmitGameController(Controller):
         ):
             raise AlertError([Alert("alert-warning", "Game submissions are not currently open for this event.")])
 
-        system_kwarg = (
-            {"system_id": data.system}
-            if isinstance(data.system, int)
-            else {"system": await create_if_not_exists(System, data.system.value, transaction)}
+        new_game = await game_service.create_game(
+            data=data, event=event, gamemaster_id=request.user.id, image_loader=image_loader
         )
-
-        new_game = Game(
-            name=data.title,
-            tagline=data.tagline,
-            description=data.description,
-            classification=data.classification,
-            crunch=data.crunch,
-            core_activity=data.core_activity,
-            tone=data.tone,
-            player_count_minimum=data.player_count_minimum_prop,
-            player_count_optimum=data.player_count_optimum_prop,
-            player_count_maximum=data.player_count_maximum_prop,
-            ksps=data.ksp,
-            **system_kwarg,
-            gamemaster_id=request.user.id,
-            event_id=event.id,
-            game_requirement=GameRequirement(
-                times_to_run=data.times_to_run,
-                scheduling_notes=data.scheduling_notes,
-                table_size_requirement=data.table_size_requirement,
-                table_size_notes=data.table_size_notes,
-                equipment_requirement=data.equipment_requirement,
-                equipment_notes=data.equipment_notes,
-                activity_requirement=data.activity_requirement,
-                activity_notes=data.activity_notes,
-                room_requirement=data.room_requirement,
-                room_notes=data.room_notes,
-            ),
-        )
-
-        # Genres, Content Warrnings, Available Time Slots
-        genre_links, content_warning_links, time_slot_links = await create_new_links(
-            data=data,
-            transaction=transaction,
-            game=new_game,
-        )
-        image_links = await create_image_links(
-            data=data,
-            game=new_game,
-            image_loader=image_loader,
-        )
-
-        transaction.add(new_game)
-        transaction.add_all(genre_links)
-        transaction.add_all(content_warning_links)
-        transaction.add_all(time_slot_links)
-        transaction.add_all(image_links)
-
-        await transaction.flush()
-        await transaction.refresh(new_game)
 
         return HTMXBlockTemplate(
             re_target="#content",
@@ -538,6 +249,7 @@ class SubmitGameController(Controller):
         self,
         request: Request,
         transaction: AsyncSession,
+        game_service: GameService,
         game: Game,
         permission: bool,
         image_loader: ImageLoader,
@@ -566,7 +278,7 @@ class SubmitGameController(Controller):
         if isinstance(data.system, int):
             game.system_id = data.system
         else:
-            game.system = await create_if_not_exists(System, data.system.value, transaction)
+            game.system = await game_service.get_or_create_by_name(System, data.system.value)
         # existing_game.gamemaster=request.user  - Not updated!
         # existing_game.event_id=event_id  - Not updated!
 
@@ -587,7 +299,7 @@ class SubmitGameController(Controller):
         # 1. This could be creating new Genres OR using existing ones
         # 2. It's not a true linking table because it's got extra data in it, so some ORM helpers don't work
         desired_genre_ids_or_new_genres = [
-            genre if isinstance(genre, int) else await create_if_not_exists(Genre, genre.value, transaction)
+            genre if isinstance(genre, int) else await game_service.get_or_create_by_name(Genre, genre.value)
             for genre in data.genre
         ]
         # Remove any genre links that are not in the desired list
@@ -611,7 +323,7 @@ class SubmitGameController(Controller):
         desired_content_warning_ids_or_content_warnings = [
             content_warning
             if isinstance(content_warning, int)
-            else await create_if_not_exists(ContentWarning, content_warning.value, transaction)
+            else await game_service.get_or_create_by_name(ContentWarning, content_warning.value)
             for content_warning in data.content_warning
         ]
         # Remove any content warning links that are not in the desired list
@@ -655,7 +367,8 @@ class SubmitGameController(Controller):
 
         # Images
         desired_image_ids_or_images = [
-            image if isinstance(image, int) else await create_image(image, image_loader) for image in data.image
+            image if isinstance(image, int) else await game_service.create_image(image, image_loader)
+            for image in data.image
         ]
         # Remove any image links that are not in the desired list
         for image_link in game.image_links:
