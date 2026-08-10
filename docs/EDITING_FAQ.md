@@ -1,7 +1,7 @@
 
 ## Editing the FAQ
 
-The FAQ page content lives in `convergence_games/templates/pages/faq.md`. The matching Jinja template is generated from it — do not edit `faq.html.jinja` by hand.
+The FAQ page content lives in `src/convergence_games/templates/pages/faq.md`. The matching Jinja template is generated from it — do not edit `faq.html.jinja` by hand.
 
 Markdown conventions:
 

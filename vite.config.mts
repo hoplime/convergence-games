@@ -6,9 +6,9 @@ export default defineConfig({
         emptyOutDir: false,
         minify: false,
         sourcemap: true,
-        outDir: resolve(__dirname, "convergence_games/static/js"),
+        outDir: resolve(__dirname, "src/convergence_games/static/js"),
         lib: {
-            entry: resolve(__dirname, "convergence_games/frontend"),
+            entry: resolve(__dirname, "src/convergence_games/frontend"),
             name: "convergence",
             fileName: "lib",
             formats: ["umd"],

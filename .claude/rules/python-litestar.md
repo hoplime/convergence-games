@@ -7,7 +7,7 @@ paths: **/*.py
 
 ## Route Handlers
 
-- Organize routes in `Controller` classes, one per file in `convergence_games/apps/frontend/<domain>/controllers/` (domains: `accounts`, `admin`, `debug`, `games`, `player`, `public`, `redirects`, `user`).
+- Organize routes in `Controller` classes, one per file in `src/convergence_games/apps/frontend/<domain>/controllers/` (domains: `accounts`, `admin`, `debug`, `games`, `player`, `public`, `redirects`, `user`).
 - Use `@get`, `@post`, `@put`, `@delete` decorators from litestar.
 - All handlers are `async def`.
 - Apply `guards=[user_guard]` on endpoints requiring authentication.
@@ -15,7 +15,7 @@ paths: **/*.py
 
 ## Dependency Injection
 
-- Dependencies declared in `convergence_games/lib/deps.py` (registered app-wide via `server/core.py`).
+- Dependencies declared in `src/convergence_games/lib/deps.py` (registered app-wide via `server/core.py`).
 - Inject via handler parameter names: `transaction: AsyncSession`, `user: User`, `image_loader: ImageLoader`.
 - `transaction` provides an auto-committing async session wrapped in `begin()`.
 
@@ -27,17 +27,17 @@ paths: **/*.py
 
 ## Templates (JinjaX)
 
-- Pages in `convergence_games/templates/pages/` (lowercase `.html.jinja`).
-- Reusable components in `convergence_games/templates/components/` (PascalCase `.html.jinja`).
+- Pages in `src/convergence_games/templates/pages/` (lowercase `.html.jinja`).
+- Reusable components in `src/convergence_games/templates/components/` (PascalCase `.html.jinja`).
 - All JinjaX components automatically receive `request` via custom passthrough in template_config.
-- Custom Jinja filters/globals registered in `convergence_games/lib/template.py`.
+- Custom Jinja filters/globals registered in `src/convergence_games/lib/template.py`.
 
 ## Error Handling
 
 - `UserNotLoggedInError` for auth failures (redirects to login).
 - `AlertError` for user-facing error messages with toast alerts.
 - `IntegrityError` caught in transaction provider, raised as 409 Conflict.
-- Custom exception handlers registered in `convergence_games/server/core.py`.
+- Custom exception handlers registered in `src/convergence_games/server/core.py`.
 
 ## Events
 
@@ -54,6 +54,6 @@ paths: **/*.py
 
 ## Permissions
 
-- `user_has_permission()` from `convergence_games/lib/permissions.py` checks role-based access.
+- `user_has_permission()` from `src/convergence_games/lib/permissions.py` checks role-based access.
 - Available as both a route guard helper and a Jinja template filter.
 - Role hierarchy: Owner > Manager > Reader > Player.

@@ -7,8 +7,8 @@ COPY . /app
 RUN npm install && npm run build
 
 # Now we have outputs at
-# /app/convergence_games/static/css/style.css
-# /app/convergence_games/static/js/lib.js
+# /app/src/convergence_games/static/css/style.css
+# /app/src/convergence_games/static/js/lib.js
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim@sha256:5c8edeb8b5644b618882e06ddaa8ddf509dcd1aa7d08fedac7155106116a9a9e AS python-builder
 
@@ -50,9 +50,9 @@ RUN chmod u+x ./entrypoint.sh
 # Copy built files
 COPY --from=python-builder /python /python
 COPY --from=python-builder /app /app
-COPY --from=node-builder /app/convergence_games/static/css/style.css /app/convergence_games/static/css/style.css
-COPY --from=node-builder /app/convergence_games/static/js/lib.js /app/convergence_games/static/js/lib.js
-COPY --from=node-builder /app/convergence_games/static/js/lib.js.map /app/convergence_games/static/js/lib.js.map
+COPY --from=node-builder /app/src/convergence_games/static/css/style.css /app/src/convergence_games/static/css/style.css
+COPY --from=node-builder /app/src/convergence_games/static/js/lib.js /app/src/convergence_games/static/js/lib.js
+COPY --from=node-builder /app/src/convergence_games/static/js/lib.js.map /app/src/convergence_games/static/js/lib.js.map
 
 # Set up the environment
 ENV PATH="/app/.venv/bin:$PATH"
@@ -62,8 +62,8 @@ ENV LAST_UPDATED=$BUILD_TIME
 # Create the cache busted versions of style.css and lib.js
 ENV USE_CACHE_BUSTED_FILES=1
 RUN RELEASE=$(date -d "$LAST_UPDATED" +"%Y.%m.%d+%H.%M.%S") && \
-    mv /app/convergence_games/static/css/style.css /app/convergence_games/static/css/style.$RELEASE.css && \
-    mv /app/convergence_games/static/js/lib.js /app/convergence_games/static/js/lib.$RELEASE.js
+    mv /app/src/convergence_games/static/css/style.css /app/src/convergence_games/static/css/style.$RELEASE.css && \
+    mv /app/src/convergence_games/static/js/lib.js /app/src/convergence_games/static/js/lib.$RELEASE.js
 
 CMD ["python", "-m", "gunicorn", "convergence_games.server.app:app", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
 

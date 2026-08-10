@@ -32,8 +32,8 @@ from markdown_it.token import Token
 from mdit_py_plugins.attrs import attrs_block_plugin
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_INPUT = REPO_ROOT / "convergence_games/templates/pages/faq.md"
-DEFAULT_OUTPUT = REPO_ROOT / "convergence_games/templates/pages/faq.html.jinja"
+DEFAULT_INPUT = REPO_ROOT / "src/convergence_games/templates/pages/faq.md"
+DEFAULT_OUTPUT = REPO_ROOT / "src/convergence_games/templates/pages/faq.html.jinja"
 
 GENERATED_BANNER = (
     "{# GENERATED FROM faq.md — DO NOT EDIT DIRECTLY. #}\n{# Run: PYTHONPATH=. uv run python scripts/build_faq.py #}\n"

@@ -13,6 +13,6 @@ paths: **/*.py
 
 ## Test Layout
 
-- Tests live in a top-level `tests/` directory mirroring the `convergence_games/` source structure.
-- Example: `tests/lib/test_auth.py` tests `convergence_games/lib/auth.py`.
+- Tests live in a top-level `tests/` directory mirroring the `src/convergence_games/` source structure.
+- Example: `tests/lib/test_auth.py` tests `src/convergence_games/lib/auth.py`.
 - Test files are named `test_*.py`.

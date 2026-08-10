@@ -1,3 +1,7 @@
+[build-system]
+requires = ["uv_build>=0.7,<0.8"]
+build-backend = "uv_build"
+
 [project]
 name = "convergence-games"
 version = "0.1.0"
@@ -75,7 +79,7 @@ exclude = [
     "**/__pycache__",
     "**/.*",
     ".venv",
-    "convergence_games/db/migrations",
+    "src/convergence_games/db/migrations",
     "ignore",
 ]
 reportPrivateImportUsage = "none"

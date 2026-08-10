@@ -19,7 +19,7 @@ sqlalchemy = SQLAlchemyAsyncConfig(
         pool_recycle=SETTINGS.DATABASE_POOL_RECYCLE,
     ),
     alembic_config=AlembicAsyncConfig(
-        script_location="convergence_games/db/migrations",
+        script_location="src/convergence_games/db/migrations",
     ),
 )
 
