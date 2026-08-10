@@ -17,7 +17,7 @@ from litestar.params import Body, Parameter, RequestEncodingType
 from litestar.response import Redirect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from convergence_games.db.models import LoginProvider
+from convergence_games.db.enums import LoginProvider
 from convergence_games.lib.auth import (
     AuthIntent,
     NoAccountForSignInError,
