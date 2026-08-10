@@ -9,6 +9,11 @@ from convergence_games.lib.permissions import user_has_permission
 SqidInt = Annotated[int, BeforeValidator(sink)]
 
 
+class PutEventManageAllocationSession(BaseModel):
+    leader: SqidInt
+    session: SqidInt | None
+
+
 class PutEventManageScheduleSession(BaseModel):
     game: SqidInt
     table: SqidInt
