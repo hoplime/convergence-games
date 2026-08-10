@@ -1,8 +1,3 @@
-# `LoginProvider` is not a model, but the pre-split `models.py` imported it from `db.enums` at
-# module scope, so downstream code (e.g. accounts/controllers/_oauth.py) does
-# `from convergence_games.db.models import LoginProvider`. Re-export it here to keep that working.
-from convergence_games.db.enums import LoginProvider
-
 from ._allocation import Allocation
 from ._base import Base, UserAuditColumns, foreign_key_constraint_with_event
 from ._content_warning import ContentWarning
@@ -46,7 +41,6 @@ __all__ = [
     "GameRequirementTimeSlotLink",
     "Genre",
     "Image",
-    "LoginProvider",
     "Party",
     "PartyUserLink",
     "Room",
