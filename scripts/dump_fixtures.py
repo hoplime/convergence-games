@@ -1,7 +1,7 @@
 """Dump all database tables to JSON fixture files.
 
 Usage:
-    PYTHONPATH=. python scripts/dump_fixtures.py <name>
+    python scripts/dump_fixtures.py <name>
 
 Runs: litestar database dump-data --dir fixtures/<name> --table '*'
 """

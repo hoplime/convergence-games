@@ -14,7 +14,7 @@ Markdown conventions:
 After editing, regenerate the template:
 
 ```bash
-PYTHONPATH=. uv run python scripts/build_faq.py
+python scripts/build_faq.py
 ```
 
 Use `--check` to verify the committed `faq.html.jinja` is up to date with `faq.md`.

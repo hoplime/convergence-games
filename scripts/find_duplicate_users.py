@@ -5,8 +5,8 @@ that resolves to more than one User. Also flags multiple UserLogin rows under
 a single user where raw casing differs. Does NOT modify any data.
 
 Usage:
-    PYTHONPATH=. uv run python scripts/find_duplicate_users.py
-    PYTHONPATH=. uv run python scripts/find_duplicate_users.py --verbose
+    python scripts/find_duplicate_users.py
+    python scripts/find_duplicate_users.py --verbose
 """
 
 from __future__ import annotations
