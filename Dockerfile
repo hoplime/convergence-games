@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . /app
 
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install && npm run build
+RUN npm install && npm run build
 
 # Now we have outputs at
 # /app/convergence_games/static/css/style.css

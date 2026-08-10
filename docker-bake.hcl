@@ -7,9 +7,6 @@ variable "DOCKER_TAG" {
 }
 
 target "default" {
-    secret = [
-        { type = "file", id = "npmrc", src = "./.npmrc" },
-    ]
     context = "."
     dockerfile = "Dockerfile"
     target = "${DOCKER_STAGE}"
