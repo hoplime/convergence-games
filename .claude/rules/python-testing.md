@@ -14,5 +14,5 @@ paths: **/*.py
 ## Test Layout
 
 - Tests live in a top-level `tests/` directory mirroring the `convergence_games/` source structure.
-- Example: `tests/services/algorithm/test_game_allocator.py` tests `convergence_games/services/algorithm/game_allocator.py`.
+- Example: `tests/lib/test_auth.py` tests `convergence_games/lib/auth.py`.
 - Test files are named `test_*.py`.

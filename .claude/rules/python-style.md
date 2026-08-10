@@ -14,8 +14,8 @@ paths: **/*.py
 
 ## Naming
 
-- **Files**: `snake_case.py`. Controller files named after their route (e.g., `event_manager.py`).
-- **Classes**: `PascalCase`. Pattern `{Entity}{Type}` (e.g., `EventManagerController`, `AlertError`).
+- **Files**: `snake_case.py`. Controller files named after their route (e.g., `_submit.py`).
+- **Classes**: `PascalCase`. Pattern `{Entity}{Type}` (e.g., `SubmitGameController`, `AlertError`).
 - **Request models**: `{Verb}{Entity}Form` or `{Verb}{Entity}Data` (e.g., `PostEmailSignInForm`, `RatingPutData`).
 - **Functions/methods**: `snake_case`. Private methods prefixed with single underscore.
 - **Constants**: `UPPER_SNAKE_CASE`.
