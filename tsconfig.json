@@ -19,6 +19,6 @@
       "noUnusedParameters": true,
       "noFallthroughCasesInSwitch": true
     },
-    "include": ["convergence_games/app"]
+    "include": ["convergence_games/frontend", "convergence_games/templates"]
   }
   

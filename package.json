@@ -1,8 +1,8 @@
 {
   "scripts": {
     "tailwind:watch:forever": "pm2 start npm -- run tailwind:watch",
-    "tailwind:watch": "tailwindcss -i ./style.css -o ./convergence_games/app/static/css/style.css --minify --watch",
-    "build:css": "tailwindcss -i ./style.css -o ./convergence_games/app/static/css/style.css --minify",
+    "tailwind:watch": "tailwindcss -i ./style.css -o ./convergence_games/static/css/style.css --minify --watch",
+    "build:css": "tailwindcss -i ./style.css -o ./convergence_games/static/css/style.css --minify",
     "build:tsc": "tsc && vite build",
     "build": "npm run build:tsc && npm run build:css"
   },
