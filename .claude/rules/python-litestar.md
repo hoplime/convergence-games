@@ -15,7 +15,7 @@ paths: **/*.py
 
 ## Dependency Injection
 
-- Dependencies declared in `convergence_games/server/core.py`.
+- Dependencies declared in `convergence_games/lib/deps.py` (registered app-wide via `server/core.py`).
 - Inject via handler parameter names: `transaction: AsyncSession`, `user: User`, `image_loader: ImageLoader`.
 - `transaction` provides an auto-committing async session wrapped in `begin()`.
 
