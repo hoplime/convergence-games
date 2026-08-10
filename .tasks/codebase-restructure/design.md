@@ -94,7 +94,7 @@ Phase-specific: Phase 3b — CSS/JS load, templates render, favicons serve, `npm
 
 ## Out of Scope
 
-- Route/URL changes (deferred renames listed in plan.md Notes: `/editor-test`, `/components/image-upload`, `/search/*`).
+- Route/URL changes (deferred renames listed in plan.md Notes: `/components/image-upload`, `/search/*`). `/editor-test` → `/debug/editor-test` was applied during the restructure, not deferred.
 - Repository/DTO abstractions, msgspec, CompositeServiceMixin (rejected in original planning).
 - Algorithm service restructure.
 - Fixing baseline type/lint errors.

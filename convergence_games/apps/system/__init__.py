@@ -6,6 +6,7 @@ from ._static import static_files_router
 
 router = Router(
     path="/",
+    response_headers={"Vary": "hx-target"},
     include_in_schema=False,
     tags=["system"],
     route_handlers=[

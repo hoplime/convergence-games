@@ -25,10 +25,10 @@ class ApplicationCore(InitPluginProtocol):
         init_sentry()
 
         app_config.debug = SETTINGS.DEBUG
+        app_config.openapi_config = config.openapi
         app_config = jwt_cookie_auth.on_app_init(app_config)
 
         app_config.plugins.extend([plugins.sqlalchemy, plugins.htmx])
-        app_config.openapi_config = config.openapi
         app_config.compression_config = config.compression
         app_config.template_config = config.template
 
