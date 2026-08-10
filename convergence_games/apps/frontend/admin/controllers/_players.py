@@ -1,21 +1,12 @@
 from typing import Annotated
 
 from litestar import Controller, get, put
+from litestar.di import Provide
 from litestar.params import Body, RequestEncodingType
 from litestar.response import Template
 from pydantic import BaseModel
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, with_loader_criteria
 
-from convergence_games.db.models import (
-    Event,
-    User,
-    UserEventCompensationTransaction,
-    UserEventD20Transaction,
-    UserEventRole,
-)
-from convergence_games.lib.alerts import Alert, AlertError
+from convergence_games.db.models import Event, UserEventCompensationTransaction, UserEventD20Transaction
 from convergence_games.lib.deps import event_with
 from convergence_games.lib.guards import permission_check, user_guard
 from convergence_games.lib.ocean import Sqid, sink, swim
@@ -24,6 +15,7 @@ from convergence_games.lib.response_type import HTMXBlockTemplate
 from convergence_games.lib.template import catalog
 
 from .._common import SqidInt, user_can_manage_submissions
+from ..services import PlayerService, provide_player_service
 
 
 class PutEventPlayerTransactionForm(BaseModel):
@@ -31,62 +23,13 @@ class PutEventPlayerTransactionForm(BaseModel):
     delta: int
 
 
-async def add_transaction_with_delta(
-    table_type: type[UserEventD20Transaction] | type[UserEventCompensationTransaction],
+def _render_balance_delta(
     request: Request,
-    event: Event,
+    table_type: type[UserEventD20Transaction] | type[UserEventCompensationTransaction],
+    new_transaction_row: UserEventD20Transaction | UserEventCompensationTransaction,
     event_sqid: Sqid,
     user_sqid: Sqid,
-    transaction: AsyncSession,
-    data: Annotated[PutEventPlayerTransactionForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> HTMXBlockTemplate:
-    user_id = sink(user_sqid)
-    delta = data.delta
-    expected_latest_transaction_id = data.expected_latest_sqid
-
-    player = (
-        (
-            await transaction.execute(
-                select(User)
-                .where(User.id == user_id)
-                .options(
-                    selectinload(
-                        User.latest_d20_transaction
-                        if table_type is UserEventD20Transaction
-                        else User.latest_compensation_transaction
-                    ),
-                    with_loader_criteria(table_type, where_criteria=table_type.event_id == event.id),
-                )
-            )
-        )
-        .scalars()
-        .one()
-    )
-    latest_transaction = (
-        player.latest_d20_transaction
-        if table_type is UserEventD20Transaction
-        else player.latest_compensation_transaction
-    )
-
-    latest_transaction_id = None if latest_transaction is None else latest_transaction.id
-
-    if expected_latest_transaction_id != latest_transaction_id:
-        raise AlertError([Alert("alert-error", "You are out of sync with the database")])
-
-    latest_current_balance = 0 if latest_transaction is None else latest_transaction.current_balance
-
-    new_transaction_row = table_type(
-        current_balance=latest_current_balance + delta,
-        previous_balance=latest_current_balance,
-        delta=delta,
-        user_id=player.id,
-        event_id=event.id,
-        previous_transaction_id=latest_transaction_id,
-    )
-    transaction.add(new_transaction_row)
-    await transaction.flush()
-    await transaction.refresh(new_transaction_row)
-
     template_str = catalog.render(
         "UserManageDelta",
         current_value=new_transaction_row.current_balance,
@@ -101,6 +44,7 @@ class PlayersController(Controller):
     dependencies = {
         "event": event_with(),
         "permission": permission_check(user_can_manage_submissions),
+        "player_service": Provide(provide_player_service),
     }
 
     @get(
@@ -110,32 +54,10 @@ class PlayersController(Controller):
         self,
         event: Event,
         request: Request,
-        transaction: AsyncSession,
+        player_service: PlayerService,
         permission: bool,
     ) -> Template:
-        users = (
-            (
-                await transaction.execute(
-                    select(User)
-                    .options(
-                        selectinload(User.latest_d20_transaction),
-                        selectinload(User.latest_compensation_transaction),
-                        selectinload(User.event_roles),
-                        selectinload(User.logins),
-                        with_loader_criteria(
-                            UserEventCompensationTransaction, UserEventCompensationTransaction.event_id == event.id
-                        ),
-                        with_loader_criteria(UserEventD20Transaction, UserEventD20Transaction.event_id == event.id),
-                        with_loader_criteria(
-                            UserEventRole, (UserEventRole.event_id == event.id) | (UserEventRole.event_id.is_(None))
-                        ),
-                    )
-                    .order_by(User.last_name, User.first_name)
-                )
-            )
-            .scalars()
-            .all()
-        )
+        users = await player_service.list_players(event.id)
         return HTMXBlockTemplate(
             template_name="pages/event_manage_players.html.jinja",
             block_name=request.htmx.target,
@@ -154,19 +76,18 @@ class PlayersController(Controller):
         event: Event,
         event_sqid: Sqid,
         user_sqid: Sqid,
-        transaction: AsyncSession,
+        player_service: PlayerService,
         data: Annotated[PutEventPlayerTransactionForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
         permission: bool,
     ) -> Template:
-        return await add_transaction_with_delta(
-            table_type=UserEventD20Transaction,
-            request=request,
-            event=event,
-            event_sqid=event_sqid,
-            user_sqid=user_sqid,
-            transaction=transaction,
-            data=data,
+        new_transaction_row = await player_service.add_balance_transaction(
+            UserEventD20Transaction,
+            event_id=event.id,
+            user_id=sink(user_sqid),
+            delta=data.delta,
+            expected_latest_transaction_id=data.expected_latest_sqid,
         )
+        return _render_balance_delta(request, UserEventD20Transaction, new_transaction_row, event_sqid, user_sqid)
 
     @put(
         path="/event/{event_sqid:str}/player/{user_sqid:str}/compensation",
@@ -177,16 +98,17 @@ class PlayersController(Controller):
         event: Event,
         event_sqid: Sqid,
         user_sqid: Sqid,
-        transaction: AsyncSession,
+        player_service: PlayerService,
         data: Annotated[PutEventPlayerTransactionForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
         permission: bool,
     ) -> Template:
-        return await add_transaction_with_delta(
-            table_type=UserEventCompensationTransaction,
-            request=request,
-            event=event,
-            event_sqid=event_sqid,
-            user_sqid=user_sqid,
-            transaction=transaction,
-            data=data,
+        new_transaction_row = await player_service.add_balance_transaction(
+            UserEventCompensationTransaction,
+            event_id=event.id,
+            user_id=sink(user_sqid),
+            delta=data.delta,
+            expected_latest_transaction_id=data.expected_latest_sqid,
+        )
+        return _render_balance_delta(
+            request, UserEventCompensationTransaction, new_transaction_row, event_sqid, user_sqid
         )
