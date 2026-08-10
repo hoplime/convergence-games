@@ -7,7 +7,13 @@ from litestar.types.callable_types import BeforeRequestHookHandler
 from convergence_games.lib.request_type import Request
 
 from .accounts.controllers import AuthPagesController, EmailAuthController, OAuthController
-from .admin.controllers import EventManagerController
+from .admin.controllers import (
+    AllocationController,
+    PlayersController,
+    ScheduleController,
+    SubmissionsController,
+)
+from .admin.controllers import SettingsController as EventSettingsController
 from .debug.controllers import DebugController
 from .games.controllers import (
     EventGamesController,
@@ -37,23 +43,27 @@ router = Router(
     response_headers={"Vary": "hx-target"},
     include_in_schema=False,
     route_handlers=[
+        AllocationController,
         AuthPagesController,
         DebugController,
         EmailAuthController,
         EventGamesController,
-        EventManagerController,
+        EventSettingsController,
         GameController,
         MiscComponentsController,
         MySubmissionsController,
         OAuthController,
         PartyController,
         PlannerController,
+        PlayersController,
         PreferencesController,
         ProfileController,
         PublicController,
         RedirectsController,
+        ScheduleController,
         SearchController,
         SettingsController,
+        SubmissionsController,
         SubmitGameController,
     ],
     before_request=cast(BeforeRequestHookHandler, before_request_handler),
