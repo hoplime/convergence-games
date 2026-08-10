@@ -17,7 +17,7 @@ the template engine expands at request time. Inline JinjaX tags and
 `{{ ... }}` expressions in the markdown source pass through verbatim.
 
 Run:
-    PYTHONPATH=. uv run python scripts/build_faq.py
+    python scripts/build_faq.py
 
 Use `--check` in CI to fail on drift.
 """
@@ -36,7 +36,7 @@ DEFAULT_INPUT = REPO_ROOT / "src/convergence_games/templates/pages/faq.md"
 DEFAULT_OUTPUT = REPO_ROOT / "src/convergence_games/templates/pages/faq.html.jinja"
 
 GENERATED_BANNER = (
-    "{# GENERATED FROM faq.md — DO NOT EDIT DIRECTLY. #}\n{# Run: PYTHONPATH=. uv run python scripts/build_faq.py #}\n"
+    "{# GENERATED FROM faq.md — DO NOT EDIT DIRECTLY. #}\n{# Run: python scripts/build_faq.py #}\n"
 )
 
 

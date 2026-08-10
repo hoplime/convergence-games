@@ -1,7 +1,7 @@
 """Create a mock Convergence 2026 event with rooms, tables, and time slots.
 
 Usage:
-    PYTHONPATH=. python scripts/create_mock_event.py
+    python scripts/create_mock_event.py
 
 Idempotent: if an event named "Convergence 2026" already exists, skips creation
 and prints the existing event ID.
