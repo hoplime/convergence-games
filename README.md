@@ -21,6 +21,10 @@ Live at: https://convergence.waikatorpg.co.nz
 - **Package management**: [uv](https://docs.astral.sh/uv/) (Python), npm (Node)
 - **Database migrations**: Alembic via [Advanced Alchemy](https://docs.advanced-alchemy.litestar.dev/)
 
+## Development
+
+See **[SETUP.md](SETUP.md)** for local development setup — prerequisites, environment configuration, running the app, and testing.
+
 ## Licensing
 
 This repository is licensed under the MIT License. The following assets are **not** covered by this license:
