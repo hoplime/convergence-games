@@ -19,7 +19,7 @@ from convergence_games.db.models import (
     UserEventD20Transaction,
 )
 from convergence_games.lib.alerts import Alert, AlertError
-from convergence_games.lib.ocean import swim
+from convergence_games.lib.ocean import Sqid, sink, sink_upper, swim
 
 
 @dataclass(slots=True)
@@ -160,7 +160,7 @@ class PartyService:
 
         return party
 
-    async def join_party(self, *, user_id: int, time_slot_id: int, invite_id: int) -> Party:
+    async def join_party(self, *, user_id: int, time_slot_id: int, invite_sqid: Sqid) -> Party:
         is_gm = await self.user_is_gm_for_time_slot(user_id=user_id, time_slot_id=time_slot_id)
 
         if is_gm:
@@ -185,6 +185,11 @@ class PartyService:
                 else None,
                 redirect_text="Return to Planner",
             )
+
+        try:
+            invite_id = sink_upper(invite_sqid)
+        except Exception as e:
+            raise AlertError([Alert(alert_class="alert-error", message="Invalid invite code.")]) from e
 
         party = (
             await self._session.execute(
@@ -254,7 +259,7 @@ class PartyService:
             )
         ).scalar_one_or_none()
 
-    async def promote_member(self, *, user_id: int, time_slot_id: int, member_id: int) -> None:
+    async def promote_member(self, *, user_id: int, time_slot_id: int, member_sqid: Sqid) -> None:
         party_user_link = (
             await self._session.execute(
                 select(PartyUserLink).where(
@@ -265,6 +270,8 @@ class PartyService:
 
         if party_user_link is None or not party_user_link.is_leader:
             raise AlertError([Alert(alert_class="alert-error", message="You are not leading a party.")])
+
+        member_id = sink(member_sqid)
 
         other_party_user_link = (
             await self._session.execute(
