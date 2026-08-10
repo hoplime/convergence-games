@@ -1,5 +1,11 @@
 """Tests for the FAQ markdown → Jinja build script."""
 
+# scripts is _not_ a package, so we can't import from it directly. Add its parent dir to sys.path.
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+
 from scripts.build_faq import build_page, main, parse_markdown
 
 
