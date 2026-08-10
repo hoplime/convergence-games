@@ -32,7 +32,7 @@
             "program": "${file}",
             "justMyCode": false,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}"
+                "PYTHONPATH": "${workspaceFolder}/src"
             }
         }
     ]

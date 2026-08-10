@@ -46,7 +46,7 @@ npx tsc --noEmit                             # TypeScript type checking
 litestar --app convergence_games.server.app:app database upgrade             # Run migrations
 litestar --app convergence_games.server.app:app database make-migrations -m "description"  # Generate migration (uses Advanced Alchemy CLI)
 ```
-Migrations live in `convergence_games/db/migrations/versions/`. Alembic post-write hooks auto-run ruff on generated files.
+Migrations live in `src/convergence_games/db/migrations/versions/`. Alembic post-write hooks auto-run ruff on generated files.
 
 ### Tests
 ```bash
@@ -58,31 +58,31 @@ pytest -k "test_name"                        # Run specific test
 ## Architecture
 
 ### Application Entry Point
-`convergence_games/server/app.py` creates the Litestar application via `create_app()` factory. `server/core.py` defines `ApplicationCore` (an `InitPluginProtocol`) that wires everything together at app-init time: mounts the three routers, applies the plugins from `server/plugins.py` (SQLAlchemy, HTMX) and the configs from `server/config.py` (compression, OpenAPI, template), and registers dependencies, exception handlers, and event listeners. The actual providers/handlers live in `lib/`: dependency providers (`lib/deps.py` — `dependencies`, `provide_transaction`, `event_with`, etc.), exception handlers (`lib/exceptions.py` — `exception_handlers`), Sentry init (`lib/sentry.py` — `init_sentry`), template engine (`lib/template.py` — `catalog`, `jinja_env`), auth (`lib/auth.py` — `jwt_cookie_auth`, `build_token_extras`), permissions (`lib/permissions.py`). Nothing outside `server/` imports from it except the ASGI entrypoint.
+`src/convergence_games/server/app.py` creates the Litestar application via `create_app()` factory. `server/core.py` defines `ApplicationCore` (an `InitPluginProtocol`) that wires everything together at app-init time: mounts the three routers, applies the plugins from `server/plugins.py` (SQLAlchemy, HTMX) and the configs from `server/config.py` (compression, OpenAPI, template), and registers dependencies, exception handlers, and event listeners. The actual providers/handlers live in `lib/`: dependency providers (`lib/deps.py` — `dependencies`, `provide_transaction`, `event_with`, etc.), exception handlers (`lib/exceptions.py` — `exception_handlers`), Sentry init (`lib/sentry.py` — `init_sentry`), template engine (`lib/template.py` — `catalog`, `jinja_env`), auth (`lib/auth.py` — `jwt_cookie_auth`, `build_token_extras`), permissions (`lib/permissions.py`). Nothing outside `server/` imports from it except the ASGI entrypoint.
 
 ### Routing
-Three top-level apps mounted in `convergence_games/apps/`:
+Three top-level apps mounted in `src/convergence_games/apps/`:
 - **`frontend/`** - Server-rendered HTML pages, organized by domain: `apps/frontend/<domain>/controllers/` for `accounts`, `admin`, `debug`, `games`, `player`, `public`, `redirects`, `user`, plus a `services/` package for domains where business logic has been extracted (`admin`, `games`, `player`). Each controller file is a Litestar Controller (e.g., `SubmissionsController`, `SubmitGameController`). The frontend router (`apps/frontend/__init__.py`) carries a `before_request` hook that redirects users who haven't completed profile setup.
 - **`api/`** - JSON API endpoints (`apps/api/`). Only active when `DEBUG=True`.
 - **`system/`** - Health check, static file serving, and favicons (`apps/system/`).
 
 ### Templates (JinjaX)
-Templates use JinjaX component syntax. Components in `templates/components/` are reusable UI elements (PascalCase `.html.jinja` files). Pages in `templates/pages/` are full page templates. All JinjaX components automatically receive `request` via a custom passthrough. `templates/`, `static/`, and `frontend/` (TypeScript sources) live at the package top level (`convergence_games/templates/`, `convergence_games/static/`, `convergence_games/frontend/`).
+Templates use JinjaX component syntax. Components in `templates/components/` are reusable UI elements (PascalCase `.html.jinja` files). Pages in `templates/pages/` are full page templates. All JinjaX components automatically receive `request` via a custom passthrough. `templates/`, `static/`, and `frontend/` (TypeScript sources) live at the package top level (`src/convergence_games/templates/`, `src/convergence_games/static/`, `src/convergence_games/frontend/`).
 
-Some pages have co-located TypeScript files (e.g., `event_manage_schedule.ts`) that are bundled through the Vite entry at `convergence_games/frontend/index.ts` -> re-exports `templates/index.ts`, which re-exports the co-located page scripts (`templates/pages/*.ts`) -> bundled into a single UMD `lib.js`.
+Some pages have co-located TypeScript files (e.g., `event_manage_schedule.ts`) that are bundled through the Vite entry at `src/convergence_games/frontend/index.ts` -> re-exports `templates/index.ts`, which re-exports the co-located page scripts (`templates/pages/*.ts`) -> bundled into a single UMD `lib.js`.
 
 ### Service Pattern
 Services are plain classes holding an injected `self._session: AsyncSession`. Each service module defines a `provide_<name>_service(transaction: AsyncSession) -> XService` factory alongside the class; controllers wire it in via `dependencies = {"x_service": Provide(provide_x_service)}`. Services never call `.commit()` — the `transaction` dependency provides an auto-committing session wrapped in `begin()`, so commits happen at the request boundary, not inside services.
 
 ### Database Models
-All SQLAlchemy models live under `convergence_games/db/models/`, one model per file (e.g., `_game.py`, `_user.py`), re-exported from `db/models/__init__.py`. All models share a single `Base` class (extends `BigIntAuditBase` + `UserAuditColumns` for created_by/updated_by tracking). Key domain models:
+All SQLAlchemy models live under `src/convergence_games/db/models/`, one model per file (e.g., `_game.py`, `_user.py`), re-exported from `db/models/__init__.py`. All models share a single `Base` class (extends `BigIntAuditBase` + `UserAuditColumns` for created_by/updated_by tracking). Key domain models:
 - **Event** -> has Rooms, Tables, TimeSlots, Games, Sessions
 - **Game** -> belongs to Event, System, User (gamemaster); has GameRequirement, Genres, ContentWarnings, Images
 - **Session** -> links a Game to a Table and TimeSlot (with cross-event foreign key constraints)
 - **Party** -> groups Users for a TimeSlot; members linked via PartyUserLink with a unique leader constraint
 - **User** -> has LoginAccounts, UserEventRoles, UserGamePreferences, D20Transactions, CompensationTransactions
 
-Enums in `convergence_games/db/enums.py` use `FlagWithNotes` (IntFlag with metadata dicts for notes, form notes, tooltips, icons) and `Requirement`/`Facility` subclasses for game/room/table requirements matching.
+Enums in `src/convergence_games/db/enums.py` use `FlagWithNotes` (IntFlag with metadata dicts for notes, form notes, tooltips, icons) and `Requirement`/`Facility` subclasses for game/room/table requirements matching.
 
 ### Sqid Encoding (`lib/ocean.py`)
 Database IDs are obfuscated in URLs using Sqids. The API uses ocean-themed naming:
@@ -91,18 +91,18 @@ Database IDs are obfuscated in URLs using Sqids. The API uses ocean-themed namin
 - IDs are salted per model class name via `_ink()`.
 
 ### Game Allocation Algorithm
-`convergence_games/services/algorithm/game_allocator.py` implements the player-to-session allocation. It works with `AlgParty`, `AlgSession`, and `AlgResult` models (in `services/algorithm/models.py`). Players rate games using a dice-based preference system (D4-D20, higher = stronger preference). The allocator builds tier lists from preferences and assigns parties to sessions respecting player counts, compensation, and constraints.
+`src/convergence_games/services/algorithm/game_allocator.py` implements the player-to-session allocation. It works with `AlgParty`, `AlgSession`, and `AlgResult` models (in `services/algorithm/models.py`). Players rate games using a dice-based preference system (D4-D20, higher = stronger preference). The allocator builds tier lists from preferences and assigns parties to sessions respecting player counts, compensation, and constraints.
 
 ### Permissions
-`convergence_games/lib/permissions.py` provides `user_has_permission()` used both in route guards and Jinja templates. Roles: Owner > Manager > Reader > Player.
+`src/convergence_games/lib/permissions.py` provides `user_has_permission()` used both in route guards and Jinja templates. Roles: Owner > Manager > Reader > Player.
 
 ### Image Storage
-`convergence_games/services/image/` supports two backends (configured via `IMAGE_STORAGE_MODE`):
+`src/convergence_games/services/image/` supports two backends (configured via `IMAGE_STORAGE_MODE`):
 - `filesystem` - local disk storage (development)
 - `blob` - Azure Blob Storage (production)
 
 ### Settings
-`convergence_games/settings.py` uses Pydantic Settings loading from `.env`. Feature flags: `FLAG_PREFERENCES`, `FLAG_PLANNER`.
+`src/convergence_games/settings.py` uses Pydantic Settings loading from `.env`. Feature flags: `FLAG_PREFERENCES`, `FLAG_PLANNER`.
 
 ## Key Conventions
 

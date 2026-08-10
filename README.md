@@ -29,15 +29,15 @@ This repository is licensed under the MIT License. The following assets are **no
 
 Copyright the Waikato Role-Playing Guild. All rights reserved.
 
-- `convergence_games/static/favicon/` — favicon assets
-- Embedded Convergence logo SVG in `convergence_games/templates/components/NavBar.html.jinja`
+- `src/convergence_games/static/favicon/` — favicon assets
+- Embedded Convergence logo SVG in `src/convergence_games/templates/components/NavBar.html.jinja`
 
 ### Third-party brand assets
 
 Owned by their respective owners. All rights reserved.
 
-- `convergence_games/static/icons/logos/` — authentication provider logos (Discord, Google)
-- `convergence_games/static/images/sponsors/` — sponsor logos
+- `src/convergence_games/static/icons/logos/` — authentication provider logos (Discord, Google)
+- `src/convergence_games/static/images/sponsors/` — sponsor logos
 
 ### Vendored JavaScript libraries
 
