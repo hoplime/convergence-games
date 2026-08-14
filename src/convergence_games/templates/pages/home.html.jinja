@@ -286,6 +286,29 @@
                 <h2 class="text-xl">Got another question?</h2>
                 <a href="/faq" class="btn btn-ghost btn-xl">View the FAQ</a>
             </div>
+            <!-- prettier-ignore-start -->
+            <div class="divider divider-vertical"></div>
+            <h2 class="text-xl" id="sponsors">Sponsors</h2>
+            <h3 class="mt2 text-lg">Gold Tier</h3>
+            <div class="grid grid-cols-1 gap-2">
+                <SponsorCard tier="gold" img-src="/static/images/sponsors/gamersphere.png" name="Gamersphere" website_url="https://www.gamersphere.nz/" />
+            </div>
+            <h3 class="mt2 text-lg">Silver Tier</h3>
+            <div class="grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-3">
+                <SponsorCard tier="silver" img-src="/static/images/sponsors/dice_goblin.png" name="Dice Goblin" website_url="https://www.dicegoblin.nz/" />
+                <SponsorCard tier="silver" img-src="/static/images/sponsors/gaming_dna.png" name="Gaming DNA" website_url="https://gamingdna.co.nz/" />
+                <SponsorCard tier="silver" img-src="/static/images/sponsors/beadnd.png" name="BeaDnD" website_url="https://www.beadndgames.co.nz/" />
+                <SponsorCard tier="silver" img-src="/static/images/sponsors/cold_robot_design.png" name="Cold Robot Design" website_url="https://www.coldrobotdesign.co.nz/" />
+            </div>
+            <h3 class="mt2 text-lg">Prize Support</h3>
+            <div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/brewaucracy.png" name="Brewaucracy" website_url="https://www.brewaucracy.co.nz/" />
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/free_league.png" name="Free League" website_url="https://freeleaguepublishing.com/" />
+                <SponsorCard tier="prize" img-src="/static/images/sponsors/flat_cap_games.jpg" name="Flat Cap Games" website_url="https://www.facebook.com/flatcapgames/" />
+                <SponsorCard tier="volunteer" img-src="/static/images/sponsors/escapist.png" name="Escapist" website_url="https://www.escapist.co.nz/" />
+            </div>
+            <div class="divider divider-vertical"></div>
+            <!-- prettier-ignore-end -->
         </PageContainer>
     {% endblock %}
 </Page>
