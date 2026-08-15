@@ -16,7 +16,7 @@
                 hx-target="closest tr"
                 hx-swap="outerHTML"
             >
-                <select class="select {{ game.submission_status.color_classes }}" name="submission_status">
+                <select class="{{ game.submission_status.color_classes }} select" name="submission_status">
                     {% for status in submission_status %}
                         <option
                             value="{{ status }}"
@@ -35,6 +35,7 @@
     <td>{{ game.game_requirement.times_to_run }}</td>
     <td>
         <a
+            target="_blank"
             href="/game/{{ swim(game) }}/edit"
             class="btn btn-sm btn-neutral"
             {{ "" if user | has_permission("game", (game.event, game), "update") else "disabled" }}
