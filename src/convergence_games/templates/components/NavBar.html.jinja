@@ -43,6 +43,14 @@
                 <span class="hidden xs:block">Planner</span>
             </a>
         {% endif %}
+        {% if request.auth %}
+            {# If we have any roles assigned for the current event, show the admin page button #}
+            {% if request.auth.extras["event_roles"] | selectattr("event_id", "equalto", SETTINGS.DEFAULT_EVENT_ID) | map(attribute='role') | list %}
+                <a href="/admin" class="btn rounded-full bg-base-300 text-lg btn-ghost">
+                    <span class="icon-[mdi--cog]"></span>
+                </a>
+            {% endif %}
+        {% endif %}
         <div class="dropdown dropdown-end">
             <div tabindex="0" class="btn avatar btn-circle btn-ghost">
                 <div class="w-10 rounded-full bg-base-300 p-1">
