@@ -40,9 +40,6 @@
                     {% endfor %}
                 </div>
             {% endif %}
-            <span class="text-end text-sm font-semibold text-base-content/70"
-                >{{ game.player_count_optimum }} players</span
-            >
         </div>
     </a>
     {% if game.event.is_preferences_open() and request.user %}
