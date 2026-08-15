@@ -1,0 +1,12 @@
+<Page>
+    {% block content %}
+        <PageTitle>Admin</PageTitle>
+        <PageContainer>
+            {% if request.user is not none %}
+                {% if request.user | has_permission("event", (event, event), "manage_submissions") %}
+                    <AdminSectionCard :event="event" />
+                {% endif %}
+            {% endif %}
+        </PageContainer>
+    {% endblock %}
+</Page>
