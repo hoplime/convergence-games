@@ -52,12 +52,6 @@
                             {% endif %}
                         {% endblock %}
                     </div>
-
-                    {% if request.user is not none %}
-                        {% if request.user | has_permission("event", (event, event), "manage_submissions") %}
-                            <AdminSectionCard :event="event" />
-                        {% endif %}
-                    {% endif %}
                 </div>
 
                 {# Filter drawer #}
@@ -137,7 +131,6 @@
                         {% if request.user is not none and event.is_preferences_open() %}
                             <FilterSection :form_data="form_data.preference" />
                         {% endif %}
-
                     </form>
                 </div>
             </div>
