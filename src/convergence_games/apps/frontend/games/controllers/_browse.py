@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from convergence_games.db.enums import (
+    GameCrunch,
     GameKSP,
     GameTone,
     SubmissionStatus,
@@ -44,6 +45,7 @@ class EventGamesQuery(BaseModel):
     genre: list[SqidInt] = []
     system: list[SqidInt] = []
     tone: list[str] = []
+    crunch: list[str] = []
     bonus: list[int] = []
     content: list[SqidInt] = []
     preference: list[Literal["unrated", "rated"]] = []
@@ -96,6 +98,8 @@ async def get_event_approved_games_dep(
         stmt = stmt.where(Game.genres.any(Genre.id.in_(query_params.genre)))
     if query_params.system:
         stmt = stmt.where(Game.system_id.in_(query_params.system))
+    if query_params.crunch:
+        stmt = stmt.where(Game.crunch.in_(query_params.crunch))
     if query_params.tone:
         stmt = stmt.where(Game.tone.in_(query_params.tone))
     if query_params.bonus:
@@ -130,6 +134,7 @@ async def get_event_approved_games_dep(
 async def event_games_query_from_params_dep(
     genre: list[Sqid] | None = None,
     system: list[Sqid] | None = None,
+    crunch: list[str] | None = None,
     tone: list[str] | None = None,
     bonus: list[int] | None = None,
     content: list[Sqid] | None = None,
@@ -140,6 +145,7 @@ async def event_games_query_from_params_dep(
         {
             "genre": genre or [],
             "system": system or [],
+            "crunch": crunch or [],
             "tone": tone or [],
             "bonus": bonus or [],
             "content": content or [],
@@ -183,6 +189,7 @@ async def get_form_data_dep(
         .scalars()
         .all()
     )
+    all_crunches = list(GameCrunch)
     all_present_content_warnings = (
         (
             await transaction.execute(
@@ -221,6 +228,16 @@ async def get_form_data_dep(
                 for system in all_present_systems
             ],
             description="Find games using any of these systems:",
+        ),
+        "crunch": MultiselectFormData(
+            label="Complexity",
+            name="crunch",
+            options=[
+                MultiselectFormDataOption(
+                    label=crunch.value, value=crunch.value, selected=crunch.value in query_params.crunch
+                )
+                for crunch in all_crunches
+            ],
         ),
         "tone": MultiselectFormData(
             label="Tone",
@@ -379,4 +396,3 @@ class EventGamesController(Controller):
                 "latest_d20_transaction": latest_d20_transaction,
             },
         )
-
