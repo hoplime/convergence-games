@@ -96,6 +96,7 @@
         {% else %}
             <div>-</div>
         {% endif %}
+        <div class="text-xs font-semibold">{{ game.player_count_optimum }}</div>
     </div>
     <div class="flex flex-row justify-between gap-2 text-xs group-has-[#minimal-view:checked]:hidden">
         <div data-criteria-match="times-to-run">{{ game.game_requirement.times_to_run }}x</div>

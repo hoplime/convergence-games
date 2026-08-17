@@ -8,6 +8,7 @@ from convergence_games.lib.request_type import Request
 
 from .accounts.controllers import AuthPagesController, EmailAuthController, OAuthController
 from .admin.controllers import (
+    AdminController,
     AllocationController,
     PlayersController,
     ScheduleController,
@@ -43,6 +44,7 @@ router = Router(
     response_headers={"Vary": "hx-target"},
     include_in_schema=False,
     route_handlers=[
+        AdminController,
         AllocationController,
         AuthPagesController,
         DebugController,

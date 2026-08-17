@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import humanize
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from convergence_games.db.enums import SubmissionStatus
 from convergence_games.db.models import Event, Game, Session
 
 from .._common import PutEventManageScheduleSession
@@ -17,7 +18,11 @@ class ScheduleService:
     def unscheduled_games(self, event: Event) -> list[Game]:
         # Games duplicated by the number of times to run
         unscheduled_games = list(
-            itertools.chain.from_iterable([game] * game.game_requirement.times_to_run for game in event.games)
+            itertools.chain.from_iterable(
+                [game] * game.game_requirement.times_to_run
+                for game in event.games
+                if game.submission_status == SubmissionStatus.APPROVED
+            )
         )
 
         # Remove games that have sessions already scheduled
