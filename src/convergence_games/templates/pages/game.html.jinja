@@ -4,7 +4,15 @@
         <PageContainer>
             {# Header content #}
             <h1 class="text-3xl">{{ game.name }}</h1>
-            <div class="italic">{{ game.tagline }}</div>
+            <div class="flex flex-row justify-between">
+                <span class="italic">{{ game.tagline }}</span>
+                <a
+                    href="/game/{{ swim(game) }}/edit"
+                    class="{{ '' if user is not none and user | has_permission('game', (game.event, game), 'update') else 'hidden' }} btn btn-sm btn-neutral"
+                >
+                    Edit
+                </a>
+            </div>
             <div class="card rounded-box border border-base-300 bg-base-200">
                 <div class="card-body">
                     <h2 class="card-title">{{ game.system.name }} | Run by {{ game.gamemaster.full_name }}</h2>
@@ -158,7 +166,7 @@
                             {% if game.event.is_editing_open() %}
                                 <a href="/game/{{ swim(game) }}/edit" class="btn btn-primary">Edit</a>
                             {% else %}
-                                <button class="btn btn-primary btn-disabled" disabled>Editing closed</button>
+                                <button class="btn-disabled btn btn-primary" disabled>Editing closed</button>
                             {% endif %}
                         </div>
                     </div>
