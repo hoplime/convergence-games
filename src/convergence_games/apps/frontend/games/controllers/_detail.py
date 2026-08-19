@@ -48,5 +48,6 @@ class GameController(Controller):
                 "user_game_played": user_game_context.user_game_played,
                 "scheduled_sessions": scheduled_sessions,
                 "has_d20": user_game_context.has_d20,
+                "user": request.user,
             },
         )
