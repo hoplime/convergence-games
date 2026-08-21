@@ -46,6 +46,8 @@
                     </tr>
                 </tbody>
             </table>
+            {# TODO: The button breaks on table sort due to the HTMX partial reload #}
+            <ScrollButton />
         </PageContainer>
     {% endblock %}
 </Page>
