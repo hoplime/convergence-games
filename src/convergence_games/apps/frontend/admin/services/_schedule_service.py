@@ -21,7 +21,8 @@ class ScheduleService:
             itertools.chain.from_iterable(
                 [game] * game.game_requirement.times_to_run
                 for game in event.games
-                if game.submission_status == SubmissionStatus.APPROVED
+                if game.submission_status != SubmissionStatus.CANCELLED
+                and game.submission_status != SubmissionStatus.REJECTED
             )
         )
 
