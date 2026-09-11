@@ -24,8 +24,8 @@ primary_region = 'syd'
     path = '/health'
 
 [[vm]]
-  size = 'shared-cpu-1x'
-  memory = '512mb'
+  size = 'shared-cpu-2x'
+  memory = '1gb'
 
 [env]
   BASE_DOMAIN = 'https://convergence.waikatorpg.co.nz'
